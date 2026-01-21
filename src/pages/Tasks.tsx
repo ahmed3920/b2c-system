@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/components/Logo";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -369,6 +370,7 @@ const Tasks = () => {
                 Back
               </Button>
               <div className="h-6 w-px bg-border" />
+              <Logo variant="blue" className="h-8" />
               <h1 className="font-bold text-lg text-foreground">Task Management</h1>
             </div>
             <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
@@ -133,6 +134,7 @@ const Kanban = () => {
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" onClick={() => navigate("/home")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
               <div className="h-6 w-px bg-border" />
+              <Logo variant="blue" className="h-8" />
               <h1 className="font-bold text-lg text-foreground">Kanban Board</h1>
             </div>
             <div className="flex gap-4 text-sm">

@@ -7,6 +7,8 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Tasks from "./pages/Tasks";
 import Kanban from "./pages/Kanban";
+import Progress from "./pages/Progress";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +25,8 @@ const App = () => (
           <Route path="/home" element={<Home />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/kanban" element={<Kanban />} />
+          <Route path="/progress" element={<Progress />} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
