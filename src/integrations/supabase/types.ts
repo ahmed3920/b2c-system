@@ -14,11 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
+      achievements: {
         Row: {
-          avatar_url: string | null
+          achievement_type: string
+          achievement_value: number | null
+          date_earned: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_type: string
+          achievement_value?: number | null
+          date_earned?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_type?: string
+          achievement_value?: number | null
+          date_earned?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          deadline: string | null
+          goal_type: string
+          id: string
+          status: string | null
+          target_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          deadline?: string | null
+          goal_type: string
+          id?: string
+          status?: string | null
+          target_value: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          deadline?: string | null
+          goal_type?: string
+          id?: string
+          status?: string | null
+          target_value?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
           created_at: string
           id: string
+          message: string
+          read_status: boolean | null
+          related_task_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read_status?: boolean | null
+          related_task_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_status?: boolean | null
+          related_task_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          active_status: boolean | null
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          last_login: string | null
+          locked_until: string | null
+          login_attempts: number | null
           mentor_id: string
           mentor_name: string
           team_leader: string
@@ -26,9 +127,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_status?: boolean | null
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
+          full_name?: string | null
           id?: string
+          last_login?: string | null
+          locked_until?: string | null
+          login_attempts?: number | null
           mentor_id: string
           mentor_name: string
           team_leader: string
@@ -36,9 +143,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_status?: boolean | null
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
+          full_name?: string | null
           id?: string
+          last_login?: string | null
+          locked_until?: string | null
+          login_attempts?: number | null
           mentor_id?: string
           mentor_name?: string
           team_leader?: string
@@ -49,7 +162,9 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_by: string | null
           created_at: string
+          created_by: string | null
           date_from: string | null
           date_to: string | null
           description: string
@@ -62,7 +177,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_by?: string | null
           created_at?: string
+          created_by?: string | null
           date_from?: string | null
           date_to?: string | null
           description: string
@@ -75,7 +192,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_by?: string | null
           created_at?: string
+          created_by?: string | null
           date_from?: string | null
           date_to?: string | null
           description?: string
@@ -89,14 +208,46 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "team_leader" | "mentor"
       task_status: "todo" | "in_progress" | "done" | "archived"
     }
     CompositeTypes: {
@@ -225,6 +376,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "team_leader", "mentor"],
       task_status: ["todo", "in_progress", "done", "archived"],
     },
   },
