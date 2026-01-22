@@ -9,6 +9,7 @@ import Tasks from "./pages/Tasks";
 import Kanban from "./pages/Kanban";
 import Progress from "./pages/Progress";
 import Reports from "./pages/Reports";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/kanban" element={<Kanban />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/admin/users" element={<UserManagement />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
