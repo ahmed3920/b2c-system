@@ -51,7 +51,7 @@ const allCards: DashboardCard[] = [
     description: "Manage all system users",
     icon: <Users className="w-8 h-8" />,
     href: "/admin/users",
-    disabled: true,
+    disabled: false,
     roles: ["admin"],
   },
   {
