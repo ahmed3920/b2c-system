@@ -10,6 +10,7 @@ import Kanban from "./pages/Kanban";
 import Progress from "./pages/Progress";
 import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
+import TeamDashboard from "./pages/TeamDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/progress" element={<Progress />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/admin/users" element={<UserManagement />} />
+          <Route path="/team/dashboard" element={<TeamDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
