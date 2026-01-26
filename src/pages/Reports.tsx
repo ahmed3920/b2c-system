@@ -17,8 +17,7 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts";
-import { ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import type { Database } from "@/integrations/supabase/types";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -314,7 +313,7 @@ const Reports = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <Tooltip />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -337,7 +336,7 @@ const Reports = () => {
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} />
                   <Bar dataKey="value" fill="#056eec" radius={[0, 4, 4, 0]} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Tooltip />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
