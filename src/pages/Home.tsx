@@ -43,7 +43,7 @@ const allCards: DashboardCard[] = [
     description: "Overall system metrics and health",
     icon: <LayoutDashboard className="w-8 h-8" />,
     href: "/admin/dashboard",
-    disabled: true,
+    disabled: false,
     roles: ["admin"],
   },
   {

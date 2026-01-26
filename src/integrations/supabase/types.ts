@@ -234,6 +234,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_mentor_name: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -245,6 +246,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "team_leader" | "mentor"
