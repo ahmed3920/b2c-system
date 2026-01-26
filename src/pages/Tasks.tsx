@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   Plus,
   Search,
@@ -32,11 +33,14 @@ import {
   ArrowLeft,
   Loader2,
   Link as LinkIcon,
-  ExternalLink,
+  UserCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { TaskDetailsModal } from "@/components/task/TaskDetailsModal";
+import { TaskPriorityBadge } from "@/components/task/TaskPriorityBadge";
+import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -63,12 +67,12 @@ const statusLabels: Record<TaskStatus, string> = {
   archived: "Archived",
 };
 
-const statusColors: Record<TaskStatus, string> = {
-  todo: "status-todo",
-  in_progress: "status-in-progress",
-  done: "status-done",
-  archived: "status-archived",
-};
+const priorityOptions = [
+  { value: 1, label: "Low" },
+  { value: 2, label: "Medium" },
+  { value: 3, label: "High" },
+  { value: 4, label: "Urgent" },
+];
 
 interface Profile {
   mentor_id: string;
@@ -88,6 +92,7 @@ const Tasks = () => {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [assignerNames, setAssignerNames] = useState<Record<string, string>>({});
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -103,9 +108,13 @@ const Tasks = () => {
   const [formDateFrom, setFormDateFrom] = useState("");
   const [formDateTo, setFormDateTo] = useState("");
   const [formStatus, setFormStatus] = useState<TaskStatus>("todo");
+  const [formPriority, setFormPriority] = useState(2);
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, isTeamLeader } = useUserRole();
+
+  const canEditAll = isAdmin || isTeamLeader;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -153,6 +162,22 @@ const Tasks = () => {
         if (error) throw error;
         setTasks(tasksData || []);
         setFilteredTasks(tasksData || []);
+
+        // Fetch assigner names
+        const assignerIds = [...new Set((tasksData || []).map((t) => t.assigned_by).filter(Boolean))];
+        if (assignerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, mentor_name")
+            .in("user_id", assignerIds as string[]);
+          if (profiles) {
+            const nameMap: Record<string, string> = {};
+            profiles.forEach((p) => {
+              nameMap[p.user_id] = p.mentor_name;
+            });
+            setAssignerNames(nameMap);
+          }
+        }
       } catch (error) {
         toast({
           title: "Error",
@@ -220,6 +245,7 @@ const Tasks = () => {
     setFormDateFrom("");
     setFormDateTo("");
     setFormStatus("todo");
+    setFormPriority(2);
   };
 
   const handleAddTask = async () => {
@@ -242,6 +268,7 @@ const Tasks = () => {
         date_from: formDateFrom || null,
         date_to: formDateTo || null,
         status: formStatus,
+        priority: formPriority,
       }).select().single();
 
       if (error) throw error;
@@ -285,6 +312,7 @@ const Tasks = () => {
           date_from: formDateFrom || null,
           date_to: formDateTo || null,
           status: formStatus,
+          priority: formPriority,
         })
         .eq("id", selectedTask.id)
         .select()
@@ -334,7 +362,33 @@ const Tasks = () => {
     }
   };
 
+  const handleStatusChange = async (status: TaskStatus) => {
+    if (!selectedTask) return;
+    setTasks(tasks.map((t) => (t.id === selectedTask.id ? { ...t, status } : t)));
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status })
+      .eq("id", selectedTask.id);
+    if (error) {
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+      throw error;
+    }
+    setSelectedTask({ ...selectedTask, status });
+    toast({ title: "Status Updated", description: `Task status changed to ${statusLabels[status]}.` });
+  };
+
   const openEditModal = (task: Task) => {
+    // Check if task can be fully edited
+    const isAssignedTask = !!task.assigned_by;
+    if (isAssignedTask && !canEditAll) {
+      toast({
+        title: "Cannot Edit",
+        description: "This task was assigned to you. You can only update the status.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedTask(task);
     setFormType(task.task_type);
     setFormDescription(task.description);
@@ -342,6 +396,7 @@ const Tasks = () => {
     setFormDateFrom(task.date_from || "");
     setFormDateTo(task.date_to || "");
     setFormStatus(task.status);
+    setFormPriority(task.priority || 2);
     setIsEditModalOpen(true);
   };
 
@@ -479,19 +534,25 @@ const Tasks = () => {
             <table className="w-full">
               <thead className="bg-secondary">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Task Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Description
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Date Range
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Priority
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Dates
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Assigned By
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -499,78 +560,98 @@ const Tasks = () => {
               <tbody className="divide-y divide-border">
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                       {tasks.length === 0
                         ? "No tasks yet. Click 'Add Task' to create your first task."
                         : "No tasks match your filters."}
                     </td>
                   </tr>
                 ) : (
-                  filteredTasks.map((task) => (
-                    <tr key={task.id} className="hover:bg-secondary/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="task-type-badge">{task.task_type}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-foreground line-clamp-2 max-w-xs">
-                          {task.description}
-                        </p>
-                        {task.related_link && (
-                          <a
-                            href={task.related_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-                          >
-                            <LinkIcon className="w-3 h-3" />
-                            View Link
-                          </a>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-muted-foreground">
-                          {task.date_from && task.date_to
-                            ? `${task.date_from} → ${task.date_to}`
-                            : task.date_from || task.date_to || "—"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`status-badge ${statusColors[task.status]}`}>
-                          {statusLabels[task.status]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openViewModal(task)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditModal(task)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          {task.status !== "archived" && (
+                  filteredTasks.map((task) => {
+                    const isAssigned = !!task.assigned_by;
+                    const assignerName = task.assigned_by ? assignerNames[task.assigned_by] : null;
+                    
+                    return (
+                      <tr key={task.id} className="hover:bg-secondary/50 transition-colors">
+                        <td className="px-4 py-4">
+                          <span className="text-xs px-2 py-1 bg-secondary rounded font-medium">
+                            {task.task_type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-sm text-foreground line-clamp-2 max-w-xs">
+                            {task.description}
+                          </p>
+                          {task.related_link && (
+                            <a
+                              href={task.related_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                            >
+                              <LinkIcon className="w-3 h-3" />
+                              View Link
+                            </a>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          <TaskPriorityBadge priority={task.priority || 2} />
+                        </td>
+                        <td className="px-4 py-4">
+                          <TaskStatusBadge status={task.status} showIcon />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="text-sm text-muted-foreground">
+                            {task.date_from && task.date_to
+                              ? `${task.date_from} → ${task.date_to}`
+                              : task.date_from || task.date_to || "—"}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          {isAssigned ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-primary font-medium">
+                              <UserCheck className="w-3 h-3" />
+                              {assignerName || "Admin/Leader"}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Self</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleArchiveTask(task)}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => openViewModal(task)}
+                              className="h-8 w-8 p-0"
                             >
-                              <Archive className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            {(!isAssigned || canEditAll) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditModal(task)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {task.status !== "archived" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleArchiveTask(task)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -622,6 +703,22 @@ const Tasks = () => {
                 onChange={(e) => setFormDescription(e.target.value)}
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={String(formPriority)} onValueChange={(v) => setFormPriority(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -715,6 +812,22 @@ const Tasks = () => {
             </div>
 
             <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={String(formPriority)} onValueChange={(v) => setFormPriority(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Related Link</Label>
               <Input
                 type="url"
@@ -772,83 +885,21 @@ const Tasks = () => {
       </Dialog>
 
       {/* View Task Modal */}
-      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Task Details</DialogTitle>
-          </DialogHeader>
-          {selectedTask && (
-            <div className="space-y-4 py-4">
-              <div className="flex items-center gap-3">
-                <span className="task-type-badge">{selectedTask.task_type}</span>
-                <span className={`status-badge ${statusColors[selectedTask.status]}`}>
-                  {statusLabels[selectedTask.status]}
-                </span>
-              </div>
-
-              <div>
-                <Label className="text-muted-foreground text-xs">Description</Label>
-                <p className="text-foreground mt-1">{selectedTask.description}</p>
-              </div>
-
-              {selectedTask.related_link && (
-                <div>
-                  <Label className="text-muted-foreground text-xs">Related Link</Label>
-                  <a
-                    href={selectedTask.related_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-primary hover:underline mt-1"
-                  >
-                    {selectedTask.related_link}
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Date From</Label>
-                  <p className="text-foreground mt-1">{selectedTask.date_from || "—"}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Date To</Label>
-                  <p className="text-foreground mt-1">{selectedTask.date_to || "—"}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Created</Label>
-                  <p className="text-foreground text-sm mt-1">
-                    {new Date(selectedTask.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Updated</Label>
-                  <p className="text-foreground text-sm mt-1">
-                    {new Date(selectedTask.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                setIsViewModalOpen(false);
-                if (selectedTask) openEditModal(selectedTask);
-              }}
-              className="bg-gradient-primary"
-            >
-              Edit Task
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TaskDetailsModal
+        task={selectedTask}
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedTask(null);
+        }}
+        onEdit={() => {
+          setIsViewModalOpen(false);
+          if (selectedTask) openEditModal(selectedTask);
+        }}
+        onStatusChange={handleStatusChange}
+        canEditAll={canEditAll}
+        assignerName={selectedTask?.assigned_by ? assignerNames[selectedTask.assigned_by] : undefined}
+      />
     </div>
   );
 };
