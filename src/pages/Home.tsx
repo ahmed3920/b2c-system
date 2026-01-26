@@ -98,22 +98,6 @@ const allCards: DashboardCard[] = [
     href: "/reports",
     roles: ["admin", "team_leader", "mentor"],
   },
-  {
-    title: "System Settings",
-    description: "Configure application",
-    icon: <Settings className="w-8 h-8" />,
-    href: "/admin/settings",
-    disabled: true,
-    roles: ["admin"],
-  },
-  {
-    title: "Audit Logs",
-    description: "View activity logs",
-    icon: <Shield className="w-8 h-8" />,
-    href: "/admin/audit",
-    disabled: true,
-    roles: ["admin"],
-  },
 ];
 
 const Home = () => {
