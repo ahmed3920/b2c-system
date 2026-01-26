@@ -7,12 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Logo } from "@/components/Logo";
 import { ArrowLeft, Loader2, Trophy, Flame, Target, TrendingUp, Calendar, Award } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts";
 import type { Database } from "@/integrations/supabase/types";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -300,7 +295,7 @@ const Progress = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -323,7 +318,7 @@ const Progress = () => {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis />
                 <Bar dataKey="value" fill="#056eec" radius={[4, 4, 0, 0]} />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <Tooltip />
               </BarChart>
             </ResponsiveContainer>
           </motion.div>
@@ -347,7 +342,7 @@ const Progress = () => {
                   strokeWidth={2}
                   dot={{ fill: "#5dcb8d" }}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <Tooltip />
               </LineChart>
             </ResponsiveContainer>
           </motion.div>
