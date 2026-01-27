@@ -22,11 +22,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useTaskFilters } from "@/hooks/useTaskFilters";
 import {
   Plus,
-  Search,
-  Filter,
-  X,
   Edit,
   Eye,
   Archive,
@@ -34,6 +32,7 @@ import {
   Loader2,
   Link as LinkIcon,
   UserCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -41,6 +40,9 @@ import type { Database } from "@/integrations/supabase/types";
 import { TaskDetailsModal } from "@/components/task/TaskDetailsModal";
 import { TaskPriorityBadge } from "@/components/task/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
+import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
+import { TaskFilters } from "@/components/task/TaskFilters";
+import { cn } from "@/lib/utils";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -84,14 +86,7 @@ const Tasks = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<string>("");
-  const [filterStatus, setFilterStatus] = useState<string>("");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [assignerNames, setAssignerNames] = useState<Record<string, string>>({});
 
   // Modal states
@@ -109,12 +104,32 @@ const Tasks = () => {
   const [formDateTo, setFormDateTo] = useState("");
   const [formStatus, setFormStatus] = useState<TaskStatus>("todo");
   const [formPriority, setFormPriority] = useState(2);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
 
   const canEditAll = isAdmin || isTeamLeader;
+
+  // Use the task filters hook
+  const {
+    searchQuery,
+    setSearchQuery,
+    filterType,
+    setFilterType,
+    filterStatus,
+    setFilterStatus,
+    filterMonth,
+    setFilterMonth,
+    filterPriority,
+    setFilterPriority,
+    showFilters,
+    setShowFilters,
+    filteredTasks,
+    clearFilters,
+    hasActiveFilters,
+  } = useTaskFilters({ tasks });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -161,7 +176,6 @@ const Tasks = () => {
 
         if (error) throw error;
         setTasks(tasksData || []);
-        setFilteredTasks(tasksData || []);
 
         // Fetch assigner names
         const assignerIds = [...new Set((tasksData || []).map((t) => t.assigned_by).filter(Boolean))];
@@ -194,50 +208,6 @@ const Tasks = () => {
     }
   }, [user, toast]);
 
-  // Filter tasks
-  useEffect(() => {
-    let result = tasks;
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (task) =>
-          task.description.toLowerCase().includes(query) ||
-          task.task_type.toLowerCase().includes(query)
-      );
-    }
-
-    if (filterType) {
-      result = result.filter((task) => task.task_type === filterType);
-    }
-
-    if (filterStatus) {
-      result = result.filter((task) => task.status === filterStatus);
-    }
-
-    if (filterDateFrom) {
-      result = result.filter(
-        (task) => task.date_from && task.date_from >= filterDateFrom
-      );
-    }
-
-    if (filterDateTo) {
-      result = result.filter(
-        (task) => task.date_to && task.date_to <= filterDateTo
-      );
-    }
-
-    setFilteredTasks(result);
-  }, [tasks, searchQuery, filterType, filterStatus, filterDateFrom, filterDateTo]);
-
-  const clearFilters = () => {
-    setFilterType("");
-    setFilterStatus("");
-    setFilterDateFrom("");
-    setFilterDateTo("");
-    setSearchQuery("");
-  };
-
   const resetForm = () => {
     setFormType(taskTypes[0]);
     setFormDescription("");
@@ -246,15 +216,31 @@ const Tasks = () => {
     setFormDateTo("");
     setFormStatus("todo");
     setFormPriority(2);
+    setFormErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formDescription.trim()) {
+      errors.description = "Description is required";
+    }
+    if (!formDateFrom) {
+      errors.dateFrom = "Start date is required";
+    }
+    if (!formDateTo) {
+      errors.dateTo = "Due date is required";
+    }
+    if (formDateFrom && formDateTo && formDateFrom > formDateTo) {
+      errors.dateTo = "Due date must be after start date";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleAddTask = async () => {
-    if (!user || !formDescription.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in the task description.",
-        variant: "destructive",
-      });
+    if (!user || !validateForm()) {
       return;
     }
 
@@ -265,8 +251,8 @@ const Tasks = () => {
         task_type: formType,
         description: formDescription.trim(),
         related_link: formLink.trim() || null,
-        date_from: formDateFrom || null,
-        date_to: formDateTo || null,
+        date_from: formDateFrom,
+        date_to: formDateTo,
         status: formStatus,
         priority: formPriority,
       }).select().single();
@@ -292,12 +278,7 @@ const Tasks = () => {
   };
 
   const handleEditTask = async () => {
-    if (!selectedTask || !formDescription.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in the task description.",
-        variant: "destructive",
-      });
+    if (!selectedTask || !validateForm()) {
       return;
     }
 
@@ -309,8 +290,8 @@ const Tasks = () => {
           task_type: formType,
           description: formDescription.trim(),
           related_link: formLink.trim() || null,
-          date_from: formDateFrom || null,
-          date_to: formDateTo || null,
+          date_from: formDateFrom,
+          date_to: formDateTo,
           status: formStatus,
           priority: formPriority,
         })
@@ -397,6 +378,7 @@ const Tasks = () => {
     setFormDateTo(task.date_to || "");
     setFormStatus(task.status);
     setFormPriority(task.priority || 2);
+    setFormErrors({});
     setIsEditModalOpen(true);
   };
 
@@ -404,6 +386,10 @@ const Tasks = () => {
     setSelectedTask(task);
     setIsViewModalOpen(true);
   };
+
+  // Calculate stats
+  const overdueCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
+  const dueSoonCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
 
   if (isLoading) {
     return (
@@ -428,99 +414,47 @@ const Tasks = () => {
               <Logo variant="blue" className="h-8" />
               <h1 className="font-bold text-lg text-foreground">Task Management</h1>
             </div>
-            <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
-              <Plus className="w-4 h-4" />
-              Add Task
-            </Button>
+            <div className="flex items-center gap-3">
+              {overdueCount > 0 && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive text-sm rounded-full font-medium">
+                  <AlertTriangle className="w-3 h-3" />
+                  {overdueCount} Overdue
+                </span>
+              )}
+              {dueSoonCount > 0 && (
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-sm rounded-full font-medium">
+                  {dueSoonCount} Due Soon
+                </span>
+              )}
+              <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
+                <Plus className="w-4 h-4" />
+                Add Task
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search and Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-xl shadow-lg p-4 mb-6"
-        >
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-              {(filterType || filterStatus || filterDateFrom || filterDateTo) && (
-                <span className="w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">
-                  !
-                </span>
-              )}
-            </Button>
-          </div>
-
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4 pt-4 border-t border-border"
-            >
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Task Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {taskTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {statusLabels[status]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Input
-                type="date"
-                placeholder="Date From"
-                value={filterDateFrom}
-                onChange={(e) => setFilterDateFrom(e.target.value)}
-              />
-
-              <Input
-                type="date"
-                placeholder="Date To"
-                value={filterDateTo}
-                onChange={(e) => setFilterDateTo(e.target.value)}
-              />
-
-              <Button variant="secondary" onClick={clearFilters} className="gap-2">
-                <X className="w-4 h-4" />
-                Clear
-              </Button>
-            </motion.div>
-          )}
+        {/* Filters */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <TaskFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            filterType={filterType}
+            onFilterTypeChange={setFilterType}
+            filterStatus={filterStatus}
+            onFilterStatusChange={setFilterStatus}
+            filterMonth={filterMonth}
+            onFilterMonthChange={setFilterMonth}
+            filterPriority={filterPriority}
+            onFilterPriorityChange={setFilterPriority}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            onClearFilters={clearFilters}
+            taskTypes={taskTypes}
+            hasActiveFilters={hasActiveFilters}
+          />
         </motion.div>
 
         {/* Tasks Table */}
@@ -570,9 +504,17 @@ const Tasks = () => {
                   filteredTasks.map((task) => {
                     const isAssigned = !!task.assigned_by;
                     const assignerName = task.assigned_by ? assignerNames[task.assigned_by] : null;
+                    const dueStatus = getTaskDueStatus(task.date_to, task.status);
                     
                     return (
-                      <tr key={task.id} className="hover:bg-secondary/50 transition-colors">
+                      <tr 
+                        key={task.id} 
+                        className={cn(
+                          "hover:bg-secondary/50 transition-colors",
+                          dueStatus === "overdue" && "bg-destructive/5",
+                          dueStatus === "due-soon" && "bg-orange-50/50"
+                        )}
+                      >
                         <td className="px-4 py-4">
                           <span className="text-xs px-2 py-1 bg-secondary rounded font-medium">
                             {task.task_type}
@@ -598,7 +540,14 @@ const Tasks = () => {
                           <TaskPriorityBadge priority={task.priority || 2} />
                         </td>
                         <td className="px-4 py-4">
-                          <TaskStatusBadge status={task.status} showIcon />
+                          <div className="flex flex-col gap-1">
+                            <TaskStatusBadge status={task.status} showIcon />
+                            <TaskDueDateBadge 
+                              dateTo={task.date_to} 
+                              status={task.status} 
+                              size="sm"
+                            />
+                          </div>
                         </td>
                         <td className="px-4 py-4">
                           <div className="text-sm text-muted-foreground">
@@ -701,8 +650,12 @@ const Tasks = () => {
                 placeholder="Enter task description..."
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
+                className={formErrors.description ? "border-destructive" : ""}
                 rows={3}
               />
+              {formErrors.description && (
+                <p className="text-xs text-destructive">{formErrors.description}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -733,20 +686,28 @@ const Tasks = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Date From</Label>
+                <Label>Date From *</Label>
                 <Input
                   type="date"
                   value={formDateFrom}
                   onChange={(e) => setFormDateFrom(e.target.value)}
+                  className={formErrors.dateFrom ? "border-destructive" : ""}
                 />
+                {formErrors.dateFrom && (
+                  <p className="text-xs text-destructive">{formErrors.dateFrom}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label>Date To</Label>
+                <Label>Date To *</Label>
                 <Input
                   type="date"
                   value={formDateTo}
                   onChange={(e) => setFormDateTo(e.target.value)}
+                  className={formErrors.dateTo ? "border-destructive" : ""}
                 />
+                {formErrors.dateTo && (
+                  <p className="text-xs text-destructive">{formErrors.dateTo}</p>
+                )}
               </div>
             </div>
 
@@ -807,8 +768,12 @@ const Tasks = () => {
                 placeholder="Enter task description..."
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
+                className={formErrors.description ? "border-destructive" : ""}
                 rows={3}
               />
+              {formErrors.description && (
+                <p className="text-xs text-destructive">{formErrors.description}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -839,20 +804,28 @@ const Tasks = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Date From</Label>
+                <Label>Date From *</Label>
                 <Input
                   type="date"
                   value={formDateFrom}
                   onChange={(e) => setFormDateFrom(e.target.value)}
+                  className={formErrors.dateFrom ? "border-destructive" : ""}
                 />
+                {formErrors.dateFrom && (
+                  <p className="text-xs text-destructive">{formErrors.dateFrom}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label>Date To</Label>
+                <Label>Date To *</Label>
                 <Input
                   type="date"
                   value={formDateTo}
                   onChange={(e) => setFormDateTo(e.target.value)}
+                  className={formErrors.dateTo ? "border-destructive" : ""}
                 />
+                {formErrors.dateTo && (
+                  <p className="text-xs text-destructive">{formErrors.dateTo}</p>
+                )}
               </div>
             </div>
 

@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { RoleBadge } from "@/components/RoleBadge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft,
   Users,
@@ -21,9 +29,11 @@ import {
   Calendar,
   Target,
   Award,
+  AlertTriangle,
+  BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, parseISO } from "date-fns";
 
 interface SystemMetrics {
   totalUsers: number;
@@ -32,6 +42,7 @@ interface SystemMetrics {
   completedTasks: number;
   pendingTasks: number;
   inProgressTasks: number;
+  overdueTasks: number;
   totalAchievements: number;
   totalGoals: number;
   usersByRole: {
@@ -43,32 +54,59 @@ interface SystemMetrics {
   tasksCompletedThisWeek: number;
 }
 
-interface UserCredential {
-  email: string;
-  role: string;
-  password: string;
+interface UserTaskStats {
+  userId: string;
+  userName: string;
+  teamLeader: string;
+  totalTasks: number;
+  completed: number;
+  inProgress: number;
+  overdue: number;
+  completionRate: number;
 }
 
-const testCredentials: UserCredential[] = [
-  { email: "admin@ischool.com", password: "Admin123!", role: "admin" },
-  { email: "teamleader@ischool.com", password: "Leader123!", role: "team_leader" },
-  { email: "mentor@ischool.com", password: "Mentor123!", role: "mentor" },
+interface TeamStats {
+  teamLeader: string;
+  memberCount: number;
+  totalTasks: number;
+  completed: number;
+  overdue: number;
+  completionRate: number;
+}
+
+const monthOptions = [
+  { value: "", label: "All Time" },
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
 ];
 
 const SystemDashboard = () => {
   const navigate = useNavigate();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [userStats, setUserStats] = useState<UserTaskStats[]>([]);
+  const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState("");
 
   const fetchMetrics = async () => {
     setIsLoading(true);
     try {
       // Fetch all data in parallel
       const [profilesRes, rolesRes, tasksRes, achievementsRes, goalsRes] = await Promise.all([
-        supabase.from("profiles").select("user_id, active_status, last_login"),
-        supabase.from("user_roles").select("role"),
-        supabase.from("tasks").select("status, created_at"),
+        supabase.from("profiles").select("user_id, active_status, last_login, mentor_name, team_leader"),
+        supabase.from("user_roles").select("role, user_id"),
+        supabase.from("tasks").select("status, created_at, user_id, date_to"),
         supabase.from("achievements").select("id"),
         supabase.from("goals").select("id"),
       ]);
@@ -79,16 +117,30 @@ const SystemDashboard = () => {
       const achievements = achievementsRes.data || [];
       const goals = goalsRes.data || [];
 
+      // Filter tasks by month if selected
+      const filteredTasks = selectedMonth
+        ? tasks.filter(t => {
+            const taskMonth = t.date_to?.substring(5, 7);
+            return taskMonth === selectedMonth;
+          })
+        : tasks;
+
       // Calculate metrics
       const weekAgo = subDays(new Date(), 7);
+      const today = new Date();
       
       const recentLogins = profiles.filter(
         (p) => p.last_login && new Date(p.last_login) > weekAgo
       ).length;
 
-      const tasksCompletedThisWeek = tasks.filter(
+      const tasksCompletedThisWeek = filteredTasks.filter(
         (t) => t.status === "done" && new Date(t.created_at) > weekAgo
       ).length;
+
+      const overdueTasks = filteredTasks.filter(t => {
+        if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
+        return new Date(t.date_to) < today;
+      }).length;
 
       const roleCount = {
         admin: roles.filter((r) => r.role === "admin").length,
@@ -99,16 +151,80 @@ const SystemDashboard = () => {
       setMetrics({
         totalUsers: profiles.length,
         activeUsers: profiles.filter((p) => p.active_status).length,
-        totalTasks: tasks.length,
-        completedTasks: tasks.filter((t) => t.status === "done").length,
-        pendingTasks: tasks.filter((t) => t.status === "todo").length,
-        inProgressTasks: tasks.filter((t) => t.status === "in_progress").length,
+        totalTasks: filteredTasks.length,
+        completedTasks: filteredTasks.filter((t) => t.status === "done").length,
+        pendingTasks: filteredTasks.filter((t) => t.status === "todo").length,
+        inProgressTasks: filteredTasks.filter((t) => t.status === "in_progress").length,
+        overdueTasks,
         totalAchievements: achievements.length,
         totalGoals: goals.length,
         usersByRole: roleCount,
         recentLogins,
         tasksCompletedThisWeek,
       });
+
+      // Calculate per-user stats
+      const userStatsMap = new Map<string, UserTaskStats>();
+      profiles.forEach(p => {
+        const userTasks = filteredTasks.filter(t => t.user_id === p.user_id);
+        const completed = userTasks.filter(t => t.status === "done").length;
+        const overdue = userTasks.filter(t => {
+          if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
+          return new Date(t.date_to) < today;
+        }).length;
+
+        userStatsMap.set(p.user_id, {
+          userId: p.user_id,
+          userName: p.mentor_name,
+          teamLeader: p.team_leader,
+          totalTasks: userTasks.length,
+          completed,
+          inProgress: userTasks.filter(t => t.status === "in_progress").length,
+          overdue,
+          completionRate: userTasks.length > 0 ? Math.round((completed / userTasks.length) * 100) : 0,
+        });
+      });
+      setUserStats(Array.from(userStatsMap.values()).sort((a, b) => b.totalTasks - a.totalTasks));
+
+      // Calculate per-team stats
+      const teamStatsMap = new Map<string, TeamStats>();
+      profiles.forEach(p => {
+        if (!p.team_leader) return;
+        const existing = teamStatsMap.get(p.team_leader) || {
+          teamLeader: p.team_leader,
+          memberCount: 0,
+          totalTasks: 0,
+          completed: 0,
+          overdue: 0,
+          completionRate: 0,
+        };
+        
+        const userTasks = filteredTasks.filter(t => t.user_id === p.user_id);
+        const completed = userTasks.filter(t => t.status === "done").length;
+        const overdue = userTasks.filter(t => {
+          if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
+          return new Date(t.date_to) < today;
+        }).length;
+
+        teamStatsMap.set(p.team_leader, {
+          ...existing,
+          memberCount: existing.memberCount + 1,
+          totalTasks: existing.totalTasks + userTasks.length,
+          completed: existing.completed + completed,
+          overdue: existing.overdue + overdue,
+          completionRate: 0,
+        });
+      });
+      
+      // Calculate completion rates
+      teamStatsMap.forEach((stats, key) => {
+        stats.completionRate = stats.totalTasks > 0 
+          ? Math.round((stats.completed / stats.totalTasks) * 100) 
+          : 0;
+        teamStatsMap.set(key, stats);
+      });
+      
+      setTeamStats(Array.from(teamStatsMap.values()).sort((a, b) => b.totalTasks - a.totalTasks));
     } catch (error) {
       console.error("Error fetching metrics:", error);
     } finally {
@@ -137,7 +253,7 @@ const SystemDashboard = () => {
     if (isAdmin) {
       fetchMetrics();
     }
-  }, [isAdmin]);
+  }, [isAdmin, selectedMonth]);
 
   if (roleLoading || isLoading) {
     return (
@@ -172,10 +288,25 @@ const SystemDashboard = () => {
                 <span className="font-semibold text-foreground">System Dashboard</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchMetrics}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-4">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[150px]">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="All Time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={fetchMetrics}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -190,7 +321,7 @@ const SystemDashboard = () => {
             <Shield className="w-5 h-5 text-primary" />
             System Health Overview
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -237,8 +368,21 @@ const SystemDashboard = () => {
                     <TrendingUp className="w-5 h-5 text-orange-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Completion Rate</p>
+                    <p className="text-sm text-muted-foreground">Completion</p>
                     <p className="text-lg font-bold text-orange-500">{completionRate}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-500/20 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Overdue</p>
+                    <p className="text-lg font-bold text-red-500">{metrics?.overdueTasks || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -254,7 +398,7 @@ const SystemDashboard = () => {
         >
           <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            User Adoption Statistics
+            User & Task Statistics
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
@@ -272,10 +416,10 @@ const SystemDashboard = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Active Users</p>
-                    <p className="text-3xl font-bold text-green-500">{metrics?.activeUsers || 0}</p>
+                    <p className="text-sm text-muted-foreground">Total Tasks</p>
+                    <p className="text-3xl font-bold text-foreground">{metrics?.totalTasks || 0}</p>
                   </div>
-                  <UserCheck className="w-8 h-8 text-green-500/50" />
+                  <Target className="w-8 h-8 text-primary/50" />
                 </div>
               </CardContent>
             </Card>
@@ -283,10 +427,10 @@ const SystemDashboard = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Weekly Logins</p>
-                    <p className="text-3xl font-bold text-blue-500">{metrics?.recentLogins || 0}</p>
+                    <p className="text-sm text-muted-foreground">Completed</p>
+                    <p className="text-3xl font-bold text-green-500">{metrics?.completedTasks || 0}</p>
                   </div>
-                  <Calendar className="w-8 h-8 text-blue-500/50" />
+                  <CheckCircle className="w-8 h-8 text-green-500/50" />
                 </div>
               </CardContent>
             </Card>
@@ -294,24 +438,71 @@ const SystemDashboard = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Tasks This Week</p>
-                    <p className="text-3xl font-bold text-purple-500">
-                      {metrics?.tasksCompletedThisWeek || 0}
-                    </p>
+                    <p className="text-sm text-muted-foreground">In Progress</p>
+                    <p className="text-3xl font-bold text-blue-500">{metrics?.inProgressTasks || 0}</p>
                   </div>
-                  <CheckCircle className="w-8 h-8 text-purple-500/50" />
+                  <Clock className="w-8 h-8 text-blue-500/50" />
                 </div>
               </CardContent>
             </Card>
           </div>
         </motion.section>
 
-        {/* Role Distribution & Task Metrics */}
+        {/* Team Progress Tracking */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Team Progress Tracking
+          </h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Progress by Team</CardTitle>
+              <CardDescription>Task completion status across all teams</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {teamStats.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No team data available</p>
+              ) : (
+                <div className="space-y-6">
+                  {teamStats.map((team) => (
+                    <div key={team.teamLeader} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-foreground">{team.teamLeader}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {team.memberCount} member{team.memberCount !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-green-600">{team.completed} done</span>
+                          {team.overdue > 0 && (
+                            <span className="text-destructive font-medium">{team.overdue} overdue</span>
+                          )}
+                          <span className="font-bold">{team.completionRate}%</span>
+                        </div>
+                      </div>
+                      <Progress value={team.completionRate} className="h-2" />
+                      <p className="text-xs text-muted-foreground">
+                        {team.completed} of {team.totalTasks} tasks completed
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.section>
+
+        {/* Role Distribution & Individual Stats */}
         <div className="grid md:grid-cols-2 gap-6">
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3 }}
           >
             <Card>
               <CardHeader>
@@ -350,56 +541,58 @@ const SystemDashboard = () => {
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.4 }}
           >
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  Task Metrics
+                  <UserCheck className="w-5 h-5 text-primary" />
+                  Top Performers
                 </CardTitle>
-                <CardDescription>Overall task statistics</CardDescription>
+                <CardDescription>Users with highest task completion</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-yellow-500" />
-                    <span className="font-medium">Pending</span>
+              <CardContent>
+                {userStats.filter(u => u.totalTasks > 0).length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No task data available</p>
+                ) : (
+                  <div className="space-y-3">
+                    {userStats
+                      .filter(u => u.totalTasks > 0)
+                      .sort((a, b) => b.completionRate - a.completionRate)
+                      .slice(0, 5)
+                      .map((user, index) => (
+                        <div key={user.userId} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50">
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                              {index + 1}
+                            </span>
+                            <div>
+                              <p className="font-medium text-sm">{user.userName}</p>
+                              <p className="text-xs text-muted-foreground">{user.completed}/{user.totalTasks} tasks</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {user.overdue > 0 && (
+                              <span className="text-xs text-destructive">{user.overdue} overdue</span>
+                            )}
+                            <span className="font-bold text-green-600">{user.completionRate}%</span>
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                  <span className="text-2xl font-bold text-yellow-500">
-                    {metrics?.pendingTasks || 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Activity className="w-5 h-5 text-blue-500" />
-                    <span className="font-medium">In Progress</span>
-                  </div>
-                  <span className="text-2xl font-bold text-blue-500">
-                    {metrics?.inProgressTasks || 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="font-medium">Completed</span>
-                  </div>
-                  <span className="text-2xl font-bold text-green-500">
-                    {metrics?.completedTasks || 0}
-                  </span>
-                </div>
+                )}
               </CardContent>
             </Card>
           </motion.section>
         </div>
 
-        {/* Gamification Stats & Test Credentials */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
+        {/* Gamification Stats */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -427,43 +620,34 @@ const SystemDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.section>
 
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Card className="border-primary/20">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-primary" />
-                  Test Credentials
+                  <Activity className="w-5 h-5 text-primary" />
+                  Weekly Activity
                 </CardTitle>
-                <CardDescription>Use these accounts for testing (development only)</CardDescription>
+                <CardDescription>Activity in the last 7 days</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {testCredentials.map((cred) => (
-                  <div
-                    key={cred.email}
-                    className="p-3 bg-muted rounded-lg space-y-1"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{cred.email}</span>
-                      <RoleBadge role={cred.role as any} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Password:</span>
-                      <code className="text-xs bg-background px-2 py-1 rounded">
-                        {cred.password}
-                      </code>
-                    </div>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Weekly Logins</p>
+                    <p className="text-3xl font-bold text-green-500">{metrics?.recentLogins || 0}</p>
                   </div>
-                ))}
+                  <UserCheck className="w-10 h-10 text-green-500/50" />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Tasks Completed This Week</p>
+                    <p className="text-3xl font-bold text-purple-500">{metrics?.tasksCompletedThisWeek || 0}</p>
+                  </div>
+                  <CheckCircle className="w-10 h-10 text-purple-500/50" />
+                </div>
               </CardContent>
             </Card>
-          </motion.section>
-        </div>
+          </div>
+        </motion.section>
       </main>
     </div>
   );

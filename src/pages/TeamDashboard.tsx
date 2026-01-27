@@ -3,8 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { RoleBadge } from "@/components/RoleBadge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft,
   Loader2,
@@ -15,6 +24,8 @@ import {
   Clock,
   AlertCircle,
   UserPlus,
+  Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { TeamMentorCard } from "@/components/team/TeamMentorCard";
@@ -37,8 +48,25 @@ interface MemberStats {
   completed: number;
   inProgress: number;
   todo: number;
+  overdue: number;
   completionRate: number;
 }
+
+const monthOptions = [
+  { value: "", label: "All Time" },
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
 
 const TeamDashboard = () => {
   const navigate = useNavigate();
@@ -49,68 +77,86 @@ const TeamDashboard = () => {
   const [teamLeaderName, setTeamLeaderName] = useState("");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  const fetchTeamData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    // Get current user's profile to find team leader name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("mentor_name")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (profile) {
+      setTeamLeaderName(profile.mentor_name);
+
+      // Fetch team members (those whose team_leader matches this user's mentor_name)
+      const { data: members } = await supabase
+        .from("profiles")
+        .select("user_id, mentor_id, mentor_name, full_name, email, active_status, last_login")
+        .eq("team_leader", profile.mentor_name)
+        .neq("user_id", session.user.id);
+
+      if (members) {
+        setTeamMembers(members);
+
+        // Fetch task stats for each member
+        const statsMap = new Map<string, MemberStats>();
+        const today = new Date();
+        
+        for (const member of members) {
+          let query = supabase
+            .from("tasks")
+            .select("status, date_to")
+            .eq("user_id", member.user_id);
+
+          const { data: tasks } = await query;
+
+          if (tasks) {
+            // Filter by month if selected
+            const filteredTasks = selectedMonth
+              ? tasks.filter(t => {
+                  const taskMonth = t.date_to?.substring(5, 7);
+                  return taskMonth === selectedMonth;
+                })
+              : tasks;
+
+            const completed = filteredTasks.filter((t) => t.status === "done").length;
+            const inProgress = filteredTasks.filter((t) => t.status === "in_progress").length;
+            const todo = filteredTasks.filter((t) => t.status === "todo").length;
+            const overdue = filteredTasks.filter(t => {
+              if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
+              return new Date(t.date_to) < today;
+            }).length;
+            const total = filteredTasks.length;
+
+            statsMap.set(member.user_id, {
+              userId: member.user_id,
+              totalTasks: total,
+              completed,
+              inProgress,
+              todo,
+              overdue,
+              completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+            });
+          }
+        }
+        setMemberStats(statsMap);
+      }
+    }
+
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    const fetchTeamData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      // Get current user's profile to find team leader name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("mentor_name")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (profile) {
-        setTeamLeaderName(profile.mentor_name);
-
-        // Fetch team members (those whose team_leader matches this user's mentor_name)
-        const { data: members } = await supabase
-          .from("profiles")
-          .select("user_id, mentor_id, mentor_name, full_name, email, active_status, last_login")
-          .eq("team_leader", profile.mentor_name)
-          .neq("user_id", session.user.id);
-
-        if (members) {
-          setTeamMembers(members);
-
-          // Fetch task stats for each member
-          const statsMap = new Map<string, MemberStats>();
-          for (const member of members) {
-            const { data: tasks } = await supabase
-              .from("tasks")
-              .select("status")
-              .eq("user_id", member.user_id);
-
-            if (tasks) {
-              const completed = tasks.filter((t) => t.status === "done").length;
-              const inProgress = tasks.filter((t) => t.status === "in_progress").length;
-              const todo = tasks.filter((t) => t.status === "todo").length;
-              const total = tasks.length;
-
-              statsMap.set(member.user_id, {
-                userId: member.user_id,
-                totalTasks: total,
-                completed,
-                inProgress,
-                todo,
-                completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-              });
-            }
-          }
-          setMemberStats(statsMap);
-        }
-      }
-
-      setIsLoading(false);
-    };
-
     fetchTeamData();
-  }, [navigate]);
+  }, [navigate, selectedMonth]);
 
   useEffect(() => {
     if (!roleLoading && !isTeamLeader && !isAdmin) {
@@ -126,6 +172,7 @@ const TeamDashboard = () => {
   const totalTeamTasks = Array.from(memberStats.values()).reduce((sum, s) => sum + s.totalTasks, 0);
   const totalCompleted = Array.from(memberStats.values()).reduce((sum, s) => sum + s.completed, 0);
   const totalInProgress = Array.from(memberStats.values()).reduce((sum, s) => sum + s.inProgress, 0);
+  const totalOverdue = Array.from(memberStats.values()).reduce((sum, s) => sum + s.overdue, 0);
   const avgCompletionRate =
     memberStats.size > 0
       ? Math.round(Array.from(memberStats.values()).reduce((sum, s) => sum + s.completionRate, 0) / memberStats.size)
@@ -156,7 +203,22 @@ const TeamDashboard = () => {
                 <span className="font-semibold text-foreground">Team Dashboard</span>
               </div>
             </div>
-            <RoleBadge role="team_leader" />
+            <div className="flex items-center gap-3">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[150px]">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="All Time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <RoleBadge role="team_leader" />
+            </div>
           </div>
         </div>
       </nav>
@@ -183,20 +245,106 @@ const TeamDashboard = () => {
         </motion.div>
 
         {/* Team Stats Overview */}
-        <TeamStatsCards
-          totalMembers={teamMembers.length}
-          totalTasks={totalTeamTasks}
-          completedTasks={totalCompleted}
-          inProgressTasks={totalInProgress}
-          avgCompletionRate={avgCompletionRate}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
+        >
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Team Members</p>
+                  <p className="text-2xl font-bold">{teamMembers.length}</p>
+                </div>
+                <Users className="w-6 h-6 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Tasks</p>
+                  <p className="text-2xl font-bold">{totalTeamTasks}</p>
+                </div>
+                <ClipboardList className="w-6 h-6 text-primary/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold text-green-500">{totalCompleted}</p>
+                </div>
+                <CheckCircle2 className="w-6 h-6 text-green-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">In Progress</p>
+                  <p className="text-2xl font-bold text-blue-500">{totalInProgress}</p>
+                </div>
+                <Clock className="w-6 h-6 text-blue-500/50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={totalOverdue > 0 ? "border-destructive/50" : ""}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Overdue</p>
+                  <p className={`text-2xl font-bold ${totalOverdue > 0 ? "text-destructive" : ""}`}>
+                    {totalOverdue}
+                  </p>
+                </div>
+                <AlertTriangle className={`w-6 h-6 ${totalOverdue > 0 ? "text-destructive/50" : "text-muted-foreground/50"}`} />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Team Progress */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                Team Progress
+              </CardTitle>
+              <CardDescription>Overall team task completion rate</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Average Completion Rate</span>
+                  <span className="font-bold">{avgCompletionRate}%</span>
+                </div>
+                <Progress value={avgCompletionRate} className="h-3" />
+                <p className="text-xs text-muted-foreground">
+                  {totalCompleted} of {totalTeamTasks} tasks completed across the team
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Team Members Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mt-8"
         >
           <h2 className="text-lg font-semibold text-foreground mb-4">Team Members</h2>
           {teamMembers.length === 0 ? (
@@ -229,8 +377,7 @@ const TeamDashboard = () => {
         teamMembers={teamMembers}
         selectedMember={selectedMember}
         onTaskAssigned={() => {
-          // Refresh stats
-          window.location.reload();
+          fetchTeamData();
         }}
       />
     </div>

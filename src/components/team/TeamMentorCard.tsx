@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, CheckCircle2, Clock, AlertCircle, UserCheck, UserX } from "lucide-react";
+import { ClipboardList, CheckCircle2, Clock, AlertCircle, UserCheck, UserX, AlertTriangle } from "lucide-react";
 
 interface TeamMember {
   user_id: string;
@@ -18,6 +18,7 @@ interface MemberStats {
   completed: number;
   inProgress: number;
   todo: number;
+  overdue?: number;
   completionRate: number;
 }
 
@@ -38,8 +39,10 @@ export function TeamMentorCard({ member, stats, onAssignTask }: TeamMentorCardPr
       })
     : "Never";
 
+  const hasOverdue = stats?.overdue && stats.overdue > 0;
+
   return (
-    <div className="bg-card rounded-xl shadow-lg border border-border overflow-hidden hover:shadow-xl transition-shadow">
+    <div className={`bg-card rounded-xl shadow-lg border overflow-hidden hover:shadow-xl transition-shadow ${hasOverdue ? "border-destructive/50" : "border-border"}`}>
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -52,15 +55,22 @@ export function TeamMentorCard({ member, stats, onAssignTask }: TeamMentorCardPr
               <p className="text-sm text-muted-foreground">{member.mentor_id}</p>
             </div>
           </div>
-          {member.active_status ? (
-            <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded-full">
-              <UserCheck className="w-3 h-3" /> Active
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              <UserX className="w-3 h-3" /> Inactive
-            </span>
-          )}
+          <div className="flex flex-col items-end gap-1">
+            {member.active_status ? (
+              <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded-full">
+                <UserCheck className="w-3 h-3" /> Active
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                <UserX className="w-3 h-3" /> Inactive
+              </span>
+            )}
+            {hasOverdue && (
+              <span className="inline-flex items-center gap-1 text-xs text-destructive bg-destructive/10 px-2 py-1 rounded-full">
+                <AlertTriangle className="w-3 h-3" /> {stats.overdue} overdue
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
@@ -72,7 +82,7 @@ export function TeamMentorCard({ member, stats, onAssignTask }: TeamMentorCardPr
             </div>
             <Progress value={stats.completionRate} className="h-2" />
 
-            <div className="grid grid-cols-3 gap-2 pt-2">
+            <div className="grid grid-cols-4 gap-2 pt-2">
               <div className="text-center p-2 bg-muted rounded-lg">
                 <div className="flex items-center justify-center gap-1 text-amber-600 mb-1">
                   <AlertCircle className="w-3 h-3" />
@@ -85,7 +95,7 @@ export function TeamMentorCard({ member, stats, onAssignTask }: TeamMentorCardPr
                   <Clock className="w-3 h-3" />
                   <span className="text-lg font-bold">{stats.inProgress}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">In Progress</p>
+                <p className="text-xs text-muted-foreground">Active</p>
               </div>
               <div className="text-center p-2 bg-muted rounded-lg">
                 <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
@@ -93,6 +103,13 @@ export function TeamMentorCard({ member, stats, onAssignTask }: TeamMentorCardPr
                   <span className="text-lg font-bold">{stats.completed}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">Done</p>
+              </div>
+              <div className={`text-center p-2 rounded-lg ${hasOverdue ? "bg-destructive/10" : "bg-muted"}`}>
+                <div className={`flex items-center justify-center gap-1 mb-1 ${hasOverdue ? "text-destructive" : "text-muted-foreground"}`}>
+                  <AlertTriangle className="w-3 h-3" />
+                  <span className="text-lg font-bold">{stats.overdue || 0}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Overdue</p>
               </div>
             </div>
           </div>
