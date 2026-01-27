@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck } from "lucide-react";
+import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
@@ -13,7 +13,15 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { Database } from "@/integrations/supabase/types";
 import { TaskDetailsModal } from "@/components/task/TaskDetailsModal";
 import { TaskPriorityBadge } from "@/components/task/TaskPriorityBadge";
-import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
+import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -23,6 +31,22 @@ const columns: { id: TaskStatus; title: string; className: string }[] = [
   { id: "in_progress", title: "In Progress", className: "kanban-in-progress" },
   { id: "done", title: "Done", className: "kanban-done" },
   { id: "archived", title: "Archived", className: "kanban-archived" },
+];
+
+const monthOptions = [
+  { value: "", label: "All Months" },
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
 ];
 
 interface TaskCardProps {
@@ -39,6 +63,14 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.5 : 1 };
   const isAssigned = !!task.assigned_by;
   const priority = task.priority || 2;
+  const dueStatus = getTaskDueStatus(task.date_to, task.status);
+
+  const cardBorderClass = cn(
+    "bg-card p-4 rounded-lg shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all relative group",
+    dueStatus === "overdue" && "border-destructive/50 bg-destructive/5",
+    dueStatus === "due-soon" && "border-orange-400/50 bg-orange-50/50",
+    dueStatus !== "overdue" && dueStatus !== "due-soon" && "border-border"
+  );
 
   return (
     <div
@@ -46,7 +78,7 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
       style={style}
       {...listeners}
       {...attributes}
-      className="bg-card p-4 rounded-lg shadow-sm border border-border cursor-grab active:cursor-grabbing hover:shadow-md transition-all relative group"
+      className={cardBorderClass}
     >
       {/* Header: Type + Priority */}
       <div className="flex items-center justify-between mb-3">
@@ -70,13 +102,21 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
       {/* Description */}
       <p className="text-sm text-foreground line-clamp-2 mb-3">{task.description}</p>
 
-      {/* Date */}
-      {task.date_from && (
-        <p className="text-xs text-muted-foreground mb-2">
-          📅 {task.date_from}
-          {task.date_to && ` → ${task.date_to}`}
-        </p>
-      )}
+      {/* Date & Due Status */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        {task.date_from && (
+          <p className="text-xs text-muted-foreground">
+            📅 {task.date_from}
+            {task.date_to && ` → ${task.date_to}`}
+          </p>
+        )}
+        <TaskDueDateBadge 
+          dateTo={task.date_to} 
+          status={task.status} 
+          size="sm"
+          showLabel={true}
+        />
+      </div>
 
       {/* Footer: Assigned + Link */}
       <div className="flex items-center justify-between pt-2 border-t border-border/50">
@@ -154,6 +194,9 @@ const Column = ({
   children: React.ReactNode;
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const overdueCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
+  const dueSoonCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+
   return (
     <div
       className={`flex-shrink-0 w-80 bg-card rounded-xl ${column.className} ${
@@ -161,12 +204,22 @@ const Column = ({
       }`}
     >
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-foreground">{column.title}</h3>
           <span className="text-xs bg-secondary px-2 py-0.5 rounded-full font-medium">
             {tasks.length}
           </span>
         </div>
+        {(overdueCount > 0 || dueSoonCount > 0) && column.id !== "done" && column.id !== "archived" && (
+          <div className="flex gap-2 text-xs">
+            {overdueCount > 0 && (
+              <span className="text-destructive font-medium">{overdueCount} overdue</span>
+            )}
+            {dueSoonCount > 0 && (
+              <span className="text-orange-500 font-medium">{dueSoonCount} due soon</span>
+            )}
+          </div>
+        )}
       </div>
       <div
         ref={setNodeRef}
@@ -184,6 +237,7 @@ const Kanban = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [assignerNames, setAssignerNames] = useState<Record<string, string>>({});
+  const [filterMonth, setFilterMonth] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
@@ -224,6 +278,13 @@ const Kanban = () => {
     };
     checkAuth();
   }, [navigate]);
+
+  const filteredTasks = filterMonth
+    ? tasks.filter((task) => {
+        const taskMonth = task.date_from?.substring(5, 7) || task.date_to?.substring(5, 7);
+        return taskMonth === filterMonth;
+      })
+    : tasks;
 
   const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string);
 
@@ -272,11 +333,14 @@ const Kanban = () => {
     );
   }
 
+  const overdueCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
+  const dueSoonCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+
   const stats = {
-    total: tasks.length,
-    inProgress: tasks.filter((t) => t.status === "in_progress").length,
-    done: tasks.filter((t) => t.status === "done").length,
-    archived: tasks.filter((t) => t.status === "archived").length,
+    total: filteredTasks.length,
+    inProgress: filteredTasks.filter((t) => t.status === "in_progress").length,
+    done: filteredTasks.filter((t) => t.status === "done").length,
+    archived: filteredTasks.filter((t) => t.status === "archived").length,
   };
 
   return (
@@ -293,14 +357,40 @@ const Kanban = () => {
               <Logo variant="blue" className="h-8" />
               <h1 className="font-bold text-lg text-foreground">Kanban Board</h1>
             </div>
-            <div className="flex gap-3 text-sm">
-              <span className="px-3 py-1 bg-secondary rounded-full">Total: {stats.total}</span>
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
-                In Progress: {stats.inProgress}
-              </span>
-              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
-                Done: {stats.done}
-              </span>
+            <div className="flex items-center gap-4">
+              {/* Month Filter */}
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <Select value={filterMonth} onValueChange={setFilterMonth}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="All Months" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-3 text-sm">
+                <span className="px-3 py-1 bg-secondary rounded-full">Total: {stats.total}</span>
+                {overdueCount > 0 && (
+                  <span className="px-3 py-1 bg-destructive/10 text-destructive rounded-full font-medium">
+                    Overdue: {overdueCount}
+                  </span>
+                )}
+                {dueSoonCount > 0 && (
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">
+                    Due Soon: {dueSoonCount}
+                  </span>
+                )}
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
+                  Done: {stats.done}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -317,9 +407,9 @@ const Kanban = () => {
               <Column
                 key={column.id}
                 column={column}
-                tasks={tasks.filter((t) => t.status === column.id)}
+                tasks={filteredTasks.filter((t) => t.status === column.id)}
               >
-                {tasks
+                {filteredTasks
                   .filter((t) => t.status === column.id)
                   .map((task) => (
                     <TaskCard
