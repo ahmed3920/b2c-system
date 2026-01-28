@@ -35,7 +35,11 @@ export interface UpdateUserData {
     active_status?: boolean;
   };
   newRole?: AppRole;
-  newPassword?: string;
+}
+
+export interface ResetPasswordData {
+  userId: string;
+  newPassword?: string; // If undefined, send reset email instead
 }
 
 export function useAdminUsers() {
@@ -206,6 +210,47 @@ export function useAdminUsers() {
     }
   };
 
+  const resetPassword = async (data: ResetPasswordData) => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.access_token) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await supabase.functions.invoke("admin-update-user", {
+        body: {
+          userId: data.userId,
+          newPassword: data.newPassword,
+          sendResetEmail: !data.newPassword, // If no password provided, send email
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to reset password");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast({
+        title: data.newPassword ? "Password reset" : "Reset email sent",
+        description: data.newPassword
+          ? "Password has been updated successfully"
+          : "Password reset email has been sent to the user",
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Error resetting password",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -218,5 +263,6 @@ export function useAdminUsers() {
     createUser,
     updateUser,
     deleteUser,
+    resetPassword,
   };
 }

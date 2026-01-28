@@ -10,9 +10,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -25,30 +33,80 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { RoleBadge } from "@/components/RoleBadge";
-import { MoreHorizontal, Pencil, Trash2, Search, UserX, UserCheck } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Search,
+  UserX,
+  UserCheck,
+  KeyRound,
+  Filter,
+  X,
+} from "lucide-react";
 import type { UserWithRole } from "@/hooks/useAdminUsers";
+import type { AppRole } from "@/hooks/useUserRole";
 
 interface UserTableProps {
   users: UserWithRole[];
   onEdit: (user: UserWithRole) => void;
   onDelete: (userId: string) => Promise<{ success: boolean; error?: string }>;
+  onResetPassword: (user: UserWithRole) => void;
   currentUserId?: string;
+  teamLeaders: string[];
 }
 
-export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableProps) {
+export function UserTable({
+  users,
+  onEdit,
+  onDelete,
+  onResetPassword,
+  currentUserId,
+  teamLeaders,
+}: UserTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
 
-  const filteredUsers = users.filter(
-    (user) =>
+  const hasActiveFilters =
+    roleFilter !== "all" || teamFilter !== "all" || statusFilter !== "all" || searchQuery !== "";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("all");
+    setTeamFilter("all");
+    setStatusFilter("all");
+  };
+
+  const filteredUsers = users.filter((user) => {
+    // Search filter
+    const matchesSearch =
+      searchQuery === "" ||
       user.mentor_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.mentor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (user.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      user.team_leader.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      user.team_leader.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Role filter
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+
+    // Team filter
+    const matchesTeam = teamFilter === "all" || user.team_leader === teamFilter;
+
+    // Status filter
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && user.active_status) ||
+      (statusFilter === "inactive" && !user.active_status);
+
+    return matchesSearch && matchesRole && matchesTeam && matchesStatus;
+  });
 
   const handleDeleteClick = (user: UserWithRole) => {
     setUserToDelete(user);
@@ -74,10 +132,14 @@ export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableP
     });
   };
 
+  // Get unique teams for filter
+  const uniqueTeams = [...new Set(users.map((u) => u.team_leader))].sort();
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search users..."
@@ -86,11 +148,99 @@ export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableP
             className="pl-9"
           />
         </div>
-        <p className="text-sm text-muted-foreground">
+
+        <Select value={roleFilter} onValueChange={(value: AppRole | "all") => setRoleFilter(value)}>
+          <SelectTrigger className="w-[140px]">
+            <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+            <SelectValue placeholder="Role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="team_leader">Team Leader</SelectItem>
+            <SelectItem value="mentor">Mentor</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={teamFilter} onValueChange={(value) => setTeamFilter(value)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Team" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Teams</SelectItem>
+            {uniqueTeams.map((team) => (
+              <SelectItem key={team} value={team}>
+                {team}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(value: "all" | "active" | "inactive") => setStatusFilter(value)}
+        >
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+            <X className="w-4 h-4 mr-1" />
+            Clear
+          </Button>
+        )}
+
+        <div className="ml-auto text-sm text-muted-foreground">
           {filteredUsers.length} of {users.length} users
-        </p>
+        </div>
       </div>
 
+      {/* Active Filters Badges */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2">
+          {searchQuery && (
+            <Badge variant="secondary" className="gap-1">
+              Search: "{searchQuery}"
+              <button onClick={() => setSearchQuery("")}>
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          )}
+          {roleFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              Role: {roleFilter.replace("_", " ")}
+              <button onClick={() => setRoleFilter("all")}>
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          )}
+          {teamFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              Team: {teamFilter}
+              <button onClick={() => setTeamFilter("all")}>
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          )}
+          {statusFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              Status: {statusFilter}
+              <button onClick={() => setStatusFilter("all")}>
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Table */}
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
@@ -98,7 +248,7 @@ export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableP
               <TableHead>User ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Team Leader</TableHead>
+              <TableHead>Team / Leader</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Login</TableHead>
@@ -109,21 +259,23 @@ export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableP
             {filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No users found
+                  {hasActiveFilters ? "No users match the current filters" : "No users found"}
                 </TableCell>
               </TableRow>
             ) : (
               filteredUsers.map((user) => (
                 <TableRow key={user.user_id}>
-                  <TableCell className="font-medium">{user.mentor_id}</TableCell>
+                  <TableCell className="font-mono text-sm">{user.mentor_id}</TableCell>
                   <TableCell>
                     <div>
                       <p className="font-medium">{user.full_name || user.mentor_name}</p>
-                      <p className="text-xs text-muted-foreground">{user.mentor_name}</p>
+                      {user.full_name && user.full_name !== user.mentor_name && (
+                        <p className="text-xs text-muted-foreground">{user.mentor_name}</p>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{user.email || "-"}</TableCell>
-                  <TableCell>{user.team_leader}</TableCell>
+                  <TableCell className="text-sm">{user.team_leader}</TableCell>
                   <TableCell>
                     <RoleBadge role={user.role} size="sm" />
                   </TableCell>
@@ -148,18 +300,23 @@ export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableP
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-popover">
                         <DropdownMenuItem onClick={() => onEdit(user)}>
                           <Pencil className="w-4 h-4 mr-2" />
-                          Edit
+                          Edit User
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onResetPassword(user)}>
+                          <KeyRound className="w-4 h-4 mr-2" />
+                          Reset Password
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(user)}
                           className="text-destructive focus:text-destructive"
                           disabled={user.user_id === currentUserId}
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
+                          Delete User
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -171,14 +328,15 @@ export function UserTable({ users, onEdit, onDelete, currentUserId }: UserTableP
         </Table>
       </div>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{" "}
-              <span className="font-semibold">{userToDelete?.mentor_name}</span> (
-              {userToDelete?.mentor_id})? This action cannot be undone and will permanently
+              <span className="font-semibold">{userToDelete?.full_name || userToDelete?.mentor_name}</span>{" "}
+              ({userToDelete?.mentor_id})? This action cannot be undone and will permanently
               remove the user and all their associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>

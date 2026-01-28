@@ -17,7 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, User, Mail, Users, Shield } from "lucide-react";
+import { RoleBadge } from "@/components/RoleBadge";
 import type { UserWithRole, UpdateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
 
@@ -37,14 +38,12 @@ export function EditUserDialog({
   teamLeaders,
 }: EditUserDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     mentorName: "",
     teamLeader: "",
     activeStatus: true,
     role: "mentor" as AppRole,
-    newPassword: "",
   });
 
   useEffect(() => {
@@ -55,7 +54,6 @@ export function EditUserDialog({
         teamLeader: user.team_leader,
         activeStatus: user.active_status ?? true,
         role: user.role,
-        newPassword: "",
       });
     }
   }, [user]);
@@ -75,7 +73,6 @@ export function EditUserDialog({
         active_status: formData.activeStatus,
       },
       newRole: formData.role !== user.role ? formData.role : undefined,
-      newPassword: formData.newPassword || undefined,
     };
 
     const response = await onSubmit(updateData);
@@ -93,8 +90,29 @@ export function EditUserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit User: {user.mentor_id}</DialogTitle>
+          <DialogTitle className="flex items-center gap-3">
+            <User className="w-5 h-5" />
+            Edit User
+          </DialogTitle>
         </DialogHeader>
+
+        {/* User Info Header */}
+        <div className="bg-muted/50 rounded-lg p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-lg font-semibold text-primary">
+              {(user.full_name || user.mentor_name).charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1">
+            <p className="font-medium">{user.full_name || user.mentor_name}</p>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <Mail className="w-3 h-3" />
+              {user.email}
+            </p>
+          </div>
+          <RoleBadge role={user.role} />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -103,21 +121,26 @@ export function EditUserDialog({
                 id="edit-fullName"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="Enter full name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-mentorName">Mentor Name</Label>
+              <Label htmlFor="edit-mentorName">Display Name</Label>
               <Input
                 id="edit-mentorName"
                 value={formData.mentorName}
                 onChange={(e) => setFormData({ ...formData, mentorName: e.target.value })}
+                placeholder="Display name"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-teamLeader">Team Leader</Label>
+              <Label htmlFor="edit-teamLeader" className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                Team / Leader
+              </Label>
               <Select
                 value={formData.teamLeader}
                 onValueChange={(value) => setFormData({ ...formData, teamLeader: value })}
@@ -135,7 +158,10 @@ export function EditUserDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-role">Role</Label>
+              <Label htmlFor="edit-role" className="flex items-center gap-1">
+                <Shield className="w-3 h-3" />
+                Role
+              </Label>
               <Select
                 value={formData.role}
                 onValueChange={(value: AppRole) => setFormData({ ...formData, role: value })}
@@ -152,32 +178,28 @@ export function EditUserDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-password">New Password (leave blank to keep current)</Label>
-            <div className="relative">
-              <Input
-                id="edit-password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter new password"
-                value={formData.newPassword}
-                onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {/* Role change warning */}
+          {formData.role !== user.role && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                ⚠️ Role Change
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Changing role from{" "}
+                <span className="font-medium">{user.role.replace("_", " ")}</span> to{" "}
+                <span className="font-medium">{formData.role.replace("_", " ")}</span> will
+                update the user's permissions immediately.
+              </p>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
             <div>
-              <Label htmlFor="edit-active">Account Status</Label>
+              <Label htmlFor="edit-active" className="font-medium">Account Status</Label>
               <p className="text-sm text-muted-foreground">
-                {formData.activeStatus ? "Account is active" : "Account is disabled"}
+                {formData.activeStatus
+                  ? "User can access the system"
+                  : "User is blocked from accessing the system"}
               </p>
             </div>
             <Switch
@@ -187,7 +209,7 @@ export function EditUserDialog({
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
