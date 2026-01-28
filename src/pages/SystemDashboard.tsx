@@ -75,7 +75,7 @@ interface TeamStats {
 }
 
 const monthOptions = [
-  { value: "", label: "All Time" },
+  { value: "all", label: "All Time" },
   { value: "01", label: "January" },
   { value: "02", label: "February" },
   { value: "03", label: "March" },
@@ -97,7 +97,7 @@ const SystemDashboard = () => {
   const [userStats, setUserStats] = useState<UserTaskStats[]>([]);
   const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
 
   const fetchMetrics = async () => {
     setIsLoading(true);
@@ -118,7 +118,7 @@ const SystemDashboard = () => {
       const goals = goalsRes.data || [];
 
       // Filter tasks by month if selected
-      const filteredTasks = selectedMonth
+      const filteredTasks = selectedMonth && selectedMonth !== "all"
         ? tasks.filter(t => {
             const taskMonth = t.date_to?.substring(5, 7);
             return taskMonth === selectedMonth;
