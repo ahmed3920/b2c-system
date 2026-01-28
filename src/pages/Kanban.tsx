@@ -34,7 +34,7 @@ const columns: { id: TaskStatus; title: string; className: string }[] = [
 ];
 
 const monthOptions = [
-  { value: "", label: "All Months" },
+  { value: "all", label: "All Months" },
   { value: "01", label: "January" },
   { value: "02", label: "February" },
   { value: "03", label: "March" },
@@ -237,7 +237,7 @@ const Kanban = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [assignerNames, setAssignerNames] = useState<Record<string, string>>({});
-  const [filterMonth, setFilterMonth] = useState("");
+  const [filterMonth, setFilterMonth] = useState("all");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
@@ -279,7 +279,7 @@ const Kanban = () => {
     checkAuth();
   }, [navigate]);
 
-  const filteredTasks = filterMonth
+  const filteredTasks = filterMonth && filterMonth !== "all"
     ? tasks.filter((task) => {
         const taskMonth = task.date_from?.substring(5, 7) || task.date_to?.substring(5, 7);
         return taskMonth === filterMonth;
