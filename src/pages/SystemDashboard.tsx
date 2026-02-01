@@ -31,9 +31,13 @@ import {
   Award,
   AlertTriangle,
   BarChart3,
+  Plus,
+  Settings2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, subDays, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
+import { TaskFormConfigDialog } from "@/components/admin/TaskFormConfigDialog";
 
 interface SystemMetrics {
   totalUsers: number;
@@ -98,6 +102,8 @@ const SystemDashboard = () => {
   const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState("all");
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isFormConfigOpen, setIsFormConfigOpen] = useState(false);
 
   const fetchMetrics = async () => {
     setIsLoading(true);
@@ -305,6 +311,14 @@ const SystemDashboard = () => {
               <Button variant="outline" size="sm" onClick={fetchMetrics}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsFormConfigOpen(true)}>
+                <Settings2 className="w-4 h-4 mr-2" />
+                Task Form
+              </Button>
+              <Button size="sm" onClick={() => setIsAssignDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Assign Task
               </Button>
             </div>
           </div>
@@ -649,6 +663,19 @@ const SystemDashboard = () => {
           </div>
         </motion.section>
       </main>
+
+      {/* Admin Task Assign Dialog */}
+      <AdminTaskAssignDialog
+        open={isAssignDialogOpen}
+        onOpenChange={setIsAssignDialogOpen}
+        onTaskAssigned={fetchMetrics}
+      />
+
+      {/* Task Form Configuration Dialog */}
+      <TaskFormConfigDialog
+        open={isFormConfigOpen}
+        onOpenChange={setIsFormConfigOpen}
+      />
     </div>
   );
 };
