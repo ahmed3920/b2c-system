@@ -207,7 +207,7 @@ const Auth = () => {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          © 2025 iSchool - All rights reserved
+          © 2026 iSchool - All rights reserved
         </p>
       </motion.div>
     </div>
