@@ -53,7 +53,7 @@ interface MemberStats {
 }
 
 const monthOptions = [
-  { value: "", label: "All Time" },
+  { value: "all", label: "All Time" },
   { value: "01", label: "January" },
   { value: "02", label: "February" },
   { value: "03", label: "March" },
@@ -77,7 +77,7 @@ const TeamDashboard = () => {
   const [teamLeaderName, setTeamLeaderName] = useState("");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
 
   const fetchTeamData = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -120,7 +120,7 @@ const TeamDashboard = () => {
 
           if (tasks) {
             // Filter by month if selected
-            const filteredTasks = selectedMonth
+            const filteredTasks = selectedMonth && selectedMonth !== "all"
               ? tasks.filter(t => {
                   const taskMonth = t.date_to?.substring(5, 7);
                   return taskMonth === selectedMonth;
