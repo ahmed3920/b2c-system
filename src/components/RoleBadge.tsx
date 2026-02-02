@@ -12,7 +12,7 @@ const roleConfig = {
   },
   team_leader: {
     label: "Team Leader",
-    className: "bg-orange-100 text-orange-700 border-orange-200",
+    className: "bg-amber-100 text-amber-700 border-amber-300",
   },
   mentor: {
     label: "Mentor",

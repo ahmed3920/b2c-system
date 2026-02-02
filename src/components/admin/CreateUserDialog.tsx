@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { CreateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
@@ -56,6 +57,7 @@ const adminSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(2, "Full name is required"),
+  mentorId: z.string().optional(),
 });
 
 const teamLeaderSchema = z.object({
@@ -63,6 +65,7 @@ const teamLeaderSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(2, "Full name is required"),
   teamName: z.string().min(2, "Team name is required"),
+  mentorId: z.string().optional(),
 });
 
 const mentorSchema = z.object({
@@ -70,6 +73,7 @@ const mentorSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(2, "Full name is required"),
   teamLeader: z.string().min(1, "Team leader is required"),
+  mentorId: z.string().optional(),
 });
 
 interface CreateUserDialogProps {
@@ -99,7 +103,11 @@ export function CreateUserDialog({
     fullName: "",
     teamName: "",
     teamLeader: "",
+    mentorId: "",
+    useCustomMentorId: false,
   });
+  
+  const [mentorIdError, setMentorIdError] = useState("");
 
   const resetForm = () => {
     setStep(1);
@@ -110,8 +118,11 @@ export function CreateUserDialog({
       fullName: "",
       teamName: "",
       teamLeader: "",
+      mentorId: "",
+      useCustomMentorId: false,
     });
     setErrors({});
+    setMentorIdError("");
   };
 
   useEffect(() => {
@@ -184,7 +195,10 @@ export function CreateUserDialog({
 
     // Build the create user data based on selected type
     let createData: CreateUserData;
-    const mentorId = `U-${Date.now().toString(36).toUpperCase()}`;
+    const generatedMentorId = `U-${Date.now().toString(36).toUpperCase()}`;
+    const finalMentorId = formData.useCustomMentorId && formData.mentorId.trim() 
+      ? formData.mentorId.trim() 
+      : generatedMentorId;
 
     switch (selectedType) {
       case "admin":
@@ -192,7 +206,7 @@ export function CreateUserDialog({
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
-          mentorId,
+          mentorId: finalMentorId,
           mentorName: formData.fullName,
           teamLeader: "System Admin",
           role: "admin",
@@ -203,7 +217,7 @@ export function CreateUserDialog({
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
-          mentorId,
+          mentorId: finalMentorId,
           mentorName: formData.fullName,
           teamLeader: formData.fullName, // Team leader is their own team leader
           role: "team_leader",
@@ -214,7 +228,7 @@ export function CreateUserDialog({
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
-          mentorId,
+          mentorId: finalMentorId,
           mentorName: formData.fullName,
           teamLeader: formData.teamLeader,
           role: "mentor",
@@ -403,6 +417,46 @@ export function CreateUserDialog({
                 )}
               </div>
             )}
+
+            {/* Custom User ID Field */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="useCustomMentorId" className="text-sm font-medium">Custom User ID</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Manually set a unique User ID instead of auto-generating
+                  </p>
+                </div>
+                <Switch
+                  id="useCustomMentorId"
+                  checked={formData.useCustomMentorId}
+                  onCheckedChange={(checked) => {
+                    setFormData({ ...formData, useCustomMentorId: checked, mentorId: "" });
+                    setMentorIdError("");
+                  }}
+                />
+              </div>
+              
+              {formData.useCustomMentorId && (
+                <div className="space-y-2">
+                  <Label htmlFor="mentorId">User ID *</Label>
+                  <Input
+                    id="mentorId"
+                    placeholder="e.g., U-12345 or STAFF-001"
+                    value={formData.mentorId}
+                    onChange={(e) => {
+                      setFormData({ ...formData, mentorId: e.target.value });
+                      setMentorIdError("");
+                    }}
+                    className={mentorIdError ? "border-destructive" : ""}
+                  />
+                  {mentorIdError && <p className="text-xs text-destructive">{mentorIdError}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Must be unique across all users. This ID will be visible in profiles and tasks.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Info boxes */}
             {selectedType === "admin" && (

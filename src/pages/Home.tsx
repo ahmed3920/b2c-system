@@ -55,6 +55,14 @@ const allCards: DashboardCard[] = [
     roles: ["admin"],
   },
   {
+    title: "All System Tasks",
+    description: "View and manage all tasks",
+    icon: <ClipboardList className="w-8 h-8" />,
+    href: "/admin/tasks",
+    disabled: false,
+    roles: ["admin"],
+  },
+  {
     title: "Team Overview",
     description: "View your team metrics",
     icon: <LayoutDashboard className="w-8 h-8" />,
