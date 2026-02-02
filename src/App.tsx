@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
 import TeamDashboard from "./pages/TeamDashboard";
 import SystemDashboard from "./pages/SystemDashboard";
+import SystemTasks from "./pages/SystemTasks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/reports" element={<Reports />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/dashboard" element={<SystemDashboard />} />
+          <Route path="/admin/tasks" element={<SystemTasks />} />
           <Route path="/team/dashboard" element={<TeamDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

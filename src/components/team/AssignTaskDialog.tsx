@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
 
 interface TeamMember {
   user_id: string;
@@ -55,13 +56,21 @@ const priorityOptions = [
   { value: "4", label: "Critical", color: "text-red-600" },
 ];
 
-const taskSchema = z.object({
+const baseTaskSchema = z.object({
   mentorId: z.string().min(1, "Please select a mentor"),
   taskType: z.string().min(1, "Task type is required"),
   description: z.string().min(5, "Description must be at least 5 characters"),
+  priority: z.string(),
+});
+
+const taskWithDeadlineSchema = baseTaskSchema.extend({
   dateFrom: z.string().min(1, "Start date is required"),
   dateTo: z.string().min(1, "End date is required"),
-  priority: z.string(),
+});
+
+const taskWithoutDeadlineSchema = baseTaskSchema.extend({
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
 });
 
 export function AssignTaskDialog({
@@ -74,6 +83,7 @@ export function AssignTaskDialog({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasDeadline, setHasDeadline] = useState(true);
   const [formData, setFormData] = useState({
     mentorId: "",
     taskType: "",
@@ -101,12 +111,14 @@ export function AssignTaskDialog({
       priority: "2",
     });
     setErrors({});
+    setHasDeadline(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = taskSchema.safeParse(formData);
+    const schema = hasDeadline ? taskWithDeadlineSchema : taskWithoutDeadlineSchema;
+    const result = schema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((err) => {
@@ -128,20 +140,13 @@ export function AssignTaskDialog({
       const selectedMentorData = teamMembers.find((m) => m.user_id === formData.mentorId);
       if (!selectedMentorData) throw new Error("Mentor not found");
 
-      // Get team leader's profile
-      const { data: tlProfile } = await supabase
-        .from("profiles")
-        .select("mentor_name")
-        .eq("user_id", session.user.id)
-        .single();
-
       const { error: insertError } = await supabase.from("tasks").insert({
         user_id: formData.mentorId,
         task_type: formData.taskType,
         description: formData.description,
         related_link: formData.relatedLink || null,
-        date_from: formData.dateFrom,
-        date_to: formData.dateTo,
+        date_from: hasDeadline ? formData.dateFrom : null,
+        date_to: hasDeadline ? formData.dateTo : null,
         priority: parseInt(formData.priority),
         status: "todo",
         assigned_by: session.user.id,
@@ -178,7 +183,7 @@ export function AssignTaskDialog({
         onOpenChange(value);
       }}
     >
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Assign Task to Team Member</DialogTitle>
         </DialogHeader>
@@ -267,30 +272,46 @@ export function AssignTaskDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dateFrom">Start Date *</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={formData.dateFrom}
-                onChange={(e) => setFormData({ ...formData, dateFrom: e.target.value })}
-                className={errors.dateFrom ? "border-destructive" : ""}
-              />
-              {errors.dateFrom && <p className="text-xs text-destructive">{errors.dateFrom}</p>}
+          {/* Deadline Toggle */}
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-secondary/30">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <span className="text-sm font-medium">Has Deadline?</span>
+                <p className="text-xs text-muted-foreground">
+                  {hasDeadline ? "Date range is required" : "Task has no specific deadline"}
+                </p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="dateTo">Due Date *</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={formData.dateTo}
-                onChange={(e) => setFormData({ ...formData, dateTo: e.target.value })}
-                className={errors.dateTo ? "border-destructive" : ""}
-              />
-              {errors.dateTo && <p className="text-xs text-destructive">{errors.dateTo}</p>}
-            </div>
+            <Switch checked={hasDeadline} onCheckedChange={setHasDeadline} />
           </div>
+
+          {hasDeadline && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dateFrom">Start Date *</Label>
+                <Input
+                  id="dateFrom"
+                  type="date"
+                  value={formData.dateFrom}
+                  onChange={(e) => setFormData({ ...formData, dateFrom: e.target.value })}
+                  className={errors.dateFrom ? "border-destructive" : ""}
+                />
+                {errors.dateFrom && <p className="text-xs text-destructive">{errors.dateFrom}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateTo">Due Date *</Label>
+                <Input
+                  id="dateTo"
+                  type="date"
+                  value={formData.dateTo}
+                  onChange={(e) => setFormData({ ...formData, dateTo: e.target.value })}
+                  className={errors.dateTo ? "border-destructive" : ""}
+                />
+                {errors.dateTo && <p className="text-xs text-destructive">{errors.dateTo}</p>}
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

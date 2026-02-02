@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, User, UserCheck } from "lucide-react";
+import { Loader2, Users, User, UserCheck, Calendar } from "lucide-react";
 
 interface UserOption {
   user_id: string;
@@ -59,12 +60,20 @@ const priorityOptions = [
 
 type AssignmentType = "all_team_leaders" | "selected_team_leader" | "specific_user";
 
-const taskSchema = z.object({
+const baseTaskSchema = z.object({
   taskType: z.string().min(1, "Task type is required"),
   description: z.string().min(5, "Description must be at least 5 characters"),
+  priority: z.string(),
+});
+
+const taskWithDeadlineSchema = baseTaskSchema.extend({
   dateFrom: z.string().min(1, "Start date is required"),
   dateTo: z.string().min(1, "End date is required"),
-  priority: z.string(),
+});
+
+const taskWithoutDeadlineSchema = baseTaskSchema.extend({
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
 });
 
 export function AdminTaskAssignDialog({
@@ -81,6 +90,7 @@ export function AdminTaskAssignDialog({
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [allUsers, setAllUsers] = useState<UserOption[]>([]);
   const [teamLeaders, setTeamLeaders] = useState<UserOption[]>([]);
+  const [hasDeadline, setHasDeadline] = useState(true);
   
   const [formData, setFormData] = useState({
     taskType: "",
@@ -147,6 +157,7 @@ export function AdminTaskAssignDialog({
     setAssignmentType("specific_user");
     setSelectedUsers([]);
     setErrors({});
+    setHasDeadline(true);
   };
 
   const getTargetUsers = (): string[] => {
@@ -172,7 +183,8 @@ export function AdminTaskAssignDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = taskSchema.safeParse(formData);
+    const schema = hasDeadline ? taskWithDeadlineSchema : taskWithoutDeadlineSchema;
+    const result = schema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((err) => {
@@ -203,8 +215,8 @@ export function AdminTaskAssignDialog({
         task_type: formData.taskType,
         description: formData.description,
         related_link: formData.relatedLink || null,
-        date_from: formData.dateFrom,
-        date_to: formData.dateTo,
+        date_from: hasDeadline ? formData.dateFrom : null,
+        date_to: hasDeadline ? formData.dateTo : null,
         priority: parseInt(formData.priority),
         status: "todo" as const,
         assigned_by: session.user.id,
@@ -438,28 +450,44 @@ export function AdminTaskAssignDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Date *</Label>
-                <Input
-                  type="date"
-                  value={formData.dateFrom}
-                  onChange={(e) => setFormData({ ...formData, dateFrom: e.target.value })}
-                  className={errors.dateFrom ? "border-destructive" : ""}
-                />
-                {errors.dateFrom && <p className="text-xs text-destructive">{errors.dateFrom}</p>}
+            {/* Deadline Toggle */}
+            <div className="flex items-center justify-between p-3 border rounded-lg bg-secondary/30">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <span className="text-sm font-medium">Has Deadline?</span>
+                  <p className="text-xs text-muted-foreground">
+                    {hasDeadline ? "Date range is required" : "Task has no specific deadline"}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Due Date *</Label>
-                <Input
-                  type="date"
-                  value={formData.dateTo}
-                  onChange={(e) => setFormData({ ...formData, dateTo: e.target.value })}
-                  className={errors.dateTo ? "border-destructive" : ""}
-                />
-                {errors.dateTo && <p className="text-xs text-destructive">{errors.dateTo}</p>}
-              </div>
+              <Switch checked={hasDeadline} onCheckedChange={setHasDeadline} />
             </div>
+
+            {hasDeadline && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date *</Label>
+                  <Input
+                    type="date"
+                    value={formData.dateFrom}
+                    onChange={(e) => setFormData({ ...formData, dateFrom: e.target.value })}
+                    className={errors.dateFrom ? "border-destructive" : ""}
+                  />
+                  {errors.dateFrom && <p className="text-xs text-destructive">{errors.dateFrom}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Due Date *</Label>
+                  <Input
+                    type="date"
+                    value={formData.dateTo}
+                    onChange={(e) => setFormData({ ...formData, dateTo: e.target.value })}
+                    className={errors.dateTo ? "border-destructive" : ""}
+                  />
+                  {errors.dateTo && <p className="text-xs text-destructive">{errors.dateTo}</p>}
+                </div>
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
