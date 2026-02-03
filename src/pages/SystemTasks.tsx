@@ -327,7 +327,7 @@ const SystemTasks = () => {
               </Button>
               <Logo variant="blue" className="h-8" />
               <div className="h-6 w-px bg-border" />
-              <span className="font-semibold text-foreground">All System Tasks</span>
+              <span className="font-semibold text-foreground">Teams Overview</span>
             </div>
             <Button variant="outline" size="sm" onClick={fetchTasks}>
               <RefreshCw className="w-4 h-4 mr-2" />
