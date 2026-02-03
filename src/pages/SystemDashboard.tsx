@@ -316,10 +316,6 @@ const SystemDashboard = () => {
                 <Settings2 className="w-4 h-4 mr-2" />
                 Task Form
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate("/admin/tasks")}>
-                <BarChart3 className="w-4 h-4 mr-2" />
-                All Tasks
-              </Button>
               <Button size="sm" onClick={() => setIsAssignDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Assign Task
