@@ -8,13 +8,6 @@ import { Logo } from "@/components/Logo";
 import { RoleBadge } from "@/components/RoleBadge";
 import { Progress } from "@/components/ui/progress";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowLeft,
   Users,
   CheckCircle,
@@ -26,7 +19,6 @@ import {
   Loader2,
   RefreshCw,
   UserCheck,
-  Calendar,
   Target,
   Award,
   AlertTriangle,
@@ -35,7 +27,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { format, subDays, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { subDays } from "date-fns";
 import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
 import { TaskFormConfigDialog } from "@/components/admin/TaskFormConfigDialog";
 
@@ -44,7 +36,6 @@ interface SystemMetrics {
   activeUsers: number;
   totalTasks: number;
   completedTasks: number;
-  pendingTasks: number;
   inProgressTasks: number;
   overdueTasks: number;
   totalAchievements: number;
@@ -55,18 +46,6 @@ interface SystemMetrics {
     mentor: number;
   };
   recentLogins: number;
-  tasksCompletedThisWeek: number;
-}
-
-interface UserTaskStats {
-  userId: string;
-  userName: string;
-  teamLeader: string;
-  totalTasks: number;
-  completed: number;
-  inProgress: number;
-  overdue: number;
-  completionRate: number;
 }
 
 interface TeamStats {
@@ -74,79 +53,44 @@ interface TeamStats {
   memberCount: number;
   totalTasks: number;
   completed: number;
+  inProgress: number;
   overdue: number;
   completionRate: number;
 }
-
-const monthOptions = [
-  { value: "all", label: "All Time" },
-  { value: "01", label: "January" },
-  { value: "02", label: "February" },
-  { value: "03", label: "March" },
-  { value: "04", label: "April" },
-  { value: "05", label: "May" },
-  { value: "06", label: "June" },
-  { value: "07", label: "July" },
-  { value: "08", label: "August" },
-  { value: "09", label: "September" },
-  { value: "10", label: "October" },
-  { value: "11", label: "November" },
-  { value: "12", label: "December" },
-];
 
 const SystemDashboard = () => {
   const navigate = useNavigate();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [userStats, setUserStats] = useState<UserTaskStats[]>([]);
   const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState("all");
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isFormConfigOpen, setIsFormConfigOpen] = useState(false);
 
   const fetchMetrics = async () => {
     setIsLoading(true);
     try {
-      // Fetch all data in parallel
-      const [profilesRes, rolesRes, tasksRes, achievementsRes, goalsRes] = await Promise.all([
+      // Fetch non-task data in parallel (Admins can access these)
+      const [profilesRes, rolesRes, achievementsRes, goalsRes, teamStatsRes] = await Promise.all([
         supabase.from("profiles").select("user_id, active_status, last_login, mentor_name, team_leader"),
         supabase.from("user_roles").select("role, user_id"),
-        supabase.from("tasks").select("status, created_at, user_id, date_to"),
         supabase.from("achievements").select("id"),
         supabase.from("goals").select("id"),
+        // Use security definer function for team-level task aggregates
+        supabase.rpc("get_team_task_stats"),
       ]);
 
       const profiles = profilesRes.data || [];
       const roles = rolesRes.data || [];
-      const tasks = tasksRes.data || [];
       const achievements = achievementsRes.data || [];
       const goals = goalsRes.data || [];
+      const teamTaskStats = teamStatsRes.data || [];
 
-      // Filter tasks by month if selected
-      const filteredTasks = selectedMonth && selectedMonth !== "all"
-        ? tasks.filter(t => {
-            const taskMonth = t.date_to?.substring(5, 7);
-            return taskMonth === selectedMonth;
-          })
-        : tasks;
-
-      // Calculate metrics
+      // Calculate user metrics
       const weekAgo = subDays(new Date(), 7);
-      const today = new Date();
-      
       const recentLogins = profiles.filter(
         (p) => p.last_login && new Date(p.last_login) > weekAgo
       ).length;
-
-      const tasksCompletedThisWeek = filteredTasks.filter(
-        (t) => t.status === "done" && new Date(t.created_at) > weekAgo
-      ).length;
-
-      const overdueTasks = filteredTasks.filter(t => {
-        if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
-        return new Date(t.date_to) < today;
-      }).length;
 
       const roleCount = {
         admin: roles.filter((r) => r.role === "admin").length,
@@ -154,83 +98,53 @@ const SystemDashboard = () => {
         mentor: roles.filter((r) => r.role === "mentor").length,
       };
 
+      // Aggregate task stats from team stats (no direct task access)
+      let totalTasks = 0;
+      let completedTasks = 0;
+      let inProgressTasks = 0;
+      let overdueTasks = 0;
+
+      teamTaskStats.forEach((team: { total_tasks: number; completed_tasks: number; in_progress_tasks: number; overdue_tasks: number }) => {
+        totalTasks += Number(team.total_tasks) || 0;
+        completedTasks += Number(team.completed_tasks) || 0;
+        inProgressTasks += Number(team.in_progress_tasks) || 0;
+        overdueTasks += Number(team.overdue_tasks) || 0;
+      });
+
       setMetrics({
         totalUsers: profiles.length,
         activeUsers: profiles.filter((p) => p.active_status).length,
-        totalTasks: filteredTasks.length,
-        completedTasks: filteredTasks.filter((t) => t.status === "done").length,
-        pendingTasks: filteredTasks.filter((t) => t.status === "todo").length,
-        inProgressTasks: filteredTasks.filter((t) => t.status === "in_progress").length,
+        totalTasks,
+        completedTasks,
+        inProgressTasks,
         overdueTasks,
         totalAchievements: achievements.length,
         totalGoals: goals.length,
         usersByRole: roleCount,
         recentLogins,
-        tasksCompletedThisWeek,
       });
 
-      // Calculate per-user stats
-      const userStatsMap = new Map<string, UserTaskStats>();
-      profiles.forEach(p => {
-        const userTasks = filteredTasks.filter(t => t.user_id === p.user_id);
-        const completed = userTasks.filter(t => t.status === "done").length;
-        const overdue = userTasks.filter(t => {
-          if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
-          return new Date(t.date_to) < today;
-        }).length;
-
-        userStatsMap.set(p.user_id, {
-          userId: p.user_id,
-          userName: p.mentor_name,
-          teamLeader: p.team_leader,
-          totalTasks: userTasks.length,
-          completed,
-          inProgress: userTasks.filter(t => t.status === "in_progress").length,
-          overdue,
-          completionRate: userTasks.length > 0 ? Math.round((completed / userTasks.length) * 100) : 0,
-        });
+      // Build team stats with member count from profiles
+      const teamMemberCount = new Map<string, number>();
+      profiles.forEach((p) => {
+        if (p.team_leader) {
+          teamMemberCount.set(p.team_leader, (teamMemberCount.get(p.team_leader) || 0) + 1);
+        }
       });
-      setUserStats(Array.from(userStatsMap.values()).sort((a, b) => b.totalTasks - a.totalTasks));
 
-      // Calculate per-team stats
-      const teamStatsMap = new Map<string, TeamStats>();
-      profiles.forEach(p => {
-        if (!p.team_leader) return;
-        const existing = teamStatsMap.get(p.team_leader) || {
-          teamLeader: p.team_leader,
-          memberCount: 0,
-          totalTasks: 0,
-          completed: 0,
-          overdue: 0,
-          completionRate: 0,
-        };
-        
-        const userTasks = filteredTasks.filter(t => t.user_id === p.user_id);
-        const completed = userTasks.filter(t => t.status === "done").length;
-        const overdue = userTasks.filter(t => {
-          if (t.status === "done" || t.status === "archived" || !t.date_to) return false;
-          return new Date(t.date_to) < today;
-        }).length;
+      const processedTeamStats: TeamStats[] = teamTaskStats.map((team: { team_leader: string; total_tasks: number; completed_tasks: number; in_progress_tasks: number; overdue_tasks: number }) => ({
+        teamLeader: team.team_leader,
+        memberCount: teamMemberCount.get(team.team_leader) || 0,
+        totalTasks: Number(team.total_tasks) || 0,
+        completed: Number(team.completed_tasks) || 0,
+        inProgress: Number(team.in_progress_tasks) || 0,
+        overdue: Number(team.overdue_tasks) || 0,
+        completionRate: team.total_tasks > 0
+          ? Math.round((Number(team.completed_tasks) / Number(team.total_tasks)) * 100)
+          : 0,
+      }));
 
-        teamStatsMap.set(p.team_leader, {
-          ...existing,
-          memberCount: existing.memberCount + 1,
-          totalTasks: existing.totalTasks + userTasks.length,
-          completed: existing.completed + completed,
-          overdue: existing.overdue + overdue,
-          completionRate: 0,
-        });
-      });
-      
-      // Calculate completion rates
-      teamStatsMap.forEach((stats, key) => {
-        stats.completionRate = stats.totalTasks > 0 
-          ? Math.round((stats.completed / stats.totalTasks) * 100) 
-          : 0;
-        teamStatsMap.set(key, stats);
-      });
-      
-      setTeamStats(Array.from(teamStatsMap.values()).sort((a, b) => b.totalTasks - a.totalTasks));
+      setTeamStats(processedTeamStats.sort((a, b) => b.totalTasks - a.totalTasks));
     } catch (error) {
       console.error("Error fetching metrics:", error);
     } finally {
@@ -259,7 +173,7 @@ const SystemDashboard = () => {
     if (isAdmin) {
       fetchMetrics();
     }
-  }, [isAdmin, selectedMonth]);
+  }, [isAdmin]);
 
   if (roleLoading || isLoading) {
     return (
@@ -295,19 +209,6 @@ const SystemDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[150px]">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="All Time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Button variant="outline" size="sm" onClick={fetchMetrics}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
@@ -404,7 +305,7 @@ const SystemDashboard = () => {
           </div>
         </motion.section>
 
-        {/* User Adoption Stats */}
+        {/* User & Task Statistics (Aggregated) */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -475,7 +376,7 @@ const SystemDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Progress by Team</CardTitle>
-              <CardDescription>Task completion status across all teams</CardDescription>
+              <CardDescription>Aggregated task completion status across all teams</CardDescription>
             </CardHeader>
             <CardContent>
               {teamStats.length === 0 ? (
@@ -493,6 +394,7 @@ const SystemDashboard = () => {
                         </div>
                         <div className="flex items-center gap-4 text-sm">
                           <span className="text-green-600">{team.completed} done</span>
+                          <span className="text-blue-600">{team.inProgress} in progress</span>
                           {team.overdue > 0 && (
                             <span className="text-destructive font-medium">{team.overdue} overdue</span>
                           )}
@@ -511,13 +413,13 @@ const SystemDashboard = () => {
           </Card>
         </motion.section>
 
-        {/* Role Distribution & Individual Stats */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
+        {/* Role Distribution */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -534,7 +436,7 @@ const SystemDashboard = () => {
                   </div>
                   <span className="text-2xl font-bold">{metrics?.usersByRole.admin || 0}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-amber-100/50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <RoleBadge role="team_leader" />
                     <span className="font-medium">Team Leaders</span>
@@ -550,98 +452,14 @@ const SystemDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.section>
-
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-primary" />
-                  Top Performers
-                </CardTitle>
-                <CardDescription>Users with highest task completion</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {userStats.filter(u => u.totalTasks > 0).length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No task data available</p>
-                ) : (
-                  <div className="space-y-3">
-                    {userStats
-                      .filter(u => u.totalTasks > 0)
-                      .sort((a, b) => b.completionRate - a.completionRate)
-                      .slice(0, 5)
-                      .map((user, index) => (
-                        <div key={user.userId} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50">
-                          <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                              {index + 1}
-                            </span>
-                            <div>
-                              <p className="font-medium text-sm">{user.userName}</p>
-                              <p className="text-xs text-muted-foreground">{user.completed}/{user.totalTasks} tasks</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {user.overdue > 0 && (
-                              <span className="text-xs text-destructive">{user.overdue} overdue</span>
-                            )}
-                            <span className="font-bold text-green-600">{user.completionRate}%</span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.section>
-        </div>
-
-        {/* Gamification Stats */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-primary" />
-                  Gamification Stats
-                </CardTitle>
-                <CardDescription>Achievements and goals overview</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg border border-yellow-500/20">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Achievements Earned</p>
-                    <p className="text-3xl font-bold text-yellow-500">
-                      {metrics?.totalAchievements || 0}
-                    </p>
-                  </div>
-                  <Award className="w-10 h-10 text-yellow-500/50" />
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Goals</p>
-                    <p className="text-3xl font-bold text-blue-500">{metrics?.totalGoals || 0}</p>
-                  </div>
-                  <Target className="w-10 h-10 text-blue-500/50" />
-                </div>
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-primary" />
-                  Weekly Activity
+                  System Activity
                 </CardTitle>
-                <CardDescription>Activity in the last 7 days</CardDescription>
+                <CardDescription>Recent activity overview</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
@@ -651,12 +469,12 @@ const SystemDashboard = () => {
                   </div>
                   <UserCheck className="w-10 h-10 text-green-500/50" />
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg border border-yellow-500/20">
                   <div>
-                    <p className="text-sm text-muted-foreground">Tasks Completed This Week</p>
-                    <p className="text-3xl font-bold text-purple-500">{metrics?.tasksCompletedThisWeek || 0}</p>
+                    <p className="text-sm text-muted-foreground">Total Achievements</p>
+                    <p className="text-3xl font-bold text-yellow-500">{metrics?.totalAchievements || 0}</p>
                   </div>
-                  <CheckCircle className="w-10 h-10 text-purple-500/50" />
+                  <Award className="w-10 h-10 text-yellow-500/50" />
                 </div>
               </CardContent>
             </Card>
