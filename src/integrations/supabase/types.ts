@@ -277,6 +277,16 @@ export type Database = {
     }
     Functions: {
       get_current_user_mentor_name: { Args: never; Returns: string }
+      get_team_task_stats: {
+        Args: never
+        Returns: {
+          completed_tasks: number
+          in_progress_tasks: number
+          overdue_tasks: number
+          team_leader: string
+          total_tasks: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
