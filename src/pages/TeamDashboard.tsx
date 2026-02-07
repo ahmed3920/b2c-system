@@ -28,9 +28,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TeamMentorCard } from "@/components/team/TeamMentorCard";
 import { TeamStatsCards } from "@/components/team/TeamStatsCards";
 import { AssignTaskDialog } from "@/components/team/AssignTaskDialog";
+import { TeamTasksTab } from "@/components/team/TeamTasksTab";
 
 interface TeamMember {
   user_id: string;
@@ -244,130 +246,154 @@ const TeamDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Team Stats Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
-        >
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Team Members</p>
-                  <p className="text-2xl font-bold">{teamMembers.length}</p>
-                </div>
-                <Users className="w-6 h-6 text-primary/50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Tasks</p>
-                  <p className="text-2xl font-bold">{totalTeamTasks}</p>
-                </div>
-                <ClipboardList className="w-6 h-6 text-primary/50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold text-green-500">{totalCompleted}</p>
-                </div>
-                <CheckCircle2 className="w-6 h-6 text-green-500/50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">In Progress</p>
-                  <p className="text-2xl font-bold text-blue-500">{totalInProgress}</p>
-                </div>
-                <Clock className="w-6 h-6 text-blue-500/50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className={totalOverdue > 0 ? "border-destructive/50" : ""}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Overdue</p>
-                  <p className={`text-2xl font-bold ${totalOverdue > 0 ? "text-destructive" : ""}`}>
-                    {totalOverdue}
+        {/* Tabs: Overview + Team Tasks */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="bg-card border border-border">
+            <TabsTrigger value="overview" className="gap-2">
+              <Users className="w-4 h-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Team Tasks
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-8">
+            {/* Team Stats Overview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="grid grid-cols-2 md:grid-cols-5 gap-4"
+            >
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Team Members</p>
+                      <p className="text-2xl font-bold">{teamMembers.length}</p>
+                    </div>
+                    <Users className="w-6 h-6 text-primary/50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Tasks</p>
+                      <p className="text-2xl font-bold">{totalTeamTasks}</p>
+                    </div>
+                    <ClipboardList className="w-6 h-6 text-primary/50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Completed</p>
+                      <p className="text-2xl font-bold text-green-500">{totalCompleted}</p>
+                    </div>
+                    <CheckCircle2 className="w-6 h-6 text-green-500/50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">In Progress</p>
+                      <p className="text-2xl font-bold text-blue-500">{totalInProgress}</p>
+                    </div>
+                    <Clock className="w-6 h-6 text-blue-500/50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className={totalOverdue > 0 ? "border-destructive/50" : ""}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Overdue</p>
+                      <p className={`text-2xl font-bold ${totalOverdue > 0 ? "text-destructive" : ""}`}>
+                        {totalOverdue}
+                      </p>
+                    </div>
+                    <AlertTriangle className={`w-6 h-6 ${totalOverdue > 0 ? "text-destructive/50" : "text-muted-foreground/50"}`} />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Team Progress */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Team Progress
+                  </CardTitle>
+                  <CardDescription>Overall team task completion rate</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Average Completion Rate</span>
+                      <span className="font-bold">{avgCompletionRate}%</span>
+                    </div>
+                    <Progress value={avgCompletionRate} className="h-3" />
+                    <p className="text-xs text-muted-foreground">
+                      {totalCompleted} of {totalTeamTasks} tasks completed across the team
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Team Members Grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2 className="text-lg font-semibold text-foreground mb-4">Team Members</h2>
+              {teamMembers.length === 0 ? (
+                <div className="bg-card rounded-xl p-8 text-center">
+                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-foreground mb-2">No Team Members Yet</h3>
+                  <p className="text-muted-foreground">
+                    Team members will appear here once they are assigned to your team.
                   </p>
                 </div>
-                <AlertTriangle className={`w-6 h-6 ${totalOverdue > 0 ? "text-destructive/50" : "text-muted-foreground/50"}`} />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Team Progress */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mb-8"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Team Progress
-              </CardTitle>
-              <CardDescription>Overall team task completion rate</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Average Completion Rate</span>
-                  <span className="font-bold">{avgCompletionRate}%</span>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {teamMembers.map((member) => (
+                    <TeamMentorCard
+                      key={member.user_id}
+                      member={member}
+                      stats={memberStats.get(member.user_id)}
+                      onAssignTask={() => handleAssignTask(member)}
+                    />
+                  ))}
                 </div>
-                <Progress value={avgCompletionRate} className="h-3" />
-                <p className="text-xs text-muted-foreground">
-                  {totalCompleted} of {totalTeamTasks} tasks completed across the team
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              )}
+            </motion.div>
+          </TabsContent>
 
-        {/* Team Members Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="text-lg font-semibold text-foreground mb-4">Team Members</h2>
-          {teamMembers.length === 0 ? (
-            <div className="bg-card rounded-xl p-8 text-center">
-              <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-foreground mb-2">No Team Members Yet</h3>
-              <p className="text-muted-foreground">
-                Team members will appear here once they are assigned to your team.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teamMembers.map((member) => (
-                <TeamMentorCard
-                  key={member.user_id}
-                  member={member}
-                  stats={memberStats.get(member.user_id)}
-                  onAssignTask={() => handleAssignTask(member)}
-                />
-              ))}
-            </div>
-          )}
-        </motion.div>
+          {/* Team Tasks Tab */}
+          <TabsContent value="tasks">
+            <TeamTasksTab
+              teamMembers={teamMembers}
+              onRefresh={fetchTeamData}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Assign Task Dialog */}
