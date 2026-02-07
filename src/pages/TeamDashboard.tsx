@@ -159,10 +159,11 @@ const TeamDashboard = () => {
   }, [navigate, selectedMonth]);
 
   useEffect(() => {
-    if (!roleLoading && !isTeamLeader && !isAdmin) {
+    // Only team leaders can access team dashboard (not admins)
+    if (!roleLoading && !isTeamLeader) {
       navigate("/home");
     }
-  }, [isTeamLeader, isAdmin, roleLoading, navigate]);
+  }, [isTeamLeader, roleLoading, navigate]);
 
   const handleAssignTask = (member: TeamMember) => {
     setSelectedMember(member);
