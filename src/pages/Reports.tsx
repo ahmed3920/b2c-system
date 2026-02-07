@@ -38,28 +38,28 @@ const reportTypes: ReportType[] = [
     title: "Personal Performance",
     description: "Your task completion and productivity analysis",
     icon: <TrendingUp className="w-6 h-6" />,
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["team_leader", "mentor"],
   },
   {
     id: "team",
     title: "Team Summary",
     description: "Team performance and task distribution",
     icon: <Users className="w-6 h-6" />,
-    roles: ["admin", "team_leader"],
+    roles: ["team_leader"],
   },
   {
     id: "task_analysis",
     title: "Task Analysis",
     description: "Detailed breakdown of task types and status",
     icon: <BarChart3 className="w-6 h-6" />,
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["team_leader", "mentor"],
   },
   {
     id: "time_based",
     title: "Time-Based Report",
     description: "Daily, weekly, and monthly summaries",
     icon: <Calendar className="w-6 h-6" />,
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["team_leader", "mentor"],
   },
 ];
 
@@ -73,6 +73,14 @@ const Reports = () => {
   const { role, isAdmin, isTeamLeader } = useUserRole();
 
   useEffect(() => {
+    // Admins must not view individual task data
+    if (isAdmin) {
+      navigate("/home");
+      return;
+    }
+  }, [isAdmin, navigate]);
+
+  useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -80,13 +88,12 @@ const Reports = () => {
         return;
       }
 
-      let query = supabase.from("tasks").select("*");
-      
-      if (!isAdmin && !isTeamLeader) {
-        query = query.eq("user_id", session.user.id);
-      }
-
-      const { data } = await query.order("created_at", { ascending: false });
+      // Each user only sees their own tasks (RLS enforced)
+      const { data } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
       
       if (data) {
         setTasks(data);
@@ -181,7 +188,7 @@ const Reports = () => {
   };
 
   const filteredReportTypes = reportTypes.filter(r => 
-    role && r.roles.includes(role)
+    role && r.roles.includes(role) && r.id !== "team" // team summary only for team leaders
   );
 
   const metrics = getMetrics();

@@ -242,7 +242,14 @@ const Kanban = () => {
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
 
-  const canEditAll = isAdmin || isTeamLeader;
+  const canEditAll = isTeamLeader;
+
+  // Admins must not view individual task data
+  useEffect(() => {
+    if (isAdmin) {
+      navigate("/home");
+    }
+  }, [isAdmin, navigate]);
 
   useEffect(() => {
     const checkAuth = async () => {
