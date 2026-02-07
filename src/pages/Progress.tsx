@@ -39,14 +39,6 @@ const Progress = () => {
   const { role, isAdmin, isTeamLeader } = useUserRole();
 
   useEffect(() => {
-    // Admins must not view individual task data
-    if (isAdmin) {
-      navigate("/home");
-      return;
-    }
-  }, [isAdmin, navigate]);
-
-  useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -54,12 +46,13 @@ const Progress = () => {
         return;
       }
 
-      // Each user only sees their own tasks (RLS enforced)
-      const { data } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
+      let query = supabase.from("tasks").select("*");
+      
+      if (!isAdmin && !isTeamLeader) {
+        query = query.eq("user_id", session.user.id);
+      }
+
+      const { data } = await query.order("created_at", { ascending: false });
       
       if (data) {
         setTasks(data);

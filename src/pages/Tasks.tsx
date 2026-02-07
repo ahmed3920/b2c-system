@@ -110,14 +110,7 @@ const Tasks = () => {
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
 
-  // Admins must not view individual task data
-  useEffect(() => {
-    if (isAdmin) {
-      navigate("/home");
-    }
-  }, [isAdmin, navigate]);
-
-  const canEditAll = isTeamLeader;
+  const canEditAll = isAdmin || isTeamLeader;
 
   // Use the task filters hook
   const {
