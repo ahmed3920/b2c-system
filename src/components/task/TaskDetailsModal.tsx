@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, Calendar, User, UserCheck, AlertCircle, Clock, CheckCircle, Archive } from "lucide-react";
+import { ExternalLink, Calendar, User, UserCheck, AlertCircle, Clock, CheckCircle, Archive, Timer } from "lucide-react";
+import { formatDuration } from "@/components/task/TaskTimeRange";
 import type { Database } from "@/integrations/supabase/types";
 import { useState, useEffect } from "react";
 
@@ -164,6 +165,28 @@ export const TaskDetailsModal = ({
                     ? `${task.date_from} → ${task.date_to}`
                     : task.date_from || task.date_to}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Time & Duration */}
+          {(((task as any).start_time || (task as any).end_time) || (task as any).duration_minutes) && (
+            <div className="flex items-start gap-3">
+              <Timer className="w-4 h-4 text-muted-foreground mt-0.5" />
+              <div>
+                <Label className="text-muted-foreground text-xs uppercase tracking-wide">Time & Duration</Label>
+                <div className="mt-1 flex items-center gap-3">
+                  {(task as any).start_time && (task as any).end_time && (
+                    <span className="text-foreground">
+                      {(task as any).start_time} – {(task as any).end_time}
+                    </span>
+                  )}
+                  {(task as any).duration_minutes && (
+                    <Badge variant="secondary" className="text-xs">
+                      {formatDuration((task as any).duration_minutes)}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           )}

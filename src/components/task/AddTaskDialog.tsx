@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Calendar, Shield, Users, UserCircle, Lock } from "lucide-react";
 import { RoleBadge } from "@/components/RoleBadge";
+import { TaskTimeRange, calculateDurationMinutes } from "@/components/task/TaskTimeRange";
+import { CoverSessionSlots } from "@/components/task/CoverSessionSlots";
 import type { Database } from "@/integrations/supabase/types";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
@@ -107,7 +109,10 @@ export function AddTaskDialog({
     dateTo: "",
     status: "todo" as TaskStatus,
     priority: 2,
+    startTime: "",
+    endTime: "",
   });
+  const [coverSessionSlots, setCoverSessionSlots] = useState<string[]>([]);
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -144,10 +149,13 @@ export function AddTaskDialog({
       dateTo: "",
       status: "todo",
       priority: 2,
+      startTime: "",
+      endTime: "",
     });
     setCustomFields({});
     setHasDeadline(true);
     setErrors({});
+    setCoverSessionSlots([]);
   };
 
   const validateForm = (): boolean => {
@@ -189,16 +197,33 @@ export function AddTaskDialog({
 
     setIsSaving(true);
     try {
+      const isCoverSession = formData.taskType === "Cover Session";
+      const durationMins = isCoverSession && coverSessionSlots.length > 0
+        ? coverSessionSlots.length * 60
+        : calculateDurationMinutes(formData.startTime, formData.endTime);
+      const description = isCoverSession && coverSessionSlots.length > 0
+        ? `${formData.description.trim()}\n\nCover Sessions: ${coverSessionSlots.map(s => {
+            const h = parseInt(s.split(":")[0]);
+            const m = s.split(":")[1];
+            const ampm = h >= 12 ? "PM" : "AM";
+            const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+            return `${h12}:${m} ${ampm}`;
+          }).join(", ")}`
+        : formData.description.trim();
+
       const taskData = {
         user_id: currentUserId,
         task_type: formData.taskType,
-        description: formData.description.trim(),
+        description: description,
         related_link: formData.relatedLink.trim() || null,
         date_from: hasDeadline ? formData.dateFrom : null,
         date_to: hasDeadline ? formData.dateTo : null,
         status: formData.status,
         priority: formData.priority,
         created_by: currentUserId,
+        start_time: isCoverSession ? null : (formData.startTime || null),
+        end_time: isCoverSession ? null : (formData.endTime || null),
+        duration_minutes: durationMins || null,
       };
 
       const { data, error } = await supabase
@@ -391,6 +416,24 @@ export function AddTaskDialog({
                   )}
                 </div>
               </div>
+            )}
+
+            {/* Time Range - for non-Cover Session types */}
+            {formData.taskType !== "Cover Session" && (
+              <TaskTimeRange
+                startTime={formData.startTime}
+                endTime={formData.endTime}
+                onStartTimeChange={(v) => setFormData({ ...formData, startTime: v })}
+                onEndTimeChange={(v) => setFormData({ ...formData, endTime: v })}
+              />
+            )}
+
+            {/* Cover Session Slots */}
+            {formData.taskType === "Cover Session" && (
+              <CoverSessionSlots
+                selectedSlots={coverSessionSlots}
+                onSlotsChange={setCoverSessionSlots}
+              />
             )}
 
             {/* Status */}
