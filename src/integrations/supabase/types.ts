@@ -210,9 +210,12 @@ export type Database = {
           date_from: string | null
           date_to: string | null
           description: string
+          duration_minutes: number | null
+          end_time: string | null
           id: string
           priority: number | null
           related_link: string | null
+          start_time: string | null
           status: Database["public"]["Enums"]["task_status"]
           task_type: string
           updated_at: string
@@ -225,9 +228,12 @@ export type Database = {
           date_from?: string | null
           date_to?: string | null
           description: string
+          duration_minutes?: number | null
+          end_time?: string | null
           id?: string
           priority?: number | null
           related_link?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_type: string
           updated_at?: string
@@ -240,9 +246,12 @@ export type Database = {
           date_from?: string | null
           date_to?: string | null
           description?: string
+          duration_minutes?: number | null
+          end_time?: string | null
           id?: string
           priority?: number | null
           related_link?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_type?: string
           updated_at?: string

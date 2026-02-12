@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Calendar } from "lucide-react";
+import { TaskTimeRange, calculateDurationMinutes } from "@/components/task/TaskTimeRange";
 
 interface TeamMember {
   user_id: string;
@@ -92,6 +93,8 @@ export function AssignTaskDialog({
     dateFrom: "",
     dateTo: "",
     priority: "2",
+    startTime: "",
+    endTime: "",
   });
 
   useEffect(() => {
@@ -109,6 +112,8 @@ export function AssignTaskDialog({
       dateFrom: "",
       dateTo: "",
       priority: "2",
+      startTime: "",
+      endTime: "",
     });
     setErrors({});
     setHasDeadline(true);
@@ -140,6 +145,7 @@ export function AssignTaskDialog({
       const selectedMentorData = teamMembers.find((m) => m.user_id === formData.mentorId);
       if (!selectedMentorData) throw new Error("Mentor not found");
 
+      const durationMins = calculateDurationMinutes(formData.startTime, formData.endTime);
       const { error: insertError } = await supabase.from("tasks").insert({
         user_id: formData.mentorId,
         task_type: formData.taskType,
@@ -151,6 +157,9 @@ export function AssignTaskDialog({
         status: "todo",
         assigned_by: session.user.id,
         created_by: session.user.id,
+        start_time: formData.startTime || null,
+        end_time: formData.endTime || null,
+        duration_minutes: durationMins || null,
       });
 
       if (insertError) throw insertError;
@@ -312,6 +321,14 @@ export function AssignTaskDialog({
               </div>
             </div>
           )}
+
+          {/* Time Range */}
+          <TaskTimeRange
+            startTime={formData.startTime}
+            endTime={formData.endTime}
+            onStartTimeChange={(v) => setFormData({ ...formData, startTime: v })}
+            onEndTimeChange={(v) => setFormData({ ...formData, endTime: v })}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

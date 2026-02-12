@@ -33,7 +33,10 @@ import {
   Link as LinkIcon,
   UserCheck,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
+import { TaskTimeRange, calculateDurationMinutes, formatDuration } from "@/components/task/TaskTimeRange";
+import { CoverSessionSlots } from "@/components/task/CoverSessionSlots";
 import { motion } from "framer-motion";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -105,6 +108,9 @@ const Tasks = () => {
   const [formStatus, setFormStatus] = useState<TaskStatus>("todo");
   const [formPriority, setFormPriority] = useState(2);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formStartTime, setFormStartTime] = useState("");
+  const [formEndTime, setFormEndTime] = useState("");
+  const [coverSessionSlots, setCoverSessionSlots] = useState<string[]>([]);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -217,6 +223,9 @@ const Tasks = () => {
     setFormStatus("todo");
     setFormPriority(2);
     setFormErrors({});
+    setFormStartTime("");
+    setFormEndTime("");
+    setCoverSessionSlots([]);
   };
 
   const validateForm = (): boolean => {
@@ -246,15 +255,33 @@ const Tasks = () => {
 
     setIsSaving(true);
     try {
+      // For cover sessions, calculate duration from selected slots
+      const isCoverSession = formType === "Cover Session";
+      const durationMins = isCoverSession && coverSessionSlots.length > 0
+        ? coverSessionSlots.length * 60
+        : calculateDurationMinutes(formStartTime, formEndTime);
+      const description = isCoverSession && coverSessionSlots.length > 0
+        ? `${formDescription.trim()}\n\nCover Sessions: ${coverSessionSlots.map(s => {
+            const h = parseInt(s.split(":")[0]);
+            const m = s.split(":")[1];
+            const ampm = h >= 12 ? "PM" : "AM";
+            const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+            return `${h12}:${m} ${ampm}`;
+          }).join(", ")}`
+        : formDescription.trim();
+
       const { data, error } = await supabase.from("tasks").insert({
         user_id: user.id,
         task_type: formType,
-        description: formDescription.trim(),
+        description: description,
         related_link: formLink.trim() || null,
         date_from: formDateFrom,
         date_to: formDateTo,
         status: formStatus,
         priority: formPriority,
+        start_time: isCoverSession ? null : (formStartTime || null),
+        end_time: isCoverSession ? null : (formEndTime || null),
+        duration_minutes: durationMins || null,
       }).select().single();
 
       if (error) throw error;
@@ -284,6 +311,7 @@ const Tasks = () => {
 
     setIsSaving(true);
     try {
+      const durationMins = calculateDurationMinutes(formStartTime, formEndTime);
       const { data, error } = await supabase
         .from("tasks")
         .update({
@@ -294,6 +322,9 @@ const Tasks = () => {
           date_to: formDateTo,
           status: formStatus,
           priority: formPriority,
+          start_time: formStartTime || null,
+          end_time: formEndTime || null,
+          duration_minutes: durationMins || null,
         })
         .eq("id", selectedTask.id)
         .select()
@@ -379,6 +410,9 @@ const Tasks = () => {
     setFormStatus(task.status);
     setFormPriority(task.priority || 2);
     setFormErrors({});
+    setFormStartTime((task as any).start_time || "");
+    setFormEndTime((task as any).end_time || "");
+    setCoverSessionSlots([]);
     setIsEditModalOpen(true);
   };
 
@@ -484,6 +518,9 @@ const Tasks = () => {
                     Dates
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Assigned By
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -494,7 +531,7 @@ const Tasks = () => {
               <tbody className="divide-y divide-border">
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
                       {tasks.length === 0
                         ? "No tasks yet. Click 'Add Task' to create your first task."
                         : "No tasks match your filters."}
@@ -555,6 +592,15 @@ const Tasks = () => {
                               ? `${task.date_from} → ${task.date_to}`
                               : task.date_from || task.date_to || "—"}
                           </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          {(task as any).duration_minutes ? (
+                            <span className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">
+                              {formatDuration((task as any).duration_minutes)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-4">
                           {isAssigned ? (
@@ -711,6 +757,24 @@ const Tasks = () => {
               </div>
             </div>
 
+            {/* Time Range - shown for non-Cover Session types */}
+            {formType !== "Cover Session" && (
+              <TaskTimeRange
+                startTime={formStartTime}
+                endTime={formEndTime}
+                onStartTimeChange={setFormStartTime}
+                onEndTimeChange={setFormEndTime}
+              />
+            )}
+
+            {/* Cover Session Slots */}
+            {formType === "Cover Session" && (
+              <CoverSessionSlots
+                selectedSlots={coverSessionSlots}
+                onSlotsChange={setCoverSessionSlots}
+              />
+            )}
+
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={formStatus} onValueChange={(v) => setFormStatus(v as TaskStatus)}>
@@ -828,6 +892,14 @@ const Tasks = () => {
                 )}
               </div>
             </div>
+
+            {/* Time Range */}
+            <TaskTimeRange
+              startTime={formStartTime}
+              endTime={formEndTime}
+              onStartTimeChange={setFormStartTime}
+              onEndTimeChange={setFormEndTime}
+            />
 
             <div className="space-y-2">
               <Label>Status</Label>
