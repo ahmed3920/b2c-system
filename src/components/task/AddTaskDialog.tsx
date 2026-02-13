@@ -272,7 +272,7 @@ export function AddTaskDialog({
       if (!value) resetForm();
       onOpenChange(value);
     }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
@@ -282,7 +282,8 @@ export function AddTaskDialog({
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          <div className="space-y-4 py-4 overflow-y-auto flex-1 pr-1">
             {/* Task Owner Info - Auto-filled & Read-only */}
             {ownerInfo && (
               <div className="p-3 bg-secondary rounded-lg">
@@ -541,6 +542,7 @@ export function AddTaskDialog({
               </div>
             )}
 
+          </div>
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel

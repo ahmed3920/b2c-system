@@ -98,7 +98,7 @@ export const TaskDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Task Details
@@ -110,7 +110,7 @@ export const TaskDetailsModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="space-y-5 py-4 overflow-y-auto flex-1 pr-1">
           {/* Type and Status Row */}
           <div className="flex items-center justify-between gap-3">
             <Badge variant="secondary" className="text-sm px-3 py-1">
