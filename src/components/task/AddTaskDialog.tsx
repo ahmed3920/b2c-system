@@ -272,8 +272,8 @@ export function AddTaskDialog({
       if (!value) resetForm();
       onOpenChange(value);
     }}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden" style={{ maxHeight: '85vh' }}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
 
@@ -283,7 +283,7 @@ export function AddTaskDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
-          <div className="space-y-4 py-4 overflow-y-auto flex-1 pr-1">
+          <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0 pr-1">
             {/* Task Owner Info - Auto-filled & Read-only */}
             {ownerInfo && (
               <div className="p-3 bg-secondary rounded-lg">
