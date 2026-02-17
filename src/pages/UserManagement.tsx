@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 const UserManagement = () => {
   const navigate = useNavigate();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
-  const { users, isLoading, teamLeaders, fetchUsers, createUser, updateUser, deleteUser, resetPassword } =
+  const { users, isLoading, teamLeaders, fetchUsers, createUser, updateUser, deactivateUser, reactivateUser, resetPassword } =
     useAdminUsers();
 
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
@@ -61,11 +61,13 @@ const UserManagement = () => {
     return await resetPassword({ userId, newPassword });
   };
 
-  // Count users by role
-  const adminCount = users.filter((u) => u.role === "admin").length;
-  const teamLeaderCount = users.filter((u) => u.role === "team_leader").length;
-  const mentorCount = users.filter((u) => u.role === "mentor").length;
-  const activeCount = users.filter((u) => u.active_status).length;
+  // Count users by role (active only)
+  const activeUsers = users.filter((u) => u.active_status);
+  const adminCount = activeUsers.filter((u) => u.role === "admin").length;
+  const teamLeaderCount = activeUsers.filter((u) => u.role === "team_leader").length;
+  const mentorCount = activeUsers.filter((u) => u.role === "mentor").length;
+  const activeCount = activeUsers.length;
+  const inactiveCount = users.filter((u) => !u.active_status).length;
 
   if (roleLoading || isLoading) {
     return (
@@ -184,7 +186,8 @@ const UserManagement = () => {
           <UserTable
             users={users}
             onEdit={handleEdit}
-            onDelete={deleteUser}
+            onDeactivate={deactivateUser}
+            onReactivate={reactivateUser}
             onResetPassword={handleResetPassword}
             currentUserId={currentUserId}
             teamLeaders={teamLeaders}

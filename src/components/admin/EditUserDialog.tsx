@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, User, Mail, Users, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { RoleBadge } from "@/components/RoleBadge";
 import type { UserWithRole, UpdateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
@@ -162,19 +163,25 @@ export function EditUserDialog({
                 <Shield className="w-3 h-3" />
                 Role
               </Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value: AppRole) => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mentor">Mentor</SelectItem>
-                  <SelectItem value="team_leader">Team Leader</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+              {user.role === "admin" ? (
+                <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-border bg-muted/50">
+                  <span className="text-sm text-muted-foreground">Super Admin</span>
+                  <Badge variant="outline" className="text-xs">Protected</Badge>
+                </div>
+              ) : (
+                <Select
+                  value={formData.role}
+                  onValueChange={(value: AppRole) => setFormData({ ...formData, role: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mentor">Mentor</SelectItem>
+                    <SelectItem value="team_leader">Team Leader</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
