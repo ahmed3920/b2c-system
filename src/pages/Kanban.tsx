@@ -88,6 +88,7 @@ const TaskCard = ({ task, onView, onArchive, assignerName, ownerName, showOwner 
         <div className="flex items-center gap-1">
           <TaskPriorityBadge priority={priority} size="sm" />
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded ml-1"
           >
@@ -118,11 +119,11 @@ const TaskCard = ({ task, onView, onArchive, assignerName, ownerName, showOwner 
         </div>
         <div className="flex items-center gap-2">
           {task.related_link && (
-            <a href={task.related_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+            <a href={task.related_link} target="_blank" rel="noopener noreferrer" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
-          <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onView(); }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onView(); }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
             View
           </button>
         </div>
@@ -130,11 +131,11 @@ const TaskCard = ({ task, onView, onArchive, assignerName, ownerName, showOwner 
 
       {showMenu && (
         <div className="absolute right-2 top-10 bg-card border border-border rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
-          <button onClick={(e) => { e.stopPropagation(); onView(); setShowMenu(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2">
+          <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onView(); setShowMenu(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2">
             <Eye className="w-4 h-4" /> View Details
           </button>
           {task.status !== "archived" && (
-            <button onClick={(e) => { e.stopPropagation(); onArchive(); setShowMenu(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2 text-destructive">
+            <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onArchive(); setShowMenu(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2 text-destructive">
               <Archive className="w-4 h-4" /> Archive
             </button>
           )}
