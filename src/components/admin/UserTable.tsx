@@ -221,7 +221,7 @@ export function UserTable({
               <DropdownMenuItem
                 onClick={() => handleDeactivateClick(user)}
                 className="text-destructive focus:text-destructive"
-                disabled={isSuperAdmin(user) || user.user_id === currentUserId}
+                disabled={user.user_id === currentUserId}
               >
                 <Archive className="w-4 h-4 mr-2" />
                 Deactivate User
