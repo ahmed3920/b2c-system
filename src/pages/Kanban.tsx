@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter } from "lucide-react";
+import { useAdminView } from "@/hooks/useAdminView";
+import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
+import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter, User } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
@@ -35,18 +37,12 @@ const columns: { id: TaskStatus; title: string; className: string }[] = [
 
 const monthOptions = [
   { value: "all", label: "All Months" },
-  { value: "01", label: "January" },
-  { value: "02", label: "February" },
-  { value: "03", label: "March" },
-  { value: "04", label: "April" },
-  { value: "05", label: "May" },
-  { value: "06", label: "June" },
-  { value: "07", label: "July" },
-  { value: "08", label: "August" },
-  { value: "09", label: "September" },
-  { value: "10", label: "October" },
-  { value: "11", label: "November" },
-  { value: "12", label: "December" },
+  { value: "01", label: "January" }, { value: "02", label: "February" },
+  { value: "03", label: "March" }, { value: "04", label: "April" },
+  { value: "05", label: "May" }, { value: "06", label: "June" },
+  { value: "07", label: "July" }, { value: "08", label: "August" },
+  { value: "09", label: "September" }, { value: "10", label: "October" },
+  { value: "11", label: "November" }, { value: "12", label: "December" },
 ];
 
 interface TaskCardProps {
@@ -54,9 +50,11 @@ interface TaskCardProps {
   onView: () => void;
   onArchive: () => void;
   assignerName?: string;
+  ownerName?: string;
+  showOwner?: boolean;
 }
 
-const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
+const TaskCard = ({ task, onView, onArchive, assignerName, ownerName, showOwner }: TaskCardProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
   const [showMenu, setShowMenu] = useState(false);
 
@@ -73,13 +71,15 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
   );
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      className={cardBorderClass}
-    >
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={cardBorderClass}>
+      {/* Owner badge for admin views */}
+      {showOwner && ownerName && (
+        <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
+          <User className="w-3 h-3" />
+          <span className="truncate font-medium">{ownerName}</span>
+        </div>
+      )}
+
       {/* Header: Type + Priority */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs px-2 py-0.5 bg-secondary rounded font-medium truncate max-w-[120px]">
@@ -88,10 +88,7 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
         <div className="flex items-center gap-1">
           <TaskPriorityBadge priority={priority} size="sm" />
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
+            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded ml-1"
           >
             <MoreVertical className="w-4 h-4 text-muted-foreground" />
@@ -99,26 +96,17 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
         </div>
       </div>
 
-      {/* Description */}
       <p className="text-sm text-foreground line-clamp-2 mb-3">{task.description}</p>
 
-      {/* Date & Due Status */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         {task.date_from && (
           <p className="text-xs text-muted-foreground">
-            📅 {task.date_from}
-            {task.date_to && ` → ${task.date_to}`}
+            📅 {task.date_from}{task.date_to && ` → ${task.date_to}`}
           </p>
         )}
-        <TaskDueDateBadge 
-          dateTo={task.date_to} 
-          status={task.status} 
-          size="sm"
-          showLabel={true}
-        />
+        <TaskDueDateBadge dateTo={task.date_to} status={task.status} size="sm" showLabel={true} />
       </div>
 
-      {/* Footer: Assigned + Link */}
       <div className="flex items-center justify-between pt-2 border-t border-border/50">
         <div className="flex items-center gap-1">
           {isAssigned && (
@@ -130,51 +118,23 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
         </div>
         <div className="flex items-center gap-2">
           {task.related_link && (
-            <a
-              href={task.related_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
+            <a href={task.related_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onView();
-            }}
-            className="text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
+          <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onView(); }} className="text-xs text-muted-foreground hover:text-primary transition-colors">
             View
           </button>
         </div>
       </div>
 
-      {/* Dropdown Menu */}
       {showMenu && (
         <div className="absolute right-2 top-10 bg-card border border-border rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onView();
-              setShowMenu(false);
-            }}
-            className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2"
-          >
+          <button onClick={(e) => { e.stopPropagation(); onView(); setShowMenu(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2">
             <Eye className="w-4 h-4" /> View Details
           </button>
           {task.status !== "archived" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onArchive();
-                setShowMenu(false);
-              }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2 text-destructive"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onArchive(); setShowMenu(false); }} className="w-full px-3 py-2 text-left text-sm hover:bg-secondary flex items-center gap-2 text-destructive">
               <Archive className="w-4 h-4" /> Archive
             </button>
           )}
@@ -184,47 +144,26 @@ const TaskCard = ({ task, onView, onArchive, assignerName }: TaskCardProps) => {
   );
 };
 
-const Column = ({
-  column,
-  tasks,
-  children,
-}: {
-  column: (typeof columns)[0];
-  tasks: Task[];
-  children: React.ReactNode;
-}) => {
+const Column = ({ column, tasks, children }: { column: (typeof columns)[0]; tasks: Task[]; children: React.ReactNode }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const overdueCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
   const dueSoonCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
 
   return (
-    <div
-      className={`flex-shrink-0 w-80 bg-card rounded-xl ${column.className} ${
-        isOver ? "ring-2 ring-primary" : ""
-      }`}
-    >
+    <div className={`flex-shrink-0 w-80 bg-card rounded-xl ${column.className} ${isOver ? "ring-2 ring-primary" : ""}`}>
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-foreground">{column.title}</h3>
-          <span className="text-xs bg-secondary px-2 py-0.5 rounded-full font-medium">
-            {tasks.length}
-          </span>
+          <span className="text-xs bg-secondary px-2 py-0.5 rounded-full font-medium">{tasks.length}</span>
         </div>
         {(overdueCount > 0 || dueSoonCount > 0) && column.id !== "done" && column.id !== "archived" && (
           <div className="flex gap-2 text-xs">
-            {overdueCount > 0 && (
-              <span className="text-destructive font-medium">{overdueCount} overdue</span>
-            )}
-            {dueSoonCount > 0 && (
-              <span className="text-orange-500 font-medium">{dueSoonCount} due soon</span>
-            )}
+            {overdueCount > 0 && <span className="text-destructive font-medium">{overdueCount} overdue</span>}
+            {dueSoonCount > 0 && <span className="text-orange-500 font-medium">{dueSoonCount} due soon</span>}
           </div>
         )}
       </div>
-      <div
-        ref={setNodeRef}
-        className="p-3 space-y-3 min-h-[200px] max-h-[calc(100vh-280px)] overflow-y-auto"
-      >
+      <div ref={setNodeRef} className="p-3 space-y-3 min-h-[200px] max-h-[calc(100vh-280px)] overflow-y-auto">
         {children}
       </div>
     </div>
@@ -241,16 +180,17 @@ const Kanban = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
+  const adminView = useAdminView();
 
   const canEditAll = isAdmin || isTeamLeader;
+
+  // Determine which tasks to display
+  const displayTasks = isAdmin && adminView.viewMode !== "my" ? adminView.tasks : tasks;
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      if (!session) { navigate("/auth"); return; }
       const { data } = await supabase
         .from("tasks")
         .select("*")
@@ -258,33 +198,26 @@ const Kanban = () => {
         .order("created_at", { ascending: false });
       setTasks(data || []);
 
-      // Fetch assigner names
       const assignerIds = [...new Set((data || []).map((t) => t.assigned_by).filter(Boolean))];
       if (assignerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, mentor_name")
-          .in("user_id", assignerIds as string[]);
+        const { data: profiles } = await supabase.from("profiles").select("user_id, mentor_name").in("user_id", assignerIds as string[]);
         if (profiles) {
           const nameMap: Record<string, string> = {};
-          profiles.forEach((p) => {
-            nameMap[p.user_id] = p.mentor_name;
-          });
+          profiles.forEach((p) => { nameMap[p.user_id] = p.mentor_name; });
           setAssignerNames(nameMap);
         }
       }
-
       setIsLoading(false);
     };
     checkAuth();
   }, [navigate]);
 
   const filteredTasks = filterMonth && filterMonth !== "all"
-    ? tasks.filter((task) => {
+    ? displayTasks.filter((task) => {
         const taskMonth = task.date_from?.substring(5, 7) || task.date_to?.substring(5, 7);
         return taskMonth === filterMonth;
       })
-    : tasks;
+    : displayTasks;
 
   const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string);
 
@@ -294,32 +227,48 @@ const Kanban = () => {
     if (!over || active.id === over.id) return;
     const taskId = active.id as string;
     const newStatus = over.id as TaskStatus;
-    const task = tasks.find((t) => t.id === taskId);
+    const task = displayTasks.find((t) => t.id === taskId);
     if (!task || task.status === newStatus) return;
 
-    setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
-    const { error } = await supabase.from("tasks").update({ status: newStatus }).eq("id", taskId);
-    if (error) {
-      setTasks(tasks);
-      toast({ title: "Error", description: "Failed to update task.", variant: "destructive" });
+    // Optimistic update
+    if (isAdmin && adminView.viewMode !== "my") {
+      // For admin views, just update and refetch
+      const { error } = await supabase.from("tasks").update({ status: newStatus }).eq("id", taskId);
+      if (error) {
+        toast({ title: "Error", description: "Failed to update task.", variant: "destructive" });
+      } else {
+        adminView.refetchTasks();
+      }
+    } else {
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
+      const { error } = await supabase.from("tasks").update({ status: newStatus }).eq("id", taskId);
+      if (error) {
+        setTasks(tasks);
+        toast({ title: "Error", description: "Failed to update task.", variant: "destructive" });
+      }
     }
   };
 
   const handleArchive = async (task: Task) => {
-    setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: "archived" as TaskStatus } : t)));
     await supabase.from("tasks").update({ status: "archived" as TaskStatus }).eq("id", task.id);
+    if (isAdmin && adminView.viewMode !== "my") {
+      adminView.refetchTasks();
+    } else {
+      setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: "archived" as TaskStatus } : t)));
+    }
   };
 
   const handleStatusChange = async (status: TaskStatus) => {
     if (!selectedTask) return;
-    setTasks(tasks.map((t) => (t.id === selectedTask.id ? { ...t, status } : t)));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status })
-      .eq("id", selectedTask.id);
+    const { error } = await supabase.from("tasks").update({ status }).eq("id", selectedTask.id);
     if (error) {
       toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
       throw error;
+    }
+    if (isAdmin && adminView.viewMode !== "my") {
+      adminView.refetchTasks();
+    } else {
+      setTasks(tasks.map((t) => (t.id === selectedTask.id ? { ...t, status } : t)));
     }
     setSelectedTask({ ...selectedTask, status });
     toast({ title: "Status Updated", description: `Task status changed to ${status}.` });
@@ -333,8 +282,9 @@ const Kanban = () => {
     );
   }
 
-  const overdueCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
-  const dueSoonCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+  const overdueCount = filteredTasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
+  const dueSoonCount = filteredTasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+  const showOwner = isAdmin && adminView.viewMode !== "my";
 
   const stats = {
     total: filteredTasks.length,
@@ -358,7 +308,6 @@ const Kanban = () => {
               <h1 className="font-bold text-lg text-foreground">Kanban Board</h1>
             </div>
             <div className="flex items-center gap-4">
-              {/* Month Filter */}
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-muted-foreground" />
                 <Select value={filterMonth} onValueChange={setFilterMonth}>
@@ -367,71 +316,78 @@ const Kanban = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {monthOptions.map((month) => (
-                      <SelectItem key={month.value} value={month.value}>
-                        {month.label}
-                      </SelectItem>
+                      <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="flex gap-3 text-sm">
                 <span className="px-3 py-1 bg-secondary rounded-full">Total: {stats.total}</span>
                 {overdueCount > 0 && (
-                  <span className="px-3 py-1 bg-destructive/10 text-destructive rounded-full font-medium">
-                    Overdue: {overdueCount}
-                  </span>
+                  <span className="px-3 py-1 bg-destructive/10 text-destructive rounded-full font-medium">Overdue: {overdueCount}</span>
                 )}
                 {dueSoonCount > 0 && (
-                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">
-                    Due Soon: {dueSoonCount}
-                  </span>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Due Soon: {dueSoonCount}</span>
                 )}
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
-                  Done: {stats.done}
-                </span>
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">Done: {stats.done}</span>
               </div>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="p-6 overflow-x-auto">
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex gap-4 min-w-max">
-            {columns.map((column) => (
-              <Column
-                key={column.id}
-                column={column}
-                tasks={filteredTasks.filter((t) => t.status === column.id)}
-              >
-                {filteredTasks
-                  .filter((t) => t.status === column.id)
-                  .map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onView={() => setSelectedTask(task)}
-                      onArchive={() => handleArchive(task)}
-                      assignerName={task.assigned_by ? assignerNames[task.assigned_by] : undefined}
-                    />
-                  ))}
-              </Column>
-            ))}
-          </div>
-          <DragOverlay>
-            {activeId ? (
-              <div className="bg-card p-3 rounded-lg shadow-xl border-2 border-primary opacity-90">
-                Dragging...
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </main>
+      {/* Admin View Selector */}
+      {isAdmin && (
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <AdminViewSelector
+            viewMode={adminView.viewMode}
+            onViewModeChange={adminView.setViewMode}
+            selectedUserId={adminView.selectedUserId}
+            onSelectedUserChange={adminView.setSelectedUserId}
+            teamLeaders={adminView.teamLeaders}
+            mentors={adminView.mentors}
+            selectedProfile={adminView.selectedProfile}
+          />
+        </div>
+      )}
+
+      {isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my" ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <main className="p-6 overflow-x-auto">
+          <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="flex gap-4 min-w-max">
+              {columns.map((column) => (
+                <Column key={column.id} column={column} tasks={filteredTasks.filter((t) => t.status === column.id)}>
+                  {filteredTasks
+                    .filter((t) => t.status === column.id)
+                    .map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onView={() => setSelectedTask(task)}
+                        onArchive={() => handleArchive(task)}
+                        assignerName={task.assigned_by ? assignerNames[task.assigned_by] : undefined}
+                        ownerName={adminView.taskOwnerNames[task.user_id]}
+                        showOwner={showOwner}
+                      />
+                    ))}
+                </Column>
+              ))}
+            </div>
+            <DragOverlay>
+              {activeId ? (
+                <div className="bg-card p-3 rounded-lg shadow-xl border-2 border-primary opacity-90">
+                  Dragging...
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </main>
+      )}
 
       <TaskDetailsModal
         task={selectedTask}

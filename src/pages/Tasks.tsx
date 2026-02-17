@@ -22,7 +22,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminView } from "@/hooks/useAdminView";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
+import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
 import {
   Plus,
   Edit,
@@ -34,6 +36,7 @@ import {
   UserCheck,
   AlertTriangle,
   Clock,
+  User,
 } from "lucide-react";
 import { TaskTimeRange, calculateDurationMinutes, formatDuration } from "@/components/task/TaskTimeRange";
 import { CoverSessionSlots } from "@/components/task/CoverSessionSlots";
@@ -115,8 +118,12 @@ const Tasks = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
+  const adminView = useAdminView();
 
   const canEditAll = isAdmin || isTeamLeader;
+
+  // Determine which tasks to display
+  const displayTasks = isAdmin && adminView.viewMode !== "my" ? adminView.tasks : tasks;
 
   // Use the task filters hook
   const {
@@ -135,7 +142,7 @@ const Tasks = () => {
     filteredTasks,
     clearFilters,
     hasActiveFilters,
-  } = useTaskFilters({ tasks });
+  } = useTaskFilters({ tasks: displayTasks });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -164,7 +171,6 @@ const Tasks = () => {
       if (!user) return;
 
       try {
-        // Fetch profile
         const { data: profileData } = await supabase
           .from("profiles")
           .select("mentor_id, mentor_name, team_leader")
@@ -173,7 +179,6 @@ const Tasks = () => {
 
         setProfile(profileData);
 
-        // Fetch tasks
         const { data: tasksData, error } = await supabase
           .from("tasks")
           .select("*")
@@ -183,7 +188,6 @@ const Tasks = () => {
         if (error) throw error;
         setTasks(tasksData || []);
 
-        // Fetch assigner names
         const assignerIds = [...new Set((tasksData || []).map((t) => t.assigned_by).filter(Boolean))];
         if (assignerIds.length > 0) {
           const { data: profiles } = await supabase
@@ -230,32 +234,18 @@ const Tasks = () => {
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    
-    if (!formDescription.trim()) {
-      errors.description = "Description is required";
-    }
-    if (!formDateFrom) {
-      errors.dateFrom = "Start date is required";
-    }
-    if (!formDateTo) {
-      errors.dateTo = "Due date is required";
-    }
-    if (formDateFrom && formDateTo && formDateFrom > formDateTo) {
-      errors.dateTo = "Due date must be after start date";
-    }
-
+    if (!formDescription.trim()) errors.description = "Description is required";
+    if (!formDateFrom) errors.dateFrom = "Start date is required";
+    if (!formDateTo) errors.dateTo = "Due date is required";
+    if (formDateFrom && formDateTo && formDateFrom > formDateTo) errors.dateTo = "Due date must be after start date";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleAddTask = async () => {
-    if (!user || !validateForm()) {
-      return;
-    }
-
+    if (!user || !validateForm()) return;
     setIsSaving(true);
     try {
-      // For cover sessions, calculate duration from selected slots
       const isCoverSession = formType === "Cover Session";
       const durationMins = isCoverSession && coverSessionSlots.length > 0
         ? coverSessionSlots.length * 60
@@ -273,7 +263,7 @@ const Tasks = () => {
       const { data, error } = await supabase.from("tasks").insert({
         user_id: user.id,
         task_type: formType,
-        description: description,
+        description,
         related_link: formLink.trim() || null,
         date_from: formDateFrom,
         date_to: formDateTo,
@@ -285,30 +275,19 @@ const Tasks = () => {
       }).select().single();
 
       if (error) throw error;
-
       setTasks([data, ...tasks]);
       setIsAddModalOpen(false);
       resetForm();
-      toast({
-        title: "Task Created",
-        description: "Your task has been created successfully.",
-      });
+      toast({ title: "Task Created", description: "Your task has been created successfully." });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create task.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to create task.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleEditTask = async () => {
-    if (!selectedTask || !validateForm()) {
-      return;
-    }
-
+    if (!selectedTask || !validateForm()) return;
     setIsSaving(true);
     try {
       const durationMins = calculateDurationMinutes(formStartTime, formEndTime);
@@ -331,21 +310,14 @@ const Tasks = () => {
         .single();
 
       if (error) throw error;
-
       setTasks(tasks.map((t) => (t.id === selectedTask.id ? data : t)));
+      if (isAdmin && adminView.viewMode !== "my") adminView.refetchTasks();
       setIsEditModalOpen(false);
       setSelectedTask(null);
       resetForm();
-      toast({
-        title: "Task Updated",
-        description: "Your task has been updated successfully.",
-      });
+      toast({ title: "Task Updated", description: "Your task has been updated successfully." });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update task.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to update task.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -357,50 +329,34 @@ const Tasks = () => {
         .from("tasks")
         .update({ status: "archived" as TaskStatus })
         .eq("id", task.id);
-
       if (error) throw error;
-
       setTasks(tasks.map((t) => (t.id === task.id ? { ...t, status: "archived" as TaskStatus } : t)));
-      toast({
-        title: "Task Archived",
-        description: "The task has been archived.",
-      });
+      if (isAdmin && adminView.viewMode !== "my") adminView.refetchTasks();
+      toast({ title: "Task Archived", description: "The task has been archived." });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to archive task.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to archive task.", variant: "destructive" });
     }
   };
 
   const handleStatusChange = async (status: TaskStatus) => {
     if (!selectedTask) return;
     setTasks(tasks.map((t) => (t.id === selectedTask.id ? { ...t, status } : t)));
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status })
-      .eq("id", selectedTask.id);
+    const { error } = await supabase.from("tasks").update({ status }).eq("id", selectedTask.id);
     if (error) {
       toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
       throw error;
     }
     setSelectedTask({ ...selectedTask, status });
+    if (isAdmin && adminView.viewMode !== "my") adminView.refetchTasks();
     toast({ title: "Status Updated", description: `Task status changed to ${statusLabels[status]}.` });
   };
 
   const openEditModal = (task: Task) => {
-    // Check if task can be fully edited
     const isAssignedTask = !!task.assigned_by;
     if (isAssignedTask && !canEditAll) {
-      toast({
-        title: "Cannot Edit",
-        description: "This task was assigned to you. You can only update the status.",
-        variant: "destructive",
-      });
+      toast({ title: "Cannot Edit", description: "This task was assigned to you.", variant: "destructive" });
       return;
     }
-
     setSelectedTask(task);
     setFormType(task.task_type);
     setFormDescription(task.description);
@@ -421,9 +377,11 @@ const Tasks = () => {
     setIsViewModalOpen(true);
   };
 
-  // Calculate stats
-  const overdueCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
-  const dueSoonCount = tasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+  const overdueCount = displayTasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
+  const dueSoonCount = displayTasks.filter(t => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+
+  // Combine assigner names from both sources
+  const allAssignerNames = { ...assignerNames, ...adminView.taskOwnerNames };
 
   if (isLoading) {
     return (
@@ -460,204 +418,225 @@ const Tasks = () => {
                   {dueSoonCount} Due Soon
                 </span>
               )}
-              <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
-                <Plus className="w-4 h-4" />
-                Add Task
-              </Button>
+              {(adminView.viewMode === "my" || !isAdmin) && (
+                <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Task
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Filters */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <TaskFilters
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            filterType={filterType}
-            onFilterTypeChange={setFilterType}
-            filterStatus={filterStatus}
-            onFilterStatusChange={setFilterStatus}
-            filterMonth={filterMonth}
-            onFilterMonthChange={setFilterMonth}
-            filterPriority={filterPriority}
-            onFilterPriorityChange={setFilterPriority}
-            showFilters={showFilters}
-            onToggleFilters={() => setShowFilters(!showFilters)}
-            onClearFilters={clearFilters}
-            taskTypes={taskTypes}
-            hasActiveFilters={hasActiveFilters}
-          />
-        </motion.div>
+        {/* Admin View Selector */}
+        {isAdmin && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+            <AdminViewSelector
+              viewMode={adminView.viewMode}
+              onViewModeChange={adminView.setViewMode}
+              selectedUserId={adminView.selectedUserId}
+              onSelectedUserChange={adminView.setSelectedUserId}
+              teamLeaders={adminView.teamLeaders}
+              mentors={adminView.mentors}
+              selectedProfile={adminView.selectedProfile}
+            />
+          </motion.div>
+        )}
 
-        {/* Tasks Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card rounded-xl shadow-lg overflow-hidden"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-secondary">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Task Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Dates
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Assigned By
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredTasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
-                      {tasks.length === 0
-                        ? "No tasks yet. Click 'Add Task' to create your first task."
-                        : "No tasks match your filters."}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTasks.map((task) => {
-                    const isAssigned = !!task.assigned_by;
-                    const assignerName = task.assigned_by ? assignerNames[task.assigned_by] : null;
-                    const dueStatus = getTaskDueStatus(task.date_to, task.status);
-                    
-                    return (
-                      <tr 
-                        key={task.id} 
-                        className={cn(
-                          "hover:bg-secondary/50 transition-colors",
-                          dueStatus === "overdue" && "bg-destructive/5",
-                          dueStatus === "due-soon" && "bg-orange-50/50"
-                        )}
-                      >
-                        <td className="px-4 py-4">
-                          <span className="text-xs px-2 py-1 bg-secondary rounded font-medium">
-                            {task.task_type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-sm text-foreground line-clamp-2 max-w-xs">
-                            {task.description}
-                          </p>
-                          {task.related_link && (
-                            <a
-                              href={task.related_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-                            >
-                              <LinkIcon className="w-3 h-3" />
-                              View Link
-                            </a>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <TaskPriorityBadge priority={task.priority || 2} />
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1">
-                            <TaskStatusBadge status={task.status} showIcon />
-                            <TaskDueDateBadge 
-                              dateTo={task.date_to} 
-                              status={task.status} 
-                              size="sm"
-                            />
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="text-sm text-muted-foreground">
-                            {task.date_from && task.date_to
-                              ? `${task.date_from} → ${task.date_to}`
-                              : task.date_from || task.date_to || "—"}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          {(task as any).duration_minutes ? (
-                            <span className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">
-                              {formatDuration((task as any).duration_minutes)}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          {isAssigned ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-primary font-medium">
-                              <UserCheck className="w-3 h-3" />
-                              {assignerName || "Admin/Leader"}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Self</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openViewModal(task)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {(!isAssigned || canEditAll) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditModal(task)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {task.status !== "archived" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleArchiveTask(task)}
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                              >
-                                <Archive className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
+        {/* Loading indicator for admin view changes */}
+        {isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my" && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
+
+        {/* Filters */}
+        {!(isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my") && (
+          <>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <TaskFilters
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filterType={filterType}
+                onFilterTypeChange={setFilterType}
+                filterStatus={filterStatus}
+                onFilterStatusChange={setFilterStatus}
+                filterMonth={filterMonth}
+                onFilterMonthChange={setFilterMonth}
+                filterPriority={filterPriority}
+                onFilterPriorityChange={setFilterPriority}
+                showFilters={showFilters}
+                onToggleFilters={() => setShowFilters(!showFilters)}
+                onClearFilters={clearFilters}
+                taskTypes={taskTypes}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </motion.div>
+
+            {/* Tasks Table */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-card rounded-xl shadow-lg overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-secondary">
+                    <tr>
+                      {isAdmin && adminView.viewMode !== "my" && (
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Owner
+                        </th>
+                      )}
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Task Type
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Priority
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Dates
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Duration
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredTasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={isAdmin && adminView.viewMode !== "my" ? 9 : 8} className="px-6 py-12 text-center text-muted-foreground">
+                          {displayTasks.length === 0
+                            ? adminView.viewMode !== "my" && isAdmin
+                              ? "Select a user to view their tasks, or no tasks found."
+                              : "No tasks yet. Click 'Add Task' to create your first task."
+                            : "No tasks match your filters."}
                         </td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="px-6 py-4 border-t border-border bg-secondary/50">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredTasks.length} of {tasks.length} tasks
-            </p>
-          </div>
-        </motion.div>
+                    ) : (
+                      filteredTasks.map((task) => {
+                        const isAssigned = !!task.assigned_by;
+                        const assignerName = task.assigned_by ? allAssignerNames[task.assigned_by] : null;
+                        const dueStatus = getTaskDueStatus(task.date_to, task.status);
+                        const ownerName = adminView.taskOwnerNames[task.user_id];
+
+                        return (
+                          <tr
+                            key={task.id}
+                            className={cn(
+                              "hover:bg-secondary/50 transition-colors",
+                              dueStatus === "overdue" && "bg-destructive/5",
+                              dueStatus === "due-soon" && "bg-orange-50/50"
+                            )}
+                          >
+                            {isAdmin && adminView.viewMode !== "my" && (
+                              <td className="px-4 py-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                                    <User className="w-3 h-3 text-primary" />
+                                  </div>
+                                  <span className="text-xs font-medium text-foreground truncate max-w-[120px]">
+                                    {ownerName || "Unknown"}
+                                  </span>
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-4 py-4">
+                              <span className="text-xs px-2 py-1 bg-secondary rounded font-medium">
+                                {task.task_type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="text-sm text-foreground line-clamp-2 max-w-xs">
+                                {task.description}
+                              </p>
+                              {task.related_link && (
+                                <a
+                                  href={task.related_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                                >
+                                  <LinkIcon className="w-3 h-3" />
+                                  View Link
+                                </a>
+                              )}
+                            </td>
+                            <td className="px-4 py-4">
+                              <TaskPriorityBadge priority={task.priority || 2} />
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-col gap-1">
+                                <TaskStatusBadge status={task.status} showIcon />
+                                <TaskDueDateBadge dateTo={task.date_to} status={task.status} size="sm" />
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="text-sm text-muted-foreground">
+                                {task.date_from && task.date_to
+                                  ? `${task.date_from} → ${task.date_to}`
+                                  : task.date_from || task.date_to || "—"}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              {(task as any).duration_minutes ? (
+                                <span className="text-xs font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">
+                                  {formatDuration((task as any).duration_minutes)}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => openViewModal(task)} className="h-8 w-8 p-0">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {(canEditAll || !isAssigned) && (
+                                  <Button variant="ghost" size="sm" onClick={() => openEditModal(task)} className="h-8 w-8 p-0">
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                )}
+                                {task.status !== "archived" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleArchiveTask(task)}
+                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Archive className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="px-6 py-4 border-t border-border bg-secondary/50">
+                <p className="text-sm text-muted-foreground">
+                  Showing {filteredTasks.length} of {displayTasks.length} tasks
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
       </main>
 
       {/* Add Task Modal */}
@@ -677,14 +656,10 @@ const Tasks = () => {
             <div className="space-y-2">
               <Label>Task Type</Label>
               <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {taskTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -699,22 +674,16 @@ const Tasks = () => {
                 className={formErrors.description ? "border-destructive" : ""}
                 rows={3}
               />
-              {formErrors.description && (
-                <p className="text-xs text-destructive">{formErrors.description}</p>
-              )}
+              {formErrors.description && <p className="text-xs text-destructive">{formErrors.description}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Priority</Label>
               <Select value={String(formPriority)} onValueChange={(v) => setFormPriority(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {priorityOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={String(opt.value)}>
-                      {opt.label}
-                    </SelectItem>
+                    <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -722,79 +691,43 @@ const Tasks = () => {
 
             <div className="space-y-2">
               <Label>Related Link</Label>
-              <Input
-                type="url"
-                placeholder="https://..."
-                value={formLink}
-                onChange={(e) => setFormLink(e.target.value)}
-              />
+              <Input type="url" placeholder="https://..." value={formLink} onChange={(e) => setFormLink(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Date From *</Label>
-                <Input
-                  type="date"
-                  value={formDateFrom}
-                  onChange={(e) => setFormDateFrom(e.target.value)}
-                  className={formErrors.dateFrom ? "border-destructive" : ""}
-                />
-                {formErrors.dateFrom && (
-                  <p className="text-xs text-destructive">{formErrors.dateFrom}</p>
-                )}
+                <Input type="date" value={formDateFrom} onChange={(e) => setFormDateFrom(e.target.value)} className={formErrors.dateFrom ? "border-destructive" : ""} />
+                {formErrors.dateFrom && <p className="text-xs text-destructive">{formErrors.dateFrom}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Date To *</Label>
-                <Input
-                  type="date"
-                  value={formDateTo}
-                  onChange={(e) => setFormDateTo(e.target.value)}
-                  className={formErrors.dateTo ? "border-destructive" : ""}
-                />
-                {formErrors.dateTo && (
-                  <p className="text-xs text-destructive">{formErrors.dateTo}</p>
-                )}
+                <Input type="date" value={formDateTo} onChange={(e) => setFormDateTo(e.target.value)} className={formErrors.dateTo ? "border-destructive" : ""} />
+                {formErrors.dateTo && <p className="text-xs text-destructive">{formErrors.dateTo}</p>}
               </div>
             </div>
 
-            {/* Time Range - shown for non-Cover Session types */}
             {formType !== "Cover Session" && (
-              <TaskTimeRange
-                startTime={formStartTime}
-                endTime={formEndTime}
-                onStartTimeChange={setFormStartTime}
-                onEndTimeChange={setFormEndTime}
-              />
+              <TaskTimeRange startTime={formStartTime} endTime={formEndTime} onStartTimeChange={setFormStartTime} onEndTimeChange={setFormEndTime} />
             )}
-
-            {/* Cover Session Slots */}
             {formType === "Cover Session" && (
-              <CoverSessionSlots
-                selectedSlots={coverSessionSlots}
-                onSlotsChange={setCoverSessionSlots}
-              />
+              <CoverSessionSlots selectedSlots={coverSessionSlots} onSlotsChange={setCoverSessionSlots} />
             )}
 
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={formStatus} onValueChange={(v) => setFormStatus(v as TaskStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {statusOptions.filter(s => s !== "archived").map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {statusLabels[status]}
-                    </SelectItem>
+                    <SelectItem key={status} value={status}>{statusLabels[status]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
             <Button onClick={handleAddTask} disabled={isSaving} className="bg-gradient-primary">
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Create Task
@@ -813,14 +746,10 @@ const Tasks = () => {
             <div className="space-y-2">
               <Label>Task Type</Label>
               <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {taskTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -835,22 +764,16 @@ const Tasks = () => {
                 className={formErrors.description ? "border-destructive" : ""}
                 rows={3}
               />
-              {formErrors.description && (
-                <p className="text-xs text-destructive">{formErrors.description}</p>
-              )}
+              {formErrors.description && <p className="text-xs text-destructive">{formErrors.description}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>Priority</Label>
               <Select value={String(formPriority)} onValueChange={(v) => setFormPriority(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {priorityOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={String(opt.value)}>
-                      {opt.label}
-                    </SelectItem>
+                    <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -858,69 +781,38 @@ const Tasks = () => {
 
             <div className="space-y-2">
               <Label>Related Link</Label>
-              <Input
-                type="url"
-                placeholder="https://..."
-                value={formLink}
-                onChange={(e) => setFormLink(e.target.value)}
-              />
+              <Input type="url" placeholder="https://..." value={formLink} onChange={(e) => setFormLink(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Date From *</Label>
-                <Input
-                  type="date"
-                  value={formDateFrom}
-                  onChange={(e) => setFormDateFrom(e.target.value)}
-                  className={formErrors.dateFrom ? "border-destructive" : ""}
-                />
-                {formErrors.dateFrom && (
-                  <p className="text-xs text-destructive">{formErrors.dateFrom}</p>
-                )}
+                <Input type="date" value={formDateFrom} onChange={(e) => setFormDateFrom(e.target.value)} className={formErrors.dateFrom ? "border-destructive" : ""} />
+                {formErrors.dateFrom && <p className="text-xs text-destructive">{formErrors.dateFrom}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Date To *</Label>
-                <Input
-                  type="date"
-                  value={formDateTo}
-                  onChange={(e) => setFormDateTo(e.target.value)}
-                  className={formErrors.dateTo ? "border-destructive" : ""}
-                />
-                {formErrors.dateTo && (
-                  <p className="text-xs text-destructive">{formErrors.dateTo}</p>
-                )}
+                <Input type="date" value={formDateTo} onChange={(e) => setFormDateTo(e.target.value)} className={formErrors.dateTo ? "border-destructive" : ""} />
+                {formErrors.dateTo && <p className="text-xs text-destructive">{formErrors.dateTo}</p>}
               </div>
             </div>
 
-            {/* Time Range */}
-            <TaskTimeRange
-              startTime={formStartTime}
-              endTime={formEndTime}
-              onStartTimeChange={setFormStartTime}
-              onEndTimeChange={setFormEndTime}
-            />
+            <TaskTimeRange startTime={formStartTime} endTime={formEndTime} onStartTimeChange={setFormStartTime} onEndTimeChange={setFormEndTime} />
 
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={formStatus} onValueChange={(v) => setFormStatus(v as TaskStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {statusOptions.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {statusLabels[status]}
-                    </SelectItem>
+                    <SelectItem key={status} value={status}>{statusLabels[status]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
             <Button onClick={handleEditTask} disabled={isSaving} className="bg-gradient-primary">
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Save Changes
@@ -933,17 +825,10 @@ const Tasks = () => {
       <TaskDetailsModal
         task={selectedTask}
         isOpen={isViewModalOpen}
-        onClose={() => {
-          setIsViewModalOpen(false);
-          setSelectedTask(null);
-        }}
-        onEdit={() => {
-          setIsViewModalOpen(false);
-          if (selectedTask) openEditModal(selectedTask);
-        }}
+        onClose={() => { setIsViewModalOpen(false); setSelectedTask(null); }}
         onStatusChange={handleStatusChange}
         canEditAll={canEditAll}
-        assignerName={selectedTask?.assigned_by ? assignerNames[selectedTask.assigned_by] : undefined}
+        assignerName={selectedTask?.assigned_by ? allAssignerNames[selectedTask.assigned_by] : undefined}
       />
     </div>
   );
