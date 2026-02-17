@@ -80,28 +80,6 @@ Deno.serve(async (req) => {
 
     // Update role if provided
     if (newRole) {
-      // Block changing any user's role to admin
-      if (newRole === "admin") {
-        return new Response(
-          JSON.stringify({ error: "Cannot assign admin role. Only one Super Admin is allowed." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Block changing the super admin's role
-      const { data: targetRole } = await supabaseAdmin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-
-      if (targetRole?.role === "admin") {
-        return new Response(
-          JSON.stringify({ error: "Cannot change the Super Admin's role." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
       const { error: roleError } = await supabaseAdmin
         .from("user_roles")
         .update({ role: newRole })
