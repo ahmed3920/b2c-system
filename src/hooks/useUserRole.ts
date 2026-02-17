@@ -27,21 +27,23 @@ export const useUserRole = (): UserRoleData => {
           return;
         }
 
+        // Fetch the highest-priority role (admin > team_leader > mentor)
         const { data, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
-          .single();
+          .order("created_at", { ascending: true });
 
         if (roleError) {
-          // If no role found, default to mentor
-          if (roleError.code === "PGRST116") {
-            setRole("mentor");
-          } else {
-            setError(roleError.message);
-          }
+          setError(roleError.message);
+        } else if (!data || data.length === 0) {
+          setRole("mentor");
         } else {
-          setRole(data?.role as AppRole || "mentor");
+          // Pick highest priority role
+          const roles = data.map(r => r.role as AppRole);
+          if (roles.includes("admin")) setRole("admin");
+          else if (roles.includes("team_leader")) setRole("team_leader");
+          else setRole("mentor");
         }
       } catch (err) {
         setError("Failed to fetch user role");
