@@ -79,7 +79,8 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { table, csv_data } = await req.json();
+    const { table, csv_data, delimiter: customDelimiter } = await req.json();
+    const delimiter = customDelimiter || ";";
 
     if (!table || !csv_data) {
       return new Response(
@@ -88,8 +89,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const records = parseCsv(csv_data);
-    console.log(`Parsed ${records.length} records for table: ${table}`);
+    const records = parseCsv(csv_data, delimiter);
+    console.log(`Parsed ${records.length} records for table: ${table} (delimiter: '${delimiter}')`);
 
     if (records.length === 0) {
       return new Response(
