@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import type { CreateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
 
-type UserType = "admin" | "team_leader" | "mentor";
+type UserType = "team_leader" | "mentor";
 
 interface UserTypeOption {
   value: UserType;
@@ -33,12 +33,6 @@ interface UserTypeOption {
 }
 
 const userTypes: UserTypeOption[] = [
-  {
-    value: "admin",
-    label: "New Admin",
-    description: "Full system access and user management",
-    icon: <Shield className="w-6 h-6" />,
-  },
   {
     value: "team_leader",
     label: "New Team Leader",
@@ -53,12 +47,6 @@ const userTypes: UserTypeOption[] = [
   },
 ];
 
-const adminSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  fullName: z.string().min(2, "Full name is required"),
-  mentorId: z.string().optional(),
-});
 
 const teamLeaderSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -141,14 +129,6 @@ export function CreateUserDialog({
     let dataToValidate;
 
     switch (selectedType) {
-      case "admin":
-        schema = adminSchema;
-        dataToValidate = {
-          email: formData.email,
-          password: formData.password,
-          fullName: formData.fullName,
-        };
-        break;
       case "team_leader":
         schema = teamLeaderSchema;
         dataToValidate = {
@@ -201,17 +181,6 @@ export function CreateUserDialog({
       : generatedMentorId;
 
     switch (selectedType) {
-      case "admin":
-        createData = {
-          email: formData.email,
-          password: formData.password,
-          fullName: formData.fullName,
-          mentorId: finalMentorId,
-          mentorName: formData.fullName,
-          teamLeader: "System Admin",
-          role: "admin",
-        };
-        break;
       case "team_leader":
         createData = {
           email: formData.email,
@@ -219,7 +188,7 @@ export function CreateUserDialog({
           fullName: formData.fullName,
           mentorId: finalMentorId,
           mentorName: formData.fullName,
-          teamLeader: formData.fullName, // Team leader is their own team leader
+          teamLeader: formData.fullName,
           role: "team_leader",
         };
         break;
@@ -301,7 +270,6 @@ export function CreateUserDialog({
               >
                 <div className={cn(
                   "flex items-center justify-center w-12 h-12 rounded-lg",
-                  type.value === "admin" && "bg-destructive/10 text-destructive",
                   type.value === "team_leader" && "bg-secondary/10 text-secondary",
                   type.value === "mentor" && "bg-primary/10 text-primary"
                 )}>
@@ -458,15 +426,6 @@ export function CreateUserDialog({
               )}
             </div>
 
-            {/* Info boxes */}
-            {selectedType === "admin" && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <p className="text-sm text-destructive font-medium">⚠️ Admin Access</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  This user will have full system access including user management, all tasks, and system settings.
-                </p>
-              </div>
-            )}
 
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

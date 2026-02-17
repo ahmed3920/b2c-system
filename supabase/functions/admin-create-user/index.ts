@@ -57,6 +57,14 @@ Deno.serve(async (req) => {
 
     const { email, password, fullName, mentorId, mentorName, teamLeader, role } = await req.json();
 
+    // Block admin role creation - only one super admin allowed
+    if (role === "admin") {
+      return new Response(
+        JSON.stringify({ error: "Cannot create admin users. Only one Super Admin is allowed in the system." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Validate required fields
     if (!email || !password || !mentorId || !mentorName || !teamLeader) {
       return new Response(

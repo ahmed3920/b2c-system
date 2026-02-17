@@ -174,19 +174,22 @@ export function useAdminUsers() {
     }
   };
 
-  const deleteUser = async (userId: string) => {
+  const deactivateUser = async (userId: string) => {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.access_token) {
         throw new Error("Not authenticated");
       }
 
-      const response = await supabase.functions.invoke("admin-delete-user", {
-        body: { userId },
+      const response = await supabase.functions.invoke("admin-update-user", {
+        body: {
+          userId,
+          profileUpdates: { active_status: false },
+        },
       });
 
       if (response.error) {
-        throw new Error(response.error.message || "Failed to delete user");
+        throw new Error(response.error.message || "Failed to deactivate user");
       }
 
       if (response.data?.error) {
@@ -194,15 +197,54 @@ export function useAdminUsers() {
       }
 
       toast({
-        title: "User deleted",
-        description: "Successfully deleted user",
+        title: "User deactivated",
+        description: "User has been deactivated and archived successfully.",
       });
 
       await fetchUsers();
       return { success: true };
     } catch (error: any) {
       toast({
-        title: "Error deleting user",
+        title: "Error deactivating user",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
+  const reactivateUser = async (userId: string) => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.access_token) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await supabase.functions.invoke("admin-update-user", {
+        body: {
+          userId,
+          profileUpdates: { active_status: true },
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to reactivate user");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast({
+        title: "User reactivated",
+        description: "User has been restored to active status.",
+      });
+
+      await fetchUsers();
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Error reactivating user",
         description: error.message,
         variant: "destructive",
       });
@@ -262,7 +304,8 @@ export function useAdminUsers() {
     fetchUsers,
     createUser,
     updateUser,
-    deleteUser,
+    deactivateUser,
+    reactivateUser,
     resetPassword,
   };
 }
