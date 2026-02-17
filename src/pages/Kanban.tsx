@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
-import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter, User, GripVertical } from "lucide-react";
+import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter, User } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
@@ -64,14 +64,14 @@ const TaskCard = ({ task, onView, onArchive, assignerName, ownerName, showOwner 
   const dueStatus = getTaskDueStatus(task.date_to, task.status);
 
   const cardBorderClass = cn(
-    "bg-card p-4 rounded-lg shadow-sm border hover:shadow-md transition-all relative group cursor-pointer",
+    "bg-card p-4 rounded-lg shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all relative group",
     dueStatus === "overdue" && "border-destructive/50 bg-destructive/5",
     dueStatus === "due-soon" && "border-orange-400/50 bg-orange-50/50",
     dueStatus !== "overdue" && dueStatus !== "due-soon" && "border-border"
   );
 
   return (
-    <div ref={setNodeRef} style={style} className={cardBorderClass} onClick={() => onView()}>
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={cardBorderClass}>
       {/* Owner badge for admin views */}
       {showOwner && ownerName && (
         <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
@@ -80,21 +80,11 @@ const TaskCard = ({ task, onView, onArchive, assignerName, ownerName, showOwner 
         </div>
       )}
 
-      {/* Header: Drag Handle + Type + Priority */}
+      {/* Header: Type + Priority */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div
-            {...listeners}
-            {...attributes}
-            className="cursor-grab active:cursor-grabbing p-0.5 -ml-1 rounded hover:bg-secondary text-muted-foreground"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="w-4 h-4" />
-          </div>
-          <span className="text-xs px-2 py-0.5 bg-secondary rounded font-medium truncate max-w-[120px]">
-            {task.task_type}
-          </span>
-        </div>
+        <span className="text-xs px-2 py-0.5 bg-secondary rounded font-medium truncate max-w-[120px]">
+          {task.task_type}
+        </span>
         <div className="flex items-center gap-1">
           <TaskPriorityBadge priority={priority} size="sm" />
           <button
