@@ -1,1 +1,28 @@
 project_id = "dlwovfavzketvwixmnlk"
+
+[functions.admin-create-user]
+verify_jwt = false
+
+[functions.admin-update-user]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
+
+[functions.setup-test-users]
+verify_jwt = false
+
+[functions.bulk-create-users]
+verify_jwt = false
+
+[functions.import-csv-data]
+verify_jwt = false
+
+[functions.import-from-storage]
+verify_jwt = false
+
+[functions.import-json-data]
+verify_jwt = false
+
+[functions.remap-task-userids]
+verify_jwt = false
