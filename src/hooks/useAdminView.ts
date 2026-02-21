@@ -6,6 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
 export type AdminViewMode = "my" | "team_leader" | "mentor" | "all";
+export type TeamLeaderSubView = "own" | "team";
 
 interface Profile {
   user_id: string;
@@ -29,6 +30,8 @@ interface AdminViewState {
   selectedProfile: Profile | null;
   refetchTasks: () => void;
   taskOwnerNames: Record<string, string>;
+  tlSubView: TeamLeaderSubView;
+  setTlSubView: (sub: TeamLeaderSubView) => void;
 }
 
 export function useAdminView(): AdminViewState {
@@ -40,6 +43,7 @@ export function useAdminView(): AdminViewState {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [taskOwnerNames, setTaskOwnerNames] = useState<Record<string, string>>({});
+  const [tlSubView, setTlSubView] = useState<TeamLeaderSubView>("team");
 
   // Fetch profiles once (for admin)
   useEffect(() => {
@@ -98,18 +102,23 @@ export function useAdminView(): AdminViewState {
       if (viewMode === "my" && currentUserId) {
         query = query.eq("user_id", currentUserId);
       } else if (viewMode === "team_leader" && selectedUserId) {
-        // Get all users under this team leader
         const leader = profiles.find(p => p.user_id === selectedUserId);
         if (leader) {
-          const teamUserIds = profiles
-            .filter(p => p.team_leader === leader.mentor_name)
-            .map(p => p.user_id);
-          if (teamUserIds.length > 0) {
-            query = query.in("user_id", teamUserIds);
+          if (tlSubView === "own") {
+            // Only the TL's own tasks
+            query = query.eq("user_id", selectedUserId);
           } else {
-            setTasks([]);
-            setIsLoadingTasks(false);
-            return;
+            // Team's tasks (mentors under this TL)
+            const teamMentorIds = profiles
+              .filter(p => p.team_leader === leader.mentor_name && p.user_id !== selectedUserId)
+              .map(p => p.user_id);
+            if (teamMentorIds.length > 0) {
+              query = query.in("user_id", teamMentorIds);
+            } else {
+              setTasks([]);
+              setIsLoadingTasks(false);
+              return;
+            }
           }
         }
       } else if (viewMode === "mentor" && selectedUserId) {
@@ -141,13 +150,14 @@ export function useAdminView(): AdminViewState {
     if (!isAdmin || !currentUserId) return;
     if ((viewMode === "team_leader" || viewMode === "mentor") && !selectedUserId) return;
     fetchTasks();
-  }, [viewMode, selectedUserId, currentUserId, isAdmin, profiles.length]);
+  }, [viewMode, selectedUserId, currentUserId, isAdmin, profiles.length, tlSubView]);
 
   return {
     viewMode,
     setViewMode: (mode: AdminViewMode) => {
       setViewMode(mode);
       if (mode === "my" || mode === "all") setSelectedUserId(null);
+      if (mode !== "team_leader") setTlSubView("team");
     },
     selectedUserId,
     setSelectedUserId,
@@ -159,5 +169,7 @@ export function useAdminView(): AdminViewState {
     selectedProfile,
     refetchTasks: fetchTasks,
     taskOwnerNames,
+    tlSubView,
+    setTlSubView,
   };
 }

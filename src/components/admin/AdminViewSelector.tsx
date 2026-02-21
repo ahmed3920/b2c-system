@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Eye, User, Users, Globe, Search, ChevronDown, X } from "lucide-react";
-import type { AdminViewMode } from "@/hooks/useAdminView";
+import type { AdminViewMode, TeamLeaderSubView } from "@/hooks/useAdminView";
 
 interface Profile {
   user_id: string;
@@ -33,6 +33,8 @@ interface AdminViewSelectorProps {
   teamLeaders: Profile[];
   mentors: Profile[];
   selectedProfile: Profile | null;
+  tlSubView?: TeamLeaderSubView;
+  onTlSubViewChange?: (sub: TeamLeaderSubView) => void;
 }
 
 const viewLabels: Record<AdminViewMode, { label: string; icon: React.ReactNode; color: string }> = {
@@ -50,6 +52,8 @@ export const AdminViewSelector = ({
   teamLeaders,
   mentors,
   selectedProfile,
+  tlSubView = "team",
+  onTlSubViewChange,
 }: AdminViewSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -64,7 +68,8 @@ export const AdminViewSelector = ({
     return userList.filter(u =>
       u.mentor_name.toLowerCase().includes(q) ||
       u.full_name?.toLowerCase().includes(q) ||
-      u.email?.toLowerCase().includes(q)
+      u.email?.toLowerCase().includes(q) ||
+      u.user_id.toLowerCase().includes(q)
     );
   }, [userList, searchQuery]);
 
@@ -118,7 +123,7 @@ export const AdminViewSelector = ({
             <div className="relative mb-2">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search by name or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 h-8 text-sm"
@@ -152,6 +157,32 @@ export const AdminViewSelector = ({
             </div>
           </PopoverContent>
         </Popover>
+      )}
+
+      {/* TL Sub-View Toggle */}
+      {viewMode === "team_leader" && selectedUserId && onTlSubViewChange && (
+        <div className="flex items-center bg-muted rounded-lg p-1 gap-1">
+          <button
+            onClick={() => onTlSubViewChange("own")}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+              tlSubView === "own"
+                ? "bg-card shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+            }`}
+          >
+            TL's Tasks
+          </button>
+          <button
+            onClick={() => onTlSubViewChange("team")}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+              tlSubView === "team"
+                ? "bg-card shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+            }`}
+          >
+            Team's Tasks
+          </button>
+        </div>
       )}
 
       {/* Active View Badge */}

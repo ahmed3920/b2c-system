@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, User, UserCheck, Calendar } from "lucide-react";
+import { Loader2, Users, User, UserCheck, Calendar, Search } from "lucide-react";
 
 interface UserOption {
   user_id: string;
@@ -75,6 +75,68 @@ const taskWithoutDeadlineSchema = baseTaskSchema.extend({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
 });
+
+function UserSelectionWithSearch({
+  users,
+  selectedUsers,
+  onUserSelect,
+  label,
+  error,
+}: {
+  users: UserOption[];
+  selectedUsers: string[];
+  onUserSelect: (userId: string, checked: boolean) => void;
+  label: string;
+  error?: string;
+}) {
+  const [search, setSearch] = useState("");
+  const filtered = users.filter((u) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      u.mentor_name.toLowerCase().includes(q) ||
+      (u.full_name?.toLowerCase().includes(q)) ||
+      u.user_id.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by name or ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8 h-9 text-sm"
+        />
+      </div>
+      <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-3">No users found</p>
+        ) : (
+          filtered.map((user) => (
+            <label
+              key={user.user_id}
+              className="flex items-center gap-2 p-2 rounded hover:bg-secondary cursor-pointer"
+            >
+              <Checkbox
+                checked={selectedUsers.includes(user.user_id)}
+                onCheckedChange={(checked) => onUserSelect(user.user_id, checked as boolean)}
+              />
+              <span className="text-sm">
+                {user.full_name || user.mentor_name}
+                <span className="text-muted-foreground ml-1">({user.role})</span>
+              </span>
+            </label>
+          ))
+        )}
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
 
 export function AdminTaskAssignDialog({
   open,
@@ -356,35 +418,13 @@ export function AdminTaskAssignDialog({
 
             {/* User Selection (for selected_team_leader and specific_user) */}
             {assignmentType !== "all_team_leaders" && (
-              <div className="space-y-2">
-                <Label>
-                  {assignmentType === "selected_team_leader" ? "Select Team Leader" : "Select Users"}
-                </Label>
-                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {getFilteredUsers().map((user) => (
-                    <label
-                      key={user.user_id}
-                      className="flex items-center gap-2 p-2 rounded hover:bg-secondary cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={selectedUsers.includes(user.user_id)}
-                        onCheckedChange={(checked) => 
-                          handleUserSelect(user.user_id, checked as boolean)
-                        }
-                      />
-                      <span className="text-sm">
-                        {user.full_name || user.mentor_name}
-                        <span className="text-muted-foreground ml-1">
-                          ({user.role})
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {errors.assignment && (
-                  <p className="text-xs text-destructive">{errors.assignment}</p>
-                )}
-              </div>
+              <UserSelectionWithSearch
+                users={getFilteredUsers()}
+                selectedUsers={selectedUsers}
+                onUserSelect={handleUserSelect}
+                label={assignmentType === "selected_team_leader" ? "Select Team Leader" : "Select Users"}
+                error={errors.assignment}
+              />
             )}
 
             {/* Task Fields */}
