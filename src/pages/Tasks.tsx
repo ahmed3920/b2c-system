@@ -37,7 +37,9 @@ import {
   AlertTriangle,
   Clock,
   User,
+  Send,
 } from "lucide-react";
+import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
 import { TaskTimeRange, calculateDurationMinutes, formatDuration } from "@/components/task/TaskTimeRange";
 import { CoverSessionSlots } from "@/components/task/CoverSessionSlots";
 import { motion } from "framer-motion";
@@ -99,6 +101,7 @@ const Tasks = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -142,7 +145,7 @@ const Tasks = () => {
     filteredTasks,
     clearFilters,
     hasActiveFilters,
-  } = useTaskFilters({ tasks: displayTasks });
+  } = useTaskFilters({ tasks: displayTasks, ownerNames: adminView.taskOwnerNames });
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -418,6 +421,12 @@ const Tasks = () => {
                   {dueSoonCount} Due Soon
                 </span>
               )}
+              {isAdmin && adminView.viewMode !== "my" && (
+                <Button onClick={() => setIsAssignDialogOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
+                  <Send className="w-4 h-4" />
+                  Assign Task
+                </Button>
+              )}
               {(adminView.viewMode === "my" || !isAdmin) && (
                 <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
                   <Plus className="w-4 h-4" />
@@ -441,6 +450,8 @@ const Tasks = () => {
               teamLeaders={adminView.teamLeaders}
               mentors={adminView.mentors}
               selectedProfile={adminView.selectedProfile}
+              tlSubView={adminView.tlSubView}
+              onTlSubViewChange={adminView.setTlSubView}
             />
           </motion.div>
         )}
@@ -830,6 +841,23 @@ const Tasks = () => {
         canEditAll={canEditAll}
         assignerName={selectedTask?.assigned_by ? allAssignerNames[selectedTask.assigned_by] : undefined}
       />
+
+      {/* Admin Assign Task Dialog */}
+      {isAdmin && (
+        <AdminTaskAssignDialog
+          open={isAssignDialogOpen}
+          onOpenChange={setIsAssignDialogOpen}
+          onTaskAssigned={() => {
+            adminView.refetchTasks();
+            // Also refresh personal tasks
+            if (user) {
+              supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).then(({ data }) => {
+                if (data) setTasks(data);
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

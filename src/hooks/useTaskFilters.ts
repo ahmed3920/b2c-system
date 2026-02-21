@@ -5,9 +5,10 @@ type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
 interface UseTaskFiltersOptions {
   tasks: Task[];
+  ownerNames?: Record<string, string>;
 }
 
-export function useTaskFilters({ tasks }: UseTaskFiltersOptions) {
+export function useTaskFilters({ tasks, ownerNames }: UseTaskFiltersOptions) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -23,7 +24,8 @@ export function useTaskFilters({ tasks }: UseTaskFiltersOptions) {
       result = result.filter(
         (task) =>
           task.description.toLowerCase().includes(query) ||
-          task.task_type.toLowerCase().includes(query)
+          task.task_type.toLowerCase().includes(query) ||
+          (ownerNames && ownerNames[task.user_id]?.toLowerCase().includes(query))
       );
     }
 
@@ -47,7 +49,7 @@ export function useTaskFilters({ tasks }: UseTaskFiltersOptions) {
     }
 
     return result;
-  }, [tasks, searchQuery, filterType, filterStatus, filterMonth, filterPriority]);
+  }, [tasks, searchQuery, filterType, filterStatus, filterMonth, filterPriority, ownerNames]);
 
   const clearFilters = () => {
     setFilterType("");
