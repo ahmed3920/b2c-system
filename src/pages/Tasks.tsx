@@ -38,6 +38,7 @@ import {
   Clock,
   User,
   Send,
+  Download,
 } from "lucide-react";
 import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
 import { TaskTimeRange, calculateDurationMinutes, formatDuration } from "@/components/task/TaskTimeRange";
@@ -51,6 +52,7 @@ import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { TaskFilters } from "@/components/task/TaskFilters";
 import { cn } from "@/lib/utils";
+import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -420,6 +422,23 @@ const Tasks = () => {
                 <span className="px-2 py-1 bg-orange-100 text-orange-700 text-sm rounded-full font-medium">
                   {dueSoonCount} Due Soon
                 </span>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    exportTasksToExcel({
+                      tasks: displayTasks,
+                      ownerNames: adminView.taskOwnerNames,
+                    });
+                    toast({ title: "Export Complete", description: "Tasks exported to Excel." });
+                  }}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Excel
+                </Button>
               )}
               {isAdmin && adminView.viewMode !== "my" && (
                 <Button onClick={() => setIsAssignDialogOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
