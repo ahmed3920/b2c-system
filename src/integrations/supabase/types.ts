@@ -310,7 +310,7 @@ export type Database = {
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "team_leader" | "mentor"
+      app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
       task_status: "todo" | "in_progress" | "done" | "archived"
     }
     CompositeTypes: {
@@ -439,7 +439,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "team_leader", "mentor"],
+      app_role: ["admin", "team_leader", "mentor", "community_moderator"],
       task_status: ["todo", "in_progress", "done", "archived"],
     },
   },

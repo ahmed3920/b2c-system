@@ -24,14 +24,14 @@ interface ReportType {
   title: string;
   description: string;
   icon: React.ReactNode;
-  roles: ("admin" | "team_leader" | "mentor")[];
+  roles: ("admin" | "team_leader" | "mentor" | "community_moderator")[];
 }
 
 const reportTypes: ReportType[] = [
-  { id: "personal", title: "Personal Performance", description: "Task completion and productivity", icon: <TrendingUp className="w-6 h-6" />, roles: ["admin", "team_leader", "mentor"] },
+  { id: "personal", title: "Personal Performance", description: "Task completion and productivity", icon: <TrendingUp className="w-6 h-6" />, roles: ["admin", "team_leader", "mentor", "community_moderator"] },
   { id: "team", title: "Team Summary", description: "Team performance and distribution", icon: <Users className="w-6 h-6" />, roles: ["admin", "team_leader"] },
-  { id: "task_analysis", title: "Task Analysis", description: "Breakdown of task types and status", icon: <BarChart3 className="w-6 h-6" />, roles: ["admin", "team_leader", "mentor"] },
-  { id: "time_based", title: "Time-Based Report", description: "Daily, weekly, monthly summaries", icon: <Calendar className="w-6 h-6" />, roles: ["admin", "team_leader", "mentor"] },
+  { id: "task_analysis", title: "Task Analysis", description: "Breakdown of task types and status", icon: <BarChart3 className="w-6 h-6" />, roles: ["admin", "team_leader", "mentor", "community_moderator"] },
+  { id: "time_based", title: "Time-Based Report", description: "Daily, weekly, monthly summaries", icon: <Calendar className="w-6 h-6" />, roles: ["admin", "team_leader", "mentor", "community_moderator"] },
 ];
 
 const Reports = () => {

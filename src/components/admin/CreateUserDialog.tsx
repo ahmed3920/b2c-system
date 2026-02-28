@@ -17,13 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft, Globe } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { CreateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
 
-type UserType = "admin" | "team_leader" | "mentor";
+type UserType = "admin" | "team_leader" | "mentor" | "community_moderator";
 
 interface UserTypeOption {
   value: UserType;
@@ -50,6 +50,12 @@ const userTypes: UserTypeOption[] = [
     label: "New Mentor",
     description: "Track personal tasks and progress",
     icon: <UserCircle className="w-6 h-6" />,
+  },
+  {
+    value: "community_moderator",
+    label: "New Community Moderator",
+    description: "Moderate community and track tasks like a mentor",
+    icon: <Globe className="w-6 h-6" />,
   },
 ];
 
@@ -160,6 +166,7 @@ export function CreateUserDialog({
         };
         break;
       case "mentor":
+      case "community_moderator":
         schema = mentorSchema;
         dataToValidate = {
           email: formData.email,
@@ -225,6 +232,7 @@ export function CreateUserDialog({
         };
         break;
       case "mentor":
+      case "community_moderator":
         createData = {
           email: formData.email,
           password: formData.password,
@@ -232,7 +240,7 @@ export function CreateUserDialog({
           mentorId: finalMentorId,
           mentorName: formData.fullName,
           teamLeader: formData.teamLeader,
-          role: "mentor",
+          role: selectedType,
         };
         break;
       default:
@@ -304,7 +312,8 @@ export function CreateUserDialog({
                   "flex items-center justify-center w-12 h-12 rounded-lg",
                   type.value === "admin" && "bg-destructive/10 text-destructive",
                   type.value === "team_leader" && "bg-secondary/10 text-secondary",
-                  type.value === "mentor" && "bg-primary/10 text-primary"
+                  type.value === "mentor" && "bg-primary/10 text-primary",
+                  type.value === "community_moderator" && "bg-purple-100 text-purple-700"
                 )}>
                   {type.icon}
                 </div>
@@ -385,8 +394,8 @@ export function CreateUserDialog({
               </div>
             )}
 
-            {/* Mentor specific fields */}
-            {selectedType === "mentor" && (
+            {/* Mentor / Community Moderator specific fields */}
+            {(selectedType === "mentor" || selectedType === "community_moderator") && (
               <div className="space-y-2">
                 <Label htmlFor="teamLeader">Assigned Team Leader *</Label>
                 <Select
