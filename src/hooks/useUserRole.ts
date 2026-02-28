@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "team_leader" | "mentor";
+export type AppRole = "admin" | "team_leader" | "mentor" | "community_moderator";
 
 interface UserRoleData {
   role: AppRole | null;
@@ -10,6 +10,7 @@ interface UserRoleData {
   isAdmin: boolean;
   isTeamLeader: boolean;
   isMentor: boolean;
+  isCommunityModerator: boolean;
 }
 
 export const useUserRole = (): UserRoleData => {
@@ -43,6 +44,7 @@ export const useUserRole = (): UserRoleData => {
           const roles = data.map(r => r.role as AppRole);
           if (roles.includes("admin")) setRole("admin");
           else if (roles.includes("team_leader")) setRole("team_leader");
+          else if (roles.includes("community_moderator")) setRole("community_moderator");
           else setRole("mentor");
         }
       } catch (err) {
@@ -67,6 +69,7 @@ export const useUserRole = (): UserRoleData => {
     error,
     isAdmin: role === "admin",
     isTeamLeader: role === "team_leader",
-    isMentor: role === "mentor" || role === null,
+    isMentor: role === "mentor" || role === "community_moderator" || role === null,
+    isCommunityModerator: role === "community_moderator",
   };
 };

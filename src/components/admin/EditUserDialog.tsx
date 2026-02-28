@@ -172,6 +172,7 @@ export function EditUserDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mentor">Mentor</SelectItem>
+                  <SelectItem value="community_moderator">Community Moderator</SelectItem>
                   <SelectItem value="team_leader">Team Leader</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>

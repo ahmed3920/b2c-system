@@ -75,28 +75,28 @@ const allCards: DashboardCard[] = [
     description: "Manage your assigned tasks",
     icon: <ClipboardList className="w-8 h-8" />,
     href: "/tasks",
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["admin", "team_leader", "mentor", "community_moderator"],
   },
   {
     title: "Kanban Board",
     description: "Visual task management",
     icon: <Kanban className="w-8 h-8" />,
     href: "/kanban",
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["admin", "team_leader", "mentor", "community_moderator"],
   },
   {
     title: "Progress Tracking",
     description: "Track performance and achievements",
     icon: <TrendingUp className="w-8 h-8" />,
     href: "/progress",
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["admin", "team_leader", "mentor", "community_moderator"],
   },
   {
     title: "Reports & Analytics",
     description: "Generate detailed reports",
     icon: <FileText className="w-8 h-8" />,
     href: "/reports",
-    roles: ["admin", "team_leader", "mentor"],
+    roles: ["admin", "team_leader", "mentor", "community_moderator"],
   },
 ];
 
