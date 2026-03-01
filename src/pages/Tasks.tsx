@@ -70,6 +70,26 @@ const taskTypes = [
   "Other",
 ];
 
+const teamLeaderSelfTaskTypes = [
+  "One-to-one meeting",
+  "Team Meeting",
+  "Sub-Team Meeting",
+  "Batch Training",
+  "Study plan",
+  "Validating CS Case",
+  "Validating Flags",
+  "Session review",
+  "Process Development",
+  "Assigning Tasks to Mentors",
+  "Following Up with Mentors",
+  "Mentors Filtration",
+  "Mentors KPIs",
+  "Tutors KPIs",
+  "Team Upgrades",
+  "Moderation Validation",
+  "Other",
+];
+
 const statusOptions: TaskStatus[] = ["todo", "in_progress", "done", "archived"];
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -126,6 +146,7 @@ const Tasks = () => {
   const adminView = useAdminView();
 
   const canEditAll = isAdmin || isTeamLeader;
+  const activeTaskTypes = isTeamLeader && !isAdmin ? teamLeaderSelfTaskTypes : taskTypes;
 
   // Determine which tasks to display
   const displayTasks = isAdmin && adminView.viewMode !== "my" ? adminView.tasks : tasks;
@@ -500,7 +521,7 @@ const Tasks = () => {
                 showFilters={showFilters}
                 onToggleFilters={() => setShowFilters(!showFilters)}
                 onClearFilters={clearFilters}
-                taskTypes={taskTypes}
+                taskTypes={activeTaskTypes}
                 hasActiveFilters={hasActiveFilters}
               />
             </motion.div>
@@ -688,7 +709,7 @@ const Tasks = () => {
               <Select value={formType} onValueChange={setFormType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {taskTypes.map((type) => (
+                  {activeTaskTypes.map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
@@ -778,7 +799,7 @@ const Tasks = () => {
               <Select value={formType} onValueChange={setFormType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {taskTypes.map((type) => (
+                  {activeTaskTypes.map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
