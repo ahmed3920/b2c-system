@@ -70,6 +70,26 @@ const defaultTaskTypes = [
   "Other",
 ];
 
+const teamLeaderSelfTaskTypes = [
+  "One-to-one meeting",
+  "Team Meeting",
+  "Sub-Team Meeting",
+  "Batch Training",
+  "Study plan",
+  "Validating CS Case",
+  "Validating Flags",
+  "Session review",
+  "Process Development",
+  "Assigning Tasks to Mentors",
+  "Following Up with Mentors",
+  "Mentors Filtration",
+  "Mentors KPIs",
+  "Tutors KPIs",
+  "Team Upgrades",
+  "Moderation Validation",
+  "Other",
+];
+
 const statusOptions: TaskStatus[] = ["todo", "in_progress", "done"];
 const statusLabels: Record<TaskStatus, string> = {
   todo: "To-Do",
@@ -98,11 +118,14 @@ export function AddTaskDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formFields, setFormFields] = useState<TaskFormField[]>([]);
+
+  const isTLSelfTask = ownerInfo?.role === "team_leader";
+  const taskTypes = isTLSelfTask ? teamLeaderSelfTaskTypes : defaultTaskTypes;
   
   // Form state
   const [hasDeadline, setHasDeadline] = useState(true);
   const [formData, setFormData] = useState({
-    taskType: defaultTaskTypes[0],
+    taskType: taskTypes[0],
     description: "",
     relatedLink: "",
     dateFrom: "",
@@ -142,7 +165,7 @@ export function AddTaskDialog({
 
   const resetForm = () => {
     setFormData({
-      taskType: defaultTaskTypes[0],
+      taskType: taskTypes[0],
       description: "",
       relatedLink: "",
       dateFrom: "",
@@ -320,7 +343,7 @@ export function AddTaskDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {defaultTaskTypes.map((type) => (
+                  {taskTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
