@@ -23,8 +23,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
+import { useTeamLeaderView } from "@/hooks/useTeamLeaderView";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
+import { TeamLeaderViewSelector } from "@/components/team/TeamLeaderViewSelector";
 import {
   Plus,
   Edit,
@@ -144,12 +146,18 @@ const Tasks = () => {
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
   const adminView = useAdminView();
+  const tlView = useTeamLeaderView();
 
   const canEditAll = isAdmin || isTeamLeader;
-  const activeTaskTypes = isTeamLeader && !isAdmin ? teamLeaderSelfTaskTypes : taskTypes;
+  const isTLMentorView = isTeamLeader && !isAdmin && tlView.viewMode === "mentor";
+  const activeTaskTypes = isTeamLeader && !isAdmin && tlView.viewMode === "my" ? teamLeaderSelfTaskTypes : isTeamLeader && !isAdmin && tlView.viewMode === "mentor" ? taskTypes : isAdmin ? taskTypes : taskTypes;
 
   // Determine which tasks to display
-  const displayTasks = isAdmin && adminView.viewMode !== "my" ? adminView.tasks : tasks;
+  const displayTasks = isAdmin && adminView.viewMode !== "my"
+    ? adminView.tasks
+    : isTLMentorView
+      ? tlView.tasks
+      : tasks;
 
   // Use the task filters hook
   const {
