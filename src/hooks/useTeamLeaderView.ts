@@ -127,7 +127,7 @@ export function useTeamLeaderView(): TeamLeaderViewState {
 
   useEffect(() => {
     if (!enabled || !currentUserId) return;
-    if (viewMode === "mentor" && !selectedUserId) return;
+    fetchTasks();
     fetchTasks();
   }, [viewMode, selectedUserId, currentUserId, enabled, teamMentors.length]);
 
