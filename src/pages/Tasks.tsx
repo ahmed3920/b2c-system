@@ -23,8 +23,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
+import { useTeamLeaderView } from "@/hooks/useTeamLeaderView";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
+import { TeamLeaderViewSelector } from "@/components/team/TeamLeaderViewSelector";
 import {
   Plus,
   Edit,
@@ -144,12 +146,18 @@ const Tasks = () => {
   const { toast } = useToast();
   const { isAdmin, isTeamLeader } = useUserRole();
   const adminView = useAdminView();
+  const tlView = useTeamLeaderView();
 
   const canEditAll = isAdmin || isTeamLeader;
-  const activeTaskTypes = isTeamLeader && !isAdmin ? teamLeaderSelfTaskTypes : taskTypes;
+  const isTLMentorView = isTeamLeader && !isAdmin && tlView.viewMode === "mentor";
+  const activeTaskTypes = isTeamLeader && !isAdmin && tlView.viewMode === "my" ? teamLeaderSelfTaskTypes : taskTypes;
 
   // Determine which tasks to display
-  const displayTasks = isAdmin && adminView.viewMode !== "my" ? adminView.tasks : tasks;
+  const displayTasks = isAdmin && adminView.viewMode !== "my"
+    ? adminView.tasks
+    : isTLMentorView
+      ? tlView.tasks
+      : tasks;
 
   // Use the task filters hook
   const {
@@ -467,7 +475,7 @@ const Tasks = () => {
                   Assign Task
                 </Button>
               )}
-              {(adminView.viewMode === "my" || !isAdmin) && (
+              {(adminView.viewMode === "my" || !isAdmin) && !isTLMentorView && (
                 <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
                   <Plus className="w-4 h-4" />
                   Add Task
@@ -494,6 +502,27 @@ const Tasks = () => {
               onTlSubViewChange={adminView.setTlSubView}
             />
           </motion.div>
+        )}
+
+        {/* Team Leader View Selector */}
+        {isTeamLeader && !isAdmin && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+            <TeamLeaderViewSelector
+              viewMode={tlView.viewMode}
+              onViewModeChange={tlView.setViewMode}
+              selectedUserId={tlView.selectedUserId}
+              onSelectedUserChange={tlView.setSelectedUserId}
+              mentors={tlView.teamMentors}
+              selectedProfile={tlView.selectedProfile}
+            />
+          </motion.div>
+        )}
+
+        {/* Loading indicator for TL view changes */}
+        {isTLMentorView && tlView.isLoadingTasks && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
         )}
 
         {/* Loading indicator for admin view changes */}
@@ -537,7 +566,7 @@ const Tasks = () => {
                 <table className="w-full">
                   <thead className="bg-secondary">
                     <tr>
-                      {isAdmin && adminView.viewMode !== "my" && (
+                      {(isAdmin && adminView.viewMode !== "my" || isTLMentorView) && (
                         <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                           Owner
                         </th>
@@ -568,9 +597,9 @@ const Tasks = () => {
                   <tbody className="divide-y divide-border">
                     {filteredTasks.length === 0 ? (
                       <tr>
-                        <td colSpan={isAdmin && adminView.viewMode !== "my" ? 9 : 8} className="px-6 py-12 text-center text-muted-foreground">
+                        <td colSpan={(isAdmin && adminView.viewMode !== "my") || isTLMentorView ? 9 : 8} className="px-6 py-12 text-center text-muted-foreground">
                           {displayTasks.length === 0
-                            ? adminView.viewMode !== "my" && isAdmin
+                            ? (adminView.viewMode !== "my" && isAdmin) || isTLMentorView
                               ? "Select a user to view their tasks, or no tasks found."
                               : "No tasks yet. Click 'Add Task' to create your first task."
                             : "No tasks match your filters."}
@@ -581,7 +610,7 @@ const Tasks = () => {
                         const isAssigned = !!task.assigned_by;
                         const assignerName = task.assigned_by ? allAssignerNames[task.assigned_by] : null;
                         const dueStatus = getTaskDueStatus(task.date_to, task.status);
-                        const ownerName = adminView.taskOwnerNames[task.user_id];
+                        const ownerName = adminView.taskOwnerNames[task.user_id] || tlView.taskOwnerNames[task.user_id];
 
                         return (
                           <tr
@@ -592,7 +621,7 @@ const Tasks = () => {
                               dueStatus === "due-soon" && "bg-orange-50/50"
                             )}
                           >
-                            {isAdmin && adminView.viewMode !== "my" && (
+                            {(isAdmin && adminView.viewMode !== "my" || isTLMentorView) && (
                               <td className="px-4 py-4">
                                 <div className="flex items-center gap-2">
                                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
