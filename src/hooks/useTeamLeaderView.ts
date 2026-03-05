@@ -94,8 +94,18 @@ export function useTeamLeaderView(): TeamLeaderViewState {
       if (error) throw error;
       setTasks(data || []);
 
-      // Build owner name map
+      // Build owner name map (include current user)
       const nameMap: Record<string, string> = {};
+      if (currentUserId) {
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("full_name, mentor_name")
+          .eq("user_id", currentUserId)
+          .single();
+        if (myProfile) {
+          nameMap[currentUserId] = myProfile.full_name || myProfile.mentor_name;
+        }
+      }
       teamMentors.forEach(p => {
         nameMap[p.user_id] = p.full_name || p.mentor_name;
       });
