@@ -150,7 +150,7 @@ const Tasks = () => {
 
   const canEditAll = isAdmin || isTeamLeader;
   const isTLMentorView = isTeamLeader && !isAdmin && tlView.viewMode === "mentor";
-  const activeTaskTypes = isTeamLeader && !isAdmin && tlView.viewMode === "my" ? teamLeaderSelfTaskTypes : isTeamLeader && !isAdmin && tlView.viewMode === "mentor" ? taskTypes : isAdmin ? taskTypes : taskTypes;
+  const activeTaskTypes = isTeamLeader && !isAdmin && tlView.viewMode === "my" ? teamLeaderSelfTaskTypes : taskTypes;
 
   // Determine which tasks to display
   const displayTasks = isAdmin && adminView.viewMode !== "my"
