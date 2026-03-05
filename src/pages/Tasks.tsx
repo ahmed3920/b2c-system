@@ -516,7 +516,14 @@ const Tasks = () => {
               selectedProfile={tlView.selectedProfile}
             />
           </motion.div>
-        )
+        )}
+
+        {/* Loading indicator for TL view changes */}
+        {isTLMentorView && tlView.isLoadingTasks && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
 
         {/* Loading indicator for admin view changes */}
         {isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my" && (
