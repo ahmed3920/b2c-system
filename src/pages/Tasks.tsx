@@ -504,6 +504,20 @@ const Tasks = () => {
           </motion.div>
         )}
 
+        {/* Team Leader View Selector */}
+        {isTeamLeader && !isAdmin && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+            <TeamLeaderViewSelector
+              viewMode={tlView.viewMode}
+              onViewModeChange={tlView.setViewMode}
+              selectedUserId={tlView.selectedUserId}
+              onSelectedUserChange={tlView.setSelectedUserId}
+              mentors={tlView.teamMentors}
+              selectedProfile={tlView.selectedProfile}
+            />
+          </motion.div>
+        )
+
         {/* Loading indicator for admin view changes */}
         {isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my" && (
           <div className="flex items-center justify-center py-8">
