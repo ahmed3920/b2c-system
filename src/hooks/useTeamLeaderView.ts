@@ -78,7 +78,6 @@ export function useTeamLeaderView(): TeamLeaderViewState {
 
   const fetchTasks = async () => {
     if (!enabled || !currentUserId) return;
-    if (viewMode === "mentor" && !selectedUserId) return;
 
     setIsLoadingTasks(true);
     try {
@@ -86,6 +85,15 @@ export function useTeamLeaderView(): TeamLeaderViewState {
 
       if (viewMode === "mentor" && selectedUserId) {
         query = query.eq("user_id", selectedUserId);
+      } else if (viewMode === "mentor" && !selectedUserId) {
+        // Show all team mentors' tasks (not TL's own)
+        const mentorIds = teamMentors.map(m => m.user_id);
+        if (mentorIds.length === 0) {
+          setTasks([]);
+          setIsLoadingTasks(false);
+          return;
+        }
+        query = query.in("user_id", mentorIds);
       } else {
         query = query.eq("user_id", currentUserId);
       }
@@ -119,7 +127,7 @@ export function useTeamLeaderView(): TeamLeaderViewState {
 
   useEffect(() => {
     if (!enabled || !currentUserId) return;
-    if (viewMode === "mentor" && !selectedUserId) return;
+    fetchTasks();
     fetchTasks();
   }, [viewMode, selectedUserId, currentUserId, enabled, teamMentors.length]);
 
