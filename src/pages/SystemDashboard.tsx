@@ -601,6 +601,10 @@ const SystemDashboard = () => {
         open={isFormConfigOpen}
         onOpenChange={setIsFormConfigOpen}
       />
+      <TaskCategoryManagerDialog
+        open={isCategoryManagerOpen}
+        onOpenChange={setIsCategoryManagerOpen}
+      />
     </div>
   );
 };
