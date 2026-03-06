@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTaskCategories } from "@/hooks/useTaskCategories";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -39,16 +40,7 @@ interface AssignTaskDialogProps {
   onTaskAssigned: () => void;
 }
 
-const taskTypes = [
-  "One-to-One",
-  "Study Plan",
-  "Parent Meeting",
-  "Group Session",
-  "Assessment",
-  "Documentation",
-  "Training",
-  "Other",
-];
+const fallbackTaskTypes = ["Other"];
 
 const priorityOptions = [
   { value: "1", label: "Low", color: "text-green-600" },
@@ -82,6 +74,9 @@ export function AssignTaskDialog({
   onTaskAssigned,
 }: AssignTaskDialogProps) {
   const { toast } = useToast();
+  // TL assigns to mentors
+  const { categories: dbCategories } = useTaskCategories("mentor");
+  const taskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasDeadline, setHasDeadline] = useState(true);

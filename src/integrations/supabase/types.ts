@@ -160,6 +160,39 @@ export type Database = {
         }
         Relationships: []
       }
+      task_categories: {
+        Row: {
+          category_name: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       task_form_fields: {
         Row: {
           created_at: string

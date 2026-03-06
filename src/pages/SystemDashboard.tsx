@@ -40,11 +40,13 @@ import {
   Kanban,
   User,
   Calendar,
+  Tags,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { subDays, format } from "date-fns";
 import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
 import { TaskFormConfigDialog } from "@/components/admin/TaskFormConfigDialog";
+import { TaskCategoryManagerDialog } from "@/components/admin/TaskCategoryManagerDialog";
 import {
   BarChart,
   Bar,
@@ -117,6 +119,7 @@ const SystemDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isFormConfigOpen, setIsFormConfigOpen] = useState(false);
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -310,6 +313,10 @@ const SystemDashboard = () => {
               <Button variant="outline" size="sm" onClick={() => setIsFormConfigOpen(true)}>
                 <Settings2 className="w-4 h-4 mr-2" />
                 Task Form
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setIsCategoryManagerOpen(true)}>
+                <Tags className="w-4 h-4 mr-2" />
+                Categories
               </Button>
               <Button size="sm" onClick={() => setIsAssignDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -593,6 +600,10 @@ const SystemDashboard = () => {
       <TaskFormConfigDialog
         open={isFormConfigOpen}
         onOpenChange={setIsFormConfigOpen}
+      />
+      <TaskCategoryManagerDialog
+        open={isCategoryManagerOpen}
+        onOpenChange={setIsCategoryManagerOpen}
       />
     </div>
   );

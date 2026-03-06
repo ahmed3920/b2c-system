@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useTaskCategories } from "@/hooks/useTaskCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,38 +60,7 @@ import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
-const taskTypes = [
-  "One-to-One Meeting",
-  "Study Plan",
-  "Cover Session",
-  "Team Meeting",
-  "Parent Meeting",
-  "Assessment",
-  "Recap Session",
-  "Session Review",
-  "Check Flags",
-  "Other",
-];
-
-const teamLeaderSelfTaskTypes = [
-  "One-to-one meeting",
-  "Team Meeting",
-  "Sub-Team Meeting",
-  "Batch Training",
-  "Study plan",
-  "Validating CS Case",
-  "Validating Flags",
-  "Session review",
-  "Process Development",
-  "Assigning Tasks to Mentors",
-  "Following Up with Mentors",
-  "Mentors Filtration",
-  "Mentors KPIs",
-  "Tutors KPIs",
-  "Team Upgrades",
-  "Moderation Validation",
-  "Other",
-];
+const fallbackTaskTypes = ["Other"];
 
 const statusOptions: TaskStatus[] = ["todo", "in_progress", "done", "archived"];
 
@@ -130,7 +100,7 @@ const Tasks = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Form states
-  const [formType, setFormType] = useState(taskTypes[0]);
+  const [formType, setFormType] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formLink, setFormLink] = useState("");
   const [formDateFrom, setFormDateFrom] = useState("");
@@ -144,13 +114,17 @@ const Tasks = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isTeamLeader } = useUserRole();
+  const { isAdmin, isTeamLeader, role } = useUserRole();
   const adminView = useAdminView();
   const tlView = useTeamLeaderView();
 
   const canEditAll = isAdmin || isTeamLeader;
   const isTLMentorView = isTeamLeader && !isAdmin && tlView.viewMode === "mentor";
-  const activeTaskTypes = isTeamLeader && !isAdmin && tlView.viewMode === "my" ? teamLeaderSelfTaskTypes : taskTypes;
+
+  // Determine which category role to use for filters
+  const categoryRole = isTLMentorView ? "mentor" : (role || "mentor");
+  const { categories: dbCategories } = useTaskCategories(categoryRole);
+  const activeTaskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
 
   // Determine which tasks to display
   const displayTasks = isAdmin && adminView.viewMode !== "my"
@@ -253,7 +227,7 @@ const Tasks = () => {
   }, [user, toast]);
 
   const resetForm = () => {
-    setFormType(taskTypes[0]);
+    setFormType(activeTaskTypes[0] || "");
     setFormDescription("");
     setFormLink("");
     setFormDateFrom("");
