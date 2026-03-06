@@ -74,6 +74,9 @@ export function AssignTaskDialog({
   onTaskAssigned,
 }: AssignTaskDialogProps) {
   const { toast } = useToast();
+  // TL assigns to mentors
+  const { categories: dbCategories } = useTaskCategories("mentor");
+  const taskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasDeadline, setHasDeadline] = useState(true);
