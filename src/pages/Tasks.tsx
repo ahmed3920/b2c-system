@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useTaskCategories } from "@/hooks/useTaskCategories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,38 +60,7 @@ import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
-const taskTypes = [
-  "One-to-One Meeting",
-  "Study Plan",
-  "Cover Session",
-  "Team Meeting",
-  "Parent Meeting",
-  "Assessment",
-  "Recap Session",
-  "Session Review",
-  "Check Flags",
-  "Other",
-];
-
-const teamLeaderSelfTaskTypes = [
-  "One-to-one meeting",
-  "Team Meeting",
-  "Sub-Team Meeting",
-  "Batch Training",
-  "Study plan",
-  "Validating CS Case",
-  "Validating Flags",
-  "Session review",
-  "Process Development",
-  "Assigning Tasks to Mentors",
-  "Following Up with Mentors",
-  "Mentors Filtration",
-  "Mentors KPIs",
-  "Tutors KPIs",
-  "Team Upgrades",
-  "Moderation Validation",
-  "Other",
-];
+const fallbackTaskTypes = ["Other"];
 
 const statusOptions: TaskStatus[] = ["todo", "in_progress", "done", "archived"];
 
