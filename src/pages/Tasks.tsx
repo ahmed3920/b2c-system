@@ -100,7 +100,7 @@ const Tasks = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Form states
-  const [formType, setFormType] = useState(taskTypes[0]);
+  const [formType, setFormType] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formLink, setFormLink] = useState("");
   const [formDateFrom, setFormDateFrom] = useState("");
@@ -114,13 +114,17 @@ const Tasks = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, isTeamLeader } = useUserRole();
+  const { isAdmin, isTeamLeader, role } = useUserRole();
   const adminView = useAdminView();
   const tlView = useTeamLeaderView();
 
   const canEditAll = isAdmin || isTeamLeader;
   const isTLMentorView = isTeamLeader && !isAdmin && tlView.viewMode === "mentor";
-  const activeTaskTypes = isTeamLeader && !isAdmin && tlView.viewMode === "my" ? teamLeaderSelfTaskTypes : taskTypes;
+
+  // Determine which category role to use for filters
+  const categoryRole = isTLMentorView ? "mentor" : (role || "mentor");
+  const { categories: dbCategories } = useTaskCategories(categoryRole);
+  const activeTaskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
 
   // Determine which tasks to display
   const displayTasks = isAdmin && adminView.viewMode !== "my"
@@ -223,7 +227,7 @@ const Tasks = () => {
   }, [user, toast]);
 
   const resetForm = () => {
-    setFormType(taskTypes[0]);
+    setFormType(activeTaskTypes[0] || "");
     setFormDescription("");
     setFormLink("");
     setFormDateFrom("");
