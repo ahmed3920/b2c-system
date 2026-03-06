@@ -134,6 +134,9 @@ export function AdminTaskAssignDialog({
   onTaskAssigned,
 }: AdminTaskAssignDialogProps) {
   const { toast } = useToast();
+  // Admin assigns to mentors, so use mentor categories
+  const { categories: dbCategories } = useTaskCategories("mentor");
+  const taskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
