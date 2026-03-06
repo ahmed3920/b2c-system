@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTaskCategories } from "@/hooks/useTaskCategories";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -38,18 +39,7 @@ interface AdminTaskAssignDialogProps {
   onTaskAssigned: () => void;
 }
 
-const taskTypes = [
-  "One-to-One Meeting",
-  "Study Plan",
-  "Cover Session",
-  "Team Meeting",
-  "Parent Meeting",
-  "Assessment",
-  "Recap Session",
-  "Session Review",
-  "Check Flags",
-  "Other",
-];
+const fallbackTaskTypes = ["Other"];
 
 const priorityOptions = [
   { value: "1", label: "Low" },
