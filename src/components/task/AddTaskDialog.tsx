@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole, type AppRole } from "@/hooks/useUserRole";
+import { useTaskCategories } from "@/hooks/useTaskCategories";
 import {
   Dialog,
   DialogContent,
@@ -57,38 +58,7 @@ interface AddTaskDialogProps {
   ownerInfo: OwnerInfo | null;
 }
 
-const defaultTaskTypes = [
-  "One-to-One Meeting",
-  "Study Plan",
-  "Cover Session",
-  "Team Meeting",
-  "Parent Meeting",
-  "Assessment",
-  "Recap Session",
-  "Session Review",
-  "Check Flags",
-  "Other",
-];
-
-const teamLeaderSelfTaskTypes = [
-  "One-to-one meeting",
-  "Team Meeting",
-  "Sub-Team Meeting",
-  "Batch Training",
-  "Study plan",
-  "Validating CS Case",
-  "Validating Flags",
-  "Session review",
-  "Process Development",
-  "Assigning Tasks to Mentors",
-  "Following Up with Mentors",
-  "Mentors Filtration",
-  "Mentors KPIs",
-  "Tutors KPIs",
-  "Team Upgrades",
-  "Moderation Validation",
-  "Other",
-];
+const fallbackTaskTypes = ["Other"];
 
 const statusOptions: TaskStatus[] = ["todo", "in_progress", "done"];
 const statusLabels: Record<TaskStatus, string> = {
@@ -119,8 +89,10 @@ export function AddTaskDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [formFields, setFormFields] = useState<TaskFormField[]>([]);
 
-  const isTLSelfTask = ownerInfo?.role === "team_leader";
-  const taskTypes = isTLSelfTask ? teamLeaderSelfTaskTypes : defaultTaskTypes;
+  // Use the owner's role to fetch categories; fall back to current user's role
+  const categoryRole = ownerInfo?.role || role;
+  const { categories: dbCategories } = useTaskCategories(categoryRole);
+  const taskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
   
   // Form state
   const [hasDeadline, setHasDeadline] = useState(true);
