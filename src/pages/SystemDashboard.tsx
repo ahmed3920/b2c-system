@@ -40,6 +40,7 @@ import {
   Kanban,
   User,
   Calendar,
+  Tags,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { subDays, format } from "date-fns";
