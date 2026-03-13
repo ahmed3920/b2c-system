@@ -49,6 +49,7 @@ import {
   ShieldAlert,
   Archive,
   RotateCcw,
+  Link,
 } from "lucide-react";
 import type { UserWithRole } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
@@ -60,6 +61,7 @@ interface UserTableProps {
   onDeactivate: (userId: string) => Promise<{ success: boolean; error?: string }>;
   onReactivate: (userId: string) => Promise<{ success: boolean; error?: string }>;
   onResetPassword: (user: UserWithRole) => void;
+  onGenerateLoginLink?: (userId: string) => Promise<{ success: boolean }>;
   currentUserId?: string;
   teamLeaders: string[];
 }
@@ -70,6 +72,7 @@ export function UserTable({
   onDeactivate,
   onReactivate,
   onResetPassword,
+  onGenerateLoginLink,
   currentUserId,
   teamLeaders,
 }: UserTableProps) {
@@ -216,6 +219,12 @@ export function UserTable({
               <KeyRound className="w-4 h-4 mr-2" />
               Reset Password
             </DropdownMenuItem>
+            {onGenerateLoginLink && (
+              <DropdownMenuItem onClick={() => onGenerateLoginLink(user.user_id)} disabled={isInactive}>
+                <Link className="w-4 h-4 mr-2" />
+                Copy Login Link
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             {user.active_status ? (
               <DropdownMenuItem

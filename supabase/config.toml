@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.remap-task-userids]
 verify_jwt = false
+
+[functions.generate-login-token]
+verify_jwt = false
+
+[functions.token-login]
+verify_jwt = false

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,67 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTokenLoading, setIsTokenLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loginAttempts, setLoginAttempts] = useState(0);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Handle login token from URL
+  useEffect(() => {
+    const loginToken = searchParams.get("login_token");
+    if (loginToken) {
+      handleTokenLogin(loginToken);
+    }
+  }, [searchParams]);
+
+  const handleTokenLogin = async (token: string) => {
+    setIsTokenLoading(true);
+    try {
+      const response = await supabase.functions.invoke("token-login", {
+        body: { token },
+      });
+
+      if (response.error || response.data?.error) {
+        throw new Error(response.data?.error || response.error?.message || "Invalid login link");
+      }
+
+      const actionLink = response.data?.action_link;
+      if (actionLink) {
+        // Extract token_hash and type from the action link
+        const url = new URL(actionLink);
+        const tokenHash = url.searchParams.get("token") || url.hash?.match(/token=([^&]+)/)?.[1];
+        const type = url.searchParams.get("type") || "magiclink";
+        
+        if (tokenHash) {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as any,
+          });
+
+          if (error) throw error;
+
+          toast({
+            title: "Welcome!",
+            description: "You have been logged in successfully.",
+          });
+          navigate("/home");
+          return;
+        }
+      }
+
+      throw new Error("Failed to process login link");
+    } catch (error: any) {
+      toast({
+        title: "Login Link Failed",
+        description: error.message || "This login link is invalid. Please contact your administrator.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTokenLoading(false);
+    }
+  };
 
   const validateForm = () => {
     const data = { email, password };
@@ -106,6 +163,17 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  if (isTokenLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
