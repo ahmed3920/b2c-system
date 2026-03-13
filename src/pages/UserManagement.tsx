@@ -189,6 +189,7 @@ const UserManagement = () => {
             onDeactivate={deactivateUser}
             onReactivate={reactivateUser}
             onResetPassword={handleResetPassword}
+            onGenerateLoginLink={generateLoginLink}
             currentUserId={currentUserId}
             teamLeaders={teamLeaders}
           />
