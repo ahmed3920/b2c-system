@@ -49,6 +49,7 @@ import {
   ShieldAlert,
   Archive,
   RotateCcw,
+  Link,
 } from "lucide-react";
 import type { UserWithRole } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
