@@ -252,6 +252,46 @@ export function useAdminUsers() {
     }
   };
 
+  const generateLoginLink = async (userId: string) => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.access_token) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await supabase.functions.invoke("generate-login-token", {
+        body: { userId },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to generate login link");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      const token = response.data.token;
+      const loginUrl = `${window.location.origin}/auth?login_token=${token}`;
+
+      await navigator.clipboard.writeText(loginUrl);
+
+      toast({
+        title: "Login link copied!",
+        description: "The permanent login link has been copied to your clipboard.",
+      });
+
+      return { success: true, url: loginUrl };
+    } catch (error: any) {
+      toast({
+        title: "Error generating login link",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
   const resetPassword = async (data: ResetPasswordData) => {
     try {
       const { data: session } = await supabase.auth.getSession();
