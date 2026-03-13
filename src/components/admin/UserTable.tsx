@@ -72,6 +72,7 @@ export function UserTable({
   onDeactivate,
   onReactivate,
   onResetPassword,
+  onGenerateLoginLink,
   currentUserId,
   teamLeaders,
 }: UserTableProps) {
