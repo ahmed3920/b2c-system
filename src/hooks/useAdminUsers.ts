@@ -347,5 +347,6 @@ export function useAdminUsers() {
     deactivateUser,
     reactivateUser,
     resetPassword,
+    generateLoginLink,
   };
 }

@@ -219,6 +219,12 @@ export function UserTable({
               <KeyRound className="w-4 h-4 mr-2" />
               Reset Password
             </DropdownMenuItem>
+            {onGenerateLoginLink && (
+              <DropdownMenuItem onClick={() => onGenerateLoginLink(user.user_id)} disabled={isInactive}>
+                <Link className="w-4 h-4 mr-2" />
+                Copy Login Link
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             {user.active_status ? (
               <DropdownMenuItem
