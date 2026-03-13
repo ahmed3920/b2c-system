@@ -61,6 +61,7 @@ interface UserTableProps {
   onDeactivate: (userId: string) => Promise<{ success: boolean; error?: string }>;
   onReactivate: (userId: string) => Promise<{ success: boolean; error?: string }>;
   onResetPassword: (user: UserWithRole) => void;
+  onGenerateLoginLink?: (userId: string) => Promise<{ success: boolean }>;
   currentUserId?: string;
   teamLeaders: string[];
 }
