@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 const UserManagement = () => {
   const navigate = useNavigate();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
-  const { users, isLoading, teamLeaders, fetchUsers, createUser, updateUser, deactivateUser, reactivateUser, resetPassword } =
+  const { users, isLoading, teamLeaders, fetchUsers, createUser, updateUser, deactivateUser, reactivateUser, resetPassword, generateLoginLink } =
     useAdminUsers();
 
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
