@@ -149,16 +149,16 @@ export const QualityTab = () => {
             />
             <SummaryCard
               icon={<TrendingUp className="w-5 h-5" />}
-              label="Highest Agent Score"
+              label="Highest Tutor Score"
               value={`${stats.highest.avg.toFixed(1)}%`}
-              hint={stats.highest.agent_name}
+              hint={`${stats.highest.agent_name}${stats.highest.tutor_id ? ` (${stats.highest.tutor_id})` : ""}`}
               tone="success"
             />
             <SummaryCard
               icon={<TrendingDown className="w-5 h-5" />}
-              label="Lowest Agent Score"
+              label="Lowest Tutor Score"
               value={`${stats.lowest.avg.toFixed(1)}%`}
-              hint={stats.lowest.agent_name}
+              hint={`${stats.lowest.agent_name}${stats.lowest.tutor_id ? ` (${stats.lowest.tutor_id})` : ""}`}
               tone="warning"
             />
             <SummaryCard
@@ -179,13 +179,15 @@ export const QualityTab = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Agent Name</TableHead>
+                    <TableHead>Tutor ID</TableHead>
+                    <TableHead>Tutor Name</TableHead>
                     <TableHead className="text-right">Avg Score</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {stats.top.map((a) => (
-                    <TableRow key={a.agent_name}>
+                    <TableRow key={a.tutor_id || a.agent_name}>
+                      <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                       <TableCell className="font-medium">{a.agent_name}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant="secondary">{a.avg.toFixed(1)}%</Badge>
@@ -208,13 +210,15 @@ export const QualityTab = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Agent Name</TableHead>
+                      <TableHead>Tutor ID</TableHead>
+                      <TableHead>Tutor Name</TableHead>
                       <TableHead className="text-right">Avg Score</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {stats.needsAction.map((a) => (
-                      <TableRow key={a.agent_name}>
+                      <TableRow key={a.tutor_id || a.agent_name}>
+                        <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                         <TableCell className="font-medium">{a.agent_name}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="destructive">{a.avg.toFixed(1)}%</Badge>
@@ -254,11 +258,12 @@ export const QualityTab = () => {
 
           {/* Full data table */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">All Agents</h3>
+            <h3 className="text-lg font-semibold mb-4">All Tutors</h3>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent Name</TableHead>
+                  <TableHead>Tutor ID</TableHead>
+                  <TableHead>Tutor Name</TableHead>
                   <TableHead>Team Leader</TableHead>
                   <TableHead className="text-right">Avg Score</TableHead>
                   <TableHead className="text-right"># Evaluations</TableHead>
@@ -266,7 +271,8 @@ export const QualityTab = () => {
               </TableHeader>
               <TableBody>
                 {stats.agentStats.map((a) => (
-                  <TableRow key={a.agent_name}>
+                  <TableRow key={a.tutor_id || a.agent_name}>
+                    <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                     <TableCell className="font-medium">{a.agent_name}</TableCell>
                     <TableCell>{a.team_leader}</TableCell>
                     <TableCell className="text-right">
