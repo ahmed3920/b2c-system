@@ -118,8 +118,19 @@ export const QualityTab = () => {
     load();
   }, [load]);
 
+  const filteredRows = useMemo(() => {
+    if (!dateFrom && !dateTo) return rows;
+    const fromTs = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate()).getTime() : -Infinity;
+    const toTs = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).getTime() : Infinity;
+    return rows.filter((r) => {
+      if (!r.session_date) return false;
+      const ts = new Date(r.session_date).getTime();
+      return ts >= fromTs && ts <= toTs;
+    });
+  }, [rows, dateFrom, dateTo]);
+
   const stats = useMemo(() => {
-    if (rows.length === 0) return null;
+    if (filteredRows.length === 0) return null;
 
     // Group by tutor_id (canonical) — fall back to agent_name if missing.
     const byTutor = new Map<
