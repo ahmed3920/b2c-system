@@ -140,7 +140,7 @@ export const QualityTab = () => {
     const byTL = new Map<string, { total: number; count: number }>();
     let total = 0;
 
-    for (const r of rows) {
+    for (const r of filteredRows) {
       total += r.score;
       const key = (r.tutor_id ?? "").trim() || `name:${r.agent_name}`;
       const existing = byTutor.get(key);
