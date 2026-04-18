@@ -18,6 +18,7 @@ import {
   Shield,
   LayoutDashboard,
   BarChart3,
+  Target,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -36,6 +37,7 @@ interface DashboardCard {
   href: string;
   disabled?: boolean;
   roles: AppRole[];
+  disabledForRoles?: AppRole[];
 }
 
 const allCards: DashboardCard[] = [
@@ -104,6 +106,14 @@ const allCards: DashboardCard[] = [
     description: "Upload sheets and view performance metrics",
     icon: <BarChart3 className="w-8 h-8" />,
     href: "/tracking-numbers",
+    roles: ["admin"],
+    disabledForRoles: ["team_leader"],
+  },
+  {
+    title: "Action Plans",
+    description: "Manage tutor action plans and track improvement",
+    icon: <Target className="w-8 h-8" />,
+    href: "/action-plans",
     roles: ["admin", "team_leader"],
   },
 ];
@@ -271,7 +281,9 @@ const Home = () => {
 
         {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredCards.map((card, index) => (
+          {filteredCards.map((card, index) => {
+            const isDisabled = card.disabled || (role && card.disabledForRoles?.includes(role));
+            return (
             <motion.div
               key={card.title}
               initial={{ opacity: 0, y: 20 }}
@@ -279,10 +291,10 @@ const Home = () => {
               transition={{ delay: 0.1 + index * 0.05 }}
             >
               <button
-                onClick={() => !card.disabled && navigate(card.href)}
-                disabled={card.disabled}
+                onClick={() => !isDisabled && navigate(card.href)}
+                disabled={isDisabled}
                 className={`w-full text-left bg-card rounded-xl p-6 shadow-lg border border-border transition-all duration-300 
-                  ${card.disabled 
+                  ${isDisabled 
                     ? "opacity-50 cursor-not-allowed" 
                     : "hover:shadow-xl hover:-translate-y-1 hover:border-primary/50"
                   }`}
@@ -290,14 +302,15 @@ const Home = () => {
                 <div className="text-primary mb-4">{card.icon}</div>
                 <h3 className="font-semibold text-foreground mb-1">{card.title}</h3>
                 <p className="text-sm text-muted-foreground">{card.description}</p>
-                {card.disabled && (
+                {isDisabled && (
                   <span className="inline-block mt-2 text-xs bg-secondary px-2 py-0.5 rounded">
                     Coming Soon
                   </span>
                 )}
               </button>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       </main>
     </div>

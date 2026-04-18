@@ -34,10 +34,10 @@ const TrackingNumbers = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (!roleLoading && role && !isAdmin && !isTeamLeader) {
+    if (!roleLoading && role && !isAdmin) {
       navigate("/home");
     }
-  }, [role, roleLoading, isAdmin, isTeamLeader, navigate]);
+  }, [role, roleLoading, isAdmin, navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
