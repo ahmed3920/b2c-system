@@ -280,7 +280,11 @@ export const QualityTab = () => {
               </TableHeader>
               <TableBody>
                 {stats.agentStats.map((a) => (
-                  <TableRow key={a.tutor_id || a.agent_name}>
+                  <TableRow
+                    key={a.tutor_id || a.agent_name}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedTutor(a)}
+                  >
                     <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                     <TableCell className="font-medium">{a.agent_name}</TableCell>
                     <TableCell>{a.team_leader}</TableCell>
