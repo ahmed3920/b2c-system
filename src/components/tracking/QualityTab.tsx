@@ -611,6 +611,30 @@ const MiniStat = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
+const DistributionTile = ({
+  label,
+  count,
+  tone,
+}: {
+  label: string;
+  count: number;
+  tone: "primary" | "success" | "warning" | "muted";
+}) => {
+  const toneClass = {
+    primary: "bg-primary/10 text-primary border-primary/20",
+    success: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    warning: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+    muted: "bg-muted text-foreground border-border",
+  }[tone];
+  return (
+    <div className={`rounded-lg border p-4 ${toneClass}`}>
+      <p className="text-xs font-medium opacity-80">{label}</p>
+      <p className="text-3xl font-bold mt-1">{count}</p>
+      <p className="text-xs opacity-70 mt-0.5">tutor{count === 1 ? "" : "s"}</p>
+    </div>
+  );
+};
+
 const SummaryCard = ({
   icon,
   label,
