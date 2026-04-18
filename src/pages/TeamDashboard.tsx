@@ -239,10 +239,16 @@ const TeamDashboard = () => {
                 Managing {teamMembers.length} team member{teamMembers.length !== 1 ? "s" : ""}
               </p>
             </div>
-            <Button onClick={() => setAssignDialogOpen(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Assign New Task
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/action-plans")}>
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Action Plans
+              </Button>
+              <Button onClick={() => setAssignDialogOpen(true)}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Assign New Task
+              </Button>
+            </div>
           </div>
         </motion.div>
 
