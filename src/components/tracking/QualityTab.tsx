@@ -204,15 +204,122 @@ export const QualityTab = () => {
     );
   }
 
+  const hasFilter = !!dateFrom || !!dateTo;
+  const hasAnyData = rows.length > 0;
+
   return (
     <div className="space-y-6">
       <QualityUpload onUploaded={() => load()} />
 
+      {hasAnyData && (
+        <Card className="p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Period</label>
+              <Select value={preset} onValueChange={applyPreset}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="month">This month</SelectItem>
+                  <SelectItem value="last_month">Last month</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">From</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "PP") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(d) => {
+                      setDateFrom(d);
+                      setPreset("custom");
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">To</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "PP") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={(d) => {
+                      setDateTo(d);
+                      setPreset("custom");
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {hasFilter && (
+              <Button variant="ghost" size="sm" onClick={clearFilter}>
+                <X className="w-4 h-4 mr-1" /> Clear
+              </Button>
+            )}
+
+            <div className="ml-auto text-sm text-muted-foreground">
+              {hasFilter ? (
+                <>
+                  Showing <span className="font-semibold text-foreground">{filteredRows.length}</span> evaluation
+                  {filteredRows.length === 1 ? "" : "s"}
+                  {dateFrom && dateTo && ` from ${format(dateFrom, "PP")} to ${format(dateTo, "PP")}`}
+                </>
+              ) : (
+                <>All time • <span className="font-semibold text-foreground">{rows.length}</span> evaluations</>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
       {!stats ? (
         <Card className="p-12 text-center">
           <ClipboardCheck className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <h3 className="text-lg font-semibold">No quality data yet</h3>
-          <p className="text-muted-foreground">Upload a sheet to see analytics.</p>
+          <h3 className="text-lg font-semibold">
+            {hasAnyData ? "No evaluations in selected range" : "No quality data yet"}
+          </h3>
+          <p className="text-muted-foreground">
+            {hasAnyData ? "Try a different date range or clear the filter." : "Upload a sheet to see analytics."}
+          </p>
+          {hasAnyData && hasFilter && (
+            <Button variant="outline" className="mt-4" onClick={clearFilter}>
+              Clear filter
+            </Button>
+          )}
         </Card>
       ) : (
         <>
