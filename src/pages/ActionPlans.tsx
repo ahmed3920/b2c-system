@@ -159,102 +159,120 @@ const ActionPlans = () => {
           </Card>
         )}
 
-        {/* Filters */}
-        <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search tutor or ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
-                <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isAdmin && (
-            <Select value={tlFilter} onValueChange={setTlFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Team Leaders</SelectItem>
-                {teamLeaders.map((tl) => (
-                  <SelectItem key={tl} value={tl}>{tl}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        <Tabs defaultValue="plans" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="plans" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" /> Plans
+            </TabsTrigger>
+            <TabsTrigger value="tutors" className="flex items-center gap-2">
+              <Users className="w-4 h-4" /> Tutors
+            </TabsTrigger>
+          </TabsList>
 
-        {/* List */}
-        {filtered.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <h3 className="font-semibold mb-1">No action plans</h3>
-              <p className="text-sm text-muted-foreground">Click "New Plan" to create the first one.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((plan) => {
-              const overdue = plan.status !== "resolved" && isAfter(today, new Date(plan.due_date));
-              return (
-                <motion.button
-                  key={plan.id}
-                  onClick={() => setSelected(plan)}
-                  className="text-left bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-md transition-all p-4 space-y-3"
-                  whileHover={{ y: -2 }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold truncate">{plan.tutor_name}</h3>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {plan.tutor_external_id ? `${plan.tutor_external_id} · ` : ""}{plan.team_leader}
-                      </p>
-                    </div>
-                    <StatusBadge status={plan.status} />
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CategoryBadge category={plan.category} />
-                    {overdue && (
-                      <span className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" /> Overdue
-                      </span>
-                    )}
-                    {plan.evaluation && (
-                      <span className={`text-xs flex items-center gap-1 ${plan.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
-                        {plan.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
-                        {plan.evaluation === "improved" ? "Improved" : "Not Improved"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-semibold">{plan.progress}%</span>
-                    </div>
-                    <Progress value={plan.progress} className="h-1.5" />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
-                    <span>Start: {format(new Date(plan.start_date), "MMM d")}</span>
-                    <span>Due: {format(new Date(plan.due_date), "MMM d, yyyy")}</span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
+          <TabsContent value="plans" className="space-y-4">
+            {/* Filters */}
+            <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder="Search tutor or ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
+                    <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isAdmin && (
+                <Select value={tlFilter} onValueChange={setTlFilter}>
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Team Leaders</SelectItem>
+                    {teamLeaders.map((tl) => (
+                      <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* List */}
+            {filtered.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="font-semibold mb-1">No action plans</h3>
+                  <p className="text-sm text-muted-foreground">Click "New Plan" to create the first one.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filtered.map((plan) => {
+                  const overdue = plan.status !== "resolved" && isAfter(today, new Date(plan.due_date));
+                  return (
+                    <motion.button
+                      key={plan.id}
+                      onClick={() => setSelected(plan)}
+                      className="text-left bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-md transition-all p-4 space-y-3"
+                      whileHover={{ y: -2 }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold truncate">{plan.tutor_name}</h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {plan.tutor_external_id ? `${plan.tutor_external_id} · ` : ""}{plan.team_leader}
+                          </p>
+                        </div>
+                        <StatusBadge status={plan.status} />
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CategoryBadge category={plan.category} />
+                        {overdue && (
+                          <span className="text-xs text-destructive flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" /> Overdue
+                          </span>
+                        )}
+                        {plan.evaluation && (
+                          <span className={`text-xs flex items-center gap-1 ${plan.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
+                            {plan.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
+                            {plan.evaluation === "improved" ? "Improved" : "Not Improved"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-semibold">{plan.progress}%</span>
+                        </div>
+                        <Progress value={plan.progress} className="h-1.5" />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
+                        <span>Start: {format(new Date(plan.start_date), "MMM d")}</span>
+                        <span>Due: {format(new Date(plan.due_date), "MMM d, yyyy")}</span>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tutors">
+            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} />
+          </TabsContent>
+        </Tabs>
+
       </main>
 
       <CreateActionPlanDialog
