@@ -184,6 +184,39 @@ export type Database = {
         }
         Relationships: []
       }
+      quality_uploads: {
+        Row: {
+          agent_name: string
+          created_at: string
+          id: string
+          scope: string
+          score: number
+          session_date: string | null
+          team_leader: string
+          uploaded_by: string
+        }
+        Insert: {
+          agent_name: string
+          created_at?: string
+          id?: string
+          scope?: string
+          score: number
+          session_date?: string | null
+          team_leader: string
+          uploaded_by: string
+        }
+        Update: {
+          agent_name?: string
+          created_at?: string
+          id?: string
+          scope?: string
+          score?: number
+          session_date?: string | null
+          team_leader?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       task_categories: {
         Row: {
           category_name: string
