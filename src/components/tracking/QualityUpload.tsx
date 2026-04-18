@@ -318,10 +318,10 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
               Accepted formats: .xlsx, .csv. Required columns:{" "}
               <span className="font-medium text-foreground">Tutor ID</span>,{" "}
               <span className="font-medium text-foreground">Team Leader</span>,{" "}
+              <span className="font-medium text-foreground">Session Date</span> (column E),{" "}
               <span className="font-medium text-foreground">Score</span>. Optional:{" "}
-              <span className="font-medium text-foreground">Instructor's Name</span>,{" "}
-              <span className="font-medium text-foreground">Session Date</span>. After choosing a
-              file you'll confirm which date range the data covers.
+              <span className="font-medium text-foreground">Instructor's Name</span>. Each row's
+              quality score is dated by its own Session Date — rows without a date are skipped.
             </p>
 
             <input
