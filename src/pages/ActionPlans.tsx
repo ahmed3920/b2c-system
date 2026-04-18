@@ -96,7 +96,7 @@ const ActionPlans = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(isAdmin ? "/admin/dashboard" : "/team/dashboard")}>
+              <Button variant="ghost" size="icon" onClick={() => navigate("/home")}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <Logo variant="blue" className="h-8" />
