@@ -38,6 +38,149 @@ export type Database = {
         }
         Relationships: []
       }
+      action_plan_steps: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          created_at: string
+          id: string
+          note: string
+          plan_id: string
+          progress_change: number | null
+          status_change:
+            | Database["public"]["Enums"]["action_plan_status"]
+            | null
+        }
+        Insert: {
+          author_id: string
+          author_name?: string | null
+          created_at?: string
+          id?: string
+          note: string
+          plan_id: string
+          progress_change?: number | null
+          status_change?:
+            | Database["public"]["Enums"]["action_plan_status"]
+            | null
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          created_at?: string
+          id?: string
+          note?: string
+          plan_id?: string
+          progress_change?: number | null
+          status_change?:
+            | Database["public"]["Enums"]["action_plan_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_steps_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "action_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_plan_tutors: {
+        Row: {
+          created_at: string
+          id: string
+          is_mentor: boolean | null
+          language: string | null
+          mentor_name: string | null
+          team_leader: string
+          tutor_external_id: string | null
+          tutor_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_mentor?: boolean | null
+          language?: string | null
+          mentor_name?: string | null
+          team_leader: string
+          tutor_external_id?: string | null
+          tutor_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_mentor?: boolean | null
+          language?: string | null
+          mentor_name?: string | null
+          team_leader?: string
+          tutor_external_id?: string | null
+          tutor_name?: string
+        }
+        Relationships: []
+      }
+      action_plans: {
+        Row: {
+          category: Database["public"]["Enums"]["action_plan_category"]
+          created_at: string
+          created_by: string
+          due_date: string
+          evaluation:
+            | Database["public"]["Enums"]["action_plan_evaluation"]
+            | null
+          evaluation_notes: string | null
+          id: string
+          progress: number
+          resolved_at: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["action_plan_status"]
+          summary: string | null
+          team_leader: string
+          tutor_external_id: string | null
+          tutor_name: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["action_plan_category"]
+          created_at?: string
+          created_by: string
+          due_date?: string
+          evaluation?:
+            | Database["public"]["Enums"]["action_plan_evaluation"]
+            | null
+          evaluation_notes?: string | null
+          id?: string
+          progress?: number
+          resolved_at?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["action_plan_status"]
+          summary?: string | null
+          team_leader: string
+          tutor_external_id?: string | null
+          tutor_name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["action_plan_category"]
+          created_at?: string
+          created_by?: string
+          due_date?: string
+          evaluation?:
+            | Database["public"]["Enums"]["action_plan_evaluation"]
+            | null
+          evaluation_notes?: string | null
+          id?: string
+          progress?: number
+          resolved_at?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["action_plan_status"]
+          summary?: string | null
+          team_leader?: string
+          tutor_external_id?: string | null
+          tutor_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
@@ -424,6 +567,13 @@ export type Database = {
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      action_plan_category:
+        | "quality"
+        | "leaves_abuse"
+        | "communication"
+        | "cs_complaints"
+      action_plan_evaluation: "improved" | "not_improved"
+      action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
       app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
       task_status: "todo" | "in_progress" | "done" | "archived"
     }
@@ -553,6 +703,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      action_plan_category: [
+        "quality",
+        "leaves_abuse",
+        "communication",
+        "cs_complaints",
+      ],
+      action_plan_evaluation: ["improved", "not_improved"],
+      action_plan_status: ["active", "on_hold", "resolved", "escalated"],
       app_role: ["admin", "team_leader", "mentor", "community_moderator"],
       task_status: ["todo", "in_progress", "done", "archived"],
     },

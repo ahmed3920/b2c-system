@@ -41,6 +41,7 @@ import {
   User,
   Calendar,
   Tags,
+  ClipboardList,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { subDays, format } from "date-fns";
@@ -317,6 +318,10 @@ const SystemDashboard = () => {
               <Button variant="outline" size="sm" onClick={() => setIsCategoryManagerOpen(true)}>
                 <Tags className="w-4 h-4 mr-2" />
                 Categories
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("/action-plans")}>
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Action Plans
               </Button>
               <Button size="sm" onClick={() => setIsAssignDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
