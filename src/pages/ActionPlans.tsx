@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Logo } from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, Loader2, Plus, Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, PauseCircle, Flame, TrendingUp, ThumbsUp, ThumbsDown,
+  ArrowLeft, Loader2, Plus, Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, PauseCircle, Flame, TrendingUp, ThumbsUp, ThumbsDown, Users, ChevronRight,
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { motion } from "framer-motion";
@@ -156,102 +160,120 @@ const ActionPlans = () => {
           </Card>
         )}
 
-        {/* Filters */}
-        <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search tutor or ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
-                <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isAdmin && (
-            <Select value={tlFilter} onValueChange={setTlFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Team Leaders</SelectItem>
-                {teamLeaders.map((tl) => (
-                  <SelectItem key={tl} value={tl}>{tl}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        <Tabs defaultValue="plans" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="plans" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" /> Plans
+            </TabsTrigger>
+            <TabsTrigger value="tutors" className="flex items-center gap-2">
+              <Users className="w-4 h-4" /> Tutors
+            </TabsTrigger>
+          </TabsList>
 
-        {/* List */}
-        {filtered.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <h3 className="font-semibold mb-1">No action plans</h3>
-              <p className="text-sm text-muted-foreground">Click "New Plan" to create the first one.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((plan) => {
-              const overdue = plan.status !== "resolved" && isAfter(today, new Date(plan.due_date));
-              return (
-                <motion.button
-                  key={plan.id}
-                  onClick={() => setSelected(plan)}
-                  className="text-left bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-md transition-all p-4 space-y-3"
-                  whileHover={{ y: -2 }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold truncate">{plan.tutor_name}</h3>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {plan.tutor_external_id ? `${plan.tutor_external_id} · ` : ""}{plan.team_leader}
-                      </p>
-                    </div>
-                    <StatusBadge status={plan.status} />
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CategoryBadge category={plan.category} />
-                    {overdue && (
-                      <span className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" /> Overdue
-                      </span>
-                    )}
-                    {plan.evaluation && (
-                      <span className={`text-xs flex items-center gap-1 ${plan.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
-                        {plan.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
-                        {plan.evaluation === "improved" ? "Improved" : "Not Improved"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-semibold">{plan.progress}%</span>
-                    </div>
-                    <Progress value={plan.progress} className="h-1.5" />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
-                    <span>Start: {format(new Date(plan.start_date), "MMM d")}</span>
-                    <span>Due: {format(new Date(plan.due_date), "MMM d, yyyy")}</span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
+          <TabsContent value="plans" className="space-y-4">
+            {/* Filters */}
+            <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder="Search tutor or ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
+                    <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isAdmin && (
+                <Select value={tlFilter} onValueChange={setTlFilter}>
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Team Leaders</SelectItem>
+                    {teamLeaders.map((tl) => (
+                      <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* List */}
+            {filtered.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="font-semibold mb-1">No action plans</h3>
+                  <p className="text-sm text-muted-foreground">Click "New Plan" to create the first one.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filtered.map((plan) => {
+                  const overdue = plan.status !== "resolved" && isAfter(today, new Date(plan.due_date));
+                  return (
+                    <motion.button
+                      key={plan.id}
+                      onClick={() => setSelected(plan)}
+                      className="text-left bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-md transition-all p-4 space-y-3"
+                      whileHover={{ y: -2 }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold truncate">{plan.tutor_name}</h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {plan.tutor_external_id ? `${plan.tutor_external_id} · ` : ""}{plan.team_leader}
+                          </p>
+                        </div>
+                        <StatusBadge status={plan.status} />
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CategoryBadge category={plan.category} />
+                        {overdue && (
+                          <span className="text-xs text-destructive flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" /> Overdue
+                          </span>
+                        )}
+                        {plan.evaluation && (
+                          <span className={`text-xs flex items-center gap-1 ${plan.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
+                            {plan.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
+                            {plan.evaluation === "improved" ? "Improved" : "Not Improved"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-semibold">{plan.progress}%</span>
+                        </div>
+                        <Progress value={plan.progress} className="h-1.5" />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
+                        <span>Start: {format(new Date(plan.start_date), "MMM d")}</span>
+                        <span>Due: {format(new Date(plan.due_date), "MMM d, yyyy")}</span>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tutors">
+            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} />
+          </TabsContent>
+        </Tabs>
+
       </main>
 
       <CreateActionPlanDialog
@@ -284,5 +306,251 @@ const KpiCard = ({ label, value, icon, highlight }: { label: string; value: numb
     </CardContent>
   </Card>
 );
+
+interface TutorRow {
+  key: string;
+  tutor_name: string;
+  tutor_external_id: string | null;
+  team_leader: string;
+  total: number;
+  active: number;
+  resolved: number;
+  escalated: number;
+  on_hold: number;
+  improved: number;
+  not_improved: number;
+  plans: ActionPlan[];
+}
+
+const TutorsTab = ({
+  plans,
+  isAdmin,
+  onSelectPlan,
+}: {
+  plans: ActionPlan[];
+  isAdmin: boolean;
+  onSelectPlan: (p: ActionPlan) => void;
+}) => {
+  const [search, setSearch] = useState("");
+  const [openTutor, setOpenTutor] = useState<TutorRow | null>(null);
+
+  const rows = useMemo<TutorRow[]>(() => {
+    const map = new Map<string, TutorRow>();
+    for (const p of plans) {
+      const key = `${p.tutor_external_id ?? "noid"}::${p.tutor_name}::${p.team_leader}`;
+      let row = map.get(key);
+      if (!row) {
+        row = {
+          key,
+          tutor_name: p.tutor_name,
+          tutor_external_id: p.tutor_external_id,
+          team_leader: p.team_leader,
+          total: 0, active: 0, resolved: 0, escalated: 0, on_hold: 0,
+          improved: 0, not_improved: 0,
+          plans: [],
+        };
+        map.set(key, row);
+      }
+      row.total += 1;
+      if (p.status === "active") row.active += 1;
+      else if (p.status === "resolved") row.resolved += 1;
+      else if (p.status === "escalated") row.escalated += 1;
+      else if (p.status === "on_hold") row.on_hold += 1;
+      if (p.evaluation === "improved") row.improved += 1;
+      else if (p.evaluation === "not_improved") row.not_improved += 1;
+      row.plans.push(p);
+    }
+    const arr = Array.from(map.values()).sort((a, b) => b.total - a.total || a.tutor_name.localeCompare(b.tutor_name));
+    if (!search.trim()) return arr;
+    const q = search.toLowerCase();
+    return arr.filter(
+      (r) =>
+        r.tutor_name.toLowerCase().includes(q) ||
+        (r.tutor_external_id ?? "").toLowerCase().includes(q) ||
+        r.team_leader.toLowerCase().includes(q),
+    );
+  }, [plans, search]);
+
+  const today = new Date();
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search tutor, ID, or team leader..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Badge variant="outline" className="font-medium">
+          {rows.length} tutor{rows.length === 1 ? "" : "s"}
+        </Badge>
+      </div>
+
+      {rows.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+            <h3 className="font-semibold mb-1">No tutors on action plans</h3>
+            <p className="text-sm text-muted-foreground">Tutors will appear here once plans are created.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tutor</TableHead>
+                  {isAdmin && <TableHead>Team Leader</TableHead>}
+                  <TableHead className="text-center">Total</TableHead>
+                  <TableHead className="text-center">Active</TableHead>
+                  <TableHead className="text-center">Resolved</TableHead>
+                  <TableHead className="text-center">Escalated</TableHead>
+                  <TableHead className="text-center">Improved / Not</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow
+                    key={r.key}
+                    className="cursor-pointer"
+                    onClick={() => setOpenTutor(r)}
+                  >
+                    <TableCell>
+                      <div className="font-medium">{r.tutor_name}</div>
+                      {r.tutor_external_id && (
+                        <div className="text-xs text-muted-foreground">{r.tutor_external_id}</div>
+                      )}
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-sm text-muted-foreground">{r.team_leader}</TableCell>
+                    )}
+                    <TableCell className="text-center font-semibold">{r.total}</TableCell>
+                    <TableCell className="text-center">
+                      {r.active > 0 ? (
+                        <Badge variant="outline" className="bg-blue-500/15 text-blue-600 border-blue-500/30">{r.active}</Badge>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {r.resolved > 0 ? (
+                        <Badge variant="outline" className="bg-green-500/15 text-green-700 border-green-500/30">{r.resolved}</Badge>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {r.escalated > 0 ? (
+                        <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">{r.escalated}</Badge>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center text-sm whitespace-nowrap">
+                      <span className="text-green-600 font-medium">{r.improved}</span>
+                      <span className="text-muted-foreground"> / </span>
+                      <span className="text-destructive font-medium">{r.not_improved}</span>
+                    </TableCell>
+                    <TableCell>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <TutorPlansDialog
+        tutor={openTutor}
+        open={!!openTutor}
+        onOpenChange={(v) => !v && setOpenTutor(null)}
+        onSelectPlan={(p) => {
+          setOpenTutor(null);
+          onSelectPlan(p);
+        }}
+        today={today}
+      />
+    </div>
+  );
+};
+
+const TutorPlansDialog = ({
+  tutor,
+  open,
+  onOpenChange,
+  onSelectPlan,
+  today,
+}: {
+  tutor: TutorRow | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSelectPlan: (p: ActionPlan) => void;
+  today: Date;
+}) => {
+  if (!tutor) return null;
+  const sorted = [...tutor.plans].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            {tutor.tutor_name}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {tutor.tutor_external_id ? `${tutor.tutor_external_id} · ` : ""}{tutor.team_leader} · {tutor.total} plan{tutor.total === 1 ? "" : "s"}
+          </p>
+        </DialogHeader>
+        <div className="space-y-3">
+          {sorted.map((p) => {
+            const overdue = p.status !== "resolved" && isAfter(today, new Date(p.due_date));
+            return (
+              <button
+                key={p.id}
+                onClick={() => onSelectPlan(p)}
+                className="w-full text-left bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-sm transition-all p-3 space-y-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CategoryBadge category={p.category} />
+                    <StatusBadge status={p.status} />
+                    {overdue && (
+                      <span className="text-xs text-destructive flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Overdue
+                      </span>
+                    )}
+                    {p.evaluation && (
+                      <span className={`text-xs flex items-center gap-1 ${p.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
+                        {p.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
+                        {p.evaluation === "improved" ? "Improved" : "Not Improved"}
+                      </span>
+                    )}
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </div>
+                {p.summary && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">{p.summary}</p>
+                )}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-semibold">{p.progress}%</span>
+                  </div>
+                  <Progress value={p.progress} className="h-1.5" />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
+                  <span>Start: {format(new Date(p.start_date), "MMM d, yyyy")}</span>
+                  <span>Due: {format(new Date(p.due_date), "MMM d, yyyy")}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export default ActionPlans;
