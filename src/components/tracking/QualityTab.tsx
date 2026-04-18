@@ -16,6 +16,7 @@ import { Loader2, TrendingUp, TrendingDown, Award, ClipboardCheck, AlertTriangle
 
 interface QualityRow {
   id: string;
+  tutor_id: string | null;
   agent_name: string;
   team_leader: string;
   session_date: string | null;
@@ -23,6 +24,7 @@ interface QualityRow {
 }
 
 interface AgentStat {
+  tutor_id: string;
   agent_name: string;
   team_leader: string;
   avg: number;

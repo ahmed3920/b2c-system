@@ -187,10 +187,12 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
           <h3 className="text-lg font-semibold">Upload Quality Sheet</h3>
           <p className="text-sm text-muted-foreground mb-4">
             Accepted formats: .xlsx, .csv. Required columns:{" "}
-            <span className="font-medium text-foreground">Agent Name (or Instructor's Name)</span>,{" "}
+            <span className="font-medium text-foreground">Tutor ID</span>,{" "}
             <span className="font-medium text-foreground">Team Leader</span>,{" "}
-            <span className="font-medium text-foreground">Date (or Session Date)</span>,{" "}
-            <span className="font-medium text-foreground">Score</span>.
+            <span className="font-medium text-foreground">Score</span>. Optional:{" "}
+            <span className="font-medium text-foreground">Instructor's Name</span>,{" "}
+            <span className="font-medium text-foreground">Session Date</span>.
+            Tutors are tracked by Tutor ID, so name changes won't split their stats.
           </p>
 
           <input
