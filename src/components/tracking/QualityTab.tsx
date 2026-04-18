@@ -185,6 +185,13 @@ export const QualityTab = () => {
     const top = sortedDesc.slice(0, 5);
     const needsAction = agentStats.filter((a) => a.avg < ACTION_THRESHOLD).sort((a, b) => a.avg - b.avg);
 
+    const distribution = {
+      perfect: agentStats.filter((a) => a.avg >= 100).length,
+      high: agentStats.filter((a) => a.avg >= 96 && a.avg < 100).length,
+      mid: agentStats.filter((a) => a.avg >= 90 && a.avg < 96).length,
+      low: agentStats.filter((a) => a.avg < 90).length,
+    };
+
     return {
       overallAvg: total / filteredRows.length,
       totalEvaluations: filteredRows.length,
@@ -192,6 +199,7 @@ export const QualityTab = () => {
       lowest: sortedDesc[sortedDesc.length - 1],
       top,
       needsAction,
+      distribution,
       agentStats: [...agentStats].sort((a, b) => a.agent_name.localeCompare(b.agent_name)),
       tlStats: tlStats.sort((a, b) => b.avg - a.avg),
     };
