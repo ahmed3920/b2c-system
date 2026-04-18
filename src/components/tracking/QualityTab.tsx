@@ -185,6 +185,13 @@ export const QualityTab = () => {
     const top = sortedDesc.slice(0, 5);
     const needsAction = agentStats.filter((a) => a.avg < ACTION_THRESHOLD).sort((a, b) => a.avg - b.avg);
 
+    const distribution = {
+      perfect: agentStats.filter((a) => a.avg >= 100).length,
+      high: agentStats.filter((a) => a.avg >= 96 && a.avg < 100).length,
+      mid: agentStats.filter((a) => a.avg >= 90 && a.avg < 96).length,
+      low: agentStats.filter((a) => a.avg < 90).length,
+    };
+
     return {
       overallAvg: total / filteredRows.length,
       totalEvaluations: filteredRows.length,
@@ -192,6 +199,7 @@ export const QualityTab = () => {
       lowest: sortedDesc[sortedDesc.length - 1],
       top,
       needsAction,
+      distribution,
       agentStats: [...agentStats].sort((a, b) => a.agent_name.localeCompare(b.agent_name)),
       tlStats: tlStats.sort((a, b) => b.avg - a.avg),
     };
@@ -354,6 +362,17 @@ export const QualityTab = () => {
               tone="muted"
             />
           </div>
+
+          {/* Score distribution */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Tutor Score Distribution</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <DistributionTile label="Perfect (100%)" count={stats.distribution.perfect} tone="success" />
+              <DistributionTile label="Excellent (96–99%)" count={stats.distribution.high} tone="primary" />
+              <DistributionTile label="Good (90–95%)" count={stats.distribution.mid} tone="muted" />
+              <DistributionTile label="Needs Action (<90%)" count={stats.distribution.low} tone="warning" />
+            </div>
+          </Card>
 
           {/* Top performers + Needs action */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -591,6 +610,30 @@ const MiniStat = ({ label, value }: { label: string; value: string }) => (
     <p className="text-lg font-bold mt-0.5">{value}</p>
   </div>
 );
+
+const DistributionTile = ({
+  label,
+  count,
+  tone,
+}: {
+  label: string;
+  count: number;
+  tone: "primary" | "success" | "warning" | "muted";
+}) => {
+  const toneClass = {
+    primary: "bg-primary/10 text-primary border-primary/20",
+    success: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    warning: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+    muted: "bg-muted text-foreground border-border",
+  }[tone];
+  return (
+    <div className={`rounded-lg border p-4 ${toneClass}`}>
+      <p className="text-xs font-medium opacity-80">{label}</p>
+      <p className="text-3xl font-bold mt-1">{count}</p>
+      <p className="text-xs opacity-70 mt-0.5">tutor{count === 1 ? "" : "s"}</p>
+    </div>
+  );
+};
 
 const SummaryCard = ({
   icon,
