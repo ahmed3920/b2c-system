@@ -16,6 +16,7 @@ import { Loader2, TrendingUp, TrendingDown, Award, ClipboardCheck, AlertTriangle
 
 interface QualityRow {
   id: string;
+  tutor_id: string | null;
   agent_name: string;
   team_leader: string;
   session_date: string | null;
@@ -23,6 +24,7 @@ interface QualityRow {
 }
 
 interface AgentStat {
+  tutor_id: string;
   agent_name: string;
   team_leader: string;
   avg: number;
@@ -40,7 +42,7 @@ export const QualityTab = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("quality_uploads")
-      .select("id, agent_name, team_leader, session_date, score")
+      .select("id, tutor_id, agent_name, team_leader, session_date, score")
       .order("created_at", { ascending: false });
     if (!error && data) setRows(data as QualityRow[]);
     setLoading(false);
@@ -53,17 +55,33 @@ export const QualityTab = () => {
   const stats = useMemo(() => {
     if (rows.length === 0) return null;
 
-    const byAgent = new Map<string, { team_leader: string; total: number; count: number }>();
+    // Group by tutor_id (canonical) — fall back to agent_name if missing.
+    const byTutor = new Map<
+      string,
+      { tutor_id: string; agent_name: string; team_leader: string; total: number; count: number }
+    >();
     const byTL = new Map<string, { total: number; count: number }>();
     let total = 0;
 
     for (const r of rows) {
       total += r.score;
-      const a = byAgent.get(r.agent_name) ?? { team_leader: r.team_leader, total: 0, count: 0 };
+      const key = (r.tutor_id ?? "").trim() || `name:${r.agent_name}`;
+      const existing = byTutor.get(key);
+      const a = existing ?? {
+        tutor_id: r.tutor_id ?? "",
+        agent_name: r.agent_name,
+        team_leader: r.team_leader,
+        total: 0,
+        count: 0,
+      };
       a.total += r.score;
       a.count += 1;
-      a.team_leader = r.team_leader;
-      byAgent.set(r.agent_name, a);
+      // Use most recent name/team_leader (rows ordered desc by created_at)
+      if (!existing) {
+        a.agent_name = r.agent_name;
+        a.team_leader = r.team_leader;
+      }
+      byTutor.set(key, a);
 
       const tl = byTL.get(r.team_leader) ?? { total: 0, count: 0 };
       tl.total += r.score;
@@ -71,8 +89,9 @@ export const QualityTab = () => {
       byTL.set(r.team_leader, tl);
     }
 
-    const agentStats: AgentStat[] = Array.from(byAgent.entries()).map(([name, v]) => ({
-      agent_name: name,
+    const agentStats: AgentStat[] = Array.from(byTutor.values()).map((v) => ({
+      tutor_id: v.tutor_id,
+      agent_name: v.agent_name,
       team_leader: v.team_leader,
       avg: v.total / v.count,
       count: v.count,
@@ -130,16 +149,16 @@ export const QualityTab = () => {
             />
             <SummaryCard
               icon={<TrendingUp className="w-5 h-5" />}
-              label="Highest Agent Score"
+              label="Highest Tutor Score"
               value={`${stats.highest.avg.toFixed(1)}%`}
-              hint={stats.highest.agent_name}
+              hint={`${stats.highest.agent_name}${stats.highest.tutor_id ? ` (${stats.highest.tutor_id})` : ""}`}
               tone="success"
             />
             <SummaryCard
               icon={<TrendingDown className="w-5 h-5" />}
-              label="Lowest Agent Score"
+              label="Lowest Tutor Score"
               value={`${stats.lowest.avg.toFixed(1)}%`}
-              hint={stats.lowest.agent_name}
+              hint={`${stats.lowest.agent_name}${stats.lowest.tutor_id ? ` (${stats.lowest.tutor_id})` : ""}`}
               tone="warning"
             />
             <SummaryCard
@@ -160,13 +179,15 @@ export const QualityTab = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Agent Name</TableHead>
+                    <TableHead>Tutor ID</TableHead>
+                    <TableHead>Tutor Name</TableHead>
                     <TableHead className="text-right">Avg Score</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {stats.top.map((a) => (
-                    <TableRow key={a.agent_name}>
+                    <TableRow key={a.tutor_id || a.agent_name}>
+                      <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                       <TableCell className="font-medium">{a.agent_name}</TableCell>
                       <TableCell className="text-right">
                         <Badge variant="secondary">{a.avg.toFixed(1)}%</Badge>
@@ -189,13 +210,15 @@ export const QualityTab = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Agent Name</TableHead>
+                      <TableHead>Tutor ID</TableHead>
+                      <TableHead>Tutor Name</TableHead>
                       <TableHead className="text-right">Avg Score</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {stats.needsAction.map((a) => (
-                      <TableRow key={a.agent_name}>
+                      <TableRow key={a.tutor_id || a.agent_name}>
+                        <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                         <TableCell className="font-medium">{a.agent_name}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="destructive">{a.avg.toFixed(1)}%</Badge>
@@ -235,11 +258,12 @@ export const QualityTab = () => {
 
           {/* Full data table */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">All Agents</h3>
+            <h3 className="text-lg font-semibold mb-4">All Tutors</h3>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agent Name</TableHead>
+                  <TableHead>Tutor ID</TableHead>
+                  <TableHead>Tutor Name</TableHead>
                   <TableHead>Team Leader</TableHead>
                   <TableHead className="text-right">Avg Score</TableHead>
                   <TableHead className="text-right"># Evaluations</TableHead>
@@ -247,7 +271,8 @@ export const QualityTab = () => {
               </TableHeader>
               <TableBody>
                 {stats.agentStats.map((a) => (
-                  <TableRow key={a.agent_name}>
+                  <TableRow key={a.tutor_id || a.agent_name}>
+                    <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                     <TableCell className="font-medium">{a.agent_name}</TableCell>
                     <TableCell>{a.team_leader}</TableCell>
                     <TableCell className="text-right">

@@ -7,10 +7,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Upload, Loader2, CheckCircle2, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Strict expected columns. We accept either the spec's names or the
-// sheet's actual names (Instructor's Name, Session Date) for convenience.
+// Strict expected columns. Tutor ID is the canonical identifier (names may change).
 const COLUMN_ALIASES: Record<string, string[]> = {
-  agent_name: ["Agent Name", "Instructor's Name", "Instructor Name", "Mentor"],
+  tutor_id: ["Tutor ID", "Tutor Id", "TutorID", "Mentor ID", "Agent ID"],
+  agent_name: ["Agent Name", "Instructor's Name", "Instructor Name", "Mentor", "Tutor Name"],
   team_leader: ["Team Leader"],
   session_date: ["Date", "Session Date"],
   score: ["Score"],
@@ -21,6 +21,7 @@ interface QualityUploadProps {
 }
 
 interface ParsedRow {
+  tutor_id: string;
   agent_name: string;
   team_leader: string;
   session_date: string | null;
@@ -91,6 +92,7 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
 
       const headers = Object.keys(json[0]);
       const colMap = {
+        tutor_id: findColumn(headers, COLUMN_ALIASES.tutor_id),
         agent_name: findColumn(headers, COLUMN_ALIASES.agent_name),
         team_leader: findColumn(headers, COLUMN_ALIASES.team_leader),
         session_date: findColumn(headers, COLUMN_ALIASES.session_date),
@@ -111,23 +113,25 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
       let skipped = 0;
 
       for (const row of json) {
+        const tutorId = String(row[colMap.tutor_id!] ?? "").trim();
         const agent = String(row[colMap.agent_name!] ?? "").trim();
         const tl = String(row[colMap.team_leader!] ?? "").trim();
         const dateRaw = row[colMap.session_date!];
         const scoreRaw = row[colMap.score!];
 
-        if (!agent && !tl && (scoreRaw === "" || scoreRaw == null)) {
+        if (!tutorId && !agent && !tl && (scoreRaw === "" || scoreRaw == null)) {
           continue; // empty row
         }
 
         const scoreNum = typeof scoreRaw === "number" ? scoreRaw : parseFloat(String(scoreRaw).replace("%", "").trim());
-        if (!agent || !tl || isNaN(scoreNum)) {
+        if (!tutorId || !tl || isNaN(scoreNum)) {
           skipped++;
           continue;
         }
 
         cleaned.push({
-          agent_name: agent,
+          tutor_id: tutorId,
+          agent_name: agent || tutorId,
           team_leader: tl,
           session_date: excelDateToISO(dateRaw),
           score: scoreNum,
@@ -183,10 +187,12 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
           <h3 className="text-lg font-semibold">Upload Quality Sheet</h3>
           <p className="text-sm text-muted-foreground mb-4">
             Accepted formats: .xlsx, .csv. Required columns:{" "}
-            <span className="font-medium text-foreground">Agent Name (or Instructor's Name)</span>,{" "}
+            <span className="font-medium text-foreground">Tutor ID</span>,{" "}
             <span className="font-medium text-foreground">Team Leader</span>,{" "}
-            <span className="font-medium text-foreground">Date (or Session Date)</span>,{" "}
-            <span className="font-medium text-foreground">Score</span>.
+            <span className="font-medium text-foreground">Score</span>. Optional:{" "}
+            <span className="font-medium text-foreground">Instructor's Name</span>,{" "}
+            <span className="font-medium text-foreground">Session Date</span>.
+            Tutors are tracked by Tutor ID, so name changes won't split their stats.
           </p>
 
           <input
