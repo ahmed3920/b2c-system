@@ -40,7 +40,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   tutor_id: ["Tutor ID", "Tutor Id", "TutorID", "Mentor ID", "Agent ID"],
   agent_name: ["Agent Name", "Instructor's Name", "Instructor Name", "Mentor", "Tutor Name"],
   team_leader: ["Team Leader"],
-  session_date: ["Date", "Session Date"],
+  session_date: ["Session Date", "SessionDate", "Date"],
   score: ["Score"],
 };
 
