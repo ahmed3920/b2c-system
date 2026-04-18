@@ -1,26 +1,32 @@
-# Change Credentials for Ghada Mohamed
 
-## Current Account
+## Per-Tutor Drill-Down Modal
 
-- **Email**: [ghada.mohamed@ischooltech.com](mailto:ghada.mohamed@ischooltech.com)
-- **User ID (DB)**: 1cdfb097-6ed6-4f83-98a4-5b95ad63e4d2
-- **Mentor ID**: U-ML4CBTEI
-- **Role**: team_leader
+### Goal
+Click any row in the "All Tutors" table to open a modal showing that tutor's complete evaluation history.
 
-## Plan
-
-Use the existing `admin-update-user` edge function to reset Ghada's password to a new value. No data will be deleted — only the authentication password is changed.
-
-### New Credentials
-
-- **Email**: [ghada.mohamed@ischooltech.com](mailto:ghada.mohamed@ischooltech.com) (unchanged)
-- **Password**: `Ghada@2026!`
+### UX
+- Rows in "All Tutors" table become clickable (cursor pointer + hover highlight already present).
+- Modal opens with:
+  - **Header**: Tutor name + Tutor ID + current Team Leader
+  - **Summary strip**: Avg score, # evaluations, highest score, lowest score
+  - **History table**: Date (sorted newest first), Score (color-coded badge), Team Leader
+  - Empty/edge handling for tutors with a single evaluation
 
 ### Implementation
 
-1. Invoke the `admin-update-user` edge function with `userId` and `newPassword` to update the password via the Supabase Auth Admin API.
-2. This only changes the auth password — profile data, tasks, and role remain untouched.
+**File: `src/components/tracking/QualityTab.tsx`** (only file touched)
 
-### Technical Detail
+1. Add state: `selectedTutor: AgentStat | null`.
+2. Make `<TableRow>` in the "All Tutors" table clickable (`onClick`, `cursor-pointer`).
+3. Compute `tutorHistory` via memo: filter `rows` (or `filteredRows` if date filter exists) by matching `tutor_id` (fallback to `agent_name` when ID missing), sort by `session_date` desc.
+4. Render a `<Dialog>` (shadcn) with:
+   - `DialogHeader` showing tutor identity
+   - 4 small summary tiles (avg / count / high / low)
+   - History `<Table>` with Date, Score (Badge: green ≥90, orange 75-89, red <75), Team Leader
+5. Dialog respects existing 85vh max-height + internal scroll convention.
 
-- Single call to the existing edge function; no code changes, no migrations needed.
+### Technical Notes
+- Pure client-side; no DB/edge function/migration changes.
+- Reuses already-loaded `rows` data — no extra queries.
+- Uses existing `Dialog`, `Table`, `Badge` components.
+- Date formatting via `date-fns` `format(..., "PP")` (already in project).
