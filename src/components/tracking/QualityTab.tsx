@@ -363,6 +363,17 @@ export const QualityTab = () => {
             />
           </div>
 
+          {/* Score distribution */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Tutor Score Distribution</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <DistributionTile label="Perfect (100%)" count={stats.distribution.perfect} tone="success" />
+              <DistributionTile label="Excellent (96–99%)" count={stats.distribution.high} tone="primary" />
+              <DistributionTile label="Good (90–95%)" count={stats.distribution.mid} tone="muted" />
+              <DistributionTile label="Needs Action (<90%)" count={stats.distribution.low} tone="warning" />
+            </div>
+          </Card>
+
           {/* Top performers + Needs action */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6">
