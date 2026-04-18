@@ -17,6 +17,7 @@ import {
   Settings,
   Shield,
   LayoutDashboard,
+  BarChart3,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -97,6 +98,13 @@ const allCards: DashboardCard[] = [
     icon: <FileText className="w-8 h-8" />,
     href: "/reports",
     roles: ["admin", "team_leader", "mentor", "community_moderator"],
+  },
+  {
+    title: "Tracking Numbers",
+    description: "Upload sheets and view performance metrics",
+    icon: <BarChart3 className="w-8 h-8" />,
+    href: "/tracking-numbers",
+    roles: ["admin", "team_leader"],
   },
 ];
 
