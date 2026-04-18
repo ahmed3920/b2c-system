@@ -20,7 +20,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, TrendingUp, TrendingDown, Award, ClipboardCheck, AlertTriangle, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import {
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Award,
+  ClipboardCheck,
+  AlertTriangle,
+  Trophy,
+  CalendarIcon,
+  X,
+} from "lucide-react";
 
 interface QualityRow {
   id: string;
