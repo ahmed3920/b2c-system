@@ -169,12 +169,15 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
         }
 
         const iso = excelDateToISO(dateRaw);
-        if (!iso) rowsWithoutDate++;
-        else {
-          const d = new Date(iso);
-          if (!minDate || d < minDate) minDate = d;
-          if (!maxDate || d > maxDate) maxDate = d;
+        if (!iso) {
+          // Session Date (column E) is required — skip rows without a valid date.
+          rowsWithoutDate++;
+          skipped++;
+          continue;
         }
+        const d = new Date(iso);
+        if (!minDate || d < minDate) minDate = d;
+        if (!maxDate || d > maxDate) maxDate = d;
 
         cleaned.push({
           tutor_id: tutorId,
