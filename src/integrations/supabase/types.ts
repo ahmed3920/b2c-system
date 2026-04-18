@@ -193,6 +193,7 @@ export type Database = {
           score: number
           session_date: string | null
           team_leader: string
+          tutor_id: string | null
           uploaded_by: string
         }
         Insert: {
@@ -203,6 +204,7 @@ export type Database = {
           score: number
           session_date?: string | null
           team_leader: string
+          tutor_id?: string | null
           uploaded_by: string
         }
         Update: {
@@ -213,6 +215,7 @@ export type Database = {
           score?: number
           session_date?: string | null
           team_leader?: string
+          tutor_id?: string | null
           uploaded_by?: string
         }
         Relationships: []
