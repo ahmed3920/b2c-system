@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { QualityUpload } from "./QualityUpload";
@@ -12,6 +13,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Loader2, TrendingUp, TrendingDown, Award, ClipboardCheck, AlertTriangle, Trophy } from "lucide-react";
 
 interface QualityRow {
@@ -37,6 +45,7 @@ export const QualityTab = () => {
   const { isAdmin } = useUserRole();
   const [rows, setRows] = useState<QualityRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTutor, setSelectedTutor] = useState<AgentStat | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -271,7 +280,11 @@ export const QualityTab = () => {
               </TableHeader>
               <TableBody>
                 {stats.agentStats.map((a) => (
-                  <TableRow key={a.tutor_id || a.agent_name}>
+                  <TableRow
+                    key={a.tutor_id || a.agent_name}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedTutor(a)}
+                  >
                     <TableCell className="font-mono text-xs">{a.tutor_id || "—"}</TableCell>
                     <TableCell className="font-medium">{a.agent_name}</TableCell>
                     <TableCell>{a.team_leader}</TableCell>
@@ -288,9 +301,119 @@ export const QualityTab = () => {
           </Card>
         </>
       )}
+
+      <TutorHistoryDialog
+        tutor={selectedTutor}
+        rows={rows}
+        onClose={() => setSelectedTutor(null)}
+      />
     </div>
   );
 };
+
+const TutorHistoryDialog = ({
+  tutor,
+  rows,
+  onClose,
+}: {
+  tutor: AgentStat | null;
+  rows: QualityRow[];
+  onClose: () => void;
+}) => {
+  const history = useMemo(() => {
+    if (!tutor) return [];
+    const matchById = (tutor.tutor_id ?? "").trim().length > 0;
+    const filtered = rows.filter((r) =>
+      matchById ? (r.tutor_id ?? "").trim() === tutor.tutor_id : r.agent_name === tutor.agent_name,
+    );
+    return filtered.sort((a, b) => {
+      const ad = a.session_date ? new Date(a.session_date).getTime() : 0;
+      const bd = b.session_date ? new Date(b.session_date).getTime() : 0;
+      return bd - ad;
+    });
+  }, [tutor, rows]);
+
+  const summary = useMemo(() => {
+    if (history.length === 0) return null;
+    const scores = history.map((h) => h.score);
+    return {
+      avg: scores.reduce((s, v) => s + v, 0) / scores.length,
+      count: scores.length,
+      high: Math.max(...scores),
+      low: Math.min(...scores),
+    };
+  }, [history]);
+
+  const scoreVariant = (s: number): "default" | "secondary" | "destructive" => {
+    if (s >= 90) return "default";
+    if (s >= 75) return "secondary";
+    return "destructive";
+  };
+
+  return (
+    <Dialog open={!!tutor} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl">
+        {tutor && (
+          <>
+            <DialogHeader>
+              <DialogTitle>{tutor.agent_name}</DialogTitle>
+              <DialogDescription>
+                <span className="font-mono">{tutor.tutor_id || "No ID"}</span>
+                {" • "}
+                Team Leader: {tutor.team_leader}
+              </DialogDescription>
+            </DialogHeader>
+
+            {summary && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                <MiniStat label="Average" value={`${summary.avg.toFixed(1)}%`} />
+                <MiniStat label="Evaluations" value={summary.count.toString()} />
+                <MiniStat label="Highest" value={`${summary.high.toFixed(1)}%`} />
+                <MiniStat label="Lowest" value={`${summary.low.toFixed(1)}%`} />
+              </div>
+            )}
+
+            {history.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No evaluation history available.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Team Leader</TableHead>
+                    <TableHead className="text-right">Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((h) => (
+                    <TableRow key={h.id}>
+                      <TableCell>
+                        {h.session_date ? format(new Date(h.session_date), "PP") : "—"}
+                      </TableCell>
+                      <TableCell>{h.team_leader}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant={scoreVariant(h.score)}>{h.score.toFixed(1)}%</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const MiniStat = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-lg border p-3">
+    <p className="text-xs text-muted-foreground">{label}</p>
+    <p className="text-lg font-bold mt-0.5">{value}</p>
+  </div>
+);
 
 const SummaryCard = ({
   icon,
