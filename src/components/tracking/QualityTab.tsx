@@ -45,6 +45,7 @@ export const QualityTab = () => {
   const { isAdmin } = useUserRole();
   const [rows, setRows] = useState<QualityRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTutor, setSelectedTutor] = useState<AgentStat | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
