@@ -40,7 +40,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   tutor_id: ["Tutor ID", "Tutor Id", "TutorID", "Mentor ID", "Agent ID"],
   agent_name: ["Agent Name", "Instructor's Name", "Instructor Name", "Mentor", "Tutor Name"],
   team_leader: ["Team Leader"],
-  session_date: ["Date", "Session Date"],
+  session_date: ["Session Date", "SessionDate", "Date"],
   score: ["Score"],
 };
 
@@ -169,12 +169,15 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
         }
 
         const iso = excelDateToISO(dateRaw);
-        if (!iso) rowsWithoutDate++;
-        else {
-          const d = new Date(iso);
-          if (!minDate || d < minDate) minDate = d;
-          if (!maxDate || d > maxDate) maxDate = d;
+        if (!iso) {
+          // Session Date (column E) is required — skip rows without a valid date.
+          rowsWithoutDate++;
+          skipped++;
+          continue;
         }
+        const d = new Date(iso);
+        if (!minDate || d < minDate) minDate = d;
+        if (!maxDate || d > maxDate) maxDate = d;
 
         cleaned.push({
           tutor_id: tutorId,
@@ -242,12 +245,13 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
       const fromISO = format(confirmFrom, "yyyy-MM-dd");
       const toISO = format(confirmTo, "yyyy-MM-dd");
 
-      // Filter rows to confirmed range. Rows missing a date inherit `confirmFrom`.
+      // Each row keeps its own session_date from column E ("Session Date").
+      // Only rows whose date falls within the confirmed window are uploaded.
       const inRange: ParsedRow[] = [];
       let outOfRange = 0;
       for (const r of pending.rows) {
         if (!r.session_date) {
-          inRange.push({ ...r, session_date: fromISO });
+          outOfRange++;
           continue;
         }
         if (r.session_date >= fromISO && r.session_date <= toISO) {
@@ -314,10 +318,10 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
               Accepted formats: .xlsx, .csv. Required columns:{" "}
               <span className="font-medium text-foreground">Tutor ID</span>,{" "}
               <span className="font-medium text-foreground">Team Leader</span>,{" "}
+              <span className="font-medium text-foreground">Session Date</span> (column E),{" "}
               <span className="font-medium text-foreground">Score</span>. Optional:{" "}
-              <span className="font-medium text-foreground">Instructor's Name</span>,{" "}
-              <span className="font-medium text-foreground">Session Date</span>. After choosing a
-              file you'll confirm which date range the data covers.
+              <span className="font-medium text-foreground">Instructor's Name</span>. Each row's
+              quality score is dated by its own Session Date — rows without a date are skipped.
             </p>
 
             <input
