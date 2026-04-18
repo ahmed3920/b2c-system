@@ -15,6 +15,7 @@ import UserManagement from "./pages/UserManagement";
 import TeamDashboard from "./pages/TeamDashboard";
 import SystemDashboard from "./pages/SystemDashboard";
 import TrackingNumbers from "./pages/TrackingNumbers";
+import ActionPlans from "./pages/ActionPlans";
 
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
           {/* All System Tasks route removed - Admins only see team-level aggregates */}
           <Route path="/team/dashboard" element={<TeamDashboard />} />
           <Route path="/tracking-numbers" element={<TrackingNumbers />} />
+          <Route path="/action-plans" element={<ActionPlans />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
