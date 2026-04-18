@@ -185,8 +185,8 @@ export const QualityTab = () => {
     const needsAction = agentStats.filter((a) => a.avg < ACTION_THRESHOLD).sort((a, b) => a.avg - b.avg);
 
     return {
-      overallAvg: total / rows.length,
-      totalEvaluations: rows.length,
+      overallAvg: total / filteredRows.length,
+      totalEvaluations: filteredRows.length,
       highest: sortedDesc[0],
       lowest: sortedDesc[sortedDesc.length - 1],
       top,
@@ -194,7 +194,7 @@ export const QualityTab = () => {
       agentStats: [...agentStats].sort((a, b) => a.agent_name.localeCompare(b.agent_name)),
       tlStats: tlStats.sort((a, b) => b.avg - a.avg),
     };
-  }, [rows]);
+  }, [filteredRows]);
 
   if (loading) {
     return (
