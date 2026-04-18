@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, subDays, subMonths } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { QualityUpload } from "./QualityUpload";
@@ -20,7 +20,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, TrendingUp, TrendingDown, Award, ClipboardCheck, AlertTriangle, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import {
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Award,
+  ClipboardCheck,
+  AlertTriangle,
+  Trophy,
+  CalendarIcon,
+  X,
+} from "lucide-react";
 
 interface QualityRow {
   id: string;
@@ -46,6 +67,42 @@ export const QualityTab = () => {
   const [rows, setRows] = useState<QualityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTutor, setSelectedTutor] = useState<AgentStat | null>(null);
+  const [preset, setPreset] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  const applyPreset = useCallback((p: string) => {
+    setPreset(p);
+    const today = new Date();
+    switch (p) {
+      case "all":
+        setDateFrom(undefined);
+        setDateTo(undefined);
+        break;
+      case "7d":
+        setDateFrom(subDays(today, 6));
+        setDateTo(today);
+        break;
+      case "30d":
+        setDateFrom(subDays(today, 29));
+        setDateTo(today);
+        break;
+      case "month":
+        setDateFrom(startOfMonth(today));
+        setDateTo(endOfMonth(today));
+        break;
+      case "last_month": {
+        const lm = subMonths(today, 1);
+        setDateFrom(startOfMonth(lm));
+        setDateTo(endOfMonth(lm));
+        break;
+      }
+      default:
+        break;
+    }
+  }, []);
+
+  const clearFilter = useCallback(() => applyPreset("all"), [applyPreset]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,8 +118,19 @@ export const QualityTab = () => {
     load();
   }, [load]);
 
+  const filteredRows = useMemo(() => {
+    if (!dateFrom && !dateTo) return rows;
+    const fromTs = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate()).getTime() : -Infinity;
+    const toTs = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59, 999).getTime() : Infinity;
+    return rows.filter((r) => {
+      if (!r.session_date) return false;
+      const ts = new Date(r.session_date).getTime();
+      return ts >= fromTs && ts <= toTs;
+    });
+  }, [rows, dateFrom, dateTo]);
+
   const stats = useMemo(() => {
-    if (rows.length === 0) return null;
+    if (filteredRows.length === 0) return null;
 
     // Group by tutor_id (canonical) — fall back to agent_name if missing.
     const byTutor = new Map<
@@ -72,7 +140,7 @@ export const QualityTab = () => {
     const byTL = new Map<string, { total: number; count: number }>();
     let total = 0;
 
-    for (const r of rows) {
+    for (const r of filteredRows) {
       total += r.score;
       const key = (r.tutor_id ?? "").trim() || `name:${r.agent_name}`;
       const existing = byTutor.get(key);
@@ -117,8 +185,8 @@ export const QualityTab = () => {
     const needsAction = agentStats.filter((a) => a.avg < ACTION_THRESHOLD).sort((a, b) => a.avg - b.avg);
 
     return {
-      overallAvg: total / rows.length,
-      totalEvaluations: rows.length,
+      overallAvg: total / filteredRows.length,
+      totalEvaluations: filteredRows.length,
       highest: sortedDesc[0],
       lowest: sortedDesc[sortedDesc.length - 1],
       top,
@@ -126,7 +194,7 @@ export const QualityTab = () => {
       agentStats: [...agentStats].sort((a, b) => a.agent_name.localeCompare(b.agent_name)),
       tlStats: tlStats.sort((a, b) => b.avg - a.avg),
     };
-  }, [rows]);
+  }, [filteredRows]);
 
   if (loading) {
     return (
@@ -136,15 +204,122 @@ export const QualityTab = () => {
     );
   }
 
+  const hasFilter = !!dateFrom || !!dateTo;
+  const hasAnyData = rows.length > 0;
+
   return (
     <div className="space-y-6">
       <QualityUpload onUploaded={() => load()} />
 
+      {hasAnyData && (
+        <Card className="p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Period</label>
+              <Select value={preset} onValueChange={applyPreset}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="month">This month</SelectItem>
+                  <SelectItem value="last_month">Last month</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">From</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-[180px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "PP") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(d) => {
+                      setDateFrom(d);
+                      setPreset("custom");
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">To</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-[180px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "PP") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={(d) => {
+                      setDateTo(d);
+                      setPreset("custom");
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {hasFilter && (
+              <Button variant="ghost" size="sm" onClick={clearFilter}>
+                <X className="w-4 h-4 mr-1" /> Clear
+              </Button>
+            )}
+
+            <div className="ml-auto text-sm text-muted-foreground">
+              {hasFilter ? (
+                <>
+                  Showing <span className="font-semibold text-foreground">{filteredRows.length}</span> evaluation
+                  {filteredRows.length === 1 ? "" : "s"}
+                  {dateFrom && dateTo && ` from ${format(dateFrom, "PP")} to ${format(dateTo, "PP")}`}
+                </>
+              ) : (
+                <>All time • <span className="font-semibold text-foreground">{rows.length}</span> evaluations</>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
       {!stats ? (
         <Card className="p-12 text-center">
           <ClipboardCheck className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <h3 className="text-lg font-semibold">No quality data yet</h3>
-          <p className="text-muted-foreground">Upload a sheet to see analytics.</p>
+          <h3 className="text-lg font-semibold">
+            {hasAnyData ? "No evaluations in selected range" : "No quality data yet"}
+          </h3>
+          <p className="text-muted-foreground">
+            {hasAnyData ? "Try a different date range or clear the filter." : "Upload a sheet to see analytics."}
+          </p>
+          {hasAnyData && hasFilter && (
+            <Button variant="outline" className="mt-4" onClick={clearFilter}>
+              Clear filter
+            </Button>
+          )}
         </Card>
       ) : (
         <>
