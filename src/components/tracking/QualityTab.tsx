@@ -67,6 +67,42 @@ export const QualityTab = () => {
   const [rows, setRows] = useState<QualityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTutor, setSelectedTutor] = useState<AgentStat | null>(null);
+  const [preset, setPreset] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  const applyPreset = useCallback((p: string) => {
+    setPreset(p);
+    const today = new Date();
+    switch (p) {
+      case "all":
+        setDateFrom(undefined);
+        setDateTo(undefined);
+        break;
+      case "7d":
+        setDateFrom(subDays(today, 6));
+        setDateTo(today);
+        break;
+      case "30d":
+        setDateFrom(subDays(today, 29));
+        setDateTo(today);
+        break;
+      case "month":
+        setDateFrom(startOfMonth(today));
+        setDateTo(endOfMonth(today));
+        break;
+      case "last_month": {
+        const lm = subMonths(today, 1);
+        setDateFrom(startOfMonth(lm));
+        setDateTo(endOfMonth(lm));
+        break;
+      }
+      default:
+        break;
+    }
+  }, []);
+
+  const clearFilter = useCallback(() => applyPreset("all"), [applyPreset]);
 
   const load = useCallback(async () => {
     setLoading(true);
