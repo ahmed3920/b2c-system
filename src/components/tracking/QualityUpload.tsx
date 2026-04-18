@@ -245,12 +245,13 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
       const fromISO = format(confirmFrom, "yyyy-MM-dd");
       const toISO = format(confirmTo, "yyyy-MM-dd");
 
-      // Filter rows to confirmed range. Rows missing a date inherit `confirmFrom`.
+      // Each row keeps its own session_date from column E ("Session Date").
+      // Only rows whose date falls within the confirmed window are uploaded.
       const inRange: ParsedRow[] = [];
       let outOfRange = 0;
       for (const r of pending.rows) {
         if (!r.session_date) {
-          inRange.push({ ...r, session_date: fromISO });
+          outOfRange++;
           continue;
         }
         if (r.session_date >= fromISO && r.session_date <= toISO) {
