@@ -28,10 +28,10 @@ export const CATEGORY_FIRST_STEP: Record<ActionPlanCategory, FirstStepSpec | nul
     marker: "📧 **Warning Email Sent**",
   },
   quality: {
-    kind: "schedule_meeting",
-    label: "Schedule evaluation meeting",
-    description: "Quality plans must start with a scheduled evaluation meeting with the tutor.",
-    marker: "📅 **Evaluation Meeting Scheduled**",
+    kind: "warning_email",
+    label: "Send warning email",
+    description: "Send the tutor a warning email outlining concerns and the required improvements before scheduling the evaluation meeting.",
+    marker: "📧 **Warning Email Sent**",
   },
   cs_complaints: {
     kind: "schedule_meeting",
