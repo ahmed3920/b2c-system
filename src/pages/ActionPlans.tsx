@@ -458,7 +458,34 @@ const KpiCard = ({ label, value, icon, highlight }: { label: string; value: numb
   </Card>
 );
 
-interface TutorRow {
+const CATEGORY_CARD_STYLES: Record<ActionPlanCategory, string> = {
+  quality: "bg-primary/10 text-primary border-primary/20",
+  emergency_abuse: "bg-red-500/10 text-red-700 border-red-500/30",
+  no_show_abuse: "bg-amber-500/10 text-amber-700 border-amber-500/30",
+  communication: "bg-purple-500/10 text-purple-700 border-purple-500/30",
+  cs_complaints: "bg-pink-500/10 text-pink-700 border-pink-500/30",
+  leaves_abuse: "bg-orange-500/10 text-orange-700 border-orange-500/30",
+};
+
+const CategoryCountCard = ({
+  label, count, active, onClick, styleClass, activeClass,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+  styleClass: string;
+  activeClass: string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 ${styleClass} ${active ? activeClass : ""}`}
+  >
+    <p className="text-xs font-medium opacity-80 truncate">{label}</p>
+    <p className="text-2xl font-bold leading-tight">{count}</p>
+  </button>
+);
   key: string;
   tutor_name: string;
   tutor_external_id: string | null;
