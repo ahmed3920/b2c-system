@@ -244,48 +244,67 @@ const ActionPlans = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.map((plan) => {
                   const overdue = plan.status !== "resolved" && isAfter(today, new Date(plan.due_date));
+                  const canDelete = isAdmin || (isTeamLeader && plan.team_leader === currentTL);
                   return (
-                    <motion.button
+                    <motion.div
                       key={plan.id}
-                      onClick={() => setSelected(plan)}
-                      className="text-left bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-md transition-all p-4 space-y-3"
+                      className="relative bg-card rounded-lg border border-border hover:border-primary/40 hover:shadow-md transition-all"
                       whileHover={{ y: -2 }}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="font-semibold truncate">{plan.tutor_name}</h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {plan.tutor_external_id ? `${plan.tutor_external_id} · ` : ""}{plan.team_leader}
-                          </p>
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlanToDelete(plan);
+                          }}
+                          title="Delete action plan"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                      <button
+                        onClick={() => setSelected(plan)}
+                        className="text-left w-full p-4 space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-2 pr-7">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold truncate">{plan.tutor_name}</h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {plan.tutor_external_id ? `${plan.tutor_external_id} · ` : ""}{plan.team_leader}
+                            </p>
+                          </div>
+                          <StatusBadge status={plan.status} />
                         </div>
-                        <StatusBadge status={plan.status} />
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <CategoryBadge category={plan.category} />
-                        {overdue && (
-                          <span className="text-xs text-destructive flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" /> Overdue
-                          </span>
-                        )}
-                        {plan.evaluation && (
-                          <span className={`text-xs flex items-center gap-1 ${plan.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
-                            {plan.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
-                            {plan.evaluation === "improved" ? "Improved" : "Not Improved"}
-                          </span>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Progress</span>
-                          <span className="font-semibold">{plan.progress}%</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CategoryBadge category={plan.category} />
+                          {overdue && (
+                            <span className="text-xs text-destructive flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" /> Overdue
+                            </span>
+                          )}
+                          {plan.evaluation && (
+                            <span className={`text-xs flex items-center gap-1 ${plan.evaluation === "improved" ? "text-green-600" : "text-destructive"}`}>
+                              {plan.evaluation === "improved" ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
+                              {plan.evaluation === "improved" ? "Improved" : "Not Improved"}
+                            </span>
+                          )}
                         </div>
-                        <Progress value={plan.progress} className="h-1.5" />
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
-                        <span>Start: {format(new Date(plan.start_date), "MMM d")}</span>
-                        <span>Due: {format(new Date(plan.due_date), "MMM d, yyyy")}</span>
-                      </div>
-                    </motion.button>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Progress</span>
+                            <span className="font-semibold">{plan.progress}%</span>
+                          </div>
+                          <Progress value={plan.progress} className="h-1.5" />
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border">
+                          <span>Start: {format(new Date(plan.start_date), "MMM d")}</span>
+                          <span>Due: {format(new Date(plan.due_date), "MMM d, yyyy")}</span>
+                        </div>
+                      </button>
+                    </motion.div>
                   );
                 })}
               </div>
