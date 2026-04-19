@@ -52,10 +52,11 @@ const ROADMAPS: Record<ActionPlanCategory, RoadmapStep[]> = {
     { kind: "escalate", label: "Re-evaluate quality score", detail: "Resolve plan with Improved / Not Improved evaluation.", matchEscalated: true },
   ],
   cs_complaints: [
+    { kind: "warning_email", label: "Send warning email", detail: "Email to the tutor including the CS ticket details and the concern raised.", matchMarkers: ["📧 **Warning Email Sent**"], isMain: true },
     { kind: "schedule_meeting", label: "Schedule evaluation meeting", detail: "Triggered from the 2nd repeated CS ticket in the same month.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"] },
     { kind: "meeting_followup", label: "Document root cause & corrective steps", matchMarkers: ["📝 **Meeting Follow-up**"] },
     { kind: "monitor", label: "Monitor CS tickets for the rest of the month", matchUpdatesAtLeast: 3 },
-    { kind: "escalate", label: "Escalate if more tickets occur", matchEscalated: true },
+    { kind: "escalate", label: "Escalate to HR after 3 repeated incidents", detail: "If the same issue repeats 3 times, escalate the case to HR.", matchEscalated: true, isMain: true },
   ],
   communication: [
     { kind: "schedule_meeting", label: "Hold coaching conversation", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"] },
