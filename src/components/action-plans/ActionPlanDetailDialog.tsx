@@ -45,15 +45,18 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
   const [posting, setPosting] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
   const [evalNotes, setEvalNotes] = useState("");
+  // Local mirror of the plan so header/progress refresh in-place after edits.
+  const [currentPlan, setCurrentPlan] = useState<ActionPlan | null>(plan);
 
   useEffect(() => {
+    setCurrentPlan(plan);
     setEvalNotes(plan?.evaluation_notes ?? "");
-  }, [plan?.id, plan?.evaluation_notes]);
+  }, [plan?.id, plan?.evaluation_notes, plan?.status, plan?.progress, plan?.evaluation, plan]);
 
-  if (!plan) return null;
+  if (!currentPlan) return null;
 
-  const isResolved = plan.status === "resolved";
-  const dueDate = new Date(plan.due_date);
+  const isResolved = currentPlan.status === "resolved";
+  const dueDate = new Date(currentPlan.due_date);
   const isOverdue = !isResolved && dueDate < new Date();
 
   const postUpdate = async () => {
@@ -77,13 +80,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     let autoProgress: number | null = null;
     if (newStatus) {
       autoProgress = STATUS_PROGRESS[newStatus];
-    } else if (plan.status !== "resolved") {
-      autoProgress = Math.min(90, plan.progress + 10);
+    } else if (currentPlan.status !== "resolved") {
+      autoProgress = Math.min(90, currentPlan.progress + 10);
     }
 
     // Insert step
     const { error: stepErr } = await supabase.from("action_plan_steps").insert({
-      plan_id: plan.id,
+      plan_id: currentPlan.id,
       author_id: session.user.id,
       author_name: profile?.full_name || profile?.mentor_name || "User",
       note: note.trim(),
@@ -105,9 +108,12 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     if (autoProgress !== null) planUpdates.progress = autoProgress;
 
     if (Object.keys(planUpdates).length > 0) {
-      const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", plan.id);
+      const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", currentPlan.id);
       if (planErr) {
         toast.error("Update saved but plan change failed", { description: planErr.message });
+      } else {
+        // Reflect changes in the dialog immediately.
+        setCurrentPlan((prev) => (prev ? { ...prev, ...planUpdates } as ActionPlan : prev));
       }
     }
 
@@ -124,12 +130,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     const { error } = await supabase
       .from("action_plans")
       .update({ evaluation, evaluation_notes: evalNotes || null })
-      .eq("id", plan.id);
+      .eq("id", currentPlan.id);
     setSavingEval(false);
     if (error) {
       toast.error("Failed to save evaluation", { description: error.message });
       return;
     }
+    setCurrentPlan((prev) => (prev ? { ...prev, evaluation, evaluation_notes: evalNotes || null } : prev));
     toast.success("Evaluation saved");
     onChanged();
   };
@@ -139,9 +146,9 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 flex-wrap pr-8">
-            <span>{plan.tutor_name}</span>
-            <CategoryBadge category={plan.category} />
-            <StatusBadge status={plan.status} />
+            <span>{currentPlan.tutor_name}</span>
+            <CategoryBadge category={currentPlan.category} />
+            <StatusBadge status={currentPlan.status} />
             {isOverdue && (
               <span className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" /> Overdue
@@ -152,7 +159,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
                 variant="ghost"
                 size="sm"
                 className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={() => onDelete(plan)}
+                onClick={() => onDelete(currentPlan)}
               >
                 <Trash2 className="w-4 h-4 mr-1" /> Delete
               </Button>
@@ -165,28 +172,28 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
               <p className="text-muted-foreground text-xs">Team Leader</p>
-              <p className="font-medium flex items-center gap-1"><User className="w-3 h-3" />{plan.team_leader}</p>
+              <p className="font-medium flex items-center gap-1"><User className="w-3 h-3" />{currentPlan.team_leader}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Tutor ID</p>
-              <p className="font-medium">{plan.tutor_external_id || "—"}</p>
+              <p className="font-medium">{currentPlan.tutor_external_id || "—"}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Start</p>
-              <p className="font-medium flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(plan.start_date), "MMM d, yyyy")}</p>
+              <p className="font-medium flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(currentPlan.start_date), "MMM d, yyyy")}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Due</p>
               <p className={`font-medium flex items-center gap-1 ${isOverdue ? "text-destructive" : ""}`}>
-                <Calendar className="w-3 h-3" />{format(new Date(plan.due_date), "MMM d, yyyy")}
+                <Calendar className="w-3 h-3" />{format(new Date(currentPlan.due_date), "MMM d, yyyy")}
               </p>
             </div>
           </div>
 
-          {plan.summary && (
+          {currentPlan.summary && (
             <div className="bg-muted/40 rounded-md p-3 text-sm">
               <p className="text-muted-foreground text-xs mb-1">Summary</p>
-              <p>{plan.summary}</p>
+              <p>{currentPlan.summary}</p>
             </div>
           )}
 
@@ -194,13 +201,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span>Progress <span className="text-xs text-muted-foreground">(auto)</span></span>
-              <span className="font-bold">{plan.progress}%</span>
+              <span className="font-bold">{currentPlan.progress}%</span>
             </div>
-            <Progress value={plan.progress} className="h-2" />
+            <Progress value={currentPlan.progress} className="h-2" />
           </div>
 
           {/* Decision helper for this category */}
-          <CategoryDecisionHelper category={plan.category} />
+          <CategoryDecisionHelper category={currentPlan.category} />
 
           <Separator />
 
@@ -269,9 +276,9 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           {isResolved && (
             <div className="space-y-3 border rounded-md p-3 bg-muted/20">
               <Label className="text-sm font-semibold">Final Evaluation</Label>
-              {plan.evaluation && (
+              {currentPlan.evaluation && (
                 <p className="text-sm">
-                  Current: <strong>{plan.evaluation === "improved" ? "Improved" : "Not Improved"}</strong>
+                  Current: <strong>{currentPlan.evaluation === "improved" ? "Improved" : "Not Improved"}</strong>
                 </p>
               )}
               <Textarea
