@@ -80,13 +80,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     let autoProgress: number | null = null;
     if (newStatus) {
       autoProgress = STATUS_PROGRESS[newStatus];
-    } else if (plan.status !== "resolved") {
-      autoProgress = Math.min(90, plan.progress + 10);
+    } else if (currentPlan.status !== "resolved") {
+      autoProgress = Math.min(90, currentPlan.progress + 10);
     }
 
     // Insert step
     const { error: stepErr } = await supabase.from("action_plan_steps").insert({
-      plan_id: plan.id,
+      plan_id: currentPlan.id,
       author_id: session.user.id,
       author_name: profile?.full_name || profile?.mentor_name || "User",
       note: note.trim(),
@@ -108,9 +108,12 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     if (autoProgress !== null) planUpdates.progress = autoProgress;
 
     if (Object.keys(planUpdates).length > 0) {
-      const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", plan.id);
+      const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", currentPlan.id);
       if (planErr) {
         toast.error("Update saved but plan change failed", { description: planErr.message });
+      } else {
+        // Reflect changes in the dialog immediately.
+        setCurrentPlan((prev) => (prev ? { ...prev, ...planUpdates } as ActionPlan : prev));
       }
     }
 
@@ -127,12 +130,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     const { error } = await supabase
       .from("action_plans")
       .update({ evaluation, evaluation_notes: evalNotes || null })
-      .eq("id", plan.id);
+      .eq("id", currentPlan.id);
     setSavingEval(false);
     if (error) {
       toast.error("Failed to save evaluation", { description: error.message });
       return;
     }
+    setCurrentPlan((prev) => (prev ? { ...prev, evaluation, evaluation_notes: evalNotes || null } : prev));
     toast.success("Evaluation saved");
     onChanged();
   };
