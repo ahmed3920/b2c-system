@@ -815,8 +815,23 @@ const TutorsTab = ({
                           ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="text-center">
-                          {r.escalated > 0 ? (
-                            <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">{r.escalated}</Badge>
+                          {r.escalation_events > 0 || r.escalated > 0 ? (
+                            <span
+                              className="inline-flex items-center gap-1"
+                              title={
+                                r.escalation_events > r.escalated
+                                  ? `${r.escalation_events} total escalation${r.escalation_events === 1 ? "" : "s"} · ${r.escalated} currently escalated`
+                                  : `${r.escalated} currently escalated`
+                              }
+                            >
+                              <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">
+                                {Math.max(r.escalation_events, r.escalated)}
+                                {r.escalation_events > 1 && <span className="ml-0.5">×</span>}
+                              </Badge>
+                              {r.escalated > 0 && r.escalation_events > r.escalated && (
+                                <span className="text-[10px] text-muted-foreground">({r.escalated} now)</span>
+                              )}
+                            </span>
                           ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="text-center text-sm whitespace-nowrap">
