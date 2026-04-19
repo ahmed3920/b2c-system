@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X, Flag } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
