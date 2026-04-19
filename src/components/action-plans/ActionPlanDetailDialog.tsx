@@ -310,8 +310,10 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           {!isResolved && (
             <AddUpdateForm
               planId={currentPlan.id}
+              category={currentPlan.category}
               currentStatus={currentPlan.status}
               currentProgress={currentPlan.progress}
+              firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
               onPosted={handlePosted}
             />
           )}
