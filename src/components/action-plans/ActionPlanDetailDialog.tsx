@@ -202,6 +202,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             <Progress value={currentPlan.progress} className="h-2" />
           </div>
 
+          {/* First-step tracker (admin/TL clear visibility) */}
+          <PlanProgressTracker
+            category={currentPlan.category}
+            totalSteps={steps.length}
+            firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
+          />
+
           {/* Decision helper for this category */}
           <CategoryDecisionHelper category={currentPlan.category} />
 
