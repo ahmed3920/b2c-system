@@ -18,6 +18,8 @@ import { CategoryBadge, StatusBadge } from "./ActionPlanBadges";
 import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 import { AddUpdateForm } from "./AddUpdateForm";
 import { StepNoteRenderer } from "./StepNoteRenderer";
+import { PlanProgressTracker } from "./PlanProgressTracker";
+import { isFirstStepDone } from "./categoryFirstStep";
 import {
   useActionPlanSteps,
   type ActionPlan,
@@ -202,6 +204,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             <Progress value={currentPlan.progress} className="h-2" />
           </div>
 
+          {/* First-step tracker (admin/TL clear visibility) */}
+          <PlanProgressTracker
+            category={currentPlan.category}
+            totalSteps={steps.length}
+            firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
+          />
+
           {/* Decision helper for this category */}
           <CategoryDecisionHelper category={currentPlan.category} />
 
@@ -301,8 +310,10 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           {!isResolved && (
             <AddUpdateForm
               planId={currentPlan.id}
+              category={currentPlan.category}
               currentStatus={currentPlan.status}
               currentProgress={currentPlan.progress}
+              firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
               onPosted={handlePosted}
             />
           )}

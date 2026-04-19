@@ -8,12 +8,13 @@ import {
 } from "@/components/ui/select";
 import {
   Loader2, MessageSquarePlus, Mail, CalendarClock, FileText,
-  ImagePlus, X, MessageSquare,
+  ImagePlus, X, MessageSquare, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { STATUS_LABELS, type ActionPlanStatus } from "@/hooks/useActionPlans";
+import { STATUS_LABELS, type ActionPlanStatus, type ActionPlanCategory } from "@/hooks/useActionPlans";
+import { CATEGORY_FIRST_STEP, type FirstStepKind } from "./categoryFirstStep";
 
 type TemplateKey = "free" | "warning_email" | "schedule_meeting" | "meeting_followup";
 
@@ -31,10 +32,18 @@ const TEMPLATE_ICONS: Record<TemplateKey, React.ElementType> = {
   meeting_followup: FileText,
 };
 
+const FIRST_STEP_TO_TEMPLATE: Record<FirstStepKind, TemplateKey> = {
+  warning_email: "warning_email",
+  schedule_meeting: "schedule_meeting",
+  meeting_followup: "meeting_followup",
+};
+
 interface Props {
   planId: string;
+  category: ActionPlanCategory;
   currentStatus: ActionPlanStatus;
   currentProgress: number;
+  firstStepDone: boolean;
   onPosted: (planUpdates: Partial<{ status: ActionPlanStatus; progress: number; resolved_at: string }>) => void;
 }
 
@@ -45,8 +54,11 @@ const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
   resolved: 100,
 };
 
-export function AddUpdateForm({ planId, currentStatus, currentProgress, onPosted }: Props) {
-  const [template, setTemplate] = useState<TemplateKey>("free");
+export function AddUpdateForm({ planId, category, currentStatus, currentProgress, firstStepDone, onPosted }: Props) {
+  const firstStepSpec = CATEGORY_FIRST_STEP[category];
+  const suggestedTemplate: TemplateKey =
+    !firstStepDone && firstStepSpec ? FIRST_STEP_TO_TEMPLATE[firstStepSpec.kind] : "free";
+  const [template, setTemplate] = useState<TemplateKey>(suggestedTemplate);
   const [posting, setPosting] = useState(false);
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
 
@@ -225,6 +237,17 @@ export function AddUpdateForm({ planId, currentStatus, currentProgress, onPosted
       <Label className="text-sm font-semibold flex items-center gap-2">
         <MessageSquarePlus className="w-4 h-4" /> Add Update
       </Label>
+
+      {/* Suggested-step hint */}
+      {!firstStepDone && firstStepSpec && (
+        <div className="flex items-start gap-2 text-xs rounded-md border border-orange-500/30 bg-orange-500/5 p-2">
+          <Sparkles className="w-3.5 h-3.5 text-orange-600 mt-0.5 shrink-0" />
+          <span>
+            Suggested first step for this category:{" "}
+            <strong>{firstStepSpec.label}</strong>
+          </span>
+        </div>
+      )}
 
       {/* Template picker */}
       <div>
