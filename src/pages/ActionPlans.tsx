@@ -142,6 +142,14 @@ const ActionPlans = () => {
     return { active, onHold, resolved, escalated, overdue, improved, notImproved, improvementRate, total: plans.length };
   }, [plans]);
 
+  // Category counts (across all plans, ignoring current category filter)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: plans.length };
+    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = 0;
+    for (const p of plans) counts[p.category] = (counts[p.category] ?? 0) + 1;
+    return counts;
+  }, [plans]);
+
   if (roleLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
