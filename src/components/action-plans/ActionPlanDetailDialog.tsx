@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-// Input no longer needed: progress is auto-calculated
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageSquarePlus, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -18,21 +16,14 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { CategoryBadge, StatusBadge } from "./ActionPlanBadges";
 import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
+import { AddUpdateForm } from "./AddUpdateForm";
+import { StepNoteRenderer } from "./StepNoteRenderer";
 import {
-  STATUS_LABELS,
   useActionPlanSteps,
   type ActionPlan,
   type ActionPlanEvaluation,
   type ActionPlanStatus,
 } from "@/hooks/useActionPlans";
-
-// Auto-progress mapping based on status
-const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
-  active: 25,
-  on_hold: 25,
-  escalated: 60,
-  resolved: 100,
-};
 
 interface Props {
   plan: ActionPlan | null;
