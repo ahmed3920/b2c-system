@@ -300,38 +300,14 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             </div>
           </div>
 
-          {/* Add update */}
+          {/* Add update with templates */}
           {!isResolved && (
-            <div className="space-y-3 border rounded-md p-3 bg-muted/20">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <MessageSquarePlus className="w-4 h-4" /> Add Update
-              </Label>
-              <Textarea
-                placeholder="What happened? What's next?"
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-              <div>
-                <Label className="text-xs">Change status (optional)</Label>
-                <Select value={statusChange} onValueChange={(v) => setStatusChange(v as ActionPlanStatus | "none")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No change</SelectItem>
-                    {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
-                      <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Progress is updated automatically based on status and posted updates.
-                </p>
-              </div>
-              <Button onClick={postUpdate} disabled={posting} size="sm">
-                {posting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Post Update
-              </Button>
-            </div>
+            <AddUpdateForm
+              planId={currentPlan.id}
+              currentStatus={currentPlan.status}
+              currentProgress={currentPlan.progress}
+              onPosted={handlePosted}
+            />
           )}
 
           {/* Evaluation (only for resolved) */}
