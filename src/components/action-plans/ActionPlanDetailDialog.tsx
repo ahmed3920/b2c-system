@@ -284,23 +284,86 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
               {steps.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">No updates yet.</p>
               )}
-              {steps.map((s) => (
-                <div key={s.id} className="border-l-2 border-primary/30 pl-3 py-1">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span className="font-medium text-foreground">{s.author_name || "User"}</span>
-                    <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap">{s.note}</p>
-                  {(s.status_change || s.progress_change !== null) && (
-                    <div className="flex gap-2 mt-2 text-xs">
-                      {s.status_change && <StatusBadge status={s.status_change} />}
-                      {s.progress_change !== null && (
-                        <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
-                      )}
+              {steps.map((s) => {
+                const canEditStep = isAdmin || (currentUserId !== null && s.author_id === currentUserId);
+                const isEditing = editingStepId === s.id;
+                return (
+                  <div key={s.id} className="border-l-2 border-primary/30 pl-3 py-1 group">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1 gap-2">
+                      <span className="font-medium text-foreground">{s.author_name || "User"}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
+                        {canEditStep && !isEditing && (
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => startEditStep(s.id, s.note)}
+                              title="Edit update"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() =>
+                                setStepToDelete({ id: s.id, preview: s.note.slice(0, 80) })
+                              }
+                              title="Delete update"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={2}
+                          autoFocus
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => saveEditStep(s.id)}
+                            disabled={savingEdit}
+                          >
+                            {savingEdit ? (
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3 mr-1" />
+                            )}
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEditStep}
+                            disabled={savingEdit}
+                          >
+                            <X className="w-3 h-3 mr-1" /> Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{s.note}</p>
+                    )}
+                    {!isEditing && (s.status_change || s.progress_change !== null) && (
+                      <div className="flex gap-2 mt-2 text-xs">
+                        {s.status_change && <StatusBadge status={s.status_change} />}
+                        {s.progress_change !== null && (
+                          <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
