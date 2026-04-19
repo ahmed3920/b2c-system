@@ -34,9 +34,11 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onChanged: () => void;
+  onDelete?: (plan: ActionPlan) => void;
+  canDelete?: boolean;
 }
 
-export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: Props) {
+export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, onDelete, canDelete }: Props) {
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
   const [note, setNote] = useState("");
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
