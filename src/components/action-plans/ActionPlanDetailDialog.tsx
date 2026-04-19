@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageSquarePlus, CheckCircle2, XCircle, Calendar, User, AlertCircle } from "lucide-react";
+import { Loader2, MessageSquarePlus, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -34,9 +34,11 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onChanged: () => void;
+  onDelete?: (plan: ActionPlan) => void;
+  canDelete?: boolean;
 }
 
-export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: Props) {
+export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, onDelete, canDelete }: Props) {
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
   const [note, setNote] = useState("");
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
@@ -136,7 +138,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 flex-wrap">
+          <DialogTitle className="flex items-center gap-3 flex-wrap pr-8">
             <span>{plan.tutor_name}</span>
             <CategoryBadge category={plan.category} />
             <StatusBadge status={plan.status} />
@@ -144,6 +146,16 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
               <span className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" /> Overdue
               </span>
+            )}
+            {canDelete && onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => onDelete(plan)}
+              >
+                <Trash2 className="w-4 h-4 mr-1" /> Delete
+              </Button>
             )}
           </DialogTitle>
         </DialogHeader>
