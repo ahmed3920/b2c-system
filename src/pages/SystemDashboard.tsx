@@ -115,6 +115,14 @@ const STATUS_COLORS = [
 
 const SystemDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabState] = useState<string>(searchParams.get("tab") || "teams");
+  const setActiveTab = (v: string) => {
+    setActiveTabState(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "teams") next.delete("tab"); else next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
