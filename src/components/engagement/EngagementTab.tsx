@@ -119,17 +119,27 @@ export function EngagementTab() {
 
   // ----- Tutor per-month rating -----
   const tutorSummary = useMemo(() => {
-    const map = new Map<string, { name: string; tl: string; perMonth: Record<string, { rating: number | null; sessions: number }> }>();
+    const map = new Map<string, { name: string; tl: string; perMonth: Record<string, { rating: number | null; sessions: number; ratedSessions: number }> }>();
     rows.forEach(r => {
       const key = r.tutor_external_id || r.tutor_name;
       if (!map.has(key)) {
         map.set(key, { name: r.tutor_name, tl: r.team_leader, perMonth: {} });
       }
       const cur = map.get(key)!;
-      cur.perMonth[r.month] = { rating: r.rating != null ? Number(r.rating) : null, sessions: r.total_sessions ?? 0 };
+      cur.perMonth[r.month] = {
+        rating: r.rating != null ? Number(r.rating) : null,
+        sessions: r.total_sessions ?? 0,
+        ratedSessions: r.sessions_with_feedback ?? 0,
+      };
       cur.tl = r.team_leader;
     });
-    let arr = Array.from(map.values());
+    let arr = Array.from(map.values()).map(t => {
+      let sum = 0, cnt = 0;
+      Object.values(t.perMonth).forEach(c => {
+        if (c.rating != null) { sum += c.rating; cnt += 1; }
+      });
+      return { ...t, overallAvg: cnt ? sum / cnt : null, monthsRated: cnt };
+    });
     if (tlFilter !== "all") arr = arr.filter(t => t.tl === tlFilter);
     if (search.trim()) {
       const s = search.toLowerCase();
