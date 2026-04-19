@@ -45,15 +45,18 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
   const [posting, setPosting] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
   const [evalNotes, setEvalNotes] = useState("");
+  // Local mirror of the plan so header/progress refresh in-place after edits.
+  const [currentPlan, setCurrentPlan] = useState<ActionPlan | null>(plan);
 
   useEffect(() => {
+    setCurrentPlan(plan);
     setEvalNotes(plan?.evaluation_notes ?? "");
-  }, [plan?.id, plan?.evaluation_notes]);
+  }, [plan?.id, plan?.evaluation_notes, plan?.status, plan?.progress, plan?.evaluation, plan]);
 
-  if (!plan) return null;
+  if (!currentPlan) return null;
 
-  const isResolved = plan.status === "resolved";
-  const dueDate = new Date(plan.due_date);
+  const isResolved = currentPlan.status === "resolved";
+  const dueDate = new Date(currentPlan.due_date);
   const isOverdue = !isResolved && dueDate < new Date();
 
   const postUpdate = async () => {
