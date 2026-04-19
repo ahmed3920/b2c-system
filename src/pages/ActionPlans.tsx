@@ -409,7 +409,7 @@ const ActionPlans = () => {
           </TabsContent>
 
           <TabsContent value="tutors">
-            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} />
+            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} teamLeaders={teamLeaders} />
           </TabsContent>
         </Tabs>
 
@@ -538,18 +538,89 @@ const TutorsTab = ({
   isAdmin,
   onSelectPlan,
   stepSummaries,
+  teamLeaders,
 }: {
   plans: ActionPlan[];
   isAdmin: boolean;
   onSelectPlan: (p: ActionPlan) => void;
   stepSummaries: Record<string, PlanStepSummary>;
+  teamLeaders: string[];
 }) => {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [tlFilter, setTlFilter] = useState<string>("all");
+  const [stepFilter, setStepFilter] = useState<string>("all");
   const [openTutor, setOpenTutor] = useState<TutorRow | null>(null);
 
+  // Plans matching status/TL/step filters (NOT category — category cards show breakdown across these)
+  const planPoolPreCategory = useMemo(() => {
+    return plans.filter((p) => {
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (tlFilter !== "all" && p.team_leader !== tlFilter) return false;
+      if (stepFilter !== "all") {
+        const summary = stepSummaries[p.id];
+        const notes = summary?.notes ?? [];
+        const total = summary?.count ?? 0;
+        const done = isFirstStepDone(p.category, notes);
+        const variant: "pending" | "in_progress" | "done" =
+          done ? "done" : total > 0 ? "in_progress" : "pending";
+        if (variant !== stepFilter) return false;
+      }
+      return true;
+    });
+  }, [plans, statusFilter, tlFilter, stepFilter, stepSummaries]);
+
+  // Final plan pool also applies category filter
+  const filteredPlans = useMemo(
+    () => planPoolPreCategory.filter((p) => categoryFilter === "all" || p.category === categoryFilter),
+    [planPoolPreCategory, categoryFilter],
+  );
+
+  // Category cards breakdown over the pre-category pool
+  const categoryCounts = useMemo(() => {
+    const empty = () => ({ total: 0, active: 0, on_hold: 0, resolved: 0, escalated: 0 });
+    const counts: Record<string, ReturnType<typeof empty>> = { all: empty() };
+    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = empty();
+    for (const p of planPoolPreCategory) {
+      counts.all.total += 1;
+      counts.all[p.status] += 1;
+      const c = counts[p.category];
+      if (c) {
+        c.total += 1;
+        c[p.status] += 1;
+      }
+    }
+    return counts;
+  }, [planPoolPreCategory]);
+
+  // First-step counts (over status/category/TL filtered pool, ignoring step filter itself)
+  const stepCountsPool = useMemo(() => {
+    return plans.filter((p) => {
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (categoryFilter !== "all" && p.category !== categoryFilter) return false;
+      if (tlFilter !== "all" && p.team_leader !== tlFilter) return false;
+      return true;
+    });
+  }, [plans, statusFilter, categoryFilter, tlFilter]);
+
+  const stepCounts = useMemo(() => {
+    const counts = { all: stepCountsPool.length, pending: 0, in_progress: 0, done: 0 };
+    for (const p of stepCountsPool) {
+      const s = stepSummaries[p.id];
+      const notes = s?.notes ?? [];
+      const total = s?.count ?? 0;
+      const done = isFirstStepDone(p.category, notes);
+      const variant: "pending" | "in_progress" | "done" = done ? "done" : total > 0 ? "in_progress" : "pending";
+      counts[variant] += 1;
+    }
+    return counts;
+  }, [stepCountsPool, stepSummaries]);
+
+  // Aggregate filtered plans by tutor
   const rows = useMemo<TutorRow[]>(() => {
     const map = new Map<string, TutorRow>();
-    for (const p of plans) {
+    for (const p of filteredPlans) {
       const key = `${p.tutor_external_id ?? "noid"}::${p.tutor_name}::${p.team_leader}`;
       let row = map.get(key);
       if (!row) {
@@ -582,12 +653,38 @@ const TutorsTab = ({
         (r.tutor_external_id ?? "").toLowerCase().includes(q) ||
         r.team_leader.toLowerCase().includes(q),
     );
-  }, [plans, search]);
+  }, [filteredPlans, search]);
 
   const today = new Date();
 
   return (
     <div className="space-y-4">
+      {/* Category cards (click to filter) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <CategoryCountCard
+          label="All"
+          breakdown={categoryCounts.all}
+          active={categoryFilter === "all"}
+          onClick={() => setCategoryFilter("all")}
+          styleClass="bg-muted/40 text-foreground border-border"
+          activeClass="ring-2 ring-primary"
+        />
+        {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[])
+          .filter((c) => c !== "leaves_abuse" || categoryCounts[c].total > 0)
+          .map((c) => (
+            <CategoryCountCard
+              key={c}
+              label={CATEGORY_LABELS[c]}
+              breakdown={categoryCounts[c]}
+              active={categoryFilter === c}
+              onClick={() => setCategoryFilter(c)}
+              styleClass={CATEGORY_CARD_STYLES[c]}
+              activeClass="ring-2 ring-primary"
+            />
+          ))}
+      </div>
+
+      {/* Filters */}
       <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -598,6 +695,46 @@ const TutorsTab = ({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
+              <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Category" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
+              <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {isAdmin && (
+          <Select value={tlFilter} onValueChange={setTlFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Team Leaders</SelectItem>
+              {teamLeaders.map((tl) => (
+                <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {isAdmin && (
+          <Select value={stepFilter} onValueChange={setStepFilter}>
+            <SelectTrigger className="w-[220px]"><SelectValue placeholder="First step" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All first-step states ({stepCounts.all})</SelectItem>
+              <SelectItem value="pending">⚠️ Awaiting first step ({stepCounts.pending})</SelectItem>
+              <SelectItem value="in_progress">In progress / no template ({stepCounts.in_progress})</SelectItem>
+              <SelectItem value="done">✅ Step 1 done ({stepCounts.done})</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Badge variant="outline" className="font-medium">
           {rows.length} tutor{rows.length === 1 ? "" : "s"}
         </Badge>
@@ -607,8 +744,8 @@ const TutorsTab = ({
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-            <h3 className="font-semibold mb-1">No tutors on action plans</h3>
-            <p className="text-sm text-muted-foreground">Tutors will appear here once plans are created.</p>
+            <h3 className="font-semibold mb-1">No tutors match these filters</h3>
+            <p className="text-sm text-muted-foreground">Try clearing filters or adjusting the search.</p>
           </CardContent>
         </Card>
       ) : (
