@@ -572,6 +572,8 @@ export type Database = {
         | "leaves_abuse"
         | "communication"
         | "cs_complaints"
+        | "emergency_abuse"
+        | "no_show_abuse"
       action_plan_evaluation: "improved" | "not_improved"
       action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
       app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
@@ -708,6 +710,8 @@ export const Constants = {
         "leaves_abuse",
         "communication",
         "cs_complaints",
+        "emergency_abuse",
+        "no_show_abuse",
       ],
       action_plan_evaluation: ["improved", "not_improved"],
       action_plan_status: ["active", "on_hold", "resolved", "escalated"],
