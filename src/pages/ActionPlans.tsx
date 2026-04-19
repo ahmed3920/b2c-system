@@ -514,6 +514,9 @@ const TutorsTab = ({
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-center">
+                      <TutorFirstStepCell plans={r.plans} stepSummaries={stepSummaries} />
+                    </TableCell>
+                    <TableCell className="text-center">
                       {r.resolved > 0 ? (
                         <Badge variant="outline" className="bg-green-500/15 text-green-700 border-green-500/30">{r.resolved}</Badge>
                       ) : <span className="text-muted-foreground">—</span>}
