@@ -641,4 +641,50 @@ const TutorPlansDialog = ({
   );
 };
 
+/**
+ * Aggregates first-step status across all of a tutor's plans (preferring active ones).
+ * Shows the "worst" badge: pending > in_progress > done. Includes a "+N" hint when
+ * the tutor has more than one plan in that state.
+ */
+const TutorFirstStepCell = ({
+  plans,
+  stepSummaries,
+}: {
+  plans: ActionPlan[];
+  stepSummaries: Record<string, PlanStepSummary>;
+}) => {
+  // Prefer active/on_hold/escalated plans (i.e. not resolved). Fall back to all.
+  const open = plans.filter((p) => p.status !== "resolved");
+  const pool = open.length > 0 ? open : plans;
+  if (pool.length === 0) return <span className="text-muted-foreground">—</span>;
+
+  // Pick worst: pending → in_progress → done
+  const ranked = pool
+    .map((p) => {
+      const s = stepSummaries[p.id];
+      const notes = s?.notes ?? [];
+      const total = s?.count ?? 0;
+      const done = isFirstStepDone(p.category, notes);
+      const variant = done ? 2 : total > 0 ? 1 : 0; // 0 worst → pending
+      return { plan: p, variant };
+    })
+    .sort((a, b) => a.variant - b.variant);
+
+  const worst = ranked[0];
+  const sameCount = ranked.filter((r) => r.variant === worst.variant).length;
+
+  return (
+    <div className="inline-flex items-center gap-1">
+      <FirstStepBadge
+        category={worst.plan.category}
+        notes={stepSummaries[worst.plan.id]?.notes ?? []}
+        totalSteps={stepSummaries[worst.plan.id]?.count ?? 0}
+      />
+      {sameCount > 1 && (
+        <span className="text-[10px] text-muted-foreground">×{sameCount}</span>
+      )}
+    </div>
+  );
+};
+
 export default ActionPlans;
