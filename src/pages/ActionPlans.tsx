@@ -284,6 +284,11 @@ const ActionPlans = () => {
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <CategoryBadge category={plan.category} />
+                          <FirstStepBadge
+                            category={plan.category}
+                            notes={stepSummaries[plan.id]?.notes ?? []}
+                            totalSteps={stepSummaries[plan.id]?.count ?? 0}
+                          />
                           {overdue && (
                             <span className="text-xs text-destructive flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" /> Overdue
