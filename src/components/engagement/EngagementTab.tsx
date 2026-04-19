@@ -389,7 +389,7 @@ export function EngagementTab() {
                                       )}
                                     </div>
                                     <span className="text-[10px] text-muted-foreground">
-                                      {cell.sessions} sessions · {cell.count} tutors
+                                      {cell.ratedSessions}/{cell.sessions} sessions · {cell.count} tutors
                                       {cell.rated < cell.count && ` (${cell.rated} rated)`}
                                     </span>
                                   </div>
