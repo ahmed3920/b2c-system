@@ -28,8 +28,15 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
   const [category, setCategory] = useState<ActionPlanCategory>("quality");
   const [summary, setSummary] = useState("");
   const [days, setDays] = useState(30);
+  const [baselineScore, setBaselineScore] = useState<string>("");
   const [tutorSearchOpen, setTutorSearchOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Quality plans require a baseline score < 90 to be eligible.
+  const baselineNum = baselineScore.trim() === "" ? null : Number(baselineScore);
+  const baselineValid =
+    baselineNum !== null && Number.isFinite(baselineNum) && baselineNum >= 0 && baselineNum <= 100;
+  const qualityEligible = category !== "quality" || (baselineValid && (baselineNum as number) < 90);
 
   // Admins can pick any tutor; TLs only see their own (RLS already enforces)
   const visibleTutors = useMemo(() => {
@@ -44,12 +51,25 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
     setCategory("quality");
     setSummary("");
     setDays(30);
+    setBaselineScore("");
   };
 
   const handleSubmit = async () => {
     if (!selectedTutor) {
       toast.error("Please select a tutor");
       return;
+    }
+    if (category === "quality") {
+      if (!baselineValid) {
+        toast.error("Enter a baseline quality score (0–100) for this month");
+        return;
+      }
+      if ((baselineNum as number) >= 90) {
+        toast.error("Quality action plan not required", {
+          description: "Baseline score must be below 90 to open a Quality action plan.",
+        });
+        return;
+      }
     }
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
@@ -71,6 +91,7 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
       start_date: start.toISOString().slice(0, 10),
       due_date: due.toISOString().slice(0, 10),
       created_by: session.user.id,
+      quality_baseline_score: category === "quality" ? baselineNum : null,
     });
 
     setSaving(false);
@@ -149,6 +170,41 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
 
           <CategoryDecisionHelper category={category} />
 
+          {category === "quality" && (
+            <div className="space-y-2 border rounded-md p-3 bg-muted/20">
+              <Label className="text-sm font-semibold">
+                Baseline Quality Score (this month) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step="0.1"
+                placeholder="e.g. 78"
+                value={baselineScore}
+                onChange={(e) => setBaselineScore(e.target.value)}
+                className={baselineScore && !qualityEligible ? "border-destructive" : ""}
+              />
+              {baselineScore.trim() === "" ? (
+                <p className="text-xs text-muted-foreground">
+                  Enter the tutor's quality score for the current month. A Quality action plan is
+                  only required when the score is <strong>below 90</strong>.
+                </p>
+              ) : !baselineValid ? (
+                <p className="text-xs text-destructive">Score must be a number between 0 and 100.</p>
+              ) : (baselineNum as number) >= 90 ? (
+                <p className="text-xs text-destructive">
+                  Score is {baselineNum}. No Quality action plan is needed (≥ 90). Choose another
+                  category or wait until the score drops below 90.
+                </p>
+              ) : (
+                <p className="text-xs text-green-600 dark:text-green-500">
+                  ✓ Eligible. Baseline {baselineNum} will be tracked for the next 3 months.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Duration (days)</Label>
             <Input type="number" min={1} max={365} value={days} onChange={(e) => setDays(Number(e.target.value) || 30)} />
@@ -167,7 +223,7 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving || !tutorId}>
+          <Button onClick={handleSubmit} disabled={saving || !tutorId || !qualityEligible}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Create Plan
           </Button>

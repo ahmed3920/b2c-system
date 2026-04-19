@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, TrendingDown, Minus, Save } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Minus, Save, AlertTriangle, CheckCircle2, Calendar } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -64,6 +64,22 @@ export function QualityScoresEditor({ plan, onSaved }: Props) {
 
   const baseNum = parse(baseline);
 
+  // Build the 3-month follow-up schedule. Each entry shows the month label,
+  // the score (if entered), the delta vs baseline, and what step the TL must take next.
+  const schedule = useMemo(() => {
+    const months = [
+      { idx: 1, label: "Month 1", value: parse(m1), date: addMonths(start, 1) },
+      { idx: 2, label: "Month 2", value: parse(m2), date: addMonths(start, 2) },
+      { idx: 3, label: "Month 3", value: parse(m3), date: addMonths(start, 3) },
+    ];
+    return months.map((m) => {
+      const delta = m.value !== null && baseNum !== null ? m.value - baseNum : null;
+      const needsRemeeting = m.value !== null && baseNum !== null && m.value < baseNum;
+      const improved = m.value !== null && baseNum !== null && m.value >= baseNum;
+      return { ...m, delta, needsRemeeting, improved };
+    });
+  }, [m1, m2, m3, baseNum, start]);
+
   return (
     <div className="space-y-3 border rounded-md p-3 bg-muted/20">
       <div className="flex items-center justify-between">
@@ -74,8 +90,9 @@ export function QualityScoresEditor({ plan, onSaved }: Props) {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Baseline = quality score for the month the plan was created. Enter the follow-up score each month
-        for the next 3 months. Use percentage (0–100).
+        Baseline = quality score for the month the plan was created (must be &lt; 90 to open this plan).
+        Enter each follow-up score below. If a follow-up score drops <strong>below the baseline</strong>,
+        a re-meeting with the tutor is required.
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <ScoreField
@@ -104,6 +121,76 @@ export function QualityScoresEditor({ plan, onSaved }: Props) {
           baseline={baseNum}
         />
       </div>
+
+      {baseNum !== null && (
+        <div className="space-y-2 pt-2 border-t">
+          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Follow-up Schedule
+          </Label>
+          <ol className="space-y-2">
+            {schedule.map((m) => {
+              const stateClass = m.needsRemeeting
+                ? "border-destructive/50 bg-destructive/5"
+                : m.improved
+                ? "border-green-500/40 bg-green-500/5"
+                : "border-border bg-background";
+              return (
+                <li
+                  key={m.idx}
+                  className={`flex items-start gap-3 rounded-md border p-2.5 text-xs ${stateClass}`}
+                >
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-bold">
+                    {m.idx}
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {m.label} · {format(m.date, "MMM yyyy")}
+                      </span>
+                      {m.value !== null && (
+                        <span className="font-mono">
+                          Score: <strong>{m.value}</strong>
+                          {m.delta !== null && (
+                            <span
+                              className={
+                                m.delta > 0
+                                  ? "text-green-600 ml-1"
+                                  : m.delta < 0
+                                  ? "text-destructive ml-1"
+                                  : "text-muted-foreground ml-1"
+                              }
+                            >
+                              ({m.delta > 0 ? "+" : ""}
+                              {m.delta.toFixed(1)} vs baseline)
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                    {m.value === null ? (
+                      <p className="text-muted-foreground">
+                        Pending — record this month's score after the monthly review.
+                      </p>
+                    ) : m.needsRemeeting ? (
+                      <p className="text-destructive flex items-start gap-1 font-medium">
+                        <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        Score dropped below baseline → schedule another meeting with the tutor and log
+                        it as an update in the timeline below.
+                      </p>
+                    ) : (
+                      <p className="text-green-600 dark:text-green-500 flex items-start gap-1">
+                        <CheckCircle2 className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        On track — score is at or above baseline. Continue monitoring.
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }
