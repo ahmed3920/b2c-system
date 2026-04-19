@@ -19,6 +19,8 @@ export interface RoadmapStep {
   matchEscalated?: boolean;
   /** If true, step ticks when at least N updates have been posted. */
   matchUpdatesAtLeast?: number;
+  /** Visually highlights the step as a primary/main action. */
+  isMain?: boolean;
 }
 
 const ICONS: Record<RoadmapStepKind, React.ElementType> = {
