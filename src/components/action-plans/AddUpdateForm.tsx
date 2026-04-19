@@ -238,6 +238,17 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
         <MessageSquarePlus className="w-4 h-4" /> Add Update
       </Label>
 
+      {/* Suggested-step hint */}
+      {!firstStepDone && firstStepSpec && (
+        <div className="flex items-start gap-2 text-xs rounded-md border border-orange-500/30 bg-orange-500/5 p-2">
+          <Sparkles className="w-3.5 h-3.5 text-orange-600 mt-0.5 shrink-0" />
+          <span>
+            Suggested first step for this category:{" "}
+            <strong>{firstStepSpec.label}</strong>
+          </span>
+        </div>
+      )}
+
       {/* Template picker */}
       <div>
         <Label className="text-xs">Template</Label>
