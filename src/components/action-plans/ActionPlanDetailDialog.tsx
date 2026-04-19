@@ -19,6 +19,7 @@ import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 import { AddUpdateForm } from "./AddUpdateForm";
 import { StepNoteRenderer } from "./StepNoteRenderer";
 import { PlanProgressTracker } from "./PlanProgressTracker";
+import { PlanRoadmap } from "./PlanRoadmap";
 import { isFirstStepDone } from "./categoryFirstStep";
 import {
   useActionPlanSteps,
@@ -209,6 +210,14 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             category={currentPlan.category}
             totalSteps={steps.length}
             firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
+          />
+
+          {/* Vertical roadmap of recommended steps for this category */}
+          <PlanRoadmap
+            category={currentPlan.category}
+            notes={steps.map((s) => s.note)}
+            status={currentPlan.status}
+            totalUpdates={steps.length}
           />
 
           {/* Decision helper for this category */}
