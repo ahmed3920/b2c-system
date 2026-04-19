@@ -23,6 +23,12 @@ export interface ActionPlan {
   created_by: string;
   created_at: string;
   updated_at: string;
+  /** Quality score for the month the plan was created (baseline). */
+  quality_baseline_score: number | null;
+  /** Follow-up quality scores for months 1, 2, 3 after plan creation. */
+  quality_month1_score: number | null;
+  quality_month2_score: number | null;
+  quality_month3_score: number | null;
 }
 
 export interface ActionPlanStep {
