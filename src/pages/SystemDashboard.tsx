@@ -48,6 +48,8 @@ import { subDays, format } from "date-fns";
 import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
 import { TaskFormConfigDialog } from "@/components/admin/TaskFormConfigDialog";
 import { TaskCategoryManagerDialog } from "@/components/admin/TaskCategoryManagerDialog";
+import { EngagementTab } from "@/components/engagement/EngagementTab";
+import { Star } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -419,7 +421,15 @@ const SystemDashboard = () => {
               <Users className="w-4 h-4 mr-2" />
               All Members
             </TabsTrigger>
+            <TabsTrigger value="engagement">
+              <Star className="w-4 h-4 mr-2" />
+              Student Engagement
+            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="engagement" className="space-y-4">
+            <EngagementTab />
+          </TabsContent>
 
           {/* Teams Tab */}
           <TabsContent value="teams" className="space-y-4">

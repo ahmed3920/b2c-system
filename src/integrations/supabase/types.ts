@@ -214,6 +214,57 @@ export type Database = {
         }
         Relationships: []
       }
+      engagement_uploads: {
+        Row: {
+          availability_type: string | null
+          created_at: string
+          id: string
+          is_mentor: boolean | null
+          month: string
+          rating: number | null
+          sessions_with_feedback: number | null
+          team_leader: string
+          total_sessions: number | null
+          tutor_external_id: string | null
+          tutor_language: string | null
+          tutor_name: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          availability_type?: string | null
+          created_at?: string
+          id?: string
+          is_mentor?: boolean | null
+          month: string
+          rating?: number | null
+          sessions_with_feedback?: number | null
+          team_leader: string
+          total_sessions?: number | null
+          tutor_external_id?: string | null
+          tutor_language?: string | null
+          tutor_name: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          availability_type?: string | null
+          created_at?: string
+          id?: string
+          is_mentor?: boolean | null
+          month?: string
+          rating?: number | null
+          sessions_with_feedback?: number | null
+          team_leader?: string
+          total_sessions?: number | null
+          tutor_external_id?: string | null
+          tutor_language?: string | null
+          tutor_name?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           created_at: string
