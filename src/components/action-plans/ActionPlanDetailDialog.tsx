@@ -284,7 +284,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">{s.note}</p>
+                      <StepNoteRenderer text={s.note} />
                     )}
                     {!isEditing && (s.status_change || s.progress_change !== null) && (
                       <div className="flex gap-2 mt-2 text-xs">
