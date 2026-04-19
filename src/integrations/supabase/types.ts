@@ -130,6 +130,10 @@ export type Database = {
           evaluation_notes: string | null
           id: string
           progress: number
+          quality_baseline_score: number | null
+          quality_month1_score: number | null
+          quality_month2_score: number | null
+          quality_month3_score: number | null
           resolved_at: string | null
           start_date: string
           status: Database["public"]["Enums"]["action_plan_status"]
@@ -150,6 +154,10 @@ export type Database = {
           evaluation_notes?: string | null
           id?: string
           progress?: number
+          quality_baseline_score?: number | null
+          quality_month1_score?: number | null
+          quality_month2_score?: number | null
+          quality_month3_score?: number | null
           resolved_at?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["action_plan_status"]
@@ -170,6 +178,10 @@ export type Database = {
           evaluation_notes?: string | null
           id?: string
           progress?: number
+          quality_baseline_score?: number | null
+          quality_month1_score?: number | null
+          quality_month2_score?: number | null
+          quality_month3_score?: number | null
           resolved_at?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["action_plan_status"]
