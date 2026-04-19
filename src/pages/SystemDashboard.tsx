@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
@@ -115,6 +115,14 @@ const STATUS_COLORS = [
 
 const SystemDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabState] = useState<string>(searchParams.get("tab") || "teams");
+  const setActiveTab = (v: string) => {
+    setActiveTabState(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === "teams") next.delete("tab"); else next.set("tab", v);
+    setSearchParams(next, { replace: true });
+  };
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
@@ -411,7 +419,7 @@ const SystemDashboard = () => {
         </motion.section>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="teams" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="teams">
               <BarChart3 className="w-4 h-4 mr-2" />

@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   BarChart3,
   Target,
+  Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -115,6 +116,13 @@ const allCards: DashboardCard[] = [
     icon: <Target className="w-8 h-8" />,
     href: "/action-plans",
     roles: ["admin", "team_leader"],
+  },
+  {
+    title: "Student Engagement",
+    description: "Monthly tutor ratings & sessions by team leader",
+    icon: <Star className="w-8 h-8" />,
+    href: "/admin/dashboard?tab=engagement",
+    roles: ["admin"],
   },
 ];
 
