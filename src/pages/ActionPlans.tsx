@@ -484,6 +484,7 @@ const TutorsTab = ({
                   {isAdmin && <TableHead>Team Leader</TableHead>}
                   <TableHead className="text-center">Total</TableHead>
                   <TableHead className="text-center">Active</TableHead>
+                  <TableHead className="text-center">First Step</TableHead>
                   <TableHead className="text-center">Resolved</TableHead>
                   <TableHead className="text-center">Escalated</TableHead>
                   <TableHead className="text-center">Improved / Not</TableHead>
