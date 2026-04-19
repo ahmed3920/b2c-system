@@ -207,7 +207,16 @@ const ActionPlans = () => {
           <KpiCard label="Active" value={kpis.active} icon={<Clock className="w-5 h-5 text-blue-500" />} />
           <KpiCard label="On Hold" value={kpis.onHold} icon={<PauseCircle className="w-5 h-5 text-yellow-500" />} />
           <KpiCard label="Resolved" value={kpis.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} />
-          <KpiCard label="Escalated" value={kpis.escalated} icon={<Flame className="w-5 h-5 text-destructive" />} />
+          <KpiCard
+            label="Escalated"
+            value={Math.max(kpis.escalationEvents, kpis.escalated)}
+            icon={<Flame className="w-5 h-5 text-destructive" />}
+            sub={
+              kpis.escalationEvents > kpis.escalated
+                ? `${kpis.escalated} now · ${kpis.escalationEvents} total`
+                : kpis.escalated > 0 ? `${kpis.escalated} now` : undefined
+            }
+          />
           <KpiCard label="Overdue" value={kpis.overdue} icon={<AlertTriangle className="w-5 h-5 text-destructive" />} highlight={kpis.overdue > 0} />
           <KpiCard label="Improvement Rate" value={`${kpis.improvementRate}%`} icon={<TrendingUp className="w-5 h-5 text-primary" />} />
         </motion.div>
