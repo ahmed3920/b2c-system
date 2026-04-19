@@ -135,13 +135,18 @@ const ActionPlans = () => {
     const onHold = plans.filter((p) => p.status === "on_hold").length;
     const resolved = plans.filter((p) => p.status === "resolved").length;
     const escalated = plans.filter((p) => p.status === "escalated").length;
+    // Total historical escalation events (a plan re-escalated counts twice).
+    const escalationEvents = plans.reduce(
+      (acc, p) => acc + (stepSummaries[p.id]?.escalationCount ?? 0),
+      0,
+    );
     const overdue = plans.filter((p) => p.status !== "resolved" && isAfter(today, new Date(p.due_date))).length;
     const improved = plans.filter((p) => p.evaluation === "improved").length;
     const notImproved = plans.filter((p) => p.evaluation === "not_improved").length;
     const evaluated = improved + notImproved;
     const improvementRate = evaluated > 0 ? Math.round((improved / evaluated) * 100) : 0;
-    return { active, onHold, resolved, escalated, overdue, improved, notImproved, improvementRate, total: plans.length };
-  }, [plans]);
+    return { active, onHold, resolved, escalated, escalationEvents, overdue, improved, notImproved, improvementRate, total: plans.length };
+  }, [plans, stepSummaries]);
 
   // Category counts (across all plans, ignoring current category filter)
   // Includes a per-status breakdown so cards can show severity at a glance.
@@ -202,7 +207,16 @@ const ActionPlans = () => {
           <KpiCard label="Active" value={kpis.active} icon={<Clock className="w-5 h-5 text-blue-500" />} />
           <KpiCard label="On Hold" value={kpis.onHold} icon={<PauseCircle className="w-5 h-5 text-yellow-500" />} />
           <KpiCard label="Resolved" value={kpis.resolved} icon={<CheckCircle2 className="w-5 h-5 text-green-500" />} />
-          <KpiCard label="Escalated" value={kpis.escalated} icon={<Flame className="w-5 h-5 text-destructive" />} />
+          <KpiCard
+            label="Escalated"
+            value={Math.max(kpis.escalationEvents, kpis.escalated)}
+            icon={<Flame className="w-5 h-5 text-destructive" />}
+            sub={
+              kpis.escalationEvents > kpis.escalated
+                ? `${kpis.escalated} now · ${kpis.escalationEvents} total`
+                : kpis.escalated > 0 ? `${kpis.escalated} now` : undefined
+            }
+          />
           <KpiCard label="Overdue" value={kpis.overdue} icon={<AlertTriangle className="w-5 h-5 text-destructive" />} highlight={kpis.overdue > 0} />
           <KpiCard label="Improvement Rate" value={`${kpis.improvementRate}%`} icon={<TrendingUp className="w-5 h-5 text-primary" />} />
         </motion.div>
@@ -456,13 +470,14 @@ const ActionPlans = () => {
   );
 };
 
-const KpiCard = ({ label, value, icon, highlight }: { label: string; value: number | string; icon: React.ReactNode; highlight?: boolean }) => (
+const KpiCard = ({ label, value, icon, highlight, sub }: { label: string; value: number | string; icon: React.ReactNode; highlight?: boolean; sub?: string }) => (
   <Card className={highlight ? "border-destructive/50" : ""}>
     <CardContent className="p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
           <p className={`text-2xl font-bold ${highlight ? "text-destructive" : ""}`}>{value}</p>
+          {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
         </div>
         {icon}
       </div>
@@ -528,6 +543,8 @@ interface TutorRow {
   active: number;
   resolved: number;
   escalated: number;
+  /** Total historical escalation events across this tutor's plans (a plan re-escalated counts twice). */
+  escalation_events: number;
   on_hold: number;
   improved: number;
   not_improved: number;
@@ -630,7 +647,7 @@ const TutorsTab = ({
           tutor_name: p.tutor_name,
           tutor_external_id: p.tutor_external_id,
           team_leader: p.team_leader,
-          total: 0, active: 0, resolved: 0, escalated: 0, on_hold: 0,
+          total: 0, active: 0, resolved: 0, escalated: 0, escalation_events: 0, on_hold: 0,
           improved: 0, not_improved: 0,
           plans: [],
         };
@@ -641,6 +658,7 @@ const TutorsTab = ({
       else if (p.status === "resolved") row.resolved += 1;
       else if (p.status === "escalated") row.escalated += 1;
       else if (p.status === "on_hold") row.on_hold += 1;
+      row.escalation_events += stepSummaries[p.id]?.escalationCount ?? 0;
       if (p.evaluation === "improved") row.improved += 1;
       else if (p.evaluation === "not_improved") row.not_improved += 1;
       row.plans.push(p);
@@ -654,7 +672,7 @@ const TutorsTab = ({
         (r.tutor_external_id ?? "").toLowerCase().includes(q) ||
         r.team_leader.toLowerCase().includes(q),
     );
-  }, [filteredPlans, search]);
+  }, [filteredPlans, search, stepSummaries]);
 
   const today = new Date();
 
@@ -812,8 +830,23 @@ const TutorsTab = ({
                           ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="text-center">
-                          {r.escalated > 0 ? (
-                            <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">{r.escalated}</Badge>
+                          {r.escalation_events > 0 || r.escalated > 0 ? (
+                            <span
+                              className="inline-flex items-center gap-1"
+                              title={
+                                r.escalation_events > r.escalated
+                                  ? `${r.escalation_events} total escalation${r.escalation_events === 1 ? "" : "s"} · ${r.escalated} currently escalated`
+                                  : `${r.escalated} currently escalated`
+                              }
+                            >
+                              <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">
+                                {Math.max(r.escalation_events, r.escalated)}
+                                {r.escalation_events > 1 && <span className="ml-0.5">×</span>}
+                              </Badge>
+                              {r.escalated > 0 && r.escalation_events > r.escalated && (
+                                <span className="text-[10px] text-muted-foreground">({r.escalated} now)</span>
+                              )}
+                            </span>
                           ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="text-center text-sm whitespace-nowrap">

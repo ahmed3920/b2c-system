@@ -57,9 +57,12 @@ const meetingConductedCol: CategoryColumnSpec = {
 
 const escalatedHrCol: CategoryColumnSpec = {
   header: "Escalated to HR",
-  compute: (plans) => {
-    const done = plans.filter((p) => p.status === "escalated").length;
-    return { done, total: plans.length, tone: done > 0 ? "bad" : "neutral" };
+  compute: (plans, sums) => {
+    // Count plans currently escalated, but use total historical escalation events for the badge.
+    const events = plans.reduce((acc, p) => acc + (sums[p.id]?.escalationCount ?? 0), 0);
+    const currentlyEscalated = plans.filter((p) => p.status === "escalated").length;
+    // "done" represents the count we want to display; total stays as plan count for context.
+    return { done: events, total: plans.length, tone: events > 0 || currentlyEscalated > 0 ? "bad" : "neutral" };
   },
 };
 
