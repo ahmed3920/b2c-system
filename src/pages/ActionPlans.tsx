@@ -268,12 +268,12 @@ const ActionPlans = () => {
               )}
               {isAdmin && (
                 <Select value={stepFilter} onValueChange={setStepFilter}>
-                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="First step" /></SelectTrigger>
+                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="First step" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All first-step states</SelectItem>
-                    <SelectItem value="pending">⚠️ Awaiting first step</SelectItem>
-                    <SelectItem value="in_progress">In progress (no template)</SelectItem>
-                    <SelectItem value="done">✅ Step 1 done</SelectItem>
+                    <SelectItem value="all">All first-step states ({stepCounts.all})</SelectItem>
+                    <SelectItem value="pending">⚠️ Awaiting first step ({stepCounts.pending})</SelectItem>
+                    <SelectItem value="in_progress">In progress / no template ({stepCounts.in_progress})</SelectItem>
+                    <SelectItem value="done">✅ Step 1 done ({stepCounts.done})</SelectItem>
                   </SelectContent>
                 </Select>
               )}
