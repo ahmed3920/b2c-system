@@ -212,6 +212,14 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
           />
 
+          {/* Vertical roadmap of recommended steps for this category */}
+          <PlanRoadmap
+            category={currentPlan.category}
+            notes={steps.map((s) => s.note)}
+            status={currentPlan.status}
+            totalUpdates={steps.length}
+          />
+
           {/* Decision helper for this category */}
           <CategoryDecisionHelper category={currentPlan.category} />
 
