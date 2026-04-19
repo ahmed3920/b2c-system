@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, ThumbsUp, ThumbsDown, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { ActionPlan, ActionPlanCategory } from "@/hooks/useActionPlans";
 import type { PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 
@@ -58,10 +58,8 @@ const meetingConductedCol: CategoryColumnSpec = {
 const escalatedHrCol: CategoryColumnSpec = {
   header: "Escalated to HR",
   compute: (plans, sums) => {
-    // Count plans currently escalated, but use total historical escalation events for the badge.
     const events = plans.reduce((acc, p) => acc + (sums[p.id]?.escalationCount ?? 0), 0);
     const currentlyEscalated = plans.filter((p) => p.status === "escalated").length;
-    // "done" represents the count we want to display; total stays as plan count for context.
     return { done: events, total: plans.length, tone: events > 0 || currentlyEscalated > 0 ? "bad" : "neutral" };
   },
 };
@@ -80,13 +78,103 @@ const evaluationCol: CategoryColumnSpec = {
   },
 };
 
+/**
+ * Quality-only score columns. Rendered by the table with `QualityScoreCell`
+ * (the renderer in ActionPlans.tsx branches on `header` matching one of these).
+ * `compute` is intentionally a no-op for these columns.
+ */
+export const QUALITY_SCORE_HEADERS = {
+  baseline: "Baseline",
+  m1: "Month 1",
+  m2: "Month 2",
+  m3: "Month 3",
+} as const;
+
+const noopCompute = () => ({ done: 0, total: 0, tone: "neutral" as const });
+
+const baselineCol: CategoryColumnSpec = { header: QUALITY_SCORE_HEADERS.baseline, compute: noopCompute };
+const m1Col: CategoryColumnSpec = { header: QUALITY_SCORE_HEADERS.m1, compute: noopCompute };
+const m2Col: CategoryColumnSpec = { header: QUALITY_SCORE_HEADERS.m2, compute: noopCompute };
+const m3Col: CategoryColumnSpec = { header: QUALITY_SCORE_HEADERS.m3, compute: noopCompute };
+
 /** Specialised column sets per category. When category === "all", we fall back to generic columns. */
 export const CATEGORY_COLUMNS: Partial<Record<ActionPlanCategory, CategoryColumnSpec[]>> = {
-  quality: [meetingScheduledCol, meetingConductedCol, evaluationCol, escalatedHrCol],
+  quality: [
+    meetingScheduledCol,
+    meetingConductedCol,
+    evaluationCol,
+    escalatedHrCol,
+    baselineCol,
+    m1Col,
+    m2Col,
+    m3Col,
+  ],
   emergency_abuse: [warningEmailCol, meetingConductedCol, escalatedHrCol],
   no_show_abuse: [warningEmailCol, meetingConductedCol, escalatedHrCol],
   communication: [meetingScheduledCol, meetingConductedCol, evaluationCol],
   cs_complaints: [meetingScheduledCol, meetingConductedCol, evaluationCol, escalatedHrCol],
+};
+
+/**
+ * Quality score cell — averages the score across the tutor's plans for that
+ * column (baseline / M1 / M2 / M3) and shows ▲/▼ vs baseline average.
+ * If only one plan, it's just that plan's value.
+ */
+export const QualityScoreCell = ({
+  plans,
+  field,
+}: {
+  plans: ActionPlan[];
+  field: "quality_baseline_score" | "quality_month1_score" | "quality_month2_score" | "quality_month3_score";
+}) => {
+  const values = plans
+    .map((p) => p[field])
+    .filter((v): v is number => v !== null && Number.isFinite(v));
+
+  if (values.length === 0) {
+    return <span className="text-muted-foreground text-xs">—</span>;
+  }
+
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+  // Baseline cell: just show the value (no delta).
+  if (field === "quality_baseline_score") {
+    return (
+      <span className="inline-flex flex-col items-center text-xs">
+        <span className="font-semibold tabular-nums">{avg.toFixed(1)}</span>
+        {plans.length > 1 && <span className="text-[10px] text-muted-foreground">avg of {values.length}</span>}
+      </span>
+    );
+  }
+
+  // Follow-up cells: compute delta vs baseline (averaged the same way, only over the
+  // plans that have BOTH this month's score and a baseline — fairest comparison).
+  const paired = plans
+    .map((p) => ({ base: p.quality_baseline_score, follow: p[field] }))
+    .filter((x) => x.base !== null && x.follow !== null && Number.isFinite(x.base) && Number.isFinite(x.follow)) as { base: number; follow: number }[];
+
+  let delta: number | null = null;
+  if (paired.length > 0) {
+    const baseAvg = paired.reduce((a, b) => a + b.base, 0) / paired.length;
+    const followAvg = paired.reduce((a, b) => a + b.follow, 0) / paired.length;
+    delta = followAvg - baseAvg;
+  }
+
+  const tone = delta === null ? "neutral" : delta > 0 ? "good" : delta < 0 ? "bad" : "neutral";
+  const colour = tone === "good" ? "text-green-600" : tone === "bad" ? "text-destructive" : "text-muted-foreground";
+  const Icon = delta === null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
+
+  return (
+    <span className="inline-flex flex-col items-center text-xs">
+      <span className="font-semibold tabular-nums">{avg.toFixed(1)}</span>
+      {delta !== null && (
+        <span className={`inline-flex items-center gap-0.5 text-[10px] font-medium ${colour}`}>
+          <Icon className="w-3 h-3" />
+          {delta > 0 ? "+" : ""}{delta.toFixed(1)}
+        </span>
+      )}
+    </span>
+  );
 };
 
 /** Special rendering for the Evaluation column — show improved/not split. */
