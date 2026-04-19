@@ -429,15 +429,7 @@ const SystemDashboard = () => {
               <Users className="w-4 h-4 mr-2" />
               All Members
             </TabsTrigger>
-            <TabsTrigger value="engagement">
-              <Star className="w-4 h-4 mr-2" />
-              Student Engagement
-            </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="engagement" className="space-y-4">
-            <EngagementTab />
-          </TabsContent>
 
           {/* Teams Tab */}
           <TabsContent value="teams" className="space-y-4">
