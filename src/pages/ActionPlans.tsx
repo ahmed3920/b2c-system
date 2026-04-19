@@ -142,6 +142,14 @@ const ActionPlans = () => {
     return { active, onHold, resolved, escalated, overdue, improved, notImproved, improvementRate, total: plans.length };
   }, [plans]);
 
+  // Category counts (across all plans, ignoring current category filter)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: plans.length };
+    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = 0;
+    for (const p of plans) counts[p.category] = (counts[p.category] ?? 0) + 1;
+    return counts;
+  }, [plans]);
+
   if (roleLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
@@ -231,6 +239,31 @@ const ActionPlans = () => {
           </TabsList>
 
           <TabsContent value="plans" className="space-y-4">
+            {/* Category cards (click to filter) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              <CategoryCountCard
+                label="All"
+                count={categoryCounts.all}
+                active={categoryFilter === "all"}
+                onClick={() => setCategoryFilter("all")}
+                styleClass="bg-muted/40 text-foreground border-border"
+                activeClass="ring-2 ring-primary"
+              />
+              {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[])
+                .filter((c) => c !== "leaves_abuse" || categoryCounts[c] > 0)
+                .map((c) => (
+                  <CategoryCountCard
+                    key={c}
+                    label={CATEGORY_LABELS[c]}
+                    count={categoryCounts[c] ?? 0}
+                    active={categoryFilter === c}
+                    onClick={() => setCategoryFilter(c)}
+                    styleClass={CATEGORY_CARD_STYLES[c]}
+                    activeClass="ring-2 ring-primary"
+                  />
+                ))}
+            </div>
+
             {/* Filters */}
             <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-[200px]">
@@ -423,6 +456,35 @@ const KpiCard = ({ label, value, icon, highlight }: { label: string; value: numb
       </div>
     </CardContent>
   </Card>
+);
+
+const CATEGORY_CARD_STYLES: Record<ActionPlanCategory, string> = {
+  quality: "bg-primary/10 text-primary border-primary/20",
+  emergency_abuse: "bg-red-500/10 text-red-700 border-red-500/30",
+  no_show_abuse: "bg-amber-500/10 text-amber-700 border-amber-500/30",
+  communication: "bg-purple-500/10 text-purple-700 border-purple-500/30",
+  cs_complaints: "bg-pink-500/10 text-pink-700 border-pink-500/30",
+  leaves_abuse: "bg-orange-500/10 text-orange-700 border-orange-500/30",
+};
+
+const CategoryCountCard = ({
+  label, count, active, onClick, styleClass, activeClass,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+  styleClass: string;
+  activeClass: string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 ${styleClass} ${active ? activeClass : ""}`}
+  >
+    <p className="text-xs font-medium opacity-80 truncate">{label}</p>
+    <p className="text-2xl font-bold leading-tight">{count}</p>
+  </button>
 );
 
 interface TutorRow {
