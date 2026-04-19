@@ -32,6 +32,7 @@ import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDeta
 import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
 import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
+import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell } from "@/components/action-plans/categoryColumns";
 
 const ActionPlans = () => {
   const navigate = useNavigate();
@@ -758,10 +759,23 @@ const TutorsTab = ({
                   {isAdmin && <TableHead>Team Leader</TableHead>}
                   <TableHead className="text-center">Total</TableHead>
                   <TableHead className="text-center">Active</TableHead>
-                  <TableHead className="text-center">First Step</TableHead>
-                  <TableHead className="text-center">Resolved</TableHead>
-                  <TableHead className="text-center">Escalated</TableHead>
-                  <TableHead className="text-center">Improved / Not</TableHead>
+                  {categoryFilter === "all" ? (
+                    <>
+                      <TableHead className="text-center">First Step</TableHead>
+                      <TableHead className="text-center">Resolved</TableHead>
+                      <TableHead className="text-center">Escalated</TableHead>
+                      <TableHead className="text-center">Improved / Not</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      {(CATEGORY_COLUMNS[categoryFilter as ActionPlanCategory] ?? []).map((col) => (
+                        <TableHead key={col.header} className="text-center whitespace-nowrap">
+                          {col.header}
+                        </TableHead>
+                      ))}
+                      <TableHead className="text-center">Resolved</TableHead>
+                    </>
+                  )}
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -787,24 +801,51 @@ const TutorsTab = ({
                         <Badge variant="outline" className="bg-blue-500/15 text-blue-600 border-blue-500/30">{r.active}</Badge>
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell className="text-center">
-                      <TutorFirstStepCell plans={r.plans} stepSummaries={stepSummaries} />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {r.resolved > 0 ? (
-                        <Badge variant="outline" className="bg-green-500/15 text-green-700 border-green-500/30">{r.resolved}</Badge>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {r.escalated > 0 ? (
-                        <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">{r.escalated}</Badge>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-center text-sm whitespace-nowrap">
-                      <span className="text-green-600 font-medium">{r.improved}</span>
-                      <span className="text-muted-foreground"> / </span>
-                      <span className="text-destructive font-medium">{r.not_improved}</span>
-                    </TableCell>
+                    {categoryFilter === "all" ? (
+                      <>
+                        <TableCell className="text-center">
+                          <TutorFirstStepCell plans={r.plans} stepSummaries={stepSummaries} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {r.resolved > 0 ? (
+                            <Badge variant="outline" className="bg-green-500/15 text-green-700 border-green-500/30">{r.resolved}</Badge>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {r.escalated > 0 ? (
+                            <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/30">{r.escalated}</Badge>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-center text-sm whitespace-nowrap">
+                          <span className="text-green-600 font-medium">{r.improved}</span>
+                          <span className="text-muted-foreground"> / </span>
+                          <span className="text-destructive font-medium">{r.not_improved}</span>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        {(CATEGORY_COLUMNS[categoryFilter as ActionPlanCategory] ?? []).map((col) => {
+                          if (col.header === "Evaluation") {
+                            return (
+                              <TableCell key={col.header} className="text-center">
+                                <EvaluationCell plans={r.plans} />
+                              </TableCell>
+                            );
+                          }
+                          const v = col.compute(r.plans, stepSummaries);
+                          return (
+                            <TableCell key={col.header} className="text-center">
+                              <MilestoneCell done={v.done} total={v.total} tone={v.tone} />
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-center">
+                          {r.resolved > 0 ? (
+                            <Badge variant="outline" className="bg-green-500/15 text-green-700 border-green-500/30">{r.resolved}</Badge>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                      </>
+                    )}
                     <TableCell>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </TableCell>
