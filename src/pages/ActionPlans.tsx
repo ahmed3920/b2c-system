@@ -330,7 +330,30 @@ const ActionPlans = () => {
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
         onChanged={() => { refetch(); /* keep dialog open with fresh data via refetch effect */ }}
+        onDelete={(p) => setPlanToDelete(p)}
+        canDelete={!!selected && (isAdmin || (isTeamLeader && selected.team_leader === currentTL))}
       />
+      <AlertDialog open={!!planToDelete} onOpenChange={(v) => !v && !deleting && setPlanToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this action plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the plan for <strong>{planToDelete?.tutor_name}</strong> and all of its timeline updates. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
