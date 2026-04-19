@@ -45,6 +45,7 @@ const ActionPlans = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [tlFilter, setTlFilter] = useState<string>("all");
+  const [stepFilter, setStepFilter] = useState<string>("all"); // all | pending | in_progress | done
   const [currentTL, setCurrentTL] = useState<string | null>(null);
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
   const [deleting, setDeleting] = useState(false);
