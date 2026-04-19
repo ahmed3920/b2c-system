@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CategoryBadge, StatusBadge } from "./ActionPlanBadges";
+import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 import {
   STATUS_LABELS,
   useActionPlanSteps,
@@ -19,6 +20,14 @@ import {
   type ActionPlanEvaluation,
   type ActionPlanStatus,
 } from "@/hooks/useActionPlans";
+
+// Auto-progress mapping based on status
+const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
+  active: 25,
+  on_hold: 25,
+  escalated: 60,
+  resolved: 100,
+};
 
 interface Props {
   plan: ActionPlan | null;
