@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Mail, CalendarClock, FileText, AlertTriangle, MessageSquare } from "lucide-react";
+import { CheckCircle2, Circle, Mail, CalendarClock, FileText, AlertTriangle, MessageSquare, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ActionPlanCategory } from "@/hooks/useActionPlans";
 
