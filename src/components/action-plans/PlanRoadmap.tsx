@@ -45,8 +45,8 @@ const ROADMAPS: Record<ActionPlanCategory, RoadmapStep[]> = {
     { kind: "escalate", label: "Direct to HR (3–4 no-shows)", matchEscalated: true },
   ],
   quality: [
-    { kind: "warning_email", label: "Send warning email", detail: "Email outlining concerns and required improvements expected from the tutor.", matchMarkers: ["📧 **Warning Email Sent**"] },
-    { kind: "schedule_meeting", label: "Schedule evaluation meeting", detail: "Main step — must be conducted with the tutor.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"] },
+    { kind: "warning_email", label: "Send warning email", detail: "Email outlining concerns and required improvements expected from the tutor.", matchMarkers: ["📧 **Warning Email Sent**"], isMain: true },
+    { kind: "schedule_meeting", label: "Schedule evaluation meeting", detail: "Main step — must be conducted with the tutor.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"], isMain: true },
     { kind: "meeting_followup", label: "Log meeting notes & recording", matchMarkers: ["📝 **Meeting Follow-up**"] },
     { kind: "monitor", label: "Set follow-up review (≈2 weeks)", detail: "Add a free-note update with the chosen follow-up date.", matchUpdatesAtLeast: 3 },
     { kind: "escalate", label: "Re-evaluate quality score", detail: "Resolve plan with Improved / Not Improved evaluation.", matchEscalated: true },
