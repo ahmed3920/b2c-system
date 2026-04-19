@@ -632,7 +632,7 @@ const TutorsTab = ({
           tutor_name: p.tutor_name,
           tutor_external_id: p.tutor_external_id,
           team_leader: p.team_leader,
-          total: 0, active: 0, resolved: 0, escalated: 0, on_hold: 0,
+          total: 0, active: 0, resolved: 0, escalated: 0, escalation_events: 0, on_hold: 0,
           improved: 0, not_improved: 0,
           plans: [],
         };
@@ -643,6 +643,7 @@ const TutorsTab = ({
       else if (p.status === "resolved") row.resolved += 1;
       else if (p.status === "escalated") row.escalated += 1;
       else if (p.status === "on_hold") row.on_hold += 1;
+      row.escalation_events += stepSummaries[p.id]?.escalationCount ?? 0;
       if (p.evaluation === "improved") row.improved += 1;
       else if (p.evaluation === "not_improved") row.not_improved += 1;
       row.plans.push(p);
