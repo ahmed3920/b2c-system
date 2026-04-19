@@ -440,7 +440,7 @@ export function EngagementTab() {
                                     )}
                                   </div>
                                   <span className="text-[10px] text-muted-foreground font-normal">
-                                    {sessions} sessions · {tutors} tutors
+                                    {ratedSessions}/{sessions} sessions · {tutors} tutors
                                   </span>
                                 </div>
                               ) : (
