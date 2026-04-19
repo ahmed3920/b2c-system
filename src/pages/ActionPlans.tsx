@@ -143,10 +143,21 @@ const ActionPlans = () => {
   }, [plans]);
 
   // Category counts (across all plans, ignoring current category filter)
+  // Includes a per-status breakdown so cards can show severity at a glance.
+  type CatBreakdown = { total: number; active: number; on_hold: number; resolved: number; escalated: number };
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: plans.length };
-    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = 0;
-    for (const p of plans) counts[p.category] = (counts[p.category] ?? 0) + 1;
+    const empty = (): CatBreakdown => ({ total: 0, active: 0, on_hold: 0, resolved: 0, escalated: 0 });
+    const counts: Record<string, CatBreakdown> = { all: empty() };
+    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = empty();
+    for (const p of plans) {
+      counts.all.total += 1;
+      counts.all[p.status] += 1;
+      const c = counts[p.category];
+      if (c) {
+        c.total += 1;
+        c[p.status] += 1;
+      }
+    }
     return counts;
   }, [plans]);
 
