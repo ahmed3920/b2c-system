@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-// Input no longer needed: progress is auto-calculated
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageSquarePlus, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -18,21 +16,14 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { CategoryBadge, StatusBadge } from "./ActionPlanBadges";
 import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
+import { AddUpdateForm } from "./AddUpdateForm";
+import { StepNoteRenderer } from "./StepNoteRenderer";
 import {
-  STATUS_LABELS,
   useActionPlanSteps,
   type ActionPlan,
   type ActionPlanEvaluation,
   type ActionPlanStatus,
 } from "@/hooks/useActionPlans";
-
-// Auto-progress mapping based on status
-const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
-  active: 25,
-  on_hold: 25,
-  escalated: 60,
-  resolved: 100,
-};
 
 interface Props {
   plan: ActionPlan | null;
@@ -46,9 +37,6 @@ interface Props {
 export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, onDelete, canDelete }: Props) {
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
   const { isAdmin } = useUserRole();
-  const [note, setNote] = useState("");
-  const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
-  const [posting, setPosting] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
   const [evalNotes, setEvalNotes] = useState("");
   // Local mirror of the plan so header/progress refresh in-place after edits.
@@ -79,68 +67,10 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
   const dueDate = new Date(currentPlan.due_date);
   const isOverdue = !isResolved && dueDate < new Date();
 
-  const postUpdate = async () => {
-    if (!note.trim()) {
-      toast.error("Please add a note");
-      return;
-    }
-    setPosting(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, mentor_name")
-      .eq("user_id", session.user.id)
-      .single();
-
-    const newStatus = statusChange !== "none" ? statusChange : null;
-    // Compute auto progress: prefer new status mapping if status changes,
-    // otherwise nudge progress upward by 10% per posted update (capped at 90% until resolved).
-    let autoProgress: number | null = null;
-    if (newStatus) {
-      autoProgress = STATUS_PROGRESS[newStatus];
-    } else if (currentPlan.status !== "resolved") {
-      autoProgress = Math.min(90, currentPlan.progress + 10);
-    }
-
-    // Insert step
-    const { error: stepErr } = await supabase.from("action_plan_steps").insert({
-      plan_id: currentPlan.id,
-      author_id: session.user.id,
-      author_name: profile?.full_name || profile?.mentor_name || "User",
-      note: note.trim(),
-      status_change: newStatus,
-      progress_change: autoProgress,
-    });
-    if (stepErr) {
-      toast.error("Failed to post update", { description: stepErr.message });
-      setPosting(false);
-      return;
-    }
-
-    // Apply changes to plan if any
-    const planUpdates: Partial<ActionPlan> = {};
-    if (newStatus) {
-      planUpdates.status = newStatus;
-      if (newStatus === "resolved") planUpdates.resolved_at = new Date().toISOString();
-    }
-    if (autoProgress !== null) planUpdates.progress = autoProgress;
-
+  const handlePosted = (planUpdates: Partial<{ status: ActionPlanStatus; progress: number; resolved_at: string }>) => {
     if (Object.keys(planUpdates).length > 0) {
-      const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", currentPlan.id);
-      if (planErr) {
-        toast.error("Update saved but plan change failed", { description: planErr.message });
-      } else {
-        // Reflect changes in the dialog immediately.
-        setCurrentPlan((prev) => (prev ? { ...prev, ...planUpdates } as ActionPlan : prev));
-      }
+      setCurrentPlan((prev) => (prev ? { ...prev, ...planUpdates } as ActionPlan : prev));
     }
-
-    toast.success("Update posted");
-    setNote("");
-    setStatusChange("none");
-    setPosting(false);
     refetchSteps();
     onChanged();
   };
@@ -351,7 +281,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">{s.note}</p>
+                      <StepNoteRenderer text={s.note} />
                     )}
                     {!isEditing && (s.status_change || s.progress_change !== null) && (
                       <div className="flex gap-2 mt-2 text-xs">
@@ -367,38 +297,14 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             </div>
           </div>
 
-          {/* Add update */}
+          {/* Add update with templates */}
           {!isResolved && (
-            <div className="space-y-3 border rounded-md p-3 bg-muted/20">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <MessageSquarePlus className="w-4 h-4" /> Add Update
-              </Label>
-              <Textarea
-                placeholder="What happened? What's next?"
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-              <div>
-                <Label className="text-xs">Change status (optional)</Label>
-                <Select value={statusChange} onValueChange={(v) => setStatusChange(v as ActionPlanStatus | "none")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No change</SelectItem>
-                    {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
-                      <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Progress is updated automatically based on status and posted updates.
-                </p>
-              </div>
-              <Button onClick={postUpdate} disabled={posting} size="sm">
-                {posting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Post Update
-              </Button>
-            </div>
+            <AddUpdateForm
+              planId={currentPlan.id}
+              currentStatus={currentPlan.status}
+              currentProgress={currentPlan.progress}
+              onPosted={handlePosted}
+            />
           )}
 
           {/* Evaluation (only for resolved) */}
