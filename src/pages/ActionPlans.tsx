@@ -563,12 +563,14 @@ const TutorPlansDialog = ({
   onOpenChange,
   onSelectPlan,
   today,
+  stepSummaries,
 }: {
   tutor: TutorRow | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSelectPlan: (p: ActionPlan) => void;
   today: Date;
+  stepSummaries: Record<string, PlanStepSummary>;
 }) => {
   if (!tutor) return null;
   const sorted = [...tutor.plans].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -597,6 +599,11 @@ const TutorPlansDialog = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <CategoryBadge category={p.category} />
                     <StatusBadge status={p.status} />
+                    <FirstStepBadge
+                      category={p.category}
+                      notes={stepSummaries[p.id]?.notes ?? []}
+                      totalSteps={stepSummaries[p.id]?.count ?? 0}
+                    />
                     {overdue && (
                       <span className="text-xs text-destructive flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" /> Overdue
