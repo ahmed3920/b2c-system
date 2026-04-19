@@ -89,13 +89,22 @@ const ActionPlans = () => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (categoryFilter !== "all" && p.category !== categoryFilter) return false;
       if (tlFilter !== "all" && p.team_leader !== tlFilter) return false;
+      if (stepFilter !== "all") {
+        const summary = stepSummaries[p.id];
+        const notes = summary?.notes ?? [];
+        const total = summary?.count ?? 0;
+        const done = isFirstStepDone(p.category, notes);
+        const variant: "pending" | "in_progress" | "done" =
+          done ? "done" : total > 0 ? "in_progress" : "pending";
+        if (variant !== stepFilter) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         if (!p.tutor_name.toLowerCase().includes(q) && !(p.tutor_external_id ?? "").toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [plans, statusFilter, categoryFilter, tlFilter, search]);
+  }, [plans, statusFilter, categoryFilter, tlFilter, stepFilter, stepSummaries, search]);
 
   const today = new Date();
   const kpis = useMemo(() => {
