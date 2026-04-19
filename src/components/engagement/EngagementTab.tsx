@@ -167,7 +167,7 @@ export function EngagementTab() {
     return buckets;
   }, [rows]);
 
-  const colors = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(217 91% 60%)", "hsl(142 71% 45%)", "hsl(38 92% 50%)", "hsl(280 70% 55%)"];
+  const colors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(217 91% 60%)", "hsl(142 71% 45%)", "hsl(38 92% 50%)", "hsl(280 70% 55%)", "hsl(0 72% 51%)", "hsl(180 65% 40%)"];
 
   // ----- Upload handler -----
   const handleFile = async (file: File) => {
