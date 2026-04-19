@@ -19,6 +19,8 @@ export interface RoadmapStep {
   matchEscalated?: boolean;
   /** If true, step ticks when at least N updates have been posted. */
   matchUpdatesAtLeast?: number;
+  /** Visually highlights the step as a primary/main action. */
+  isMain?: boolean;
 }
 
 const ICONS: Record<RoadmapStepKind, React.ElementType> = {
@@ -43,8 +45,8 @@ const ROADMAPS: Record<ActionPlanCategory, RoadmapStep[]> = {
     { kind: "escalate", label: "Direct to HR (3–4 no-shows)", matchEscalated: true },
   ],
   quality: [
-    { kind: "warning_email", label: "Send warning email", detail: "Email outlining concerns and required improvements expected from the tutor.", matchMarkers: ["📧 **Warning Email Sent**"] },
-    { kind: "schedule_meeting", label: "Schedule evaluation meeting", detail: "Main step — must be conducted with the tutor.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"] },
+    { kind: "warning_email", label: "Send warning email", detail: "Email outlining concerns and required improvements expected from the tutor.", matchMarkers: ["📧 **Warning Email Sent**"], isMain: true },
+    { kind: "schedule_meeting", label: "Schedule evaluation meeting", detail: "Main step — must be conducted with the tutor.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"], isMain: true },
     { kind: "meeting_followup", label: "Log meeting notes & recording", matchMarkers: ["📝 **Meeting Follow-up**"] },
     { kind: "monitor", label: "Set follow-up review (≈2 weeks)", detail: "Add a free-note update with the chosen follow-up date.", matchUpdatesAtLeast: 3 },
     { kind: "escalate", label: "Re-evaluate quality score", detail: "Resolve plan with Improved / Not Improved evaluation.", matchEscalated: true },
@@ -109,12 +111,19 @@ export function PlanRoadmap({ category, notes, status, totalUpdates }: Props) {
           const Icon = ICONS[step.kind];
           const isLast = i === steps.length - 1;
           return (
-            <li key={i} className="relative flex gap-3 pb-1">
+            <li
+              key={i}
+              className={cn(
+                "relative flex gap-3 pb-1",
+                step.isMain && "rounded-md border border-primary/40 bg-primary/5 p-2 -ml-1",
+              )}
+            >
               {/* Connector line */}
               {!isLast && (
                 <span
                   className={cn(
                     "absolute left-[11px] top-6 bottom-0 w-px",
+                    step.isMain && "left-[19px] top-9",
                     done ? "bg-green-500/40" : "bg-border",
                   )}
                 />
@@ -125,28 +134,40 @@ export function PlanRoadmap({ category, notes, status, totalUpdates }: Props) {
                   "relative z-10 flex items-center justify-center w-6 h-6 rounded-full shrink-0 border",
                   done
                     ? "bg-green-500/15 border-green-500/40 text-green-700"
-                    : "bg-muted border-border text-muted-foreground",
+                    : step.isMain
+                      ? "bg-primary/15 border-primary/50 text-primary"
+                      : "bg-muted border-border text-muted-foreground",
                 )}
               >
                 {done ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-3 h-3" />}
               </div>
               {/* Body */}
               <div className="flex-1 min-w-0 pt-0.5">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Icon
                     className={cn(
                       "w-3.5 h-3.5 shrink-0",
-                      done ? "text-green-600" : "text-muted-foreground",
+                      done
+                        ? "text-green-600"
+                        : step.isMain
+                          ? "text-primary"
+                          : "text-muted-foreground",
                     )}
                   />
                   <p
                     className={cn(
                       "text-sm font-medium",
+                      step.isMain && !done && "text-primary font-semibold",
                       done && "line-through text-muted-foreground",
                     )}
                   >
                     {step.label}
                   </p>
+                  {step.isMain && (
+                    <span className="text-[10px] uppercase tracking-wide font-semibold rounded px-1.5 py-0.5 bg-primary/15 text-primary border border-primary/30">
+                      Main step
+                    </span>
+                  )}
                 </div>
                 {step.detail && (
                   <p className="text-xs text-muted-foreground mt-0.5 ml-5">{step.detail}</p>
