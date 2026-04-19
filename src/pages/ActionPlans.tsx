@@ -470,13 +470,14 @@ const ActionPlans = () => {
   );
 };
 
-const KpiCard = ({ label, value, icon, highlight }: { label: string; value: number | string; icon: React.ReactNode; highlight?: boolean }) => (
+const KpiCard = ({ label, value, icon, highlight, sub }: { label: string; value: number | string; icon: React.ReactNode; highlight?: boolean; sub?: string }) => (
   <Card className={highlight ? "border-destructive/50" : ""}>
     <CardContent className="p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
           <p className={`text-2xl font-bold ${highlight ? "text-destructive" : ""}`}>{value}</p>
+          {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
         </div>
         {icon}
       </div>
