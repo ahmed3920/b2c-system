@@ -135,13 +135,18 @@ const ActionPlans = () => {
     const onHold = plans.filter((p) => p.status === "on_hold").length;
     const resolved = plans.filter((p) => p.status === "resolved").length;
     const escalated = plans.filter((p) => p.status === "escalated").length;
+    // Total historical escalation events (a plan re-escalated counts twice).
+    const escalationEvents = plans.reduce(
+      (acc, p) => acc + (stepSummaries[p.id]?.escalationCount ?? 0),
+      0,
+    );
     const overdue = plans.filter((p) => p.status !== "resolved" && isAfter(today, new Date(p.due_date))).length;
     const improved = plans.filter((p) => p.evaluation === "improved").length;
     const notImproved = plans.filter((p) => p.evaluation === "not_improved").length;
     const evaluated = improved + notImproved;
     const improvementRate = evaluated > 0 ? Math.round((improved / evaluated) * 100) : 0;
-    return { active, onHold, resolved, escalated, overdue, improved, notImproved, improvementRate, total: plans.length };
-  }, [plans]);
+    return { active, onHold, resolved, escalated, escalationEvents, overdue, improved, notImproved, improvementRate, total: plans.length };
+  }, [plans, stepSummaries]);
 
   // Category counts (across all plans, ignoring current category filter)
   // Includes a per-status breakdown so cards can show severity at a glance.
