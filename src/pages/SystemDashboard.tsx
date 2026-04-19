@@ -48,6 +48,8 @@ import { subDays, format } from "date-fns";
 import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog";
 import { TaskFormConfigDialog } from "@/components/admin/TaskFormConfigDialog";
 import { TaskCategoryManagerDialog } from "@/components/admin/TaskCategoryManagerDialog";
+import { EngagementTab } from "@/components/engagement/EngagementTab";
+import { Star } from "lucide-react";
 import {
   BarChart,
   Bar,
