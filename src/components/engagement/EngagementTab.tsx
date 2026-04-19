@@ -405,12 +405,13 @@ export function EngagementTab() {
                       <TableRow className="bg-muted/40 font-semibold border-t-2">
                         <TableCell>Overall</TableCell>
                         {months.map((m, i) => {
-                          let sum = 0, rated = 0, sessions = 0, tutors = 0;
+                          let sum = 0, rated = 0, sessions = 0, ratedSessions = 0, tutors = 0;
                           tlSummary.forEach(t => {
                             const c = t.perMonth[m];
                             if (c.avg != null) { sum += c.avg * c.rated; }
                             rated += c.rated;
                             sessions += c.sessions;
+                            ratedSessions += c.ratedSessions;
                             tutors += c.count;
                           });
                           const avg = rated ? sum / rated : null;
