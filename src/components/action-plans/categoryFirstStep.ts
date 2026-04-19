@@ -34,10 +34,10 @@ export const CATEGORY_FIRST_STEP: Record<ActionPlanCategory, FirstStepSpec | nul
     marker: "📧 **Warning Email Sent**",
   },
   cs_complaints: {
-    kind: "schedule_meeting",
-    label: "Schedule evaluation meeting",
-    description: "From the 2nd repeated ticket, the first step is an evaluation meeting with the tutor.",
-    marker: "📅 **Evaluation Meeting Scheduled**",
+    kind: "warning_email",
+    label: "Send warning email",
+    description: "Send the tutor a warning email containing the CS ticket details and the concern raised before scheduling further steps.",
+    marker: "📧 **Warning Email Sent**",
   },
   communication: {
     kind: "schedule_meeting",
