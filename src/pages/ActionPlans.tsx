@@ -30,6 +30,7 @@ import { CategoryBadge, StatusBadge } from "@/components/action-plans/ActionPlan
 import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
 import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
 import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
+import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 
 const ActionPlans = () => {
