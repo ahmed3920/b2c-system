@@ -119,17 +119,27 @@ export function EngagementTab() {
 
   // ----- Tutor per-month rating -----
   const tutorSummary = useMemo(() => {
-    const map = new Map<string, { name: string; tl: string; perMonth: Record<string, { rating: number | null; sessions: number }> }>();
+    const map = new Map<string, { name: string; tl: string; perMonth: Record<string, { rating: number | null; sessions: number; ratedSessions: number }> }>();
     rows.forEach(r => {
       const key = r.tutor_external_id || r.tutor_name;
       if (!map.has(key)) {
         map.set(key, { name: r.tutor_name, tl: r.team_leader, perMonth: {} });
       }
       const cur = map.get(key)!;
-      cur.perMonth[r.month] = { rating: r.rating != null ? Number(r.rating) : null, sessions: r.total_sessions ?? 0 };
+      cur.perMonth[r.month] = {
+        rating: r.rating != null ? Number(r.rating) : null,
+        sessions: r.total_sessions ?? 0,
+        ratedSessions: r.sessions_with_feedback ?? 0,
+      };
       cur.tl = r.team_leader;
     });
-    let arr = Array.from(map.values());
+    let arr = Array.from(map.values()).map(t => {
+      let sum = 0, cnt = 0;
+      Object.values(t.perMonth).forEach(c => {
+        if (c.rating != null) { sum += c.rating; cnt += 1; }
+      });
+      return { ...t, overallAvg: cnt ? sum / cnt : null, monthsRated: cnt };
+    });
     if (tlFilter !== "all") arr = arr.filter(t => t.tl === tlFilter);
     if (search.trim()) {
       const s = search.toLowerCase();
@@ -497,12 +507,13 @@ export function EngagementTab() {
                         {months.map(m => (
                           <TableHead key={m} className="text-center">{monthLabel(m)}</TableHead>
                         ))}
+                        <TableHead className="text-center">Overall Avg</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tutorSummary.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={2 + months.length} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={3 + months.length} className="text-center text-muted-foreground py-8">
                             No tutors match the filters.
                           </TableCell>
                         </TableRow>
@@ -528,11 +539,33 @@ export function EngagementTab() {
                                   <Badge variant="secondary" className={tone}>
                                     {r.toFixed(2)}
                                   </Badge>
-                                  <span className="text-[10px] text-muted-foreground">{c.sessions}s</span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {c.ratedSessions}/{c.sessions}s
+                                  </span>
                                 </div>
                               </TableCell>
                             );
                           })}
+                          <TableCell className="text-center">
+                            {t.overallAvg != null ? (
+                              <div className="flex flex-col items-center gap-0.5">
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    t.overallAvg >= 4.5 ? "bg-green-500/10 text-green-700 dark:text-green-400 font-semibold" :
+                                    t.overallAvg >= 4   ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 font-semibold" :
+                                    t.overallAvg >= 3.5 ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold" :
+                                                          "bg-red-500/10 text-red-700 dark:text-red-400 font-semibold"
+                                  }
+                                >
+                                  {t.overallAvg.toFixed(2)}
+                                </Badge>
+                                <span className="text-[10px] text-muted-foreground">{t.monthsRated} mo</span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
