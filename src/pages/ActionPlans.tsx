@@ -29,11 +29,16 @@ import {
 import { CategoryBadge, StatusBadge } from "@/components/action-plans/ActionPlanBadges";
 import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
 import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
+import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
+import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
+import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 
 const ActionPlans = () => {
   const navigate = useNavigate();
   const { isAdmin, isTeamLeader, isLoading: roleLoading } = useUserRole();
   const { plans, isLoading, refetch } = useActionPlans();
+  const planIds = useMemo(() => plans.map((p) => p.id), [plans]);
+  const { summaries: stepSummaries, refetch: refetchSummaries } = usePlanStepSummaries(planIds);
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<ActionPlan | null>(null);
   const [search, setSearch] = useState("");
@@ -280,6 +285,11 @@ const ActionPlans = () => {
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <CategoryBadge category={plan.category} />
+                          <FirstStepBadge
+                            category={plan.category}
+                            notes={stepSummaries[plan.id]?.notes ?? []}
+                            totalSteps={stepSummaries[plan.id]?.count ?? 0}
+                          />
                           {overdue && (
                             <span className="text-xs text-destructive flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" /> Overdue
@@ -312,7 +322,7 @@ const ActionPlans = () => {
           </TabsContent>
 
           <TabsContent value="tutors">
-            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} />
+            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} />
           </TabsContent>
         </Tabs>
 
@@ -329,7 +339,7 @@ const ActionPlans = () => {
         plan={selected}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
-        onChanged={() => { refetch(); /* keep dialog open with fresh data via refetch effect */ }}
+        onChanged={() => { refetch(); refetchSummaries(); }}
         onDelete={(p) => setPlanToDelete(p)}
         canDelete={isAdmin}
       />
@@ -391,10 +401,12 @@ const TutorsTab = ({
   plans,
   isAdmin,
   onSelectPlan,
+  stepSummaries,
 }: {
   plans: ActionPlan[];
   isAdmin: boolean;
   onSelectPlan: (p: ActionPlan) => void;
+  stepSummaries: Record<string, PlanStepSummary>;
 }) => {
   const [search, setSearch] = useState("");
   const [openTutor, setOpenTutor] = useState<TutorRow | null>(null);
@@ -473,6 +485,7 @@ const TutorsTab = ({
                   {isAdmin && <TableHead>Team Leader</TableHead>}
                   <TableHead className="text-center">Total</TableHead>
                   <TableHead className="text-center">Active</TableHead>
+                  <TableHead className="text-center">First Step</TableHead>
                   <TableHead className="text-center">Resolved</TableHead>
                   <TableHead className="text-center">Escalated</TableHead>
                   <TableHead className="text-center">Improved / Not</TableHead>
@@ -500,6 +513,9 @@ const TutorsTab = ({
                       {r.active > 0 ? (
                         <Badge variant="outline" className="bg-blue-500/15 text-blue-600 border-blue-500/30">{r.active}</Badge>
                       ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <TutorFirstStepCell plans={r.plans} stepSummaries={stepSummaries} />
                     </TableCell>
                     <TableCell className="text-center">
                       {r.resolved > 0 ? (
@@ -536,6 +552,7 @@ const TutorsTab = ({
           onSelectPlan(p);
         }}
         today={today}
+        stepSummaries={stepSummaries}
       />
     </div>
   );
@@ -547,12 +564,14 @@ const TutorPlansDialog = ({
   onOpenChange,
   onSelectPlan,
   today,
+  stepSummaries,
 }: {
   tutor: TutorRow | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSelectPlan: (p: ActionPlan) => void;
   today: Date;
+  stepSummaries: Record<string, PlanStepSummary>;
 }) => {
   if (!tutor) return null;
   const sorted = [...tutor.plans].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -581,6 +600,11 @@ const TutorPlansDialog = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <CategoryBadge category={p.category} />
                     <StatusBadge status={p.status} />
+                    <FirstStepBadge
+                      category={p.category}
+                      notes={stepSummaries[p.id]?.notes ?? []}
+                      totalSteps={stepSummaries[p.id]?.count ?? 0}
+                    />
                     {overdue && (
                       <span className="text-xs text-destructive flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" /> Overdue
@@ -615,6 +639,52 @@ const TutorPlansDialog = ({
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+/**
+ * Aggregates first-step status across all of a tutor's plans (preferring active ones).
+ * Shows the "worst" badge: pending > in_progress > done. Includes a "+N" hint when
+ * the tutor has more than one plan in that state.
+ */
+const TutorFirstStepCell = ({
+  plans,
+  stepSummaries,
+}: {
+  plans: ActionPlan[];
+  stepSummaries: Record<string, PlanStepSummary>;
+}) => {
+  // Prefer active/on_hold/escalated plans (i.e. not resolved). Fall back to all.
+  const open = plans.filter((p) => p.status !== "resolved");
+  const pool = open.length > 0 ? open : plans;
+  if (pool.length === 0) return <span className="text-muted-foreground">—</span>;
+
+  // Pick worst: pending → in_progress → done
+  const ranked = pool
+    .map((p) => {
+      const s = stepSummaries[p.id];
+      const notes = s?.notes ?? [];
+      const total = s?.count ?? 0;
+      const done = isFirstStepDone(p.category, notes);
+      const variant = done ? 2 : total > 0 ? 1 : 0; // 0 worst → pending
+      return { plan: p, variant };
+    })
+    .sort((a, b) => a.variant - b.variant);
+
+  const worst = ranked[0];
+  const sameCount = ranked.filter((r) => r.variant === worst.variant).length;
+
+  return (
+    <div className="inline-flex items-center gap-1">
+      <FirstStepBadge
+        category={worst.plan.category}
+        notes={stepSummaries[worst.plan.id]?.notes ?? []}
+        totalSteps={stepSummaries[worst.plan.id]?.count ?? 0}
+      />
+      {sameCount > 1 && (
+        <span className="text-[10px] text-muted-foreground">×{sameCount}</span>
+      )}
+    </div>
   );
 };
 
