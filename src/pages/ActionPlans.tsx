@@ -657,7 +657,7 @@ const TutorsTab = ({
         (r.tutor_external_id ?? "").toLowerCase().includes(q) ||
         r.team_leader.toLowerCase().includes(q),
     );
-  }, [filteredPlans, search]);
+  }, [filteredPlans, search, stepSummaries]);
 
   const today = new Date();
 
