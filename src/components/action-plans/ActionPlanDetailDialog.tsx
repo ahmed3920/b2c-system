@@ -45,6 +45,7 @@ interface Props {
 
 export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, onDelete, canDelete }: Props) {
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
+  const { isAdmin } = useUserRole();
   const [note, setNote] = useState("");
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
   const [posting, setPosting] = useState(false);
@@ -52,6 +53,20 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
   const [evalNotes, setEvalNotes] = useState("");
   // Local mirror of the plan so header/progress refresh in-place after edits.
   const [currentPlan, setCurrentPlan] = useState<ActionPlan | null>(plan);
+  // Current user (to gate per-step edit/delete to author or admin).
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Per-step edit / delete state.
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [stepToDelete, setStepToDelete] = useState<{ id: string; preview: string } | null>(null);
+  const [deletingStep, setDeletingStep] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user.id ?? null);
+    });
+  }, []);
 
   useEffect(() => {
     setCurrentPlan(plan);
