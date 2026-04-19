@@ -106,6 +106,28 @@ const ActionPlans = () => {
     });
   }, [plans, statusFilter, categoryFilter, tlFilter, stepFilter, stepSummaries, search]);
 
+  // Counts per first-step state, respecting all OTHER active filters (status/category/TL/search)
+  const stepCounts = useMemo(() => {
+    const counts = { all: 0, pending: 0, in_progress: 0, done: 0 };
+    for (const p of plans) {
+      if (statusFilter !== "all" && p.status !== statusFilter) continue;
+      if (categoryFilter !== "all" && p.category !== categoryFilter) continue;
+      if (tlFilter !== "all" && p.team_leader !== tlFilter) continue;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!p.tutor_name.toLowerCase().includes(q) && !(p.tutor_external_id ?? "").toLowerCase().includes(q)) continue;
+      }
+      const summary = stepSummaries[p.id];
+      const notes = summary?.notes ?? [];
+      const total = summary?.count ?? 0;
+      const done = isFirstStepDone(p.category, notes);
+      const variant: "pending" | "in_progress" | "done" = done ? "done" : total > 0 ? "in_progress" : "pending";
+      counts.all += 1;
+      counts[variant] += 1;
+    }
+    return counts;
+  }, [plans, statusFilter, categoryFilter, tlFilter, search, stepSummaries]);
+
   const today = new Date();
   const kpis = useMemo(() => {
     const active = plans.filter((p) => p.status === "active").length;
@@ -246,12 +268,12 @@ const ActionPlans = () => {
               )}
               {isAdmin && (
                 <Select value={stepFilter} onValueChange={setStepFilter}>
-                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="First step" /></SelectTrigger>
+                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="First step" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All first-step states</SelectItem>
-                    <SelectItem value="pending">⚠️ Awaiting first step</SelectItem>
-                    <SelectItem value="in_progress">In progress (no template)</SelectItem>
-                    <SelectItem value="done">✅ Step 1 done</SelectItem>
+                    <SelectItem value="all">All first-step states ({stepCounts.all})</SelectItem>
+                    <SelectItem value="pending">⚠️ Awaiting first step ({stepCounts.pending})</SelectItem>
+                    <SelectItem value="in_progress">In progress / no template ({stepCounts.in_progress})</SelectItem>
+                    <SelectItem value="done">✅ Step 1 done ({stepCounts.done})</SelectItem>
                   </SelectContent>
                 </Select>
               )}
