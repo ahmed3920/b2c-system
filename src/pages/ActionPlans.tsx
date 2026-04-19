@@ -41,6 +41,24 @@ const ActionPlans = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [currentTL, setCurrentTL] = useState<string | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!planToDelete) return;
+    setDeleting(true);
+    await supabase.from("action_plan_steps").delete().eq("plan_id", planToDelete.id);
+    const { error } = await supabase.from("action_plans").delete().eq("id", planToDelete.id);
+    setDeleting(false);
+    if (error) {
+      toast.error("Failed to delete action plan", { description: error.message });
+      return;
+    }
+    toast.success("Action plan deleted");
+    if (selected?.id === planToDelete.id) setSelected(null);
+    setPlanToDelete(null);
+    refetch();
+  };
 
   useEffect(() => {
     if (roleLoading) return;
