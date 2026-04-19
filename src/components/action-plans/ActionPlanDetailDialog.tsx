@@ -70,7 +70,14 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
       .single();
 
     const newStatus = statusChange !== "none" ? statusChange : null;
-    const newProgress = progressChange !== "" ? Math.max(0, Math.min(100, Number(progressChange))) : null;
+    // Compute auto progress: prefer new status mapping if status changes,
+    // otherwise nudge progress upward by 10% per posted update (capped at 90% until resolved).
+    let autoProgress: number | null = null;
+    if (newStatus) {
+      autoProgress = STATUS_PROGRESS[newStatus];
+    } else if (plan.status !== "resolved") {
+      autoProgress = Math.min(90, plan.progress + 10);
+    }
 
     // Insert step
     const { error: stepErr } = await supabase.from("action_plan_steps").insert({
@@ -79,7 +86,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
       author_name: profile?.full_name || profile?.mentor_name || "User",
       note: note.trim(),
       status_change: newStatus,
-      progress_change: newProgress,
+      progress_change: autoProgress,
     });
     if (stepErr) {
       toast.error("Failed to post update", { description: stepErr.message });
@@ -93,7 +100,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
       planUpdates.status = newStatus;
       if (newStatus === "resolved") planUpdates.resolved_at = new Date().toISOString();
     }
-    if (newProgress !== null) planUpdates.progress = newProgress;
+    if (autoProgress !== null) planUpdates.progress = autoProgress;
 
     if (Object.keys(planUpdates).length > 0) {
       const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", plan.id);
@@ -105,7 +112,6 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
     toast.success("Update posted");
     setNote("");
     setStatusChange("none");
-    setProgressChange("");
     setPosting(false);
     refetchSteps();
     onChanged();
