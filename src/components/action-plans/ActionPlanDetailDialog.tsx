@@ -440,6 +440,36 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           )}
         </div>
       </DialogContent>
+
+      <AlertDialog
+        open={!!stepToDelete}
+        onOpenChange={(v) => !v && !deletingStep && setStepToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this update?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the timeline update. This cannot be undone.
+              {stepToDelete?.preview && (
+                <span className="block mt-2 italic text-foreground">
+                  "{stepToDelete.preview}{stepToDelete.preview.length >= 80 ? "…" : ""}"
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingStep}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDeleteStep(); }}
+              disabled={deletingStep}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingStep ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
