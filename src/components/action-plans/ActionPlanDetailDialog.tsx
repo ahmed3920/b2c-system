@@ -40,7 +40,6 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
   const [note, setNote] = useState("");
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
-  const [progressChange, setProgressChange] = useState<string>("");
   const [posting, setPosting] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
   const [evalNotes, setEvalNotes] = useState("");
