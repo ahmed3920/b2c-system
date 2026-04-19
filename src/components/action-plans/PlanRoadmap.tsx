@@ -92,6 +92,16 @@ export function PlanRoadmap({ category, notes, status, totalUpdates }: Props) {
           {completed} of {steps.length} done · {pct}%
         </span>
       </div>
+      {category === "quality" && (
+        <div className="mb-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-900 dark:text-amber-200">
+          <RefreshCw className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <p>
+            <strong>Repeat monthly:</strong> this roadmap is followed every month for 3 months.
+            If the follow-up score stays <strong>below the baseline</strong>, repeat the meeting
+            and steps again the next month — continue until the score improves.
+          </p>
+        </div>
+      )}
       <ol className="relative space-y-3">
         {steps.map((step, i) => {
           const done = isDone(step);
