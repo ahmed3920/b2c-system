@@ -479,24 +479,44 @@ const CATEGORY_CARD_STYLES: Record<ActionPlanCategory, string> = {
 };
 
 const CategoryCountCard = ({
-  label, count, active, onClick, styleClass, activeClass,
+  label, breakdown, active, onClick, styleClass, activeClass,
 }: {
   label: string;
-  count: number;
+  breakdown: { total: number; active: number; on_hold: number; resolved: number; escalated: number };
   active: boolean;
   onClick: () => void;
   styleClass: string;
   activeClass: string;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 ${styleClass} ${active ? activeClass : ""}`}
-  >
-    <p className="text-xs font-medium opacity-80 truncate">{label}</p>
-    <p className="text-2xl font-bold leading-tight">{count}</p>
-  </button>
-);
+}) => {
+  const segments: { key: string; label: string; value: number; cls: string }[] = [
+    { key: "active", label: "active", value: breakdown.active, cls: "text-blue-600" },
+    { key: "escalated", label: "escalated", value: breakdown.escalated, cls: "text-destructive" },
+    { key: "on_hold", label: "on hold", value: breakdown.on_hold, cls: "text-yellow-700" },
+    { key: "resolved", label: "resolved", value: breakdown.resolved, cls: "text-green-700" },
+  ].filter((s) => s.value > 0);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 ${styleClass} ${active ? activeClass : ""}`}
+    >
+      <p className="text-xs font-medium opacity-80 truncate">{label}</p>
+      <p className="text-2xl font-bold leading-tight">{breakdown.total}</p>
+      <div className="mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5 text-[10px] leading-tight min-h-[14px]">
+        {segments.length === 0 ? (
+          <span className="opacity-60">—</span>
+        ) : (
+          segments.map((s, i) => (
+            <span key={s.key} className={s.cls}>
+              {s.value} {s.label}{i < segments.length - 1 ? " ·" : ""}
+            </span>
+          ))
+        )}
+      </div>
+    </button>
+  );
+};
 
 interface TutorRow {
   key: string;
