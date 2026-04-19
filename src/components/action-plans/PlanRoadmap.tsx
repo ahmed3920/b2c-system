@@ -111,19 +111,12 @@ export function PlanRoadmap({ category, notes, status, totalUpdates }: Props) {
           const Icon = ICONS[step.kind];
           const isLast = i === steps.length - 1;
           return (
-            <li
-              key={i}
-              className={cn(
-                "relative flex gap-3 pb-1",
-                step.isMain && "rounded-md border border-primary/40 bg-primary/5 p-2 -ml-1",
-              )}
-            >
+            <li key={i} className="relative flex gap-3 pb-1">
               {/* Connector line */}
               {!isLast && (
                 <span
                   className={cn(
                     "absolute left-[11px] top-6 bottom-0 w-px",
-                    step.isMain && "left-[19px] top-9",
                     done ? "bg-green-500/40" : "bg-border",
                   )}
                 />
@@ -134,9 +127,7 @@ export function PlanRoadmap({ category, notes, status, totalUpdates }: Props) {
                   "relative z-10 flex items-center justify-center w-6 h-6 rounded-full shrink-0 border",
                   done
                     ? "bg-green-500/15 border-green-500/40 text-green-700"
-                    : step.isMain
-                      ? "bg-primary/15 border-primary/50 text-primary"
-                      : "bg-muted border-border text-muted-foreground",
+                    : "bg-muted border-border text-muted-foreground",
                 )}
               >
                 {done ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-3 h-3" />}
@@ -147,24 +138,19 @@ export function PlanRoadmap({ category, notes, status, totalUpdates }: Props) {
                   <Icon
                     className={cn(
                       "w-3.5 h-3.5 shrink-0",
-                      done
-                        ? "text-green-600"
-                        : step.isMain
-                          ? "text-primary"
-                          : "text-muted-foreground",
+                      done ? "text-green-600" : "text-muted-foreground",
                     )}
                   />
                   <p
                     className={cn(
                       "text-sm font-medium",
-                      step.isMain && !done && "text-primary font-semibold",
                       done && "line-through text-muted-foreground",
                     )}
                   >
                     {step.label}
                   </p>
                   {step.isMain && (
-                    <span className="text-[10px] uppercase tracking-wide font-semibold rounded px-1.5 py-0.5 bg-primary/15 text-primary border border-primary/30">
+                    <span className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground">
                       Main step
                     </span>
                   )}
