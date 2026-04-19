@@ -29,6 +29,8 @@ import {
 import { CategoryBadge, StatusBadge } from "@/components/action-plans/ActionPlanBadges";
 import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
 import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
+import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
+import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 
 const ActionPlans = () => {
   const navigate = useNavigate();
