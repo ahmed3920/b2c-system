@@ -178,14 +178,17 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
             </div>
           )}
 
-          {/* Progress */}
+          {/* Progress (auto-calculated) */}
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
-              <span>Progress</span>
+              <span>Progress <span className="text-xs text-muted-foreground">(auto)</span></span>
               <span className="font-bold">{plan.progress}%</span>
             </div>
             <Progress value={plan.progress} className="h-2" />
           </div>
+
+          {/* Decision helper for this category */}
+          <CategoryDecisionHelper category={plan.category} />
 
           <Separator />
 
