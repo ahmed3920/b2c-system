@@ -121,7 +121,7 @@ const allCards: DashboardCard[] = [
     title: "Student Engagement",
     description: "Monthly tutor ratings & sessions by team leader",
     icon: <Star className="w-8 h-8" />,
-    href: "/admin/dashboard?tab=engagement",
+    href: "/engagement",
     roles: ["admin"],
   },
 ];
