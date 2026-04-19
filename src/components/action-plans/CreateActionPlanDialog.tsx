@@ -11,7 +11,8 @@ import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CATEGORY_LABELS, useActionPlanTutors, type ActionPlanCategory } from "@/hooks/useActionPlans";
+import { CATEGORY_LABELS, SELECTABLE_CATEGORIES, useActionPlanTutors, type ActionPlanCategory } from "@/hooks/useActionPlans";
+import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 
 interface Props {
   open: boolean;
@@ -139,12 +140,14 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
+                {SELECTABLE_CATEGORIES.map((c) => (
                   <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          <CategoryDecisionHelper category={category} />
 
           <div className="space-y-2">
             <Label>Duration (days)</Label>

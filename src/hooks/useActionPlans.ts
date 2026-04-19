@@ -48,10 +48,21 @@ export interface ActionPlanTutor {
 
 export const CATEGORY_LABELS: Record<ActionPlanCategory, string> = {
   quality: "Quality",
-  leaves_abuse: "Leaves Abuse",
+  emergency_abuse: "Emergency Abuse",
+  no_show_abuse: "No Show Abuse",
   communication: "Communication",
   cs_complaints: "CS Complaints",
+  leaves_abuse: "Leaves Abuse (Legacy)",
 };
+
+// Categories shown in the picker (legacy ones hidden)
+export const SELECTABLE_CATEGORIES: ActionPlanCategory[] = [
+  "quality",
+  "emergency_abuse",
+  "no_show_abuse",
+  "communication",
+  "cs_complaints",
+];
 
 export const STATUS_LABELS: Record<ActionPlanStatus, string> = {
   active: "Active",

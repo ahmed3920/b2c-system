@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
+// Input no longer needed: progress is auto-calculated
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CategoryBadge, StatusBadge } from "./ActionPlanBadges";
+import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 import {
   STATUS_LABELS,
   useActionPlanSteps,
@@ -19,6 +20,14 @@ import {
   type ActionPlanEvaluation,
   type ActionPlanStatus,
 } from "@/hooks/useActionPlans";
+
+// Auto-progress mapping based on status
+const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
+  active: 25,
+  on_hold: 25,
+  escalated: 60,
+  resolved: 100,
+};
 
 interface Props {
   plan: ActionPlan | null;
@@ -31,7 +40,6 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
   const [note, setNote] = useState("");
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
-  const [progressChange, setProgressChange] = useState<string>("");
   const [posting, setPosting] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
   const [evalNotes, setEvalNotes] = useState("");
@@ -62,7 +70,14 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
       .single();
 
     const newStatus = statusChange !== "none" ? statusChange : null;
-    const newProgress = progressChange !== "" ? Math.max(0, Math.min(100, Number(progressChange))) : null;
+    // Compute auto progress: prefer new status mapping if status changes,
+    // otherwise nudge progress upward by 10% per posted update (capped at 90% until resolved).
+    let autoProgress: number | null = null;
+    if (newStatus) {
+      autoProgress = STATUS_PROGRESS[newStatus];
+    } else if (plan.status !== "resolved") {
+      autoProgress = Math.min(90, plan.progress + 10);
+    }
 
     // Insert step
     const { error: stepErr } = await supabase.from("action_plan_steps").insert({
@@ -71,7 +86,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
       author_name: profile?.full_name || profile?.mentor_name || "User",
       note: note.trim(),
       status_change: newStatus,
-      progress_change: newProgress,
+      progress_change: autoProgress,
     });
     if (stepErr) {
       toast.error("Failed to post update", { description: stepErr.message });
@@ -85,7 +100,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
       planUpdates.status = newStatus;
       if (newStatus === "resolved") planUpdates.resolved_at = new Date().toISOString();
     }
-    if (newProgress !== null) planUpdates.progress = newProgress;
+    if (autoProgress !== null) planUpdates.progress = autoProgress;
 
     if (Object.keys(planUpdates).length > 0) {
       const { error: planErr } = await supabase.from("action_plans").update(planUpdates).eq("id", plan.id);
@@ -97,7 +112,6 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
     toast.success("Update posted");
     setNote("");
     setStatusChange("none");
-    setProgressChange("");
     setPosting(false);
     refetchSteps();
     onChanged();
@@ -164,14 +178,17 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
             </div>
           )}
 
-          {/* Progress */}
+          {/* Progress (auto-calculated) */}
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
-              <span>Progress</span>
+              <span>Progress <span className="text-xs text-muted-foreground">(auto)</span></span>
               <span className="font-bold">{plan.progress}%</span>
             </div>
             <Progress value={plan.progress} className="h-2" />
           </div>
+
+          {/* Decision helper for this category */}
+          <CategoryDecisionHelper category={plan.category} />
 
           <Separator />
 
@@ -214,30 +231,20 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged }: 
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Change status (optional)</Label>
-                  <Select value={statusChange} onValueChange={(v) => setStatusChange(v as ActionPlanStatus | "none")}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No change</SelectItem>
-                      {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
-                        <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Set progress % (optional)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    placeholder="0-100"
-                    value={progressChange}
-                    onChange={(e) => setProgressChange(e.target.value)}
-                  />
-                </div>
+              <div>
+                <Label className="text-xs">Change status (optional)</Label>
+                <Select value={statusChange} onValueChange={(v) => setStatusChange(v as ActionPlanStatus | "none")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No change</SelectItem>
+                    {(Object.keys(STATUS_LABELS) as ActionPlanStatus[]).map((s) => (
+                      <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Progress is updated automatically based on status and posted updates.
+                </p>
               </div>
               <Button onClick={postUpdate} disabled={posting} size="sm">
                 {posting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
