@@ -486,6 +486,8 @@ const CategoryCountCard = ({
     <p className="text-2xl font-bold leading-tight">{count}</p>
   </button>
 );
+
+interface TutorRow {
   key: string;
   tutor_name: string;
   tutor_external_id: string | null;
