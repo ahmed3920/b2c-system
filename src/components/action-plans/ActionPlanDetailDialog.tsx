@@ -276,9 +276,9 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           {isResolved && (
             <div className="space-y-3 border rounded-md p-3 bg-muted/20">
               <Label className="text-sm font-semibold">Final Evaluation</Label>
-              {plan.evaluation && (
+              {currentPlan.evaluation && (
                 <p className="text-sm">
-                  Current: <strong>{plan.evaluation === "improved" ? "Improved" : "Not Improved"}</strong>
+                  Current: <strong>{currentPlan.evaluation === "improved" ? "Improved" : "Not Improved"}</strong>
                 </p>
               )}
               <Textarea
