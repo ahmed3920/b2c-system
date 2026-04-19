@@ -143,10 +143,21 @@ const ActionPlans = () => {
   }, [plans]);
 
   // Category counts (across all plans, ignoring current category filter)
+  // Includes a per-status breakdown so cards can show severity at a glance.
+  type CatBreakdown = { total: number; active: number; on_hold: number; resolved: number; escalated: number };
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: plans.length };
-    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = 0;
-    for (const p of plans) counts[p.category] = (counts[p.category] ?? 0) + 1;
+    const empty = (): CatBreakdown => ({ total: 0, active: 0, on_hold: 0, resolved: 0, escalated: 0 });
+    const counts: Record<string, CatBreakdown> = { all: empty() };
+    for (const c of Object.keys(CATEGORY_LABELS)) counts[c] = empty();
+    for (const p of plans) {
+      counts.all.total += 1;
+      counts.all[p.status] += 1;
+      const c = counts[p.category];
+      if (c) {
+        c.total += 1;
+        c[p.status] += 1;
+      }
+    }
     return counts;
   }, [plans]);
 
@@ -243,19 +254,19 @@ const ActionPlans = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
               <CategoryCountCard
                 label="All"
-                count={categoryCounts.all}
+                breakdown={categoryCounts.all}
                 active={categoryFilter === "all"}
                 onClick={() => setCategoryFilter("all")}
                 styleClass="bg-muted/40 text-foreground border-border"
                 activeClass="ring-2 ring-primary"
               />
               {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[])
-                .filter((c) => c !== "leaves_abuse" || categoryCounts[c] > 0)
+                .filter((c) => c !== "leaves_abuse" || categoryCounts[c].total > 0)
                 .map((c) => (
                   <CategoryCountCard
                     key={c}
                     label={CATEGORY_LABELS[c]}
-                    count={categoryCounts[c] ?? 0}
+                    breakdown={categoryCounts[c]}
                     active={categoryFilter === c}
                     onClick={() => setCategoryFilter(c)}
                     styleClass={CATEGORY_CARD_STYLES[c]}
@@ -468,24 +479,44 @@ const CATEGORY_CARD_STYLES: Record<ActionPlanCategory, string> = {
 };
 
 const CategoryCountCard = ({
-  label, count, active, onClick, styleClass, activeClass,
+  label, breakdown, active, onClick, styleClass, activeClass,
 }: {
   label: string;
-  count: number;
+  breakdown: { total: number; active: number; on_hold: number; resolved: number; escalated: number };
   active: boolean;
   onClick: () => void;
   styleClass: string;
   activeClass: string;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 ${styleClass} ${active ? activeClass : ""}`}
-  >
-    <p className="text-xs font-medium opacity-80 truncate">{label}</p>
-    <p className="text-2xl font-bold leading-tight">{count}</p>
-  </button>
-);
+}) => {
+  const segments: { key: string; label: string; value: number; cls: string }[] = [
+    { key: "active", label: "active", value: breakdown.active, cls: "text-blue-600" },
+    { key: "escalated", label: "escalated", value: breakdown.escalated, cls: "text-destructive" },
+    { key: "on_hold", label: "on hold", value: breakdown.on_hold, cls: "text-yellow-700" },
+    { key: "resolved", label: "resolved", value: breakdown.resolved, cls: "text-green-700" },
+  ].filter((s) => s.value > 0);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 ${styleClass} ${active ? activeClass : ""}`}
+    >
+      <p className="text-xs font-medium opacity-80 truncate">{label}</p>
+      <p className="text-2xl font-bold leading-tight">{breakdown.total}</p>
+      <div className="mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5 text-[10px] leading-tight min-h-[14px]">
+        {segments.length === 0 ? (
+          <span className="opacity-60">—</span>
+        ) : (
+          segments.map((s, i) => (
+            <span key={s.key} className={s.cls}>
+              {s.value} {s.label}{i < segments.length - 1 ? " ·" : ""}
+            </span>
+          ))
+        )}
+      </div>
+    </button>
+  );
+};
 
 interface TutorRow {
   key: string;
