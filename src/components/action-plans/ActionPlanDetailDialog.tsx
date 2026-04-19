@@ -18,6 +18,8 @@ import { CategoryBadge, StatusBadge } from "./ActionPlanBadges";
 import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 import { AddUpdateForm } from "./AddUpdateForm";
 import { StepNoteRenderer } from "./StepNoteRenderer";
+import { PlanProgressTracker } from "./PlanProgressTracker";
+import { isFirstStepDone } from "./categoryFirstStep";
 import {
   useActionPlanSteps,
   type ActionPlan,
