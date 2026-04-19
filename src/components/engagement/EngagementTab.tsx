@@ -400,6 +400,54 @@ export function EngagementTab() {
                           })}
                         </TableRow>
                       ))}
+                      {/* Overall totals row */}
+                      <TableRow className="bg-muted/40 font-semibold border-t-2">
+                        <TableCell>Overall</TableCell>
+                        {months.map((m, i) => {
+                          let sum = 0, rated = 0, sessions = 0, tutors = 0;
+                          tlSummary.forEach(t => {
+                            const c = t.perMonth[m];
+                            if (c.avg != null) { sum += c.avg * c.rated; }
+                            rated += c.rated;
+                            sessions += c.sessions;
+                            tutors += c.count;
+                          });
+                          const avg = rated ? sum / rated : null;
+                          const prevAvg = (() => {
+                            if (i === 0) return null;
+                            let ps = 0, pr = 0;
+                            tlSummary.forEach(t => {
+                              const pc = t.perMonth[months[i - 1]];
+                              if (pc.avg != null) { ps += pc.avg * pc.rated; pr += pc.rated; }
+                            });
+                            return pr ? ps / pr : null;
+                          })();
+                          const delta = avg != null && prevAvg != null ? avg - prevAvg : null;
+                          return (
+                            <TableCell key={m} className="text-center">
+                              {avg != null ? (
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-base">{avg.toFixed(2)}</span>
+                                    {delta != null && Math.abs(delta) >= 0.01 && (
+                                      delta > 0 ? <TrendingUp className="w-3 h-3 text-green-600" />
+                                                : <TrendingDown className="w-3 h-3 text-red-600" />
+                                    )}
+                                    {delta != null && Math.abs(delta) < 0.01 && (
+                                      <Minus className="w-3 h-3 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground font-normal">
+                                    {sessions} sessions · {tutors} tutors
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </CardContent>
