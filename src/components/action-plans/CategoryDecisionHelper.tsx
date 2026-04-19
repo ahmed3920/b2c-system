@@ -48,11 +48,12 @@ const HELPERS: Record<ActionPlanCategory, HelperBlock | null> = {
   cs_complaints: {
     title: "CS Complaints — Decision Helper",
     items: [
+      "Send a warning email to the tutor including the CS ticket details and the concern raised",
       "From the 2nd repeated CS ticket in the same month → place tutor on an action plan",
       "Conduct an evaluation meeting with the tutor",
       "Document the root cause and agreed corrective steps",
       "Monitor CS tickets for the rest of the month",
-      "If additional tickets occur in the same month → escalate the plan",
+      "Escalate to HR if the same issue repeats 3 times",
     ],
   },
   communication: {
