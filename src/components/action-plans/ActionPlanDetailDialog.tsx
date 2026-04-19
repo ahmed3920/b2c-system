@@ -146,9 +146,9 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 flex-wrap pr-8">
-            <span>{plan.tutor_name}</span>
-            <CategoryBadge category={plan.category} />
-            <StatusBadge status={plan.status} />
+            <span>{currentPlan.tutor_name}</span>
+            <CategoryBadge category={currentPlan.category} />
+            <StatusBadge status={currentPlan.status} />
             {isOverdue && (
               <span className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" /> Overdue
@@ -159,7 +159,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
                 variant="ghost"
                 size="sm"
                 className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={() => onDelete(plan)}
+                onClick={() => onDelete(currentPlan)}
               >
                 <Trash2 className="w-4 h-4 mr-1" /> Delete
               </Button>
@@ -172,28 +172,28 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
               <p className="text-muted-foreground text-xs">Team Leader</p>
-              <p className="font-medium flex items-center gap-1"><User className="w-3 h-3" />{plan.team_leader}</p>
+              <p className="font-medium flex items-center gap-1"><User className="w-3 h-3" />{currentPlan.team_leader}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Tutor ID</p>
-              <p className="font-medium">{plan.tutor_external_id || "—"}</p>
+              <p className="font-medium">{currentPlan.tutor_external_id || "—"}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Start</p>
-              <p className="font-medium flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(plan.start_date), "MMM d, yyyy")}</p>
+              <p className="font-medium flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(currentPlan.start_date), "MMM d, yyyy")}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Due</p>
               <p className={`font-medium flex items-center gap-1 ${isOverdue ? "text-destructive" : ""}`}>
-                <Calendar className="w-3 h-3" />{format(new Date(plan.due_date), "MMM d, yyyy")}
+                <Calendar className="w-3 h-3" />{format(new Date(currentPlan.due_date), "MMM d, yyyy")}
               </p>
             </div>
           </div>
 
-          {plan.summary && (
+          {currentPlan.summary && (
             <div className="bg-muted/40 rounded-md p-3 text-sm">
               <p className="text-muted-foreground text-xs mb-1">Summary</p>
-              <p>{plan.summary}</p>
+              <p>{currentPlan.summary}</p>
             </div>
           )}
 
@@ -201,13 +201,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span>Progress <span className="text-xs text-muted-foreground">(auto)</span></span>
-              <span className="font-bold">{plan.progress}%</span>
+              <span className="font-bold">{currentPlan.progress}%</span>
             </div>
-            <Progress value={plan.progress} className="h-2" />
+            <Progress value={currentPlan.progress} className="h-2" />
           </div>
 
           {/* Decision helper for this category */}
-          <CategoryDecisionHelper category={plan.category} />
+          <CategoryDecisionHelper category={currentPlan.category} />
 
           <Separator />
 
