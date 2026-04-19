@@ -50,13 +50,32 @@ export function EngagementTab() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("engagement_uploads")
-      .select("*")
-      .order("month", { ascending: true });
-    if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-    setRows((data ?? []) as EngagementRow[]);
-    setLoading(false);
+    const pageSize = 1000;
+    let from = 0;
+    const allRows: EngagementRow[] = [];
+
+    try {
+      while (true) {
+        const { data, error } = await supabase
+          .from("engagement_uploads")
+          .select("*")
+          .order("month", { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        const batch = (data ?? []) as EngagementRow[];
+        allRows.push(...batch);
+
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      setRows(allRows);
+    } catch (error: any) {
+      toast({ title: "Failed to load", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
