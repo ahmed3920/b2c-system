@@ -11,9 +11,11 @@ const STATUS_STYLES: Record<ActionPlanStatus, string> = {
 
 const CATEGORY_STYLES: Record<ActionPlanCategory, string> = {
   quality: "bg-primary/10 text-primary border-primary/20",
-  leaves_abuse: "bg-orange-500/15 text-orange-700 border-orange-500/30",
+  emergency_abuse: "bg-red-500/15 text-red-700 border-red-500/30",
+  no_show_abuse: "bg-amber-500/15 text-amber-700 border-amber-500/30",
   communication: "bg-purple-500/15 text-purple-700 border-purple-500/30",
   cs_complaints: "bg-pink-500/15 text-pink-700 border-pink-500/30",
+  leaves_abuse: "bg-orange-500/15 text-orange-700 border-orange-500/30",
 };
 
 export function StatusBadge({ status }: { status: ActionPlanStatus }) {
