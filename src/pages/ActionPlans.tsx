@@ -409,7 +409,7 @@ const ActionPlans = () => {
           </TabsContent>
 
           <TabsContent value="tutors">
-            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} />
+            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} teamLeaders={teamLeaders} />
           </TabsContent>
         </Tabs>
 
