@@ -93,24 +93,25 @@ export function EngagementTab() {
   // tutors    = total tutors assigned to TL in that month (matches source file)
   // ratedCount = tutors who actually have a rating (used for the average)
   const tlSummary = useMemo(() => {
-    const map = new Map<string, Map<string, { sum: number; ratedCount: number; tutors: number; sessions: number }>>();
+    const map = new Map<string, Map<string, { sum: number; ratedCount: number; tutors: number; sessions: number; ratedSessions: number }>>();
     rows.forEach(r => {
       if (!map.has(r.team_leader)) map.set(r.team_leader, new Map());
       const m = map.get(r.team_leader)!;
       const k = r.month;
-      const cur = m.get(k) ?? { sum: 0, ratedCount: 0, tutors: 0, sessions: 0 };
+      const cur = m.get(k) ?? { sum: 0, ratedCount: 0, tutors: 0, sessions: 0, ratedSessions: 0 };
       cur.tutors += 1;
       if (r.rating != null) { cur.sum += Number(r.rating); cur.ratedCount += 1; }
       cur.sessions += r.total_sessions ?? 0;
+      cur.ratedSessions += r.sessions_with_feedback ?? 0;
       m.set(k, cur);
     });
     return Array.from(map.entries()).map(([tl, monthMap]) => {
-      const perMonth: Record<string, { avg: number | null; sessions: number; count: number; rated: number }> = {};
+      const perMonth: Record<string, { avg: number | null; sessions: number; count: number; rated: number; ratedSessions: number }> = {};
       months.forEach(mo => {
         const c = monthMap.get(mo);
         perMonth[mo] = c
-          ? { avg: c.ratedCount ? c.sum / c.ratedCount : null, sessions: c.sessions, count: c.tutors, rated: c.ratedCount }
-          : { avg: null, sessions: 0, count: 0, rated: 0 };
+          ? { avg: c.ratedCount ? c.sum / c.ratedCount : null, sessions: c.sessions, count: c.tutors, rated: c.ratedCount, ratedSessions: c.ratedSessions }
+          : { avg: null, sessions: 0, count: 0, rated: 0, ratedSessions: 0 };
       });
       return { teamLeader: tl, perMonth };
     });
