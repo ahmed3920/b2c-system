@@ -138,7 +138,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 flex-wrap">
+          <DialogTitle className="flex items-center gap-3 flex-wrap pr-8">
             <span>{plan.tutor_name}</span>
             <CategoryBadge category={plan.category} />
             <StatusBadge status={plan.status} />
@@ -146,6 +146,16 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
               <span className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" /> Overdue
               </span>
+            )}
+            {canDelete && onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => onDelete(plan)}
+              >
+                <Trash2 className="w-4 h-4 mr-1" /> Delete
+              </Button>
             )}
           </DialogTitle>
         </DialogHeader>
