@@ -239,6 +239,31 @@ const ActionPlans = () => {
           </TabsList>
 
           <TabsContent value="plans" className="space-y-4">
+            {/* Category cards (click to filter) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              <CategoryCountCard
+                label="All"
+                count={categoryCounts.all}
+                active={categoryFilter === "all"}
+                onClick={() => setCategoryFilter("all")}
+                styleClass="bg-muted/40 text-foreground border-border"
+                activeClass="ring-2 ring-primary"
+              />
+              {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[])
+                .filter((c) => c !== "leaves_abuse" || categoryCounts[c] > 0)
+                .map((c) => (
+                  <CategoryCountCard
+                    key={c}
+                    label={CATEGORY_LABELS[c]}
+                    count={categoryCounts[c] ?? 0}
+                    active={categoryFilter === c}
+                    onClick={() => setCategoryFilter(c)}
+                    styleClass={CATEGORY_CARD_STYLES[c]}
+                    activeClass="ring-2 ring-primary"
+                  />
+                ))}
+            </div>
+
             {/* Filters */}
             <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-[200px]">
