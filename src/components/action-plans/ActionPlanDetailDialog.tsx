@@ -161,6 +161,52 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     onChanged();
   };
 
+  const startEditStep = (stepId: string, currentNote: string) => {
+    setEditingStepId(stepId);
+    setEditText(currentNote);
+  };
+  const cancelEditStep = () => {
+    setEditingStepId(null);
+    setEditText("");
+  };
+  const saveEditStep = async (stepId: string) => {
+    const trimmed = editText.trim();
+    if (!trimmed) {
+      toast.error("Note cannot be empty");
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("action_plan_steps")
+      .update({ note: trimmed })
+      .eq("id", stepId);
+    setSavingEdit(false);
+    if (error) {
+      toast.error("Failed to update step", { description: error.message });
+      return;
+    }
+    toast.success("Update edited");
+    setEditingStepId(null);
+    setEditText("");
+    refetchSteps();
+  };
+  const confirmDeleteStep = async () => {
+    if (!stepToDelete) return;
+    setDeletingStep(true);
+    const { error } = await supabase
+      .from("action_plan_steps")
+      .delete()
+      .eq("id", stepToDelete.id);
+    setDeletingStep(false);
+    if (error) {
+      toast.error("Failed to delete step", { description: error.message });
+      return;
+    }
+    toast.success("Step deleted");
+    setStepToDelete(null);
+    refetchSteps();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
