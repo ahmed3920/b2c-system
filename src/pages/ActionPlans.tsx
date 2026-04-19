@@ -321,7 +321,7 @@ const ActionPlans = () => {
           </TabsContent>
 
           <TabsContent value="tutors">
-            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} />
+            <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} />
           </TabsContent>
         </Tabs>
 
@@ -338,7 +338,7 @@ const ActionPlans = () => {
         plan={selected}
         open={!!selected}
         onOpenChange={(v) => !v && setSelected(null)}
-        onChanged={() => { refetch(); /* keep dialog open with fresh data via refetch effect */ }}
+        onChanged={() => { refetch(); refetchSummaries(); }}
         onDelete={(p) => setPlanToDelete(p)}
         canDelete={isAdmin}
       />
@@ -400,10 +400,12 @@ const TutorsTab = ({
   plans,
   isAdmin,
   onSelectPlan,
+  stepSummaries,
 }: {
   plans: ActionPlan[];
   isAdmin: boolean;
   onSelectPlan: (p: ActionPlan) => void;
+  stepSummaries: Record<string, PlanStepSummary>;
 }) => {
   const [search, setSearch] = useState("");
   const [openTutor, setOpenTutor] = useState<TutorRow | null>(null);
