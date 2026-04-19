@@ -32,6 +32,7 @@ import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDeta
 import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
 import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
+import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell } from "@/components/action-plans/categoryColumns";
 
 const ActionPlans = () => {
   const navigate = useNavigate();
