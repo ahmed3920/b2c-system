@@ -140,12 +140,14 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(CATEGORY_LABELS) as ActionPlanCategory[]).map((c) => (
+                {SELECTABLE_CATEGORIES.map((c) => (
                   <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          <CategoryDecisionHelper category={category} />
 
           <div className="space-y-2">
             <Label>Duration (days)</Label>
