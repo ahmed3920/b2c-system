@@ -7,7 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageSquarePlus, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2 } from "lucide-react";
+import { Loader2, MessageSquarePlus, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -40,6 +45,7 @@ interface Props {
 
 export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, onDelete, canDelete }: Props) {
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
+  const { isAdmin } = useUserRole();
   const [note, setNote] = useState("");
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
   const [posting, setPosting] = useState(false);
@@ -47,6 +53,20 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
   const [evalNotes, setEvalNotes] = useState("");
   // Local mirror of the plan so header/progress refresh in-place after edits.
   const [currentPlan, setCurrentPlan] = useState<ActionPlan | null>(plan);
+  // Current user (to gate per-step edit/delete to author or admin).
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Per-step edit / delete state.
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [stepToDelete, setStepToDelete] = useState<{ id: string; preview: string } | null>(null);
+  const [deletingStep, setDeletingStep] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user.id ?? null);
+    });
+  }, []);
 
   useEffect(() => {
     setCurrentPlan(plan);
@@ -141,6 +161,52 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
     onChanged();
   };
 
+  const startEditStep = (stepId: string, currentNote: string) => {
+    setEditingStepId(stepId);
+    setEditText(currentNote);
+  };
+  const cancelEditStep = () => {
+    setEditingStepId(null);
+    setEditText("");
+  };
+  const saveEditStep = async (stepId: string) => {
+    const trimmed = editText.trim();
+    if (!trimmed) {
+      toast.error("Note cannot be empty");
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("action_plan_steps")
+      .update({ note: trimmed })
+      .eq("id", stepId);
+    setSavingEdit(false);
+    if (error) {
+      toast.error("Failed to update step", { description: error.message });
+      return;
+    }
+    toast.success("Update edited");
+    setEditingStepId(null);
+    setEditText("");
+    refetchSteps();
+  };
+  const confirmDeleteStep = async () => {
+    if (!stepToDelete) return;
+    setDeletingStep(true);
+    const { error } = await supabase
+      .from("action_plan_steps")
+      .delete()
+      .eq("id", stepToDelete.id);
+    setDeletingStep(false);
+    if (error) {
+      toast.error("Failed to delete step", { description: error.message });
+      return;
+    }
+    toast.success("Step deleted");
+    setStepToDelete(null);
+    refetchSteps();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -218,23 +284,86 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
               {steps.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">No updates yet.</p>
               )}
-              {steps.map((s) => (
-                <div key={s.id} className="border-l-2 border-primary/30 pl-3 py-1">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span className="font-medium text-foreground">{s.author_name || "User"}</span>
-                    <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap">{s.note}</p>
-                  {(s.status_change || s.progress_change !== null) && (
-                    <div className="flex gap-2 mt-2 text-xs">
-                      {s.status_change && <StatusBadge status={s.status_change} />}
-                      {s.progress_change !== null && (
-                        <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
-                      )}
+              {steps.map((s) => {
+                const canEditStep = isAdmin || (currentUserId !== null && s.author_id === currentUserId);
+                const isEditing = editingStepId === s.id;
+                return (
+                  <div key={s.id} className="border-l-2 border-primary/30 pl-3 py-1 group">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1 gap-2">
+                      <span className="font-medium text-foreground">{s.author_name || "User"}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
+                        {canEditStep && !isEditing && (
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => startEditStep(s.id, s.note)}
+                              title="Edit update"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() =>
+                                setStepToDelete({ id: s.id, preview: s.note.slice(0, 80) })
+                              }
+                              title="Delete update"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={2}
+                          autoFocus
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => saveEditStep(s.id)}
+                            disabled={savingEdit}
+                          >
+                            {savingEdit ? (
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <Check className="w-3 h-3 mr-1" />
+                            )}
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEditStep}
+                            disabled={savingEdit}
+                          >
+                            <X className="w-3 h-3 mr-1" /> Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{s.note}</p>
+                    )}
+                    {!isEditing && (s.status_change || s.progress_change !== null) && (
+                      <div className="flex gap-2 mt-2 text-xs">
+                        {s.status_change && <StatusBadge status={s.status_change} />}
+                        {s.progress_change !== null && (
+                          <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -311,6 +440,36 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
           )}
         </div>
       </DialogContent>
+
+      <AlertDialog
+        open={!!stepToDelete}
+        onOpenChange={(v) => !v && !deletingStep && setStepToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this update?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the timeline update. This cannot be undone.
+              {stepToDelete?.preview && (
+                <span className="block mt-2 italic text-foreground">
+                  "{stepToDelete.preview}{stepToDelete.preview.length >= 80 ? "…" : ""}"
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingStep}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDeleteStep(); }}
+              disabled={deletingStep}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingStep ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
