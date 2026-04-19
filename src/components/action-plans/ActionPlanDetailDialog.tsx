@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Calendar, User, AlertCircle, Trash2, Pencil, Check, X, Flag } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -227,91 +227,127 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
 
           {/* Timeline */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Timeline</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Timeline</h3>
+              {(() => {
+                const totalEscalations = steps.filter((s) => s.status_change === "escalated").length;
+                if (totalEscalations === 0) return null;
+                return (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
+                    <Flag className="w-3 h-3" fill="currentColor" />
+                    {totalEscalations === 1
+                      ? "Escalated once"
+                      : `Escalated ${totalEscalations}× (re-escalated)`}
+                  </span>
+                );
+              })()}
+            </div>
             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-2">
               {steps.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">No updates yet.</p>
               )}
-              {steps.map((s) => {
-                const canEditStep = isAdmin || (currentUserId !== null && s.author_id === currentUserId);
-                const isEditing = editingStepId === s.id;
-                return (
-                  <div key={s.id} className="border-l-2 border-primary/30 pl-3 py-1 group">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1 gap-2">
-                      <span className="font-medium text-foreground">{s.author_name || "User"}</span>
-                      <div className="flex items-center gap-2">
-                        <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
-                        {canEditStep && !isEditing && (
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => startEditStep(s.id, s.note)}
-                              title="Edit update"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() =>
-                                setStepToDelete({ id: s.id, preview: s.note.slice(0, 80) })
-                              }
-                              title="Delete update"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {isEditing ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          rows={2}
-                          autoFocus
-                        />
+              {(() => {
+                // Steps are already ordered by created_at asc → assign running escalation #
+                let escIndex = 0;
+                return steps.map((s) => {
+                  const isEscalation = s.status_change === "escalated";
+                  if (isEscalation) escIndex += 1;
+                  const escNumber = isEscalation ? escIndex : null;
+                  const canEditStep = isAdmin || (currentUserId !== null && s.author_id === currentUserId);
+                  const isEditing = editingStepId === s.id;
+                  return (
+                    <div
+                      key={s.id}
+                      className={`pl-3 py-1 group ${
+                        isEscalation
+                          ? "border-l-2 border-destructive bg-destructive/5 rounded-r-md -mr-2 pr-2"
+                          : "border-l-2 border-primary/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1 gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium text-foreground truncate">{s.author_name || "User"}</span>
+                          {isEscalation && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-destructive text-destructive-foreground text-[10px] font-semibold uppercase tracking-wide">
+                              <Flag className="w-3 h-3" fill="currentColor" />
+                              Escalation #{escNumber}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => saveEditStep(s.id)}
-                            disabled={savingEdit}
-                          >
-                            {savingEdit ? (
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            ) : (
-                              <Check className="w-3 h-3 mr-1" />
-                            )}
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEditStep}
-                            disabled={savingEdit}
-                          >
-                            <X className="w-3 h-3 mr-1" /> Cancel
-                          </Button>
+                          <span>{format(new Date(s.created_at), "MMM d, yyyy · HH:mm")}</span>
+                          {canEditStep && !isEditing && (
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => startEditStep(s.id, s.note)}
+                                title="Edit update"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() =>
+                                  setStepToDelete({ id: s.id, preview: s.note.slice(0, 80) })
+                                }
+                                title="Delete update"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ) : (
-                      <StepNoteRenderer text={s.note} />
-                    )}
-                    {!isEditing && (s.status_change || s.progress_change !== null) && (
-                      <div className="flex gap-2 mt-2 text-xs">
-                        {s.status_change && <StatusBadge status={s.status_change} />}
-                        {s.progress_change !== null && (
-                          <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            rows={2}
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => saveEditStep(s.id)}
+                              disabled={savingEdit}
+                            >
+                              {savingEdit ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="w-3 h-3 mr-1" />
+                              )}
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={cancelEditStep}
+                              disabled={savingEdit}
+                            >
+                              <X className="w-3 h-3 mr-1" /> Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <StepNoteRenderer text={s.note} />
+                      )}
+                      {!isEditing && (s.status_change || s.progress_change !== null) && (
+                        <div className="flex gap-2 mt-2 text-xs">
+                          {s.status_change && <StatusBadge status={s.status_change} />}
+                          {s.progress_change !== null && (
+                            <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
 
