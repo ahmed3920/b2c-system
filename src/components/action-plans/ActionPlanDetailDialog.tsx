@@ -37,9 +37,6 @@ interface Props {
 export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, onDelete, canDelete }: Props) {
   const { steps, refetch: refetchSteps } = useActionPlanSteps(plan?.id ?? null);
   const { isAdmin } = useUserRole();
-  const [note, setNote] = useState("");
-  const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
-  const [posting, setPosting] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
   const [evalNotes, setEvalNotes] = useState("");
   // Local mirror of the plan so header/progress refresh in-place after edits.
