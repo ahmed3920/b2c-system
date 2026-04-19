@@ -528,6 +528,8 @@ interface TutorRow {
   active: number;
   resolved: number;
   escalated: number;
+  /** Total historical escalation events across this tutor's plans (a plan re-escalated counts twice). */
+  escalation_events: number;
   on_hold: number;
   improved: number;
   not_improved: number;
