@@ -551,6 +551,7 @@ const TutorsTab = ({
           onSelectPlan(p);
         }}
         today={today}
+        stepSummaries={stepSummaries}
       />
     </div>
   );
