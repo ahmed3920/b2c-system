@@ -36,6 +36,8 @@ const ActionPlans = () => {
   const navigate = useNavigate();
   const { isAdmin, isTeamLeader, isLoading: roleLoading } = useUserRole();
   const { plans, isLoading, refetch } = useActionPlans();
+  const planIds = useMemo(() => plans.map((p) => p.id), [plans]);
+  const { summaries: stepSummaries, refetch: refetchSummaries } = usePlanStepSummaries(planIds);
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<ActionPlan | null>(null);
   const [search, setSearch] = useState("");
