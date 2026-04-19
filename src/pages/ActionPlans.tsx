@@ -331,7 +331,7 @@ const ActionPlans = () => {
         onOpenChange={(v) => !v && setSelected(null)}
         onChanged={() => { refetch(); /* keep dialog open with fresh data via refetch effect */ }}
         onDelete={(p) => setPlanToDelete(p)}
-        canDelete={!!selected && (isAdmin || (isTeamLeader && selected.team_leader === currentTL))}
+        canDelete={isAdmin}
       />
       <AlertDialog open={!!planToDelete} onOpenChange={(v) => !v && !deleting && setPlanToDelete(null)}>
         <AlertDialogContent>
