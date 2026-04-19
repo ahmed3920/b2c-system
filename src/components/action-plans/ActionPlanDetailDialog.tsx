@@ -20,6 +20,7 @@ import { AddUpdateForm } from "./AddUpdateForm";
 import { StepNoteRenderer } from "./StepNoteRenderer";
 import { PlanProgressTracker } from "./PlanProgressTracker";
 import { PlanRoadmap } from "./PlanRoadmap";
+import { QualityScoresEditor } from "./QualityScoresEditor";
 import { isFirstStepDone } from "./categoryFirstStep";
 import {
   useActionPlanSteps,
@@ -222,6 +223,16 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
 
           {/* Decision helper for this category */}
           <CategoryDecisionHelper category={currentPlan.category} />
+
+          {/* Quality scores: only relevant for the Quality category. */}
+          {currentPlan.category === "quality" && (
+            <QualityScoresEditor
+              plan={currentPlan}
+              onSaved={(updates) =>
+                setCurrentPlan((prev) => (prev ? ({ ...prev, ...updates } as ActionPlan) : prev))
+              }
+            />
+          )}
 
           <Separator />
 

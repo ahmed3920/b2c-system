@@ -32,7 +32,7 @@ import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDeta
 import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
 import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
-import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell } from "@/components/action-plans/categoryColumns";
+import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell, QualityScoreCell, QUALITY_SCORE_HEADERS } from "@/components/action-plans/categoryColumns";
 
 const ActionPlans = () => {
   const navigate = useNavigate();
@@ -862,6 +862,34 @@ const TutorsTab = ({
                             return (
                               <TableCell key={col.header} className="text-center">
                                 <EvaluationCell plans={r.plans} />
+                              </TableCell>
+                            );
+                          }
+                          if (col.header === QUALITY_SCORE_HEADERS.baseline) {
+                            return (
+                              <TableCell key={col.header} className="text-center">
+                                <QualityScoreCell plans={r.plans} field="quality_baseline_score" />
+                              </TableCell>
+                            );
+                          }
+                          if (col.header === QUALITY_SCORE_HEADERS.m1) {
+                            return (
+                              <TableCell key={col.header} className="text-center">
+                                <QualityScoreCell plans={r.plans} field="quality_month1_score" />
+                              </TableCell>
+                            );
+                          }
+                          if (col.header === QUALITY_SCORE_HEADERS.m2) {
+                            return (
+                              <TableCell key={col.header} className="text-center">
+                                <QualityScoreCell plans={r.plans} field="quality_month2_score" />
+                              </TableCell>
+                            );
+                          }
+                          if (col.header === QUALITY_SCORE_HEADERS.m3) {
+                            return (
+                              <TableCell key={col.header} className="text-center">
+                                <QualityScoreCell plans={r.plans} field="quality_month3_score" />
                               </TableCell>
                             );
                           }
