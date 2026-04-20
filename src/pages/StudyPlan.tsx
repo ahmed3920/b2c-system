@@ -12,10 +12,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeeklyStudyPlans, type WeeklyPlan } from "@/hooks/useWeeklyStudyPlans";
+import { useTutorProgress } from "@/hooks/useTutorProgress";
 import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
 import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
@@ -37,6 +39,8 @@ export default function StudyPlan() {
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
 
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
+  const { data: progress = [], isLoading: progressLoading } = useTutorProgress(weekStart);
+  const [progressFilter, setProgressFilter] = useState("");
 
   const stats = useMemo(() => {
     const tutors = plans.length;
@@ -141,58 +145,154 @@ export default function StudyPlan() {
           <StatCard label="Utilization" value={`${stats.utilization}%`} />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Plans for week of {weekStart}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : plans.length === 0 ? (
-              <div className="py-10 text-center text-muted-foreground text-sm">
-                No plans for this week yet. Click <b>Generate Plan</b> after data is loaded.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tutor</TableHead>
-                    <TableHead>Team Leader</TableHead>
-                    <TableHead>Free h</TableHead>
-                    <TableHead>Planned h</TableHead>
-                    <TableHead>Modules</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {plans.map((p) => (
-                    <TableRow
-                      key={p.id}
-                      className="cursor-pointer"
-                      onClick={() => setSelected(p)}
-                    >
-                      <TableCell className="font-medium">
-                        {p.tutor_name}
-                        <div className="text-xs text-muted-foreground">
-                          {p.tutor_external_id}
-                        </div>
-                      </TableCell>
-                      <TableCell>{p.team_leader}</TableCell>
-                      <TableCell>{p.free_hours}</TableCell>
-                      <TableCell>{p.planned_hours}</TableCell>
-                      <TableCell>{p.items?.length ?? 0}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{p.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="plans">
+          <TabsList>
+            <TabsTrigger value="plans">Weekly Plans</TabsTrigger>
+            <TabsTrigger value="progress">Tutor Progress</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="plans">
+            <Card>
+              <CardHeader>
+                <CardTitle>Plans for week of {weekStart}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : plans.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground text-sm">
+                    No plans for this week yet. Click <b>Generate Plan</b> after data is loaded.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tutor</TableHead>
+                        <TableHead>Team Leader</TableHead>
+                        <TableHead>Free h</TableHead>
+                        <TableHead>Planned h</TableHead>
+                        <TableHead>Modules</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {plans.map((p) => (
+                        <TableRow
+                          key={p.id}
+                          className="cursor-pointer"
+                          onClick={() => setSelected(p)}
+                        >
+                          <TableCell className="font-medium">
+                            {p.tutor_name}
+                            <div className="text-xs text-muted-foreground">
+                              {p.tutor_external_id}
+                            </div>
+                          </TableCell>
+                          <TableCell>{p.team_leader}</TableCell>
+                          <TableCell>{p.free_hours}</TableCell>
+                          <TableCell>{p.planned_hours}</TableCell>
+                          <TableCell>{p.items?.length ?? 0}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{p.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="progress">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tutor module progress — week of {weekStart}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  placeholder="Filter by tutor name, ID or team leader…"
+                  value={progressFilter}
+                  onChange={(e) => setProgressFilter(e.target.value)}
+                  className="max-w-md"
+                />
+                {progressLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : progress.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground text-sm">
+                    No tutors synced for this week yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tutor</TableHead>
+                        <TableHead>Team Leader</TableHead>
+                        <TableHead className="text-center">Studied</TableHead>
+                        <TableHead className="text-center">Remaining</TableHead>
+                        <TableHead>Remaining modules</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {progress
+                        .filter((r) => {
+                          const q = progressFilter.trim().toLowerCase();
+                          if (!q) return true;
+                          return (
+                            r.tutor_name.toLowerCase().includes(q) ||
+                            r.tutor_external_id.toLowerCase().includes(q) ||
+                            r.team_leader.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((r) => (
+                          <TableRow key={r.tutor_external_id}>
+                            <TableCell className="font-medium">
+                              {r.tutor_name}
+                              <div className="text-xs text-muted-foreground">
+                                {r.tutor_external_id}
+                              </div>
+                            </TableCell>
+                            <TableCell>{r.team_leader}</TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="secondary">
+                                {r.finished_count} / {r.total_modules}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {r.remaining_count === 0 ? (
+                                <Badge className="bg-green-600 hover:bg-green-600">Done</Badge>
+                              ) : (
+                                <Badge variant="outline">{r.remaining_count}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1 max-w-xl">
+                                {r.remaining_modules.length === 0 ? (
+                                  <span className="text-xs text-muted-foreground">
+                                    All modules completed
+                                  </span>
+                                ) : (
+                                  r.remaining_modules.map((m, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">
+                                      {m.grade_band} · {m.module_code}
+                                    </Badge>
+                                  ))
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <StudyPlanDetailDialog plan={selected} onClose={() => setSelected(null)} />
       </div>
