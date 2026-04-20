@@ -13,12 +13,24 @@ type GroupRow = {
   completed: number;
 };
 
-export const TaskBreakdownStats = () => {
+export type BreakdownGroupBy = "team_leader" | "mentor";
+
+interface TaskBreakdownStatsProps {
+  /** Called whenever the scope (group + month + matching user ids) changes,
+   * so the parent can filter the task list accordingly. */
+  onScopeChange?: (scope: {
+    groupBy: BreakdownGroupBy;
+    monthFilter: string; // "YYYY-MM" or "all"
+    userIds: string[];   // user ids that belong to the selected groupBy role
+  }) => void;
+}
+
+export const TaskBreakdownStats = ({ onScopeChange }: TaskBreakdownStatsProps) => {
   const { isAdmin, isTeamLeader } = useUserRole();
   const [rawTasks, setRawTasks] = useState<RawTask[]>([]);
   const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
   const [groupedStats, setGroupedStats] = useState<GroupRow[]>([]);
-  const [groupBy, setGroupBy] = useState<"team_leader" | "mentor">("team_leader");
+  const [groupBy, setGroupBy] = useState<BreakdownGroupBy>("team_leader");
   const [monthFilter, setMonthFilter] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -48,20 +60,36 @@ export const TaskBreakdownStats = () => {
     load();
   }, [enabled]);
 
+  // Compute classification helpers
+  const profileMap = new Map(rawProfiles.map((p) => [p.user_id, p]));
+  const teamLeaderNames = new Set(
+    rawProfiles.map((p) => p.team_leader).filter(Boolean)
+  );
+  const isTeamLeaderUser = (userId: string) => {
+    const p = profileMap.get(userId);
+    if (!p) return false;
+    return teamLeaderNames.has(p.mentor_name);
+  };
+
+  // Notify parent of scope (matching user ids based on groupBy)
+  useEffect(() => {
+    if (!onScopeChange) return;
+    const userIds = rawProfiles
+      .filter((p) =>
+        groupBy === "team_leader"
+          ? isTeamLeaderUser(p.user_id)
+          : !isTeamLeaderUser(p.user_id)
+      )
+      .map((p) => p.user_id);
+    onScopeChange({ groupBy, monthFilter, userIds });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupBy, monthFilter, rawProfiles]);
+
   useEffect(() => {
     if (rawProfiles.length === 0 && rawTasks.length === 0) {
       setGroupedStats([]);
       return;
     }
-    const profileMap = new Map(rawProfiles.map((p) => [p.user_id, p]));
-    const teamLeaderNames = new Set(
-      rawProfiles.map((p) => p.team_leader).filter(Boolean)
-    );
-    const isTeamLeaderUser = (userId: string) => {
-      const p = profileMap.get(userId);
-      if (!p) return false;
-      return teamLeaderNames.has(p.mentor_name);
-    };
     const inSelectedMonth = (iso: string) => {
       if (!monthFilter || monthFilter === "all") return true;
       return iso?.startsWith(monthFilter);
@@ -89,6 +117,7 @@ export const TaskBreakdownStats = () => {
       map.set(groupName, cur);
     });
     setGroupedStats(Array.from(map.values()).sort((a, b) => b.total - a.total));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, monthFilter, rawTasks, rawProfiles]);
 
   if (!enabled) return null;

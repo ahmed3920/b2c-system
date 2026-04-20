@@ -54,7 +54,7 @@ import { TaskPriorityBadge } from "@/components/task/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { TaskFilters } from "@/components/task/TaskFilters";
-import { TaskBreakdownStats } from "@/components/task/TaskBreakdownStats";
+import { TaskBreakdownStats, type BreakdownGroupBy } from "@/components/task/TaskBreakdownStats";
 import { cn } from "@/lib/utils";
 import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
 
@@ -128,11 +128,32 @@ const Tasks = () => {
   const activeTaskTypes = dbCategories.length > 0 ? dbCategories : fallbackTaskTypes;
 
   // Determine which tasks to display
-  const displayTasks = isAdmin && adminView.viewMode !== "my"
+  const baseDisplayTasks = isAdmin && adminView.viewMode !== "my"
     ? adminView.tasks
     : isTLMentorView
       ? tlView.tasks
       : tasks;
+
+  // Breakdown scope (Team Leader vs Mentor) lifted from TaskBreakdownStats so
+  // the table below reflects the same role + month filter.
+  const [breakdownScope, setBreakdownScope] = useState<{
+    groupBy: BreakdownGroupBy;
+    monthFilter: string;
+    userIds: string[];
+  }>({ groupBy: "team_leader", monthFilter: "", userIds: [] });
+
+  // Only apply the breakdown scope filter where the breakdown is visible:
+  // admin (any view) and team leader in "my" view (when breakdown is shown).
+  const showBreakdown = isAdmin || isTeamLeader;
+  const displayTasks = showBreakdown && breakdownScope.userIds.length > 0
+    ? baseDisplayTasks.filter((t) => {
+        if (!breakdownScope.userIds.includes(t.user_id)) return false;
+        if (breakdownScope.monthFilter && breakdownScope.monthFilter !== "all") {
+          return t.created_at?.startsWith(breakdownScope.monthFilter);
+        }
+        return true;
+      })
+    : baseDisplayTasks;
 
   // Use the task filters hook
   const {
@@ -508,7 +529,7 @@ const Tasks = () => {
         )}
 
         {/* Aggregated breakdown by Team Leader / Mentor (admins & TLs only) */}
-        <TaskBreakdownStats />
+        <TaskBreakdownStats onScopeChange={setBreakdownScope} />
 
         {/* Filters */}
         {!(isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my") && (
