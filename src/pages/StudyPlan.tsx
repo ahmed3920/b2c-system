@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeeklyStudyPlans, type WeeklyPlan } from "@/hooks/useWeeklyStudyPlans";
@@ -22,6 +22,14 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
 import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
 import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { exportStudyPlanToExcel } from "@/utils/exportStudyPlanToExcel";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -42,15 +50,26 @@ export default function StudyPlan() {
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
   const { data: progress = [], isLoading: progressLoading } = useTutorProgress(weekStart);
   const [progressFilter, setProgressFilter] = useState("");
+  const [tlFilter, setTlFilter] = useState<string>("all");
+
+  const teamLeaders = useMemo(() => {
+    const set = new Set(plans.map((p) => p.team_leader).filter(Boolean));
+    return Array.from(set).sort();
+  }, [plans]);
+
+  const filteredPlans = useMemo(
+    () => (tlFilter === "all" ? plans : plans.filter((p) => p.team_leader === tlFilter)),
+    [plans, tlFilter],
+  );
 
   const stats = useMemo(() => {
-    const tutors = plans.length;
-    const totalFree = plans.reduce((s, p) => s + p.free_hours, 0);
-    const totalPlanned = plans.reduce((s, p) => s + p.planned_hours, 0);
+    const tutors = filteredPlans.length;
+    const totalFree = filteredPlans.reduce((s, p) => s + p.free_hours, 0);
+    const totalPlanned = filteredPlans.reduce((s, p) => s + p.planned_hours, 0);
     const utilization =
       totalFree > 0 ? Math.round((totalPlanned / totalFree) * 100) : 0;
     return { tutors, totalFree, totalPlanned, utilization };
-  }, [plans]);
+  }, [filteredPlans]);
 
   const handleGenerate = async () => {
     setBusy(true);
