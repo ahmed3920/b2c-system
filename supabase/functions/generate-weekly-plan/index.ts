@@ -148,6 +148,39 @@ Deno.serve(async (req) => {
       finishedByTutor.get(r.tutor_external_id)!.add(r.module_id);
     }
 
+    // Load planned leaves overlapping this working week.
+    // The week starts Friday; tutors work Fri→Tue OR Sat→Wed (5 working days).
+    // To safely cover both schedules, count leaves Fri (week_start) → Wed (+5).
+    const weekStartDate = new Date(weekStart + "T00:00:00Z");
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 5); // Fri + 5 = Wed
+    const weekEndStr = weekEndDate.toISOString().slice(0, 10);
+
+    const leavesByTutor = new Map<string, number>();
+    {
+      const PAGE2 = 1000;
+      let from2 = 0;
+      while (true) {
+        const { data: leaveBatch, error: leaveErr } = await admin
+          .from("tutor_leaves")
+          .select("tutor_external_id, leave_date")
+          .gte("leave_date", weekStart)
+          .lte("leave_date", weekEndStr)
+          .range(from2, from2 + PAGE2 - 1);
+        if (leaveErr) throw leaveErr;
+        const batch = leaveBatch ?? [];
+        for (const l of batch) {
+          leavesByTutor.set(
+            l.tutor_external_id,
+            (leavesByTutor.get(l.tutor_external_id) ?? 0) + 1,
+          );
+        }
+        if (batch.length < PAGE2) break;
+        from2 += PAGE2;
+      }
+    }
+    const HOURS_PER_LEAVE_DAY = 5;
+
     const allModuleIds = new Set((modules as ModuleRow[]).map((m) => m.id));
     let skippedNoFinishedData = 0;
     let skippedAllDone = 0;
@@ -205,7 +238,14 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      let remaining = Number(tutor.free_hours);
+      // Subtract 5h per planned-leave day during this working week.
+      const leaveDays = leavesByTutor.get(tutor.tutor_external_id) ?? 0;
+      const rawFree = Number(tutor.free_hours);
+      const adjustedFree = Math.max(
+        0,
+        (Number.isFinite(rawFree) ? rawFree : 0) - leaveDays * HOURS_PER_LEAVE_DAY,
+      );
+      let remaining = adjustedFree;
       if (!Number.isFinite(remaining) || remaining <= 0) {
         skippedNoHours++;
         continue;
@@ -259,7 +299,10 @@ Deno.serve(async (req) => {
             tutor_name: tutor.tutor_name,
             team_leader: tutor.team_leader,
             week_start: weekStart,
-            free_hours: tutor.free_hours,
+            free_hours: adjustedFree,
+            notes: leaveDays > 0
+              ? `Adjusted: original ${rawFree}h − ${leaveDays} leave day${leaveDays > 1 ? "s" : ""} × 5h`
+              : null,
             planned_hours: planned,
             status: "draft",
             generated_by: userId,
@@ -322,6 +365,8 @@ Deno.serve(async (req) => {
         skipped_not_in_finished_sheet: skippedNoFinishedData,
         skipped_all_modules_done: skippedAllDone,
         skipped_no_free_hours: skippedNoHours,
+        tutors_with_leaves: leavesByTutor.size,
+        leave_days_total: Array.from(leavesByTutor.values()).reduce((s, v) => s + v, 0),
       }),
       {
         status: 200,
