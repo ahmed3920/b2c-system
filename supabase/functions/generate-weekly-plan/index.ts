@@ -128,6 +128,8 @@ Deno.serve(async (req) => {
     if (pubErr) throw pubErr;
 
     // Finished module-ids per tutor (treat any row as "finished" — that's what the sheet represents)
+    // Only tutors that appear in this set are considered "known" — tutors absent from
+    // the StudyFinished sheet are skipped (we don't know what they've finished).
     const finishedByTutor = new Map<string, Set<string>>();
     for (const r of published ?? []) {
       if (!finishedByTutor.has(r.tutor_external_id))
@@ -136,6 +138,9 @@ Deno.serve(async (req) => {
     }
 
     const allModuleIds = new Set((modules as ModuleRow[]).map((m) => m.id));
+    let skippedNoFinishedData = 0;
+    let skippedAllDone = 0;
+    let skippedNoHours = 0;
 
     // sort modules shortest first (then display_order)
     const sortedModules = [...(modules as ModuleRow[])].sort(
@@ -148,14 +153,25 @@ Deno.serve(async (req) => {
     let itemsCreated = 0;
 
     for (const tutor of occupation) {
-      const finished = finishedByTutor.get(tutor.tutor_external_id) ?? new Set<string>();
+      // Skip tutors not present in the StudyFinished sheet — we don't know their progress.
+      if (!finishedByTutor.has(tutor.tutor_external_id)) {
+        skippedNoFinishedData++;
+        continue;
+      }
+      const finished = finishedByTutor.get(tutor.tutor_external_id)!;
       // Candidates = catalog modules this tutor has not yet finished
       const candidates = new Set<string>();
       for (const id of allModuleIds) if (!finished.has(id)) candidates.add(id);
-      if (candidates.size === 0) continue;
+      if (candidates.size === 0) {
+        skippedAllDone++;
+        continue;
+      }
 
       let remaining = Number(tutor.free_hours);
-      if (!Number.isFinite(remaining) || remaining <= 0) continue;
+      if (!Number.isFinite(remaining) || remaining <= 0) {
+        skippedNoHours++;
+        continue;
+      }
 
       const items: Array<{
         module_id: string;
@@ -237,6 +253,10 @@ Deno.serve(async (req) => {
         week_start: weekStart,
         plans_created: plansCreated,
         items_created: itemsCreated,
+        tutors_in_occupation: occupation.length,
+        skipped_not_in_finished_sheet: skippedNoFinishedData,
+        skipped_all_modules_done: skippedAllDone,
+        skipped_no_free_hours: skippedNoHours,
       }),
       {
         status: 200,
