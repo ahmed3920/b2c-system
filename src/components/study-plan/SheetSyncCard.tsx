@@ -19,20 +19,34 @@ export type SheetKind =
   | "ended_sessions"
   | "post_modules";
 
+// Logical fields → default sheet headers (match the user's exported CSVs)
 const SESSION_FIELDS = [
   "tutor_external_id",
   "tutor_name",
   "team_leader",
-  "scheduled_sessions",
 ];
+const SESSION_DEFAULTS: Record<string, string> = {
+  tutor_external_id: "Tutors → T ID",
+  tutor_name: "Name I18n → En",
+  team_leader: "Admins - Team Lead → Name",
+};
+
 const MODULE_FIELDS = [
   "tutor_external_id",
   "tutor_name",
   "team_leader",
   "grade_band",
-  "module_code",
-  "is_finished",
+  "level_name",
+  "published_at",
 ];
+const MODULE_DEFAULTS: Record<string, string> = {
+  tutor_external_id: "T ID",
+  tutor_name: "Name I18n → En",
+  team_leader: "Admins - Team Lead → Name",
+  grade_band: "Grade Band",
+  level_name: "Levels → Name",
+  published_at: "Study Plans → Published At",
+};
 
 interface Props {
   kind: SheetKind;
@@ -45,6 +59,7 @@ export function SheetSyncCard({ kind, title, description, weekStart }: Props) {
   const isSessions =
     kind === "upcoming_sessions" || kind === "ended_sessions";
   const fields = isSessions ? SESSION_FIELDS : MODULE_FIELDS;
+  const defaults = isSessions ? SESSION_DEFAULTS : MODULE_DEFAULTS;
 
   const [csvUrl, setCsvUrl] = useState("");
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -65,11 +80,11 @@ export function SheetSyncCard({ kind, title, description, weekStart }: Props) {
         setCsvUrl(data.csv_url ?? "");
         const m = (data.column_mapping ?? {}) as Record<string, string>;
         const merged: Record<string, string> = {};
-        for (const f of fields) merged[f] = m[f] ?? f;
+        for (const f of fields) merged[f] = m[f] ?? defaults[f] ?? f;
         setMapping(merged);
       } else {
         const merged: Record<string, string> = {};
-        for (const f of fields) merged[f] = f;
+        for (const f of fields) merged[f] = defaults[f] ?? f;
         setMapping(merged);
       }
       setLoading(false);
