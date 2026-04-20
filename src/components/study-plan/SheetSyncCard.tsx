@@ -59,6 +59,7 @@ export function SheetSyncCard({ kind, title, description, weekStart }: Props) {
   const isSessions =
     kind === "upcoming_sessions" || kind === "ended_sessions";
   const fields = isSessions ? SESSION_FIELDS : MODULE_FIELDS;
+  const defaults = isSessions ? SESSION_DEFAULTS : MODULE_DEFAULTS;
 
   const [csvUrl, setCsvUrl] = useState("");
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -79,11 +80,11 @@ export function SheetSyncCard({ kind, title, description, weekStart }: Props) {
         setCsvUrl(data.csv_url ?? "");
         const m = (data.column_mapping ?? {}) as Record<string, string>;
         const merged: Record<string, string> = {};
-        for (const f of fields) merged[f] = m[f] ?? f;
+        for (const f of fields) merged[f] = m[f] ?? defaults[f] ?? f;
         setMapping(merged);
       } else {
         const merged: Record<string, string> = {};
-        for (const f of fields) merged[f] = f;
+        for (const f of fields) merged[f] = defaults[f] ?? f;
         setMapping(merged);
       }
       setLoading(false);
