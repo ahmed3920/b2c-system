@@ -20,17 +20,19 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
 import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
 
-function mondayOf(d: Date): string {
-  const day = d.getDay(); // 0 = Sun
-  const diff = day === 0 ? -6 : 1 - day;
-  const m = new Date(d);
-  m.setDate(d.getDate() + diff);
-  return m.toISOString().slice(0, 10);
+// Week starts on Friday for this organisation
+function fridayOf(d: Date): string {
+  const day = d.getDay(); // 0=Sun
+  // offset to reach the most-recent Friday (or today if already Fri)
+  const diff = day >= 5 ? day - 5 : day + 2; // Fri=0, Sat=1, Sun=2, Mon=3…
+  const f = new Date(d);
+  f.setDate(d.getDate() - diff);
+  return f.toISOString().slice(0, 10);
 }
 
 export default function StudyPlan() {
   const { isAdmin } = useUserRole();
-  const [weekStart, setWeekStart] = useState<string>(mondayOf(new Date()));
+  const [weekStart, setWeekStart] = useState<string>(fridayOf(new Date()));
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
 

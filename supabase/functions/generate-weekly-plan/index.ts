@@ -115,25 +115,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Load published modules (pre) — modules NOT finished yet are study candidates
+    // Load published modules (pre).
+    // NOTE: The "StudyFinished" sheet lists only modules a tutor has ALREADY finished.
+    // So candidates for this week = every active catalog module NOT in that list.
     let pubQ = admin
       .from("tutor_published_modules")
-      .select("tutor_external_id, module_id, is_assigned, is_finished")
+      .select("tutor_external_id, module_id, is_finished")
       .eq("week_start", weekStart)
       .eq("phase", "pre");
     if (tlFilter) pubQ = pubQ.eq("team_leader", tlFilter);
     const { data: published, error: pubErr } = await pubQ;
     if (pubErr) throw pubErr;
 
-    // Index unfinished assigned modules per tutor
-    const unfinishedByTutor = new Map<string, Set<string>>();
+    // Finished module-ids per tutor (treat any row as "finished" — that's what the sheet represents)
+    const finishedByTutor = new Map<string, Set<string>>();
     for (const r of published ?? []) {
-      if (r.is_assigned && !r.is_finished) {
-        if (!unfinishedByTutor.has(r.tutor_external_id))
-          unfinishedByTutor.set(r.tutor_external_id, new Set());
-        unfinishedByTutor.get(r.tutor_external_id)!.add(r.module_id);
-      }
+      if (!finishedByTutor.has(r.tutor_external_id))
+        finishedByTutor.set(r.tutor_external_id, new Set());
+      finishedByTutor.get(r.tutor_external_id)!.add(r.module_id);
     }
+
+    const allModuleIds = new Set((modules as ModuleRow[]).map((m) => m.id));
 
     // sort modules shortest first (then display_order)
     const sortedModules = [...(modules as ModuleRow[])].sort(
@@ -146,10 +148,15 @@ Deno.serve(async (req) => {
     let itemsCreated = 0;
 
     for (const tutor of occupation) {
-      const candidates = unfinishedByTutor.get(tutor.tutor_external_id);
-      if (!candidates || candidates.size === 0) continue;
+      const finished = finishedByTutor.get(tutor.tutor_external_id) ?? new Set<string>();
+      // Candidates = catalog modules this tutor has not yet finished
+      const candidates = new Set<string>();
+      for (const id of allModuleIds) if (!finished.has(id)) candidates.add(id);
+      if (candidates.size === 0) continue;
 
       let remaining = Number(tutor.free_hours);
+      if (!Number.isFinite(remaining) || remaining <= 0) continue;
+
       const items: Array<{
         module_id: string;
         planned_hours: number;
