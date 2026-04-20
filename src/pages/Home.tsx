@@ -375,27 +375,51 @@ const Home = () => {
                 <h3 className="font-semibold text-foreground">
                   Breakdown by {groupBy === "team_leader" ? "Team Leader" : "Mentor"}
                 </h3>
-                <div className="inline-flex rounded-md border border-border overflow-hidden">
-                  <button
-                    onClick={() => setGroupBy("team_leader")}
-                    className={`px-3 py-1.5 text-sm transition-colors ${
-                      groupBy === "team_leader"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    Team Leader
-                  </button>
-                  <button
-                    onClick={() => setGroupBy("mentor")}
-                    className={`px-3 py-1.5 text-sm transition-colors ${
-                      groupBy === "mentor"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    Mentor
-                  </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    // Build month options from raw tasks (last 12 months from data)
+                    const monthSet = new Set<string>();
+                    rawTasks.forEach((t) => {
+                      if (t.created_at) monthSet.add(t.created_at.slice(0, 7));
+                    });
+                    const months = Array.from(monthSet).sort().reverse();
+                    return (
+                      <select
+                        value={monthFilter}
+                        onChange={(e) => setMonthFilter(e.target.value)}
+                        className="px-3 py-1.5 text-sm rounded-md border border-border bg-card text-foreground"
+                      >
+                        <option value="all">All Months</option>
+                        {months.map((m) => (
+                          <option key={m} value={m}>
+                            {new Date(m + "-01").toLocaleString("default", { month: "short", year: "numeric" })}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                  <div className="inline-flex rounded-md border border-border overflow-hidden">
+                    <button
+                      onClick={() => setGroupBy("team_leader")}
+                      className={`px-3 py-1.5 text-sm transition-colors ${
+                        groupBy === "team_leader"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Team Leader
+                    </button>
+                    <button
+                      onClick={() => setGroupBy("mentor")}
+                      className={`px-3 py-1.5 text-sm transition-colors ${
+                        groupBy === "mentor"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Mentor
+                    </button>
+                  </div>
                 </div>
               </div>
               {groupedStats.length === 0 ? (
@@ -411,6 +435,11 @@ const Home = () => {
                           {groupBy === "team_leader" ? "Team Leader" : "Mentor"}
                         </th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">Total</th>
+                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">
+                          {monthFilter === "all"
+                            ? "All Months"
+                            : new Date(monthFilter + "-01").toLocaleString("default", { month: "short", year: "numeric" })}
+                        </th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">In Progress</th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">Completed</th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">Rate</th>
@@ -421,6 +450,7 @@ const Home = () => {
                         <tr key={g.name} className="border-t border-border hover:bg-muted/30">
                           <td className="px-4 py-2 text-foreground font-medium">{g.name}</td>
                           <td className="px-4 py-2 text-right text-foreground">{g.total}</td>
+                          <td className="px-4 py-2 text-right text-foreground font-medium">{g.monthTotal}</td>
                           <td className="px-4 py-2 text-right text-blue-600">{g.inProgress}</td>
                           <td className="px-4 py-2 text-right text-green-600">{g.completed}</td>
                           <td className="px-4 py-2 text-right text-primary font-medium">
