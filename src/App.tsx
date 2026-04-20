@@ -26,6 +26,7 @@ import Performance from "./pages/Performance";
 import Tracking from "./pages/Tracking";
 import Growth from "./pages/Growth";
 import RiskControl from "./pages/RiskControl";
+import StudyPlan from "./pages/StudyPlan";
 
 import NotFound from "./pages/NotFound";
 
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/tracking" element={<Tracking />} />
           <Route path="/growth" element={<Growth />} />
           <Route path="/risk-control" element={<RiskControl />} />
+          <Route path="/study-plan" element={<StudyPlan />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

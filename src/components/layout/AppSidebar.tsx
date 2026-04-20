@@ -8,6 +8,7 @@ import {
   TrendingUp,
   ShieldAlert,
   ClipboardList,
+  BookOpen,
   Kanban as KanbanIcon,
   BarChart3,
   FileText,
@@ -48,6 +49,7 @@ const tracking: NavItem[] = [
   { title: "Tracking", url: "/tracking", icon: LineChart },
   { title: "Tracking Numbers", url: "/tracking-numbers", icon: Hash, roles: ["admin"] },
   { title: "Engagement", url: "/engagement", icon: Star, roles: ["admin"] },
+  { title: "Weekly Study Plan", url: "/study-plan", icon: BookOpen, roles: ["admin", "team_leader"] },
 ];
 
 const growthRisk: NavItem[] = [
