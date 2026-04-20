@@ -22,10 +22,7 @@ const json = (body: unknown, status = 200) =>
 function toCsvUrl(input: string): string {
   const url = input.trim();
   if (!url) return url;
-  // Already CSV
   if (url.includes("output=csv") || url.endsWith(".csv")) return url;
-
-  // /spreadsheets/d/<ID>/...  → /export?format=csv&gid=<gid>
   const idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
   if (idMatch) {
     const id = idMatch[1];
@@ -36,7 +33,7 @@ function toCsvUrl(input: string): string {
   return url;
 }
 
-// Minimal RFC4180-ish CSV parser (handles quotes + embedded commas/newlines).
+// Minimal RFC4180-ish CSV parser
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let cur: string[] = [];
@@ -49,12 +46,8 @@ function parseCsv(text: string): string[][] {
         if (text[i + 1] === '"') {
           field += '"';
           i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += c;
-      }
+        } else inQuotes = false;
+      } else field += c;
     } else {
       if (c === '"') inQuotes = true;
       else if (c === ",") {
@@ -76,22 +69,16 @@ function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
 }
 
-function toBool(v: string | undefined): boolean {
-  if (!v) return false;
-  const s = v.trim().toLowerCase();
-  return ["true", "1", "yes", "y", "done", "finished", "complete"].includes(s);
-}
-
 function normGradeBand(s: string): string {
-  // Accept "Grade 1-2", "Grade 1 - 2", "grade 1 to 2" → "Grade 1 - 2"
   const m = s.match(/(\d+)\s*[-–to]+\s*(\d+)/i);
   if (m) return `Grade ${m[1]} - ${m[2]}`;
   return s.trim();
 }
 
-function normModuleCode(s: string): string {
-  const m = s.match(/M\s*([1-4])/i);
-  return m ? `M${m[1]}` : s.trim().toUpperCase();
+// Extract M1/M2/M3/M4 from strings like "M1: 2D Game Design With Game Engine - 1"
+function extractModuleCode(s: string): string | null {
+  const m = s.match(/\bM\s*([1-4])\b/i);
+  return m ? `M${m[1]}` : null;
 }
 
 Deno.serve(async (req) => {
@@ -135,7 +122,6 @@ Deno.serve(async (req) => {
     if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart))
       return json({ error: "week_start (YYYY-MM-DD) required" }, 400);
 
-    // Load config
     const { data: cfg, error: cfgErr } = await admin
       .from("study_plan_sheet_configs")
       .select("csv_url, column_mapping")
@@ -148,7 +134,6 @@ Deno.serve(async (req) => {
     const mapping = (cfg.column_mapping ?? {}) as Record<string, string>;
     const csvUrl = toCsvUrl(cfg.csv_url);
 
-    // Fetch CSV
     const resp = await fetch(csvUrl, { redirect: "follow" });
     if (!resp.ok)
       return json(
@@ -166,7 +151,6 @@ Deno.serve(async (req) => {
         (h) => h.toLowerCase() === String(colName).toLowerCase(),
       );
     };
-
     const get = (row: string[], i: number) =>
       i >= 0 && i < row.length ? row[i].trim() : "";
 
@@ -181,44 +165,61 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
 
     if (isSessions) {
+      // Sessions sheet: 1 row = 1 scheduled session. We aggregate per tutor.
       const iId = idx("tutor_external_id");
       const iName = idx("tutor_name");
       const iTl = idx("team_leader");
-      const iSess = idx("scheduled_sessions");
-      if (iId < 0 || iName < 0 || iTl < 0 || iSess < 0)
+      if (iId < 0 || iName < 0 || iTl < 0)
         return json(
           {
             error:
-              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader, scheduled_sessions",
+              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader",
           },
           400,
         );
 
-      const records: any[] = [];
+      const agg = new Map<
+        string,
+        { tutor_name: string; team_leader: string; count: number }
+      >();
       for (const row of rows.slice(1)) {
         const tid = get(row, iId);
         if (!tid) {
           skipped++;
           continue;
         }
-        const sessionsRaw = get(row, iSess).replace(/[^\d.-]/g, "");
-        const sessions = parseInt(sessionsRaw || "0", 10);
-        records.push({
-          tutor_external_id: tid,
-          tutor_name: get(row, iName) || tid,
-          team_leader: get(row, iTl) || "Unknown",
-          week_start: weekStart,
-          phase,
-          scheduled_sessions: Number.isFinite(sessions) ? sessions : 0,
-          source: "google_sheet",
-        });
+        const cur = agg.get(tid);
+        if (cur) cur.count += 1;
+        else
+          agg.set(tid, {
+            tutor_name: get(row, iName) || tid,
+            team_leader: get(row, iTl) || "Unknown",
+            count: 1,
+          });
       }
+
+      const records = Array.from(agg.entries()).map(([tid, v]) => ({
+        tutor_external_id: tid,
+        tutor_name: v.tutor_name,
+        team_leader: v.team_leader,
+        week_start: weekStart,
+        phase,
+        scheduled_sessions: v.count,
+        source: "google_sheet",
+      }));
+
       if (records.length) {
+        // Wipe this tutor/week/phase set first to avoid stale rows
+        const { error: delErr } = await admin
+          .from("tutor_weekly_occupation")
+          .delete()
+          .eq("week_start", weekStart)
+          .eq("phase", phase);
+        if (delErr) throw delErr;
+
         const { error } = await admin
           .from("tutor_weekly_occupation")
-          .upsert(records, {
-            onConflict: "tutor_external_id,week_start,phase",
-          });
+          .insert(records);
         if (error) throw error;
         inserted = records.length;
       }
@@ -227,19 +228,19 @@ Deno.serve(async (req) => {
       const iId = idx("tutor_external_id");
       const iName = idx("tutor_name");
       const iTl = idx("team_leader");
-      const iGrade = idx("grade_band");
-      const iMod = idx("module_code");
-      const iFin = idx("is_finished");
-      if (iId < 0 || iName < 0 || iTl < 0 || iGrade < 0 || iMod < 0)
+      const iGrade = idx("grade_band"); // requires user-added column
+      const iLevelName = idx("level_name"); // "Levels → Name" — used to parse module code
+      const iPublished = idx("published_at"); // optional
+
+      if (iId < 0 || iName < 0 || iTl < 0 || iGrade < 0 || iLevelName < 0)
         return json(
           {
             error:
-              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader, grade_band, module_code, is_finished (optional)",
+              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader, grade_band, level_name (published_at optional)",
           },
           400,
         );
 
-      // Load module catalog → key by "grade_band|module_code"
       const { data: modules } = await admin
         .from("study_modules")
         .select("id, grade_band, module_code");
@@ -249,6 +250,7 @@ Deno.serve(async (req) => {
       }
 
       const records: any[] = [];
+      const seen = new Set<string>(); // dedupe (tutor, module) within sheet
       for (const row of rows.slice(1)) {
         const tid = get(row, iId);
         if (!tid) {
@@ -256,13 +258,28 @@ Deno.serve(async (req) => {
           continue;
         }
         const gb = normGradeBand(get(row, iGrade));
-        const mc = normModuleCode(get(row, iMod));
+        const mc = extractModuleCode(get(row, iLevelName));
+        if (!mc) {
+          errors.push(`Cannot parse module code from: "${get(row, iLevelName)}"`);
+          skipped++;
+          continue;
+        }
         const moduleId = modIdx.get(`${gb}|${mc}`.toLowerCase());
         if (!moduleId) {
           errors.push(`Unknown module: ${gb} / ${mc}`);
           skipped++;
           continue;
         }
+        const dedupeKey = `${tid}|${moduleId}`;
+        if (seen.has(dedupeKey)) {
+          skipped++;
+          continue;
+        }
+        seen.add(dedupeKey);
+
+        const publishedRaw = iPublished >= 0 ? get(row, iPublished) : "";
+        const isFinished = publishedRaw.length > 0;
+
         records.push({
           tutor_external_id: tid,
           tutor_name: get(row, iName) || tid,
@@ -271,15 +288,20 @@ Deno.serve(async (req) => {
           phase,
           module_id: moduleId,
           is_assigned: true,
-          is_finished: iFin >= 0 ? toBool(get(row, iFin)) : false,
+          is_finished: isFinished,
         });
       }
       if (records.length) {
+        const { error: delErr } = await admin
+          .from("tutor_published_modules")
+          .delete()
+          .eq("week_start", weekStart)
+          .eq("phase", phase);
+        if (delErr) throw delErr;
+
         const { error } = await admin
           .from("tutor_published_modules")
-          .upsert(records, {
-            onConflict: "tutor_external_id,week_start,phase,module_id",
-          });
+          .insert(records);
         if (error) throw error;
         inserted = records.length;
       }

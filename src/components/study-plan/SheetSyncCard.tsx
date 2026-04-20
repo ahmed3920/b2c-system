@@ -19,20 +19,34 @@ export type SheetKind =
   | "ended_sessions"
   | "post_modules";
 
+// Logical fields → default sheet headers (match the user's exported CSVs)
 const SESSION_FIELDS = [
   "tutor_external_id",
   "tutor_name",
   "team_leader",
-  "scheduled_sessions",
 ];
+const SESSION_DEFAULTS: Record<string, string> = {
+  tutor_external_id: "Tutors → T ID",
+  tutor_name: "Name I18n → En",
+  team_leader: "Admins - Team Lead → Name",
+};
+
 const MODULE_FIELDS = [
   "tutor_external_id",
   "tutor_name",
   "team_leader",
   "grade_band",
-  "module_code",
-  "is_finished",
+  "level_name",
+  "published_at",
 ];
+const MODULE_DEFAULTS: Record<string, string> = {
+  tutor_external_id: "T ID",
+  tutor_name: "Name I18n → En",
+  team_leader: "Admins - Team Lead → Name",
+  grade_band: "Grade Band",
+  level_name: "Levels → Name",
+  published_at: "Study Plans → Published At",
+};
 
 interface Props {
   kind: SheetKind;
