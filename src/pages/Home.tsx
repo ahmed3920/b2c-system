@@ -316,27 +316,94 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+            className="mb-8 space-y-4"
           >
-            <div className="bg-card rounded-lg p-4 shadow">
-              <p className="text-sm text-muted-foreground">Total Tasks</p>
-              <p className="text-2xl font-bold text-foreground">{taskStats.total}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card rounded-lg p-4 shadow">
+                <p className="text-sm text-muted-foreground">Total Tasks</p>
+                <p className="text-2xl font-bold text-foreground">{taskStats.total}</p>
+              </div>
+              <div className="bg-card rounded-lg p-4 shadow">
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold text-blue-600">{taskStats.inProgress}</p>
+              </div>
+              <div className="bg-card rounded-lg p-4 shadow">
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold text-green-600">{taskStats.completed}</p>
+              </div>
+              <div className="bg-card rounded-lg p-4 shadow">
+                <p className="text-sm text-muted-foreground">Completion Rate</p>
+                <p className="text-2xl font-bold text-primary">
+                  {taskStats.total > 0
+                    ? Math.round((taskStats.completed / taskStats.total) * 100)
+                    : 0}%
+                </p>
+              </div>
             </div>
-            <div className="bg-card rounded-lg p-4 shadow">
-              <p className="text-sm text-muted-foreground">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">{taskStats.inProgress}</p>
-            </div>
-            <div className="bg-card rounded-lg p-4 shadow">
-              <p className="text-sm text-muted-foreground">Completed</p>
-              <p className="text-2xl font-bold text-green-600">{taskStats.completed}</p>
-            </div>
-            <div className="bg-card rounded-lg p-4 shadow">
-              <p className="text-sm text-muted-foreground">Completion Rate</p>
-              <p className="text-2xl font-bold text-primary">
-                {taskStats.total > 0 
-                  ? Math.round((taskStats.completed / taskStats.total) * 100) 
-                  : 0}%
-              </p>
+
+            {/* Breakdown by group */}
+            <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-border flex-wrap gap-2">
+                <h3 className="font-semibold text-foreground">
+                  Breakdown by {groupBy === "team_leader" ? "Team Leader" : "Mentor"}
+                </h3>
+                <div className="inline-flex rounded-md border border-border overflow-hidden">
+                  <button
+                    onClick={() => setGroupBy("team_leader")}
+                    className={`px-3 py-1.5 text-sm transition-colors ${
+                      groupBy === "team_leader"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Team Leader
+                  </button>
+                  <button
+                    onClick={() => setGroupBy("mentor")}
+                    className={`px-3 py-1.5 text-sm transition-colors ${
+                      groupBy === "mentor"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Mentor
+                  </button>
+                </div>
+              </div>
+              {groupedStats.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">
+                  No data available.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left px-4 py-2 font-medium text-muted-foreground">
+                          {groupBy === "team_leader" ? "Team Leader" : "Mentor"}
+                        </th>
+                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">Total</th>
+                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">In Progress</th>
+                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">Completed</th>
+                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupedStats.map((g) => (
+                        <tr key={g.name} className="border-t border-border hover:bg-muted/30">
+                          <td className="px-4 py-2 text-foreground font-medium">{g.name}</td>
+                          <td className="px-4 py-2 text-right text-foreground">{g.total}</td>
+                          <td className="px-4 py-2 text-right text-blue-600">{g.inProgress}</td>
+                          <td className="px-4 py-2 text-right text-green-600">{g.completed}</td>
+                          <td className="px-4 py-2 text-right text-primary font-medium">
+                            {g.total > 0 ? Math.round((g.completed / g.total) * 100) : 0}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
