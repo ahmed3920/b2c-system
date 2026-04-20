@@ -152,6 +152,33 @@ Deno.serve(async (req) => {
     let plansCreated = 0;
     let itemsCreated = 0;
 
+    // Rebuild plans for the selected week/scope from scratch so tutors that are now
+    // fully finished or no longer eligible do not keep stale plans from earlier runs.
+    let existingPlansQ = admin
+      .from("weekly_study_plans")
+      .select("id")
+      .eq("week_start", weekStart);
+    if (tlFilter) existingPlansQ = existingPlansQ.eq("team_leader", tlFilter);
+    const { data: existingPlans, error: existingPlansErr } = await existingPlansQ;
+    if (existingPlansErr) throw existingPlansErr;
+
+    const existingPlanIds = (existingPlans ?? []).map((p) => p.id);
+    if (existingPlanIds.length > 0) {
+      const { error: deleteItemsErr } = await admin
+        .from("weekly_study_plan_items")
+        .delete()
+        .in("plan_id", existingPlanIds);
+      if (deleteItemsErr) throw deleteItemsErr;
+
+      let deletePlansQ = admin
+        .from("weekly_study_plans")
+        .delete()
+        .eq("week_start", weekStart);
+      if (tlFilter) deletePlansQ = deletePlansQ.eq("team_leader", tlFilter);
+      const { error: deletePlansErr } = await deletePlansQ;
+      if (deletePlansErr) throw deletePlansErr;
+    }
+
     for (const tutor of occupation) {
       // Skip tutors not present in the StudyFinished sheet — we don't know their progress.
       if (!finishedByTutor.has(tutor.tutor_external_id)) {
@@ -247,6 +274,32 @@ Deno.serve(async (req) => {
       plansCreated += 1;
     }
 
+    const { data: weekPlans, error: weekPlansErr } = await admin
+      .from("weekly_study_plans")
+      .select("id, tutor_external_id")
+      .eq("week_start", weekStart);
+    if (weekPlansErr) throw weekPlansErr;
+
+    for (const plan of weekPlans ?? []) {
+      const finished = finishedByTutor.get(plan.tutor_external_id);
+      if (finished && finished.size >= allModuleIds.size) {
+        const { error: deletePlanItemsErr } = await admin
+          .from("weekly_study_plan_items")
+          .delete()
+          .eq("plan_id", plan.id);
+        if (deletePlanItemsErr) throw deletePlanItemsErr;
+
+        const { error: deletePlanErr } = await admin
+          .from("weekly_study_plans")
+          .delete()
+          .eq("id", plan.id);
+        if (deletePlanErr) throw deletePlanErr;
+
+        skippedAllDone++;
+        plansCreated = Math.max(0, plansCreated - 1);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -254,6 +307,7 @@ Deno.serve(async (req) => {
         plans_created: plansCreated,
         items_created: itemsCreated,
         tutors_in_occupation: occupation.length,
+        tutors_in_finished_sheet: finishedByTutor.size,
         skipped_not_in_finished_sheet: skippedNoFinishedData,
         skipped_all_modules_done: skippedAllDone,
         skipped_no_free_hours: skippedNoHours,
