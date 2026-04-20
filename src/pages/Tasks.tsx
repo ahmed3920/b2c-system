@@ -507,6 +507,9 @@ const Tasks = () => {
           </div>
         )}
 
+        {/* Aggregated breakdown by Team Leader / Mentor (admins & TLs only) */}
+        <TaskBreakdownStats />
+
         {/* Filters */}
         {!(isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my") && (
           <>
