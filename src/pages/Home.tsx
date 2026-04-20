@@ -130,6 +130,10 @@ const Home = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [taskStats, setTaskStats] = useState({ total: 0, inProgress: 0, completed: 0 });
+  const [groupedStats, setGroupedStats] = useState<
+    Array<{ name: string; total: number; inProgress: number; completed: number }>
+  >([]);
+  const [groupBy, setGroupBy] = useState<"team_leader" | "mentor">("team_leader");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { role, isLoading: roleLoading, isAdmin, isTeamLeader } = useUserRole();
@@ -153,18 +157,61 @@ const Home = () => {
         setProfile(profileData);
       }
 
-      // Fetch task stats
-      const { data: tasks } = await supabase
-        .from("tasks")
-        .select("status")
-        .eq("user_id", session.user.id);
-      
+      // Determine which user_ids this viewer can see tasks for
+      let visibleProfiles: Array<{ user_id: string; mentor_name: string; team_leader: string }> = [];
+
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, mentor_name, team_leader");
+
+      visibleProfiles = profilesData || [];
+
+      const visibleIds = visibleProfiles.map((p) => p.user_id);
+
+      let tasksQuery = supabase.from("tasks").select("status, user_id");
+      if (visibleIds.length > 0) {
+        tasksQuery = tasksQuery.in("user_id", visibleIds);
+      } else {
+        tasksQuery = tasksQuery.eq("user_id", session.user.id);
+      }
+      const { data: tasks } = await tasksQuery;
+
       if (tasks) {
         setTaskStats({
           total: tasks.length,
-          inProgress: tasks.filter(t => t.status === "in_progress").length,
-          completed: tasks.filter(t => t.status === "done").length,
+          inProgress: tasks.filter((t) => t.status === "in_progress").length,
+          completed: tasks.filter((t) => t.status === "done").length,
         });
+
+        // Build grouping map: user_id -> { team_leader, mentor_name }
+        const profileMap = new Map(
+          visibleProfiles.map((p) => [p.user_id, p])
+        );
+
+        const buildGroups = (key: "team_leader" | "mentor_name") => {
+          const map = new Map<string, { total: number; inProgress: number; completed: number }>();
+          tasks.forEach((t) => {
+            const p = profileMap.get(t.user_id);
+            if (!p) return;
+            const groupName = key === "team_leader" ? p.team_leader : p.mentor_name;
+            if (!groupName) return;
+            const cur = map.get(groupName) || { total: 0, inProgress: 0, completed: 0 };
+            cur.total += 1;
+            if (t.status === "in_progress") cur.inProgress += 1;
+            if (t.status === "done") cur.completed += 1;
+            map.set(groupName, cur);
+          });
+          return Array.from(map.entries())
+            .map(([name, v]) => ({ name, ...v }))
+            .sort((a, b) => b.total - a.total);
+        };
+
+        // Default grouping; will be re-computed on toggle via separate effect by storing both
+        (window as any).__taskGroupings = {
+          team_leader: buildGroups("team_leader"),
+          mentor: buildGroups("mentor_name"),
+        };
+        setGroupedStats((window as any).__taskGroupings.team_leader);
       }
 
       setIsLoading(false);
@@ -172,6 +219,13 @@ const Home = () => {
 
     checkAuth();
   }, [navigate]);
+
+  useEffect(() => {
+    const groupings = (window as any).__taskGroupings;
+    if (groupings) {
+      setGroupedStats(groupings[groupBy] || []);
+    }
+  }, [groupBy]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
