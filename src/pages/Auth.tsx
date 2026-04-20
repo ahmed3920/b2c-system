@@ -25,6 +25,9 @@ const Auth = () => {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { audience } = useParams<{ audience?: string }>();
+  const isMentorAudience = audience === "mentor";
+  const pageTitle = isMentorAudience ? "Mentor Task Tracker" : "B2C Management System";
   const { toast } = useToast();
 
   // Handle login token from URL
