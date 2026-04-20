@@ -556,7 +556,11 @@ const Tasks = () => {
         )}
 
         {/* Aggregated breakdown by Team Leader / Mentor (admins & TLs only) */}
-        <TaskBreakdownStats onScopeChange={setBreakdownScope} />
+        <TaskBreakdownStats
+          monthFilter={sharedMonth}
+          onMonthFilterChange={setSharedMonth}
+          onScopeChange={setBreakdownScope}
+        />
 
         {/* Filters */}
         {!(isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my") && (
@@ -570,7 +574,7 @@ const Tasks = () => {
                 filterStatus={filterStatus}
                 onFilterStatusChange={setFilterStatus}
                 filterMonth={filterMonth}
-                onFilterMonthChange={setFilterMonth}
+                onFilterMonthChange={handleFilterMonthChange}
                 filterPriority={filterPriority}
                 onFilterPriorityChange={setFilterPriority}
                 showFilters={showFilters}
