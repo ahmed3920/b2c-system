@@ -16,6 +16,9 @@ type GroupRow = {
 export type BreakdownGroupBy = "team_leader" | "mentor";
 
 interface TaskBreakdownStatsProps {
+  /** Optional controlled month filter ("YYYY-MM" or "all"). */
+  monthFilter?: string;
+  onMonthFilterChange?: (value: string) => void;
   /** Called whenever the scope (group + month + matching user ids) changes,
    * so the parent can filter the task list accordingly. */
   onScopeChange?: (scope: {
@@ -25,16 +28,25 @@ interface TaskBreakdownStatsProps {
   }) => void;
 }
 
-export const TaskBreakdownStats = ({ onScopeChange }: TaskBreakdownStatsProps) => {
+export const TaskBreakdownStats = ({
+  monthFilter: controlledMonth,
+  onMonthFilterChange,
+  onScopeChange,
+}: TaskBreakdownStatsProps) => {
   const { isAdmin, isTeamLeader } = useUserRole();
   const [rawTasks, setRawTasks] = useState<RawTask[]>([]);
   const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
   const [groupedStats, setGroupedStats] = useState<GroupRow[]>([]);
   const [groupBy, setGroupBy] = useState<BreakdownGroupBy>("team_leader");
-  const [monthFilter, setMonthFilter] = useState<string>(() => {
+  const [internalMonth, setInternalMonth] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
+  const monthFilter = controlledMonth ?? internalMonth;
+  const setMonthFilter = (v: string) => {
+    if (onMonthFilterChange) onMonthFilterChange(v);
+    else setInternalMonth(v);
+  };
 
   const enabled = isAdmin || isTeamLeader;
 
