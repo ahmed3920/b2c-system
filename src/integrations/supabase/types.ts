@@ -642,6 +642,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_leaves: {
+        Row: {
+          created_at: string
+          id: string
+          leave_date: string
+          source: string | null
+          team_leader: string | null
+          tutor_external_id: string
+          tutor_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leave_date: string
+          source?: string | null
+          team_leader?: string | null
+          tutor_external_id: string
+          tutor_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leave_date?: string
+          source?: string | null
+          team_leader?: string | null
+          tutor_external_id?: string
+          tutor_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_published_modules: {
         Row: {
           created_at: string
