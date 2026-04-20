@@ -154,6 +154,13 @@ const Home = () => {
     checkAuth();
   }, [navigate]);
 
+  // Redirect Admin / Team Leader to the new B2C Dashboard
+  useEffect(() => {
+    if (!roleLoading && (role === "admin" || role === "team_leader")) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [role, roleLoading, navigate]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
