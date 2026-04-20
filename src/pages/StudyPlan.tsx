@@ -232,9 +232,9 @@ export default function StudyPlan() {
                       <TableRow>
                         <TableHead>Tutor</TableHead>
                         <TableHead>Team Leader</TableHead>
-                        <TableHead className="text-center">Studied</TableHead>
-                        <TableHead className="text-center">Remaining</TableHead>
-                        <TableHead>Remaining modules</TableHead>
+                        <TableHead className="text-center">Finished (from sheet)</TableHead>
+                        <TableHead className="text-center">Remaining to study</TableHead>
+                        <TableHead>Remaining modules (to study)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
