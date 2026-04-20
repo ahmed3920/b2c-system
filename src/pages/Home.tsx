@@ -223,7 +223,7 @@ const Home = () => {
         // Default grouping; will be re-computed on toggle via separate effect by storing both
         (window as any).__taskGroupings = {
           team_leader: buildGroups("team_leader"),
-          mentor: buildGroups("mentor_name"),
+          mentor: buildGroups("mentor"),
         };
         setGroupedStats((window as any).__taskGroupings.team_leader);
       }
