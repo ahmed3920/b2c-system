@@ -183,17 +183,31 @@ const Home = () => {
           completed: tasks.filter((t) => t.status === "done").length,
         });
 
-        // Build grouping map: user_id -> { team_leader, mentor_name }
+        // Build grouping map: user_id -> profile
         const profileMap = new Map(
           visibleProfiles.map((p) => [p.user_id, p])
         );
 
-        const buildGroups = (key: "team_leader" | "mentor_name") => {
+        // Identify which user_ids belong to team leaders (a TL's own user_id is one whose
+        // mentor_name appears as someone else's team_leader, OR who has no team_leader set).
+        const teamLeaderNames = new Set(
+          visibleProfiles.map((p) => p.team_leader).filter(Boolean)
+        );
+        const isTeamLeaderUser = (userId: string) => {
+          const p = profileMap.get(userId);
+          if (!p) return false;
+          return teamLeaderNames.has(p.mentor_name);
+        };
+
+        const buildGroups = (mode: "team_leader" | "mentor") => {
           const map = new Map<string, { total: number; inProgress: number; completed: number }>();
           tasks.forEach((t) => {
             const p = profileMap.get(t.user_id);
             if (!p) return;
-            const groupName = key === "team_leader" ? p.team_leader : p.mentor_name;
+            // Per-person grouping: only count tasks owned by people of that role
+            if (mode === "team_leader" && !isTeamLeaderUser(t.user_id)) return;
+            if (mode === "mentor" && isTeamLeaderUser(t.user_id)) return;
+            const groupName = p.mentor_name;
             if (!groupName) return;
             const cur = map.get(groupName) || { total: 0, inProgress: 0, completed: 0 };
             cur.total += 1;
@@ -209,7 +223,7 @@ const Home = () => {
         // Default grouping; will be re-computed on toggle via separate effect by storing both
         (window as any).__taskGroupings = {
           team_leader: buildGroups("team_leader"),
-          mentor: buildGroups("mentor_name"),
+          mentor: buildGroups("mentor"),
         };
         setGroupedStats((window as any).__taskGroupings.team_leader);
       }
