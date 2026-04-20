@@ -21,6 +21,7 @@ import { useTutorProgress } from "@/hooks/useTutorProgress";
 import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
 import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
+import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -133,6 +134,7 @@ export default function StudyPlan() {
                   description="Post-week: which modules each tutor finished."
                   weekStart={weekStart}
                 />
+                <LeavesSyncCard />
               </div>
             </CardContent>
           </Card>
