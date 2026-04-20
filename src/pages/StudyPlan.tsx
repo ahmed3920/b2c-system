@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWeeklyStudyPlans, type WeeklyPlan } from "@/hooks/useWeeklyStudyPlans";
 import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
+import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
 
 function mondayOf(d: Date): string {
   const day = d.getDay(); // 0 = Sun
@@ -114,6 +115,42 @@ export default function StudyPlan() {
             )}
           </CardContent>
         </Card>
+
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Google Sheets sources (admin)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <SheetSyncCard
+                  kind="upcoming_sessions"
+                  title="Upcoming sessions"
+                  description="Pre-week: scheduled sessions per tutor for the selected week."
+                  weekStart={weekStart}
+                />
+                <SheetSyncCard
+                  kind="pre_modules"
+                  title="Published modules — before week"
+                  description="Pre-week: assigned/finished modules per tutor."
+                  weekStart={weekStart}
+                />
+                <SheetSyncCard
+                  kind="ended_sessions"
+                  title="Ended-week sessions"
+                  description="Post-week: actual sessions delivered (incl. covers)."
+                  weekStart={weekStart}
+                />
+                <SheetSyncCard
+                  kind="post_modules"
+                  title="Published modules — after week"
+                  description="Post-week: which modules each tutor finished."
+                  weekStart={weekStart}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-3 md:grid-cols-4">
           <StatCard label="Tutors" value={stats.tutors} />
