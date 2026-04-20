@@ -54,6 +54,7 @@ import { TaskPriorityBadge } from "@/components/task/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { TaskFilters } from "@/components/task/TaskFilters";
+import { TaskBreakdownStats } from "@/components/task/TaskBreakdownStats";
 import { cn } from "@/lib/utils";
 import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
 
