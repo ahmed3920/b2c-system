@@ -126,14 +126,22 @@ const allCards: DashboardCard[] = [
   },
 ];
 
+type RawTask = { status: string; user_id: string; created_at: string };
+type RawProfile = { user_id: string; mentor_name: string; team_leader: string };
+type GroupRow = { name: string; total: number; monthTotal: number; inProgress: number; completed: number };
+
 const Home = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [taskStats, setTaskStats] = useState({ total: 0, inProgress: 0, completed: 0 });
-  const [groupedStats, setGroupedStats] = useState<
-    Array<{ name: string; total: number; inProgress: number; completed: number }>
-  >([]);
+  const [rawTasks, setRawTasks] = useState<RawTask[]>([]);
+  const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
+  const [groupedStats, setGroupedStats] = useState<GroupRow[]>([]);
   const [groupBy, setGroupBy] = useState<"team_leader" | "mentor">("team_leader");
+  const [monthFilter, setMonthFilter] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
   const { role, isLoading: roleLoading, isAdmin, isTeamLeader } = useUserRole();
@@ -157,18 +165,16 @@ const Home = () => {
         setProfile(profileData);
       }
 
-      // Determine which user_ids this viewer can see tasks for
-      let visibleProfiles: Array<{ user_id: string; mentor_name: string; team_leader: string }> = [];
-
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("user_id, mentor_name, team_leader");
 
-      visibleProfiles = profilesData || [];
+      const visibleProfiles: RawProfile[] = profilesData || [];
+      setRawProfiles(visibleProfiles);
 
       const visibleIds = visibleProfiles.map((p) => p.user_id);
 
-      let tasksQuery = supabase.from("tasks").select("status, user_id");
+      let tasksQuery = supabase.from("tasks").select("status, user_id, created_at");
       if (visibleIds.length > 0) {
         tasksQuery = tasksQuery.in("user_id", visibleIds);
       } else {
@@ -177,55 +183,12 @@ const Home = () => {
       const { data: tasks } = await tasksQuery;
 
       if (tasks) {
+        setRawTasks(tasks as RawTask[]);
         setTaskStats({
           total: tasks.length,
           inProgress: tasks.filter((t) => t.status === "in_progress").length,
           completed: tasks.filter((t) => t.status === "done").length,
         });
-
-        // Build grouping map: user_id -> profile
-        const profileMap = new Map(
-          visibleProfiles.map((p) => [p.user_id, p])
-        );
-
-        // Identify which user_ids belong to team leaders (a TL's own user_id is one whose
-        // mentor_name appears as someone else's team_leader, OR who has no team_leader set).
-        const teamLeaderNames = new Set(
-          visibleProfiles.map((p) => p.team_leader).filter(Boolean)
-        );
-        const isTeamLeaderUser = (userId: string) => {
-          const p = profileMap.get(userId);
-          if (!p) return false;
-          return teamLeaderNames.has(p.mentor_name);
-        };
-
-        const buildGroups = (mode: "team_leader" | "mentor") => {
-          const map = new Map<string, { total: number; inProgress: number; completed: number }>();
-          tasks.forEach((t) => {
-            const p = profileMap.get(t.user_id);
-            if (!p) return;
-            // Per-person grouping: only count tasks owned by people of that role
-            if (mode === "team_leader" && !isTeamLeaderUser(t.user_id)) return;
-            if (mode === "mentor" && isTeamLeaderUser(t.user_id)) return;
-            const groupName = p.mentor_name;
-            if (!groupName) return;
-            const cur = map.get(groupName) || { total: 0, inProgress: 0, completed: 0 };
-            cur.total += 1;
-            if (t.status === "in_progress") cur.inProgress += 1;
-            if (t.status === "done") cur.completed += 1;
-            map.set(groupName, cur);
-          });
-          return Array.from(map.entries())
-            .map(([name, v]) => ({ name, ...v }))
-            .sort((a, b) => b.total - a.total);
-        };
-
-        // Default grouping; will be re-computed on toggle via separate effect by storing both
-        (window as any).__taskGroupings = {
-          team_leader: buildGroups("team_leader"),
-          mentor: buildGroups("mentor"),
-        };
-        setGroupedStats((window as any).__taskGroupings.team_leader);
       }
 
       setIsLoading(false);
@@ -234,12 +197,42 @@ const Home = () => {
     checkAuth();
   }, [navigate]);
 
+  // Recompute grouping whenever groupBy / monthFilter / data changes
   useEffect(() => {
-    const groupings = (window as any).__taskGroupings;
-    if (groupings) {
-      setGroupedStats(groupings[groupBy] || []);
+    if (rawProfiles.length === 0 && rawTasks.length === 0) {
+      setGroupedStats([]);
+      return;
     }
-  }, [groupBy]);
+    const profileMap = new Map(rawProfiles.map((p) => [p.user_id, p]));
+    const teamLeaderNames = new Set(rawProfiles.map((p) => p.team_leader).filter(Boolean));
+    const isTeamLeaderUser = (userId: string) => {
+      const p = profileMap.get(userId);
+      if (!p) return false;
+      return teamLeaderNames.has(p.mentor_name);
+    };
+    const inSelectedMonth = (iso: string) => {
+      if (!monthFilter || monthFilter === "all") return true;
+      return iso?.startsWith(monthFilter);
+    };
+
+    const map = new Map<string, GroupRow>();
+    rawTasks.forEach((t) => {
+      const p = profileMap.get(t.user_id);
+      if (!p) return;
+      if (groupBy === "team_leader" && !isTeamLeaderUser(t.user_id)) return;
+      if (groupBy === "mentor" && isTeamLeaderUser(t.user_id)) return;
+      const groupName = p.mentor_name;
+      if (!groupName) return;
+      const cur = map.get(groupName) || { name: groupName, total: 0, monthTotal: 0, inProgress: 0, completed: 0 };
+      cur.total += 1;
+      if (inSelectedMonth(t.created_at)) cur.monthTotal += 1;
+      if (t.status === "in_progress") cur.inProgress += 1;
+      if (t.status === "done") cur.completed += 1;
+      map.set(groupName, cur);
+    });
+    setGroupedStats(Array.from(map.values()).sort((a, b) => b.total - a.total));
+  }, [groupBy, monthFilter, rawTasks, rawProfiles]);
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -336,19 +329,27 @@ const Home = () => {
               const agg = groupedStats.reduce(
                 (acc, g) => {
                   acc.total += g.total;
+                  acc.monthTotal += g.monthTotal;
                   acc.inProgress += g.inProgress;
                   acc.completed += g.completed;
                   return acc;
                 },
-                { total: 0, inProgress: 0, completed: 0 }
+                { total: 0, monthTotal: 0, inProgress: 0, completed: 0 }
               );
+              const monthLabel = monthFilter === "all"
+                ? "All Months"
+                : new Date(monthFilter + "-01").toLocaleString("default", { month: "short", year: "numeric" });
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-card rounded-lg p-4 shadow">
                     <p className="text-sm text-muted-foreground">
                       Total Tasks ({groupBy === "team_leader" ? "Team Leaders" : "Mentors"})
                     </p>
                     <p className="text-2xl font-bold text-foreground">{agg.total}</p>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow">
+                    <p className="text-sm text-muted-foreground">{monthLabel}</p>
+                    <p className="text-2xl font-bold text-foreground">{agg.monthTotal}</p>
                   </div>
                   <div className="bg-card rounded-lg p-4 shadow">
                     <p className="text-sm text-muted-foreground">In Progress</p>
@@ -374,27 +375,51 @@ const Home = () => {
                 <h3 className="font-semibold text-foreground">
                   Breakdown by {groupBy === "team_leader" ? "Team Leader" : "Mentor"}
                 </h3>
-                <div className="inline-flex rounded-md border border-border overflow-hidden">
-                  <button
-                    onClick={() => setGroupBy("team_leader")}
-                    className={`px-3 py-1.5 text-sm transition-colors ${
-                      groupBy === "team_leader"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    Team Leader
-                  </button>
-                  <button
-                    onClick={() => setGroupBy("mentor")}
-                    className={`px-3 py-1.5 text-sm transition-colors ${
-                      groupBy === "mentor"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    Mentor
-                  </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    // Build month options from raw tasks (last 12 months from data)
+                    const monthSet = new Set<string>();
+                    rawTasks.forEach((t) => {
+                      if (t.created_at) monthSet.add(t.created_at.slice(0, 7));
+                    });
+                    const months = Array.from(monthSet).sort().reverse();
+                    return (
+                      <select
+                        value={monthFilter}
+                        onChange={(e) => setMonthFilter(e.target.value)}
+                        className="px-3 py-1.5 text-sm rounded-md border border-border bg-card text-foreground"
+                      >
+                        <option value="all">All Months</option>
+                        {months.map((m) => (
+                          <option key={m} value={m}>
+                            {new Date(m + "-01").toLocaleString("default", { month: "short", year: "numeric" })}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                  <div className="inline-flex rounded-md border border-border overflow-hidden">
+                    <button
+                      onClick={() => setGroupBy("team_leader")}
+                      className={`px-3 py-1.5 text-sm transition-colors ${
+                        groupBy === "team_leader"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Team Leader
+                    </button>
+                    <button
+                      onClick={() => setGroupBy("mentor")}
+                      className={`px-3 py-1.5 text-sm transition-colors ${
+                        groupBy === "mentor"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Mentor
+                    </button>
+                  </div>
                 </div>
               </div>
               {groupedStats.length === 0 ? (
@@ -410,6 +435,11 @@ const Home = () => {
                           {groupBy === "team_leader" ? "Team Leader" : "Mentor"}
                         </th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">Total</th>
+                        <th className="text-right px-4 py-2 font-medium text-muted-foreground">
+                          {monthFilter === "all"
+                            ? "All Months"
+                            : new Date(monthFilter + "-01").toLocaleString("default", { month: "short", year: "numeric" })}
+                        </th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">In Progress</th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">Completed</th>
                         <th className="text-right px-4 py-2 font-medium text-muted-foreground">Rate</th>
@@ -420,6 +450,7 @@ const Home = () => {
                         <tr key={g.name} className="border-t border-border hover:bg-muted/30">
                           <td className="px-4 py-2 text-foreground font-medium">{g.name}</td>
                           <td className="px-4 py-2 text-right text-foreground">{g.total}</td>
+                          <td className="px-4 py-2 text-right text-foreground font-medium">{g.monthTotal}</td>
                           <td className="px-4 py-2 text-right text-blue-600">{g.inProgress}</td>
                           <td className="px-4 py-2 text-right text-green-600">{g.completed}</td>
                           <td className="px-4 py-2 text-right text-primary font-medium">
