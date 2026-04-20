@@ -274,6 +274,32 @@ Deno.serve(async (req) => {
       plansCreated += 1;
     }
 
+    const { data: weekPlans, error: weekPlansErr } = await admin
+      .from("weekly_study_plans")
+      .select("id, tutor_external_id")
+      .eq("week_start", weekStart);
+    if (weekPlansErr) throw weekPlansErr;
+
+    for (const plan of weekPlans ?? []) {
+      const finished = finishedByTutor.get(plan.tutor_external_id);
+      if (finished && finished.size >= allModuleIds.size) {
+        const { error: deletePlanItemsErr } = await admin
+          .from("weekly_study_plan_items")
+          .delete()
+          .eq("plan_id", plan.id);
+        if (deletePlanItemsErr) throw deletePlanItemsErr;
+
+        const { error: deletePlanErr } = await admin
+          .from("weekly_study_plans")
+          .delete()
+          .eq("id", plan.id);
+        if (deletePlanErr) throw deletePlanErr;
+
+        skippedAllDone++;
+        plansCreated = Math.max(0, plansCreated - 1);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
