@@ -152,7 +152,11 @@ const Tasks = () => {
   // Only apply the breakdown scope filter where the breakdown is visible:
   // admin (any view) and team leader in "my" view (when breakdown is shown).
   const showBreakdown = isAdmin || isTeamLeader;
-  const displayTasks = showBreakdown && breakdownScope.userIds.length > 0
+  // Don't apply breakdown scope when the user has an active explicit view selector
+  // (admin non-"my" view, or TL "mentor" view) — those views have their own user filtering.
+  const skipBreakdownScope =
+    (isAdmin && adminView.viewMode !== "my") || isTLMentorView;
+  const displayTasks = showBreakdown && !skipBreakdownScope && breakdownScope.userIds.length > 0
     ? baseDisplayTasks.filter((t) => {
         if (!breakdownScope.userIds.includes(t.user_id)) return false;
         if (breakdownScope.monthFilter && breakdownScope.monthFilter !== "all") {
