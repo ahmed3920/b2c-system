@@ -177,14 +177,48 @@ export default function StudyPlan() {
               <CardHeader>
                 <CardTitle>Plans for week of {weekStart}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">Team Leader</label>
+                    <Select value={tlFilter} onValueChange={setTlFilter}>
+                      <SelectTrigger className="w-56">
+                        <SelectValue placeholder="All team leaders" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All team leaders</SelectItem>
+                        {teamLeaders.map((tl) => (
+                          <SelectItem key={tl} value={tl}>
+                            {tl}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="ml-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => exportStudyPlanToExcel(filteredPlans, weekStart)}
+                      disabled={filteredPlans.length === 0}
+                    >
+                      <Download className="h-4 w-4" />
+                      Export to Excel
+                    </Button>
+                  </div>
+                </div>
+
                 {isLoading ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : plans.length === 0 ? (
+                ) : filteredPlans.length === 0 ? (
                   <div className="py-10 text-center text-muted-foreground text-sm">
-                    No plans for this week yet. Click <b>Generate Plan</b> after data is loaded.
+                    {plans.length === 0 ? (
+                      <>No plans for this week yet. Click <b>Generate Plan</b> after data is loaded.</>
+                    ) : (
+                      <>No plans match the selected team leader.</>
+                    )}
                   </div>
                 ) : (
                   <Table>
@@ -194,12 +228,13 @@ export default function StudyPlan() {
                         <TableHead>Team Leader</TableHead>
                         <TableHead>Free h</TableHead>
                         <TableHead>Planned h</TableHead>
-                        <TableHead>Modules</TableHead>
+                        <TableHead>Count</TableHead>
+                        <TableHead className="min-w-[280px]">Modules &amp; required completion</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {plans.map((p) => (
+                      {filteredPlans.map((p) => (
                         <TableRow
                           key={p.id}
                           className="cursor-pointer"
@@ -215,6 +250,30 @@ export default function StudyPlan() {
                           <TableCell>{p.free_hours}</TableCell>
                           <TableCell>{p.planned_hours}</TableCell>
                           <TableCell>{p.items?.length ?? 0}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-md">
+                              {(p.items ?? []).length === 0 ? (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              ) : (
+                                (p.items ?? []).map((it) => {
+                                  const required = it.module?.hours_required ?? 0;
+                                  const pct = required > 0
+                                    ? Math.round((it.planned_hours / required) * 100)
+                                    : 0;
+                                  return (
+                                    <Badge
+                                      key={it.id}
+                                      variant={it.is_partial ? "outline" : "secondary"}
+                                      className="text-xs"
+                                      title={`${it.planned_hours}h of ${required}h required`}
+                                    >
+                                      {it.module?.grade_band ?? "?"} · {it.module?.module_code ?? "?"} — {pct}%
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge variant="secondary">{p.status}</Badge>
                           </TableCell>
