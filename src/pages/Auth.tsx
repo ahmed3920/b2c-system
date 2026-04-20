@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,9 @@ const Auth = () => {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { audience } = useParams<{ audience?: string }>();
+  const isMentorAudience = audience === "mentor";
+  const pageTitle = isMentorAudience ? "Mentor Task Tracker" : "B2C Management System";
   const { toast } = useToast();
 
   // Handle login token from URL
@@ -194,7 +197,7 @@ const Auth = () => {
             >
               <Logo variant="white" className="h-12 mb-4" />
               <h1 className="text-2xl font-bold text-primary-foreground">
-                Mentor Task Tracker
+                {pageTitle}
               </h1>
               <p className="text-primary-foreground/80 text-sm mt-1">
                 Please login to continue
