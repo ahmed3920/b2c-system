@@ -148,10 +148,15 @@ Deno.serve(async (req) => {
     let itemsCreated = 0;
 
     for (const tutor of occupation) {
-      const candidates = unfinishedByTutor.get(tutor.tutor_external_id);
-      if (!candidates || candidates.size === 0) continue;
+      const finished = finishedByTutor.get(tutor.tutor_external_id) ?? new Set<string>();
+      // Candidates = catalog modules this tutor has not yet finished
+      const candidates = new Set<string>();
+      for (const id of allModuleIds) if (!finished.has(id)) candidates.add(id);
+      if (candidates.size === 0) continue;
 
       let remaining = Number(tutor.free_hours);
+      if (!Number.isFinite(remaining) || remaining <= 0) continue;
+
       const items: Array<{
         module_id: string;
         planned_hours: number;
