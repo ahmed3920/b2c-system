@@ -480,6 +480,36 @@ export type Database = {
         }
         Relationships: []
       }
+      study_plan_sheet_configs: {
+        Row: {
+          column_mapping: Json
+          created_at: string
+          csv_url: string | null
+          id: string
+          sheet_kind: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          column_mapping?: Json
+          created_at?: string
+          csv_url?: string | null
+          id?: string
+          sheet_kind: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          column_mapping?: Json
+          created_at?: string
+          csv_url?: string | null
+          id?: string
+          sheet_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       task_categories: {
         Row: {
           category_name: string
