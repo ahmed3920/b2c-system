@@ -318,28 +318,41 @@ const Home = () => {
             transition={{ delay: 0.1 }}
             className="mb-8 space-y-4"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-card rounded-lg p-4 shadow">
-                <p className="text-sm text-muted-foreground">Total Tasks</p>
-                <p className="text-2xl font-bold text-foreground">{taskStats.total}</p>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow">
-                <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold text-blue-600">{taskStats.inProgress}</p>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow">
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{taskStats.completed}</p>
-              </div>
-              <div className="bg-card rounded-lg p-4 shadow">
-                <p className="text-sm text-muted-foreground">Completion Rate</p>
-                <p className="text-2xl font-bold text-primary">
-                  {taskStats.total > 0
-                    ? Math.round((taskStats.completed / taskStats.total) * 100)
-                    : 0}%
-                </p>
-              </div>
-            </div>
+            {(() => {
+              const agg = groupedStats.reduce(
+                (acc, g) => {
+                  acc.total += g.total;
+                  acc.inProgress += g.inProgress;
+                  acc.completed += g.completed;
+                  return acc;
+                },
+                { total: 0, inProgress: 0, completed: 0 }
+              );
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-card rounded-lg p-4 shadow">
+                    <p className="text-sm text-muted-foreground">
+                      Total Tasks ({groupBy === "team_leader" ? "Team Leaders" : "Mentors"})
+                    </p>
+                    <p className="text-2xl font-bold text-foreground">{agg.total}</p>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow">
+                    <p className="text-sm text-muted-foreground">In Progress</p>
+                    <p className="text-2xl font-bold text-blue-600">{agg.inProgress}</p>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow">
+                    <p className="text-sm text-muted-foreground">Completed</p>
+                    <p className="text-2xl font-bold text-green-600">{agg.completed}</p>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow">
+                    <p className="text-sm text-muted-foreground">Completion Rate</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {agg.total > 0 ? Math.round((agg.completed / agg.total) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Breakdown by group */}
             <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
