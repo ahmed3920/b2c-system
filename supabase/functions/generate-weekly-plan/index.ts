@@ -152,6 +152,40 @@ Deno.serve(async (req) => {
     let plansCreated = 0;
     let itemsCreated = 0;
 
+    // Rebuild plans for the selected week/scope from scratch so tutors that are now
+    // fully finished or no longer eligible do not keep stale plans from earlier runs.
+    let existingPlansQ = admin
+      .from("weekly_study_plans")
+      .select("id")
+      .eq("week_start", weekStart);
+    if (tlFilter) existingPlansQ = existingPlansQ.eq("team_leader", tlFilter);
+    const { data: existingPlans, error: existingPlansErr } = await existingPlansQ;
+    if (existingPlansErr) throw existingPlansErr;
+
+    const existingPlanIds = (existingPlans ?? []).map((p) => p.id);
+    if (existingPlanIds.length > 0) {
+      const { error: deleteItemsErr } = await admin
+        .from("weekly_study_plan_items")
+        .delete()
+        .in("plan_id", existingPlanIds);
+      if (deleteItemsErr) throw deleteItemsErr;
+
+      const { error: deletePlansErr } = await admin
+        .from("weekly_study_plans")
+        .delete()
+        .eq("week_start", weekStart);
+      if (tlFilter) {
+        const { error: scopedDeletePlansErr } = await admin
+          .from("weekly_study_plans")
+          .delete()
+          .eq("week_start", weekStart)
+          .eq("team_leader", tlFilter);
+        if (scopedDeletePlansErr) throw scopedDeletePlansErr;
+      } else if (deletePlansErr) {
+        throw deletePlansErr;
+      }
+    }
+
     for (const tutor of occupation) {
       // Skip tutors not present in the StudyFinished sheet — we don't know their progress.
       if (!finishedByTutor.has(tutor.tutor_external_id)) {
@@ -254,6 +288,7 @@ Deno.serve(async (req) => {
         plans_created: plansCreated,
         items_created: itemsCreated,
         tutors_in_occupation: occupation.length,
+        tutors_in_finished_sheet: finishedByTutor.size,
         skipped_not_in_finished_sheet: skippedNoFinishedData,
         skipped_all_modules_done: skippedAllDone,
         skipped_no_free_hours: skippedNoHours,
