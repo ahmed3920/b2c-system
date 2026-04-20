@@ -17,6 +17,15 @@ import SystemDashboard from "./pages/SystemDashboard";
 import TrackingNumbers from "./pages/TrackingNumbers";
 import ActionPlans from "./pages/ActionPlans";
 import Engagement from "./pages/Engagement";
+import Dashboard from "./pages/Dashboard";
+import Tutors from "./pages/Tutors";
+import TutorProfile from "./pages/TutorProfile";
+import TeamsPage from "./pages/Teams";
+import TeamDetail from "./pages/TeamDetail";
+import Performance from "./pages/Performance";
+import Tracking from "./pages/Tracking";
+import Growth from "./pages/Growth";
+import RiskControl from "./pages/RiskControl";
 
 import NotFound from "./pages/NotFound";
 
@@ -43,6 +52,16 @@ const App = () => (
           <Route path="/tracking-numbers" element={<TrackingNumbers />} />
           <Route path="/action-plans" element={<ActionPlans />} />
           <Route path="/engagement" element={<Engagement />} />
+          {/* New B2C dashboard sections */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/tutors" element={<Tutors />} />
+          <Route path="/tutors/:id" element={<TutorProfile />} />
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/teams/:id" element={<TeamDetail />} />
+          <Route path="/performance" element={<Performance />} />
+          <Route path="/tracking" element={<Tracking />} />
+          <Route path="/growth" element={<Growth />} />
+          <Route path="/risk-control" element={<RiskControl />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
