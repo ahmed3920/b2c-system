@@ -264,7 +264,7 @@ export default function StudyPlan() {
                             </TableCell>
                             <TableCell className="text-center">
                               {r.remaining_count === 0 ? (
-                                <Badge className="bg-green-600 hover:bg-green-600">Done</Badge>
+                                <Badge className="bg-primary hover:bg-primary text-primary-foreground">Done</Badge>
                               ) : (
                                 <Badge variant="outline">{r.remaining_count}</Badge>
                               )}
