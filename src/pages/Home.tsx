@@ -126,30 +126,16 @@ const allCards: DashboardCard[] = [
   },
 ];
 
-type RawTask = { status: string; user_id: string; created_at: string };
-type RawProfile = { user_id: string; mentor_name: string; team_leader: string };
-type GroupRow = { name: string; total: number; monthTotal: number; inProgress: number; completed: number };
-
 const Home = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [taskStats, setTaskStats] = useState({ total: 0, inProgress: 0, completed: 0 });
-  const [rawTasks, setRawTasks] = useState<RawTask[]>([]);
-  const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
-  const [groupedStats, setGroupedStats] = useState<GroupRow[]>([]);
-  const [groupBy, setGroupBy] = useState<"team_leader" | "mentor">("team_leader");
-  const [monthFilter, setMonthFilter] = useState<string>(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  });
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { role, isLoading: roleLoading, isAdmin, isTeamLeader } = useUserRole();
+  const { role, isLoading: roleLoading, isAdmin } = useUserRole();
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
         navigate("/auth");
         return;
@@ -161,78 +147,12 @@ const Home = () => {
         .eq("user_id", session.user.id)
         .single();
 
-      if (profileData) {
-        setProfile(profileData);
-      }
-
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, mentor_name, team_leader");
-
-      const visibleProfiles: RawProfile[] = profilesData || [];
-      setRawProfiles(visibleProfiles);
-
-      const visibleIds = visibleProfiles.map((p) => p.user_id);
-
-      let tasksQuery = supabase.from("tasks").select("status, user_id, created_at");
-      if (visibleIds.length > 0) {
-        tasksQuery = tasksQuery.in("user_id", visibleIds);
-      } else {
-        tasksQuery = tasksQuery.eq("user_id", session.user.id);
-      }
-      const { data: tasks } = await tasksQuery;
-
-      if (tasks) {
-        setRawTasks(tasks as RawTask[]);
-        setTaskStats({
-          total: tasks.length,
-          inProgress: tasks.filter((t) => t.status === "in_progress").length,
-          completed: tasks.filter((t) => t.status === "done").length,
-        });
-      }
-
+      if (profileData) setProfile(profileData);
       setIsLoading(false);
     };
 
     checkAuth();
   }, [navigate]);
-
-  // Recompute grouping whenever groupBy / monthFilter / data changes
-  useEffect(() => {
-    if (rawProfiles.length === 0 && rawTasks.length === 0) {
-      setGroupedStats([]);
-      return;
-    }
-    const profileMap = new Map(rawProfiles.map((p) => [p.user_id, p]));
-    const teamLeaderNames = new Set(rawProfiles.map((p) => p.team_leader).filter(Boolean));
-    const isTeamLeaderUser = (userId: string) => {
-      const p = profileMap.get(userId);
-      if (!p) return false;
-      return teamLeaderNames.has(p.mentor_name);
-    };
-    const inSelectedMonth = (iso: string) => {
-      if (!monthFilter || monthFilter === "all") return true;
-      return iso?.startsWith(monthFilter);
-    };
-
-    const map = new Map<string, GroupRow>();
-    rawTasks.forEach((t) => {
-      const p = profileMap.get(t.user_id);
-      if (!p) return;
-      if (groupBy === "team_leader" && !isTeamLeaderUser(t.user_id)) return;
-      if (groupBy === "mentor" && isTeamLeaderUser(t.user_id)) return;
-      const groupName = p.mentor_name;
-      if (!groupName) return;
-      const cur = map.get(groupName) || { name: groupName, total: 0, monthTotal: 0, inProgress: 0, completed: 0 };
-      cur.total += 1;
-      if (inSelectedMonth(t.created_at)) cur.monthTotal += 1;
-      if (t.status === "in_progress") cur.inProgress += 1;
-      if (t.status === "done") cur.completed += 1;
-      map.set(groupName, cur);
-    });
-    setGroupedStats(Array.from(map.values()).sort((a, b) => b.total - a.total));
-  }, [groupBy, monthFilter, rawTasks, rawProfiles]);
-
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
