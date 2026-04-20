@@ -529,7 +529,7 @@ const Tasks = () => {
         )}
 
         {/* Aggregated breakdown by Team Leader / Mentor (admins & TLs only) */}
-        <TaskBreakdownStats />
+        <TaskBreakdownStats onScopeChange={setBreakdownScope} />
 
         {/* Filters */}
         {!(isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my") && (
