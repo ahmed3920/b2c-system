@@ -329,19 +329,27 @@ const Home = () => {
               const agg = groupedStats.reduce(
                 (acc, g) => {
                   acc.total += g.total;
+                  acc.monthTotal += g.monthTotal;
                   acc.inProgress += g.inProgress;
                   acc.completed += g.completed;
                   return acc;
                 },
-                { total: 0, inProgress: 0, completed: 0 }
+                { total: 0, monthTotal: 0, inProgress: 0, completed: 0 }
               );
+              const monthLabel = monthFilter === "all"
+                ? "All Months"
+                : new Date(monthFilter + "-01").toLocaleString("default", { month: "short", year: "numeric" });
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-card rounded-lg p-4 shadow">
                     <p className="text-sm text-muted-foreground">
                       Total Tasks ({groupBy === "team_leader" ? "Team Leaders" : "Mentors"})
                     </p>
                     <p className="text-2xl font-bold text-foreground">{agg.total}</p>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow">
+                    <p className="text-sm text-muted-foreground">{monthLabel}</p>
+                    <p className="text-2xl font-bold text-foreground">{agg.monthTotal}</p>
                   </div>
                   <div className="bg-card rounded-lg p-4 shadow">
                     <p className="text-sm text-muted-foreground">In Progress</p>
