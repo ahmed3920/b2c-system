@@ -54,6 +54,7 @@ import { TaskPriorityBadge } from "@/components/task/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/task/TaskStatusBadge";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { TaskFilters } from "@/components/task/TaskFilters";
+import { TaskBreakdownStats } from "@/components/task/TaskBreakdownStats";
 import { cn } from "@/lib/utils";
 import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
 
@@ -505,6 +506,9 @@ const Tasks = () => {
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         )}
+
+        {/* Aggregated breakdown by Team Leader / Mentor (admins & TLs only) */}
+        <TaskBreakdownStats />
 
         {/* Filters */}
         {!(isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my") && (
