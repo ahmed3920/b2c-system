@@ -365,6 +365,8 @@ Deno.serve(async (req) => {
         skipped_not_in_finished_sheet: skippedNoFinishedData,
         skipped_all_modules_done: skippedAllDone,
         skipped_no_free_hours: skippedNoHours,
+        tutors_with_leaves: leavesByTutor.size,
+        leave_days_total: Array.from(leavesByTutor.values()).reduce((s, v) => s + v, 0),
       }),
       {
         status: 200,
