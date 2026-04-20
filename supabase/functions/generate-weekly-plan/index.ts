@@ -170,20 +170,13 @@ Deno.serve(async (req) => {
         .in("plan_id", existingPlanIds);
       if (deleteItemsErr) throw deleteItemsErr;
 
-      const { error: deletePlansErr } = await admin
+      let deletePlansQ = admin
         .from("weekly_study_plans")
         .delete()
         .eq("week_start", weekStart);
-      if (tlFilter) {
-        const { error: scopedDeletePlansErr } = await admin
-          .from("weekly_study_plans")
-          .delete()
-          .eq("week_start", weekStart)
-          .eq("team_leader", tlFilter);
-        if (scopedDeletePlansErr) throw scopedDeletePlansErr;
-      } else if (deletePlansErr) {
-        throw deletePlansErr;
-      }
+      if (tlFilter) deletePlansQ = deletePlansQ.eq("team_leader", tlFilter);
+      const { error: deletePlansErr } = await deletePlansQ;
+      if (deletePlansErr) throw deletePlansErr;
     }
 
     for (const tutor of occupation) {
