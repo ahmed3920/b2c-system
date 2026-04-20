@@ -38,8 +38,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/auth" replace />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<Navigate to="/auth/admin" replace />} />
+          <Route path="/auth" element={<Navigate to="/auth/admin" replace />} />
+          <Route path="/auth/:audience" element={<Auth />} />
           <Route path="/home" element={<Home />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/kanban" element={<Kanban />} />
