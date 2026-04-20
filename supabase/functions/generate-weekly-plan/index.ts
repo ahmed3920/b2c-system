@@ -118,20 +118,31 @@ Deno.serve(async (req) => {
     // Load published modules (pre).
     // NOTE: The "StudyFinished" sheet lists only modules a tutor has ALREADY finished.
     // So candidates for this week = every active catalog module NOT in that list.
-    let pubQ = admin
-      .from("tutor_published_modules")
-      .select("tutor_external_id, module_id, is_finished")
-      .eq("week_start", weekStart)
-      .eq("phase", "pre");
-    if (tlFilter) pubQ = pubQ.eq("team_leader", tlFilter);
-    const { data: published, error: pubErr } = await pubQ;
-    if (pubErr) throw pubErr;
+    // Paginate to bypass PostgREST's default 1000-row cap (this table can have 7k+ rows).
+    const PAGE = 1000;
+    const published: { tutor_external_id: string; module_id: string; is_finished: boolean }[] = [];
+    let pubFrom = 0;
+    while (true) {
+      let pubQ = admin
+        .from("tutor_published_modules")
+        .select("tutor_external_id, module_id, is_finished")
+        .eq("week_start", weekStart)
+        .eq("phase", "pre")
+        .range(pubFrom, pubFrom + PAGE - 1);
+      if (tlFilter) pubQ = pubQ.eq("team_leader", tlFilter);
+      const { data: pubBatch, error: pubErr } = await pubQ;
+      if (pubErr) throw pubErr;
+      const batch = pubBatch ?? [];
+      published.push(...batch);
+      if (batch.length < PAGE) break;
+      pubFrom += PAGE;
+    }
 
     // Finished module-ids per tutor (treat any row as "finished" — that's what the sheet represents)
     // Only tutors that appear in this set are considered "known" — tutors absent from
     // the StudyFinished sheet are skipped (we don't know what they've finished).
     const finishedByTutor = new Map<string, Set<string>>();
-    for (const r of published ?? []) {
+    for (const r of published) {
       if (!finishedByTutor.has(r.tutor_external_id))
         finishedByTutor.set(r.tutor_external_id, new Set());
       finishedByTutor.get(r.tutor_external_id)!.add(r.module_id);
