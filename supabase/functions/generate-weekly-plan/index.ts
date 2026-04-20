@@ -238,7 +238,14 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      let remaining = Number(tutor.free_hours);
+      // Subtract 5h per planned-leave day during this working week.
+      const leaveDays = leavesByTutor.get(tutor.tutor_external_id) ?? 0;
+      const rawFree = Number(tutor.free_hours);
+      const adjustedFree = Math.max(
+        0,
+        (Number.isFinite(rawFree) ? rawFree : 0) - leaveDays * HOURS_PER_LEAVE_DAY,
+      );
+      let remaining = adjustedFree;
       if (!Number.isFinite(remaining) || remaining <= 0) {
         skippedNoHours++;
         continue;
