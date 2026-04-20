@@ -447,6 +447,39 @@ export type Database = {
         }
         Relationships: []
       }
+      study_modules: {
+        Row: {
+          created_at: string
+          display_order: number
+          grade_band: string
+          hours_required: number
+          id: string
+          is_active: boolean
+          module_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          grade_band: string
+          hours_required: number
+          id?: string
+          is_active?: boolean
+          module_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          grade_band?: string
+          hours_required?: number
+          id?: string
+          is_active?: boolean
+          module_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       task_categories: {
         Row: {
           category_name: string
@@ -579,6 +612,98 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_published_modules: {
+        Row: {
+          created_at: string
+          id: string
+          is_assigned: boolean
+          is_finished: boolean
+          module_id: string
+          phase: string
+          team_leader: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_assigned?: boolean
+          is_finished?: boolean
+          module_id: string
+          phase?: string
+          team_leader: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_assigned?: boolean
+          is_finished?: boolean
+          module_id?: string
+          phase?: string
+          team_leader?: string
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_published_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "study_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_weekly_occupation: {
+        Row: {
+          created_at: string
+          free_hours: number | null
+          id: string
+          phase: string
+          scheduled_sessions: number
+          source: string | null
+          team_leader: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          free_hours?: number | null
+          id?: string
+          phase?: string
+          scheduled_sessions?: number
+          source?: string | null
+          team_leader: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          free_hours?: number | null
+          id?: string
+          phase?: string
+          scheduled_sessions?: number
+          source?: string | null
+          team_leader?: string
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -597,6 +722,102 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_study_plan_items: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_completed: boolean
+          is_partial: boolean
+          module_id: string
+          plan_id: string
+          planned_hours: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_completed?: boolean
+          is_partial?: boolean
+          module_id: string
+          plan_id: string
+          planned_hours: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_completed?: boolean
+          is_partial?: boolean
+          module_id?: string
+          plan_id?: string
+          planned_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_study_plan_items_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "study_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_study_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_study_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_study_plans: {
+        Row: {
+          created_at: string
+          free_hours: number
+          generated_by: string | null
+          id: string
+          notes: string | null
+          planned_hours: number
+          status: string
+          team_leader: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          free_hours?: number
+          generated_by?: string | null
+          id?: string
+          notes?: string | null
+          planned_hours?: number
+          status?: string
+          team_leader: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          free_hours?: number
+          generated_by?: string | null
+          id?: string
+          notes?: string | null
+          planned_hours?: number
+          status?: string
+          team_leader?: string
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+          week_start?: string
         }
         Relationships: []
       }
