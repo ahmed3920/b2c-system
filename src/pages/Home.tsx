@@ -377,12 +377,17 @@ const Home = () => {
                 </h3>
                 <div className="flex items-center gap-2 flex-wrap">
                   {(() => {
-                    // Build month options from raw tasks (last 12 months from data)
-                    const monthSet = new Set<string>();
+                    // Always list all 12 months of the current year, plus any month
+                    // from data that falls outside the current year (e.g. last year)
+                    const currentYear = new Date().getFullYear();
+                    const allMonths = new Set<string>();
+                    for (let m = 1; m <= 12; m++) {
+                      allMonths.add(`${currentYear}-${String(m).padStart(2, "0")}`);
+                    }
                     rawTasks.forEach((t) => {
-                      if (t.created_at) monthSet.add(t.created_at.slice(0, 7));
+                      if (t.created_at) allMonths.add(t.created_at.slice(0, 7));
                     });
-                    const months = Array.from(monthSet).sort().reverse();
+                    const months = Array.from(allMonths).sort().reverse();
                     return (
                       <select
                         value={monthFilter}
