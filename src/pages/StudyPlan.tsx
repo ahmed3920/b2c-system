@@ -76,13 +76,16 @@ export default function StudyPlan() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="text-xs text-muted-foreground">Week start (Mon)</label>
+              <label className="text-xs text-muted-foreground">Week start (Fri)</label>
               <Input
                 type="date"
                 value={weekStart}
                 onChange={(e) => setWeekStart(e.target.value)}
                 className="w-44"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Tutors work Fri→Tue or Sat→Wed — pick the Friday of the working week.
+              </p>
             </div>
             <Button onClick={handleGenerate} disabled={busy || !weekStart}>
               {busy ? (
