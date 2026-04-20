@@ -135,21 +135,37 @@ Deno.serve(async (req) => {
     const csvUrl = toCsvUrl(cfg.csv_url);
 
     const resp = await fetch(csvUrl, { redirect: "follow" });
-    if (!resp.ok)
+    if (!resp.ok) {
+      const hint =
+        resp.status === 401 || resp.status === 403
+          ? " — make sure the Google Sheet is shared as 'Anyone with the link (Viewer)' OR published via File → Share → Publish to web."
+          : "";
       return json(
-        { error: `Failed to fetch sheet: HTTP ${resp.status}` },
+        { error: `Failed to fetch sheet: HTTP ${resp.status}${hint}` },
         502,
       );
-    const text = await resp.text();
+    }
+    let text = await resp.text();
+    // Strip UTF-8 BOM if present (breaks first-column header match)
+    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
     const rows = parseCsv(text);
     if (rows.length < 2) return json({ error: "Sheet has no data rows" }, 400);
 
+    // Normalize headers: lowercase, collapse whitespace, unify arrow variants
+    const normalize = (s: string) =>
+      s
+        .replace(/\uFEFF/g, "")
+        .replace(/\u00A0/g, " ") // nbsp → space
+        .replace(/[→➔➜➝➞➟➠]/g, "→") // any arrow variant → standard
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
     const header = rows[0].map((h) => h.trim());
+    const headerNorm = header.map(normalize);
     const idx = (logicalKey: string): number => {
       const colName = mapping[logicalKey] ?? logicalKey;
-      return header.findIndex(
-        (h) => h.toLowerCase() === String(colName).toLowerCase(),
-      );
+      return headerNorm.findIndex((h) => h === normalize(String(colName)));
     };
     const get = (row: string[], i: number) =>
       i >= 0 && i < row.length ? row[i].trim() : "";
@@ -169,14 +185,21 @@ Deno.serve(async (req) => {
       const iId = idx("tutor_external_id");
       const iName = idx("tutor_name");
       const iTl = idx("team_leader");
-      if (iId < 0 || iName < 0 || iTl < 0)
+      if (iId < 0 || iName < 0 || iTl < 0) {
+        const missing = [
+          ["tutor_external_id", iId],
+          ["tutor_name", iName],
+          ["team_leader", iTl],
+        ]
+          .filter(([, i]) => (i as number) < 0)
+          .map(([k]) => `${k} → "${mapping[k as string] ?? k}"`);
         return json(
           {
-            error:
-              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader",
+            error: `Missing columns in sheet: ${missing.join(", ")}. Sheet headers found: ${header.join(" | ")}`,
           },
           400,
         );
+      }
 
       const agg = new Map<
         string,
@@ -232,14 +255,23 @@ Deno.serve(async (req) => {
       const iLevelName = idx("level_name"); // "Levels → Name" — used to parse module code
       const iPublished = idx("published_at"); // optional
 
-      if (iId < 0 || iName < 0 || iTl < 0 || iGrade < 0 || iLevelName < 0)
+      if (iId < 0 || iName < 0 || iTl < 0 || iGrade < 0 || iLevelName < 0) {
+        const missing = [
+          ["tutor_external_id", iId],
+          ["tutor_name", iName],
+          ["team_leader", iTl],
+          ["grade_band", iGrade],
+          ["level_name", iLevelName],
+        ]
+          .filter(([, i]) => (i as number) < 0)
+          .map(([k]) => `${k} → "${mapping[k as string] ?? k}"`);
         return json(
           {
-            error:
-              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader, grade_band, level_name (published_at optional)",
+            error: `Missing columns in sheet: ${missing.join(", ")}. Sheet headers found: ${header.join(" | ")}`,
           },
           400,
         );
+      }
 
       const { data: modules } = await admin
         .from("study_modules")
