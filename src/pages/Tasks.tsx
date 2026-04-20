@@ -134,6 +134,13 @@ const Tasks = () => {
       ? tlView.tasks
       : tasks;
 
+  // Shared month filter (canonical format: "YYYY-MM" or "all").
+  // Used by both the breakdown card and TaskFilters so they stay in sync.
+  const [sharedMonth, setSharedMonth] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+
   // Breakdown scope (Team Leader vs Mentor) lifted from TaskBreakdownStats so
   // the table below reflects the same role + month filter.
   const [breakdownScope, setBreakdownScope] = useState<{
@@ -173,6 +180,26 @@ const Tasks = () => {
     clearFilters,
     hasActiveFilters,
   } = useTaskFilters({ tasks: displayTasks, ownerNames: adminView.taskOwnerNames });
+
+  // Sync TaskFilters' "MM" filterMonth with sharedMonth ("YYYY-MM" / "all").
+  useEffect(() => {
+    const mm = sharedMonth && sharedMonth !== "all" ? sharedMonth.slice(5, 7) : "";
+    if (mm !== filterMonth) setFilterMonth(mm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedMonth]);
+
+  // When user changes the TaskFilters month, push it back to sharedMonth.
+  const handleFilterMonthChange = (mm: string) => {
+    setFilterMonth(mm);
+    if (!mm) {
+      setSharedMonth("all");
+    } else {
+      const year = sharedMonth && sharedMonth !== "all"
+        ? sharedMonth.slice(0, 4)
+        : String(new Date().getFullYear());
+      setSharedMonth(`${year}-${mm}`);
+    }
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
