@@ -185,14 +185,21 @@ Deno.serve(async (req) => {
       const iId = idx("tutor_external_id");
       const iName = idx("tutor_name");
       const iTl = idx("team_leader");
-      if (iId < 0 || iName < 0 || iTl < 0)
+      if (iId < 0 || iName < 0 || iTl < 0) {
+        const missing = [
+          ["tutor_external_id", iId],
+          ["tutor_name", iName],
+          ["team_leader", iTl],
+        ]
+          .filter(([, i]) => (i as number) < 0)
+          .map(([k]) => `${k} → "${mapping[k as string] ?? k}"`);
         return json(
           {
-            error:
-              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader",
+            error: `Missing columns in sheet: ${missing.join(", ")}. Sheet headers found: ${header.join(" | ")}`,
           },
           400,
         );
+      }
 
       const agg = new Map<
         string,
@@ -248,14 +255,23 @@ Deno.serve(async (req) => {
       const iLevelName = idx("level_name"); // "Levels → Name" — used to parse module code
       const iPublished = idx("published_at"); // optional
 
-      if (iId < 0 || iName < 0 || iTl < 0 || iGrade < 0 || iLevelName < 0)
+      if (iId < 0 || iName < 0 || iTl < 0 || iGrade < 0 || iLevelName < 0) {
+        const missing = [
+          ["tutor_external_id", iId],
+          ["tutor_name", iName],
+          ["team_leader", iTl],
+          ["grade_band", iGrade],
+          ["level_name", iLevelName],
+        ]
+          .filter(([, i]) => (i as number) < 0)
+          .map(([k]) => `${k} → "${mapping[k as string] ?? k}"`);
         return json(
           {
-            error:
-              "Missing required columns. Need: tutor_external_id, tutor_name, team_leader, grade_band, level_name (published_at optional)",
+            error: `Missing columns in sheet: ${missing.join(", ")}. Sheet headers found: ${header.join(" | ")}`,
           },
           400,
         );
+      }
 
       const { data: modules } = await admin
         .from("study_modules")
