@@ -62,7 +62,17 @@ export function exportStudyPlanToExcel(plans: WeeklyPlan[], weekStart: string) {
   }
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailed), "Modules");
+  const summarySheet = XLSX.utils.json_to_sheet(summary);
+  summarySheet["!cols"] = [
+    { wch: 24 }, { wch: 12 }, { wch: 18 }, { wch: 10 },
+    { wch: 12 }, { wch: 14 }, { wch: 60 }, { wch: 12 }, { wch: 40 },
+  ];
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+  const modulesSheet = XLSX.utils.json_to_sheet(detailed);
+  modulesSheet["!cols"] = [
+    { wch: 24 }, { wch: 12 }, { wch: 18 }, { wch: 10 },
+    { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 18 },
+  ];
+  XLSX.utils.book_append_sheet(wb, modulesSheet, "Modules");
   XLSX.writeFile(wb, `weekly-study-plan-${weekStart}.xlsx`);
 }
