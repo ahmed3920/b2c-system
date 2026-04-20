@@ -1,0 +1,249 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+interface ModuleRow {
+  id: string;
+  grade_band: string;
+  module_code: string;
+  hours_required: number;
+  display_order: number;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: userData } = await userClient.auth.getUser();
+    if (!userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = userData.user.id;
+
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    // role check
+    const { data: roles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const roleSet = new Set((roles ?? []).map((r: any) => r.role));
+    const isAdmin = roleSet.has("admin");
+    const isTL = roleSet.has("team_leader");
+    if (!isAdmin && !isTL) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const weekStart: string = body.week_start;
+    if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+      return new Response(
+        JSON.stringify({ error: "week_start (YYYY-MM-DD) required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Scope: TLs limited to their team
+    let tlFilter: string | null = null;
+    if (!isAdmin && isTL) {
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("mentor_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+      tlFilter = prof?.mentor_name ?? null;
+      if (!tlFilter) {
+        return new Response(JSON.stringify({ error: "Profile missing" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Load modules
+    const { data: modules, error: modErr } = await admin
+      .from("study_modules")
+      .select("id, grade_band, module_code, hours_required, display_order")
+      .eq("is_active", true)
+      .order("display_order");
+    if (modErr) throw modErr;
+
+    // Load occupation (pre)
+    let occQ = admin
+      .from("tutor_weekly_occupation")
+      .select("tutor_external_id, tutor_name, team_leader, free_hours")
+      .eq("week_start", weekStart)
+      .eq("phase", "pre");
+    if (tlFilter) occQ = occQ.eq("team_leader", tlFilter);
+    const { data: occupation, error: occErr } = await occQ;
+    if (occErr) throw occErr;
+
+    if (!occupation || occupation.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "No pre-week occupation data for this week. Seed sample data or sync the sheet first.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Load published modules (pre) — modules NOT finished yet are study candidates
+    let pubQ = admin
+      .from("tutor_published_modules")
+      .select("tutor_external_id, module_id, is_assigned, is_finished")
+      .eq("week_start", weekStart)
+      .eq("phase", "pre");
+    if (tlFilter) pubQ = pubQ.eq("team_leader", tlFilter);
+    const { data: published, error: pubErr } = await pubQ;
+    if (pubErr) throw pubErr;
+
+    // Index unfinished assigned modules per tutor
+    const unfinishedByTutor = new Map<string, Set<string>>();
+    for (const r of published ?? []) {
+      if (r.is_assigned && !r.is_finished) {
+        if (!unfinishedByTutor.has(r.tutor_external_id))
+          unfinishedByTutor.set(r.tutor_external_id, new Set());
+        unfinishedByTutor.get(r.tutor_external_id)!.add(r.module_id);
+      }
+    }
+
+    // sort modules shortest first (then display_order)
+    const sortedModules = [...(modules as ModuleRow[])].sort(
+      (a, b) =>
+        a.hours_required - b.hours_required ||
+        a.display_order - b.display_order,
+    );
+
+    let plansCreated = 0;
+    let itemsCreated = 0;
+
+    for (const tutor of occupation) {
+      const candidates = unfinishedByTutor.get(tutor.tutor_external_id);
+      if (!candidates || candidates.size === 0) continue;
+
+      let remaining = Number(tutor.free_hours);
+      const items: Array<{
+        module_id: string;
+        planned_hours: number;
+        is_partial: boolean;
+        display_order: number;
+      }> = [];
+
+      let order = 1;
+      for (const m of sortedModules) {
+        if (!candidates.has(m.id)) continue;
+        if (remaining <= 0) break;
+        if (m.hours_required <= remaining) {
+          items.push({
+            module_id: m.id,
+            planned_hours: m.hours_required,
+            is_partial: false,
+            display_order: order++,
+          });
+          remaining -= m.hours_required;
+        }
+      }
+      // partial fill if hours left and no more full-fit modules
+      if (remaining > 0) {
+        for (const m of sortedModules) {
+          if (!candidates.has(m.id)) continue;
+          if (items.find((i) => i.module_id === m.id)) continue;
+          items.push({
+            module_id: m.id,
+            planned_hours: remaining,
+            is_partial: true,
+            display_order: order++,
+          });
+          remaining = 0;
+          break;
+        }
+      }
+
+      const planned = items.reduce((s, i) => s + Number(i.planned_hours), 0);
+
+      // Upsert plan header
+      const { data: planRow, error: upErr } = await admin
+        .from("weekly_study_plans")
+        .upsert(
+          {
+            tutor_external_id: tutor.tutor_external_id,
+            tutor_name: tutor.tutor_name,
+            team_leader: tutor.team_leader,
+            week_start: weekStart,
+            free_hours: tutor.free_hours,
+            planned_hours: planned,
+            status: "draft",
+            generated_by: userId,
+          },
+          { onConflict: "tutor_external_id,week_start" },
+        )
+        .select("id")
+        .single();
+      if (upErr) throw upErr;
+
+      // Replace items
+      await admin
+        .from("weekly_study_plan_items")
+        .delete()
+        .eq("plan_id", planRow.id);
+      if (items.length > 0) {
+        const { error: itErr } = await admin
+          .from("weekly_study_plan_items")
+          .insert(items.map((i) => ({ ...i, plan_id: planRow.id })));
+        if (itErr) throw itErr;
+        itemsCreated += items.length;
+      }
+      plansCreated += 1;
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        week_start: weekStart,
+        plans_created: plansCreated,
+        items_created: itemsCreated,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (e) {
+    console.error(e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+});
