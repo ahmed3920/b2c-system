@@ -65,23 +65,6 @@ export default function StudyPlan() {
     }
   };
 
-  const handleSeed = async () => {
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "seed-study-plan-sample",
-        { body: { week_start: weekStart } },
-      );
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success("Sample data seeded for this week");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Failed to seed sample data");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <AppLayout title="Weekly Study Plan" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -107,12 +90,6 @@ export default function StudyPlan() {
               )}
               Generate Plan
             </Button>
-            {isAdmin && (
-              <Button variant="outline" onClick={handleSeed} disabled={busy}>
-                <Beaker className="h-4 w-4" />
-                Seed sample data
-              </Button>
-            )}
           </CardContent>
         </Card>
 
