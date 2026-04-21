@@ -208,7 +208,7 @@ export function LiveIssuesTable() {
       const map: Record<string, string> = { deduct: "Deduct", no_deduction: "No Deduction", pending: "Pending" };
       return { label: map[row.edu_validation], overridden: true };
     }
-    return { label: row.moderation_deduction || "—", overridden: false };
+    return { label: "—", overridden: false };
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
