@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
+import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
@@ -13,13 +14,37 @@ import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 export default function Teams() {
   const { isTeamLeader, isAdmin } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
+
+  // Admin: one card per team leader. TL: one card per mentor sub-team.
   const teams = useMemo(() => {
-    const all = getTeamSummaries();
-    if (isTeamLeader && !isAdmin && myTeamLeader) {
-      return all.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
+    if (!isTLView) return getTeamSummaries();
+
+    const myMembers = tutorRoster.filter((t) =>
+      teamLeaderMatches(t.team_leader, myTeamLeader),
+    );
+    const byMentor = new Map<string, typeof myMembers>();
+    for (const m of myMembers) {
+      const key = m.mentor?.trim() || "Unassigned";
+      const arr = byMentor.get(key) ?? [];
+      arr.push(m);
+      byMentor.set(key, arr);
     }
-    return all;
-  }, [isTeamLeader, isAdmin, myTeamLeader]);
+    return Array.from(byMentor.entries())
+      .map(([mentor, members]) => ({
+        slug: mentor.toLowerCase().replace(/\s+/g, "-"),
+        team_leader: mentor,
+        total: members.length,
+        tutors: members.filter((m) => m.role === "Tutor").length,
+        mentors: members.filter((m) => m.role === "Mentor").length,
+        arabic: members.filter((m) => m.language === "Arabic").length,
+        english: members.filter((m) => m.language === "English").length,
+        full_time: members.filter((m) => m.employment_type === "Full-time").length,
+        part_time: members.filter((m) => m.employment_type === "Part-time").length,
+        members,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [isTLView, myTeamLeader]);
   const totals = useMemo(
     () =>
       teams.reduce(
@@ -39,7 +64,7 @@ export default function Teams() {
     <AppLayout title="Teams" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <SummaryCard label="Teams" value={teams.length} />
+          <SummaryCard label={isTLView ? "Mentors" : "Teams"} value={teams.length} />
           <SummaryCard label="Total Members" value={totals.total} />
           <SummaryCard label="Tutors" value={totals.tutors} />
           <SummaryCard label="Mentors" value={totals.mentors} />
@@ -67,7 +92,7 @@ export default function Teams() {
                       <CardTitle className="text-base leading-tight">
                         {t.team_leader}
                       </CardTitle>
-                      <p className="text-xs text-muted-foreground mt-1">Team Leader</p>
+                      <p className="text-xs text-muted-foreground mt-1">{isTLView ? "Mentor" : "Team Leader"}</p>
                     </div>
                   </div>
                   <Users className="h-5 w-5 text-muted-foreground shrink-0" />
@@ -113,11 +138,13 @@ export default function Teams() {
                     )}
                   </div>
 
-                  <Button size="sm" variant="outline" className="w-full" asChild>
-                    <Link to={`/teams/${t.slug}`}>
-                      <Eye className="h-4 w-4 mr-1" /> View Team
-                    </Link>
-                  </Button>
+                  {!isTLView && (
+                    <Button size="sm" variant="outline" className="w-full" asChild>
+                      <Link to={`/teams/${t.slug}`}>
+                        <Eye className="h-4 w-4 mr-1" /> View Team
+                      </Link>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
