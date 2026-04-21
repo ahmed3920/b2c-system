@@ -24,7 +24,7 @@ interface ReportType {
   title: string;
   description: string;
   icon: React.ReactNode;
-  roles: ("admin" | "team_leader" | "mentor" | "community_moderator")[];
+  roles: ("admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator")[];
 }
 
 const reportTypes: ReportType[] = [
