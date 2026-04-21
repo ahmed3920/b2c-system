@@ -88,7 +88,7 @@ export function LiveIssuesTable() {
     let q = supabase
       .from("live_session_issues")
       .select(
-        "id, case_id, session_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, severity, moderator_decision, moderation_deduction, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
+        "id, case_id, session_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
         { count: "exact" },
       )
       .order("session_date", { ascending: false, nullsFirst: false })
@@ -96,7 +96,6 @@ export function LiveIssuesTable() {
 
     if (tutorId.trim()) q = q.ilike("from_tutor_id", `%${tutorId.trim()}%`);
     if (issueType !== ALL) q = q.eq("issue_reason", issueType);
-    if (severity !== ALL) q = q.eq("severity", severity);
     if (validation !== ALL) {
       if (validation === "__none__") q = q.is("edu_validation", null);
       else q = q.eq("edu_validation", validation as "deduct" | "no_deduction" | "pending");
@@ -121,13 +120,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, issueType, severity, validation, dateFrom, dateTo, search, page]);
+  }, [tutorId, issueType, validation, dateFrom, dateTo, search, page]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters change
-  useEffect(() => { setPage(0); }, [tutorId, issueType, severity, validation, dateFrom, dateTo, search]);
+  useEffect(() => { setPage(0); }, [tutorId, issueType, validation, dateFrom, dateTo, search]);
 
   const writeAudit = async (
     row: IssueRow,
