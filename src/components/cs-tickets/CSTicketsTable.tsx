@@ -41,7 +41,7 @@ export function CSTicketsTable() {
   // Apply scope first (only meaningful for super team leaders)
   const scoped = useMemo(() => {
     if (!isSuperTeamLeader || scope === "all" || !myTeamLeaderName) return tickets;
-    return tickets.filter((t) => t.team_leader === myTeamLeaderName);
+    return tickets.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeaderName));
   }, [tickets, isSuperTeamLeader, scope, myTeamLeaderName]);
 
   const filtered = useMemo(() => {
