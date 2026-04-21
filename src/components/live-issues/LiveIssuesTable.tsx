@@ -113,8 +113,8 @@ export function LiveIssuesTable() {
       q = q.or(`case_id.ilike.%${s}%,from_tutor_name.ilike.%${s}%,issue_details.ilike.%${s}%,session_id.ilike.%${s}%`);
     }
 
-    const from = page * PAGE_SIZE;
-    q = q.range(from, from + PAGE_SIZE - 1);
+    const from = page * pageSize;
+    q = q.range(from, from + pageSize - 1);
 
     const { data, error, count } = await q;
     if (error) {
@@ -126,13 +126,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, page]);
+  }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, page, pageSize]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
-  // Reset page when filters change
-  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search]);
+  // Reset page when filters or page size change
+  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, pageSize]);
 
   const writeAudit = async (
     row: IssueRow,
