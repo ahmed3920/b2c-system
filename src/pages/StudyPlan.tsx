@@ -512,9 +512,116 @@ export default function StudyPlan() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="adherence">
+            <Card>
+              <CardHeader>
+                <CardTitle>Plan vs Actual — week of {weekStart}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Input
+                    placeholder="Filter by tutor name, ID or team leader…"
+                    value={adherenceFilter}
+                    onChange={(e) => setAdherenceFilter(e.target.value)}
+                    className="max-w-md"
+                  />
+                  <div className="ml-auto text-xs text-muted-foreground">
+                    {adherenceData && !adherenceData.has_any_post_modules && (
+                      <span>No post-week modules synced yet — sync "Published modules — after week" to enable comparison.</span>
+                    )}
+                  </div>
+                </div>
+
+                {adherenceLoading ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : adherenceTutors.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground text-sm">
+                    No plans for this week. Generate a plan first.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tutor</TableHead>
+                        <TableHead>Team Leader</TableHead>
+                        <TableHead className="text-center">Planned modules</TableHead>
+                        <TableHead className="text-center">Finished (planned)</TableHead>
+                        <TableHead className="text-center">Sessions (actual / sched.)</TableHead>
+                        <TableHead className="min-w-[180px]">Adherence</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adherenceTutors
+                        .filter((t) => {
+                          if (tlFilter !== "all" && t.team_leader !== tlFilter) return false;
+                          const q = adherenceFilter.trim().toLowerCase();
+                          if (!q) return true;
+                          return (
+                            t.tutor_name.toLowerCase().includes(q) ||
+                            t.tutor_external_id.toLowerCase().includes(q) ||
+                            t.team_leader.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((t) => (
+                          <TableRow
+                            key={t.tutor_external_id}
+                            className="cursor-pointer"
+                            onClick={() => setAdherenceSelected(t)}
+                          >
+                            <TableCell className="font-medium">
+                              {t.tutor_name}
+                              <div className="text-xs text-muted-foreground">
+                                {t.tutor_external_id}
+                              </div>
+                            </TableCell>
+                            <TableCell>{t.team_leader}</TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline">{t.planned_count}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="secondary">
+                                {t.finished_planned_count} / {t.planned_count}
+                              </Badge>
+                              {t.extra_finished_count > 0 && (
+                                <div className="text-[10px] text-muted-foreground mt-1">
+                                  +{t.extra_finished_count} extra
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {t.actual_sessions_post ?? "—"} / {t.scheduled_sessions_pre ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Progress value={t.adherence_pct} className="h-2 w-28" />
+                                <span className="text-xs tabular-nums w-10">
+                                  {t.adherence_pct}%
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <AdherenceStatusBadge status={t.status} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         <StudyPlanDetailDialog plan={selected} onClose={() => setSelected(null)} />
+        <AdherenceDetailDialog
+          tutor={adherenceSelected}
+          weekStart={weekStart}
+          onClose={() => setAdherenceSelected(null)}
+        />
       </div>
     </AppLayout>
   );
