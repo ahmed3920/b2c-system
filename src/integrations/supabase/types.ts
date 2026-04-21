@@ -214,6 +214,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cs_ticket_audit: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          ticket_id: string
+          ticket_number: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          ticket_id: string
+          ticket_number: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          ticket_id?: string
+          ticket_number?: string
+        }
+        Relationships: []
+      }
       cs_ticket_categories: {
         Row: {
           case_type: Database["public"]["Enums"]["cs_ticket_case_type"]

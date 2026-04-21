@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Pencil, Trash2, X } from "lucide-react";
+import { CalendarIcon, History, Pencil, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -27,6 +27,8 @@ import { STATUS_OPTIONS, type CSTicketStatus } from "./csTicketCategories";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
 import type { CSTicket } from "./useCSTickets";
+import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
+import { logCSTicketChanges } from "./logCSTicketChanges";
 
 interface Props {
   ticket: CSTicket | null;
@@ -44,6 +46,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
   const [editMode, setEditMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Validation fields
   const [status, setStatus] = useState<CSTicketStatus>("Pending");
@@ -99,11 +102,18 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
   const handleSaveValidation = async () => {
     setSaving(true);
     try {
+      const after = { status, team_leader_response: response || null };
       const { error } = await supabase
         .from("cs_tickets")
-        .update({ status, team_leader_response: response || null })
+        .update(after)
         .eq("id", ticket.id);
       if (error) throw error;
+      await logCSTicketChanges({
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        before: { status: ticket.status, team_leader_response: ticket.team_leader_response },
+        after,
+      });
       toast({ title: "Ticket updated" });
       onOpenChange(false);
       onUpdated?.();
@@ -126,28 +136,43 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     setSaving(true);
     try {
       const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const { error } = await supabase
-        .from("cs_tickets")
-        .update({
-          ticket_number: ticketNumber.trim(),
-          ticket_date: format(ticketDate, "yyyy-MM-dd"),
-          cs_category: csCategory,
-          edu_category: eduCategory,
-          category: combinedCategory,
-          case_details: caseDetails || null,
-          student_id: studentId || null,
-          session_num_or_date: sessionNumOrDate || null,
-          need_response_deadline: buildDeadline(),
-          status,
-          team_leader_response: response || null,
-        })
-        .eq("id", ticket.id);
+      const after = {
+        ticket_number: ticketNumber.trim(),
+        ticket_date: format(ticketDate, "yyyy-MM-dd"),
+        cs_category: csCategory,
+        edu_category: eduCategory,
+        category: combinedCategory,
+        case_details: caseDetails || null,
+        student_id: studentId || null,
+        session_num_or_date: sessionNumOrDate || null,
+        need_response_deadline: buildDeadline(),
+        status,
+        team_leader_response: response || null,
+      };
+      const { error } = await supabase.from("cs_tickets").update(after).eq("id", ticket.id);
       if (error) {
         if ((error as any).code === "23505") {
           throw new Error(`Ticket # "${ticketNumber.trim()}" already exists.`);
         }
         throw error;
       }
+      await logCSTicketChanges({
+        ticketId: ticket.id,
+        ticketNumber: after.ticket_number,
+        before: {
+          ticket_number: ticket.ticket_number,
+          ticket_date: ticket.ticket_date,
+          cs_category: ticket.cs_category,
+          edu_category: ticket.edu_category,
+          case_details: ticket.case_details,
+          student_id: ticket.student_id,
+          session_num_or_date: ticket.session_num_or_date,
+          need_response_deadline: ticket.need_response_deadline,
+          status: ticket.status,
+          team_leader_response: ticket.team_leader_response,
+        },
+        after,
+      });
       toast({ title: "Ticket saved" });
       setEditMode(false);
       onOpenChange(false);
@@ -197,14 +222,21 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     </Badge>
                   ))}
               </DialogTitle>
-              {canManage && !editMode && (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                    <Pencil className="mr-2 h-3 w-3" /> Edit
+              {!editMode && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" onClick={() => setHistoryOpen(true)}>
+                    <History className="mr-2 h-3 w-3" /> History
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
-                    <Trash2 className="mr-2 h-3 w-3" /> Delete
-                  </Button>
+                  {canManage && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                        <Pencil className="mr-2 h-3 w-3" /> Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                        <Trash2 className="mr-2 h-3 w-3" /> Delete
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -448,6 +480,13 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CSTicketAuditDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        ticketId={ticket.id}
+        ticketNumber={ticket.ticket_number}
+      />
     </>
   );
 }
