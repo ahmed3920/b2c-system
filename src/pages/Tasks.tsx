@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskCategories } from "@/hooks/useTaskCategories";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Logo } from "@/components/Logo";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -33,12 +33,9 @@ import {
   Edit,
   Eye,
   Archive,
-  ArrowLeft,
   Loader2,
   Link as LinkIcon,
-  UserCheck,
   AlertTriangle,
-  Clock,
   User,
   Send,
   Download,
@@ -751,7 +748,7 @@ const Tasks = () => {
             </motion.div>
           </>
         )}
-      </main>
+      </div>
 
       {/* Add Task Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -961,7 +958,7 @@ const Tasks = () => {
           }}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
 

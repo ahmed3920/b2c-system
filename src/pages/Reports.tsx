@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
-import { Logo } from "@/components/Logo";
 import {
-  ArrowLeft, Loader2, FileText, Download, Calendar,
+  Loader2, FileText, Download, Calendar,
   TrendingUp, Users, BarChart3, PieChart as PieChartIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -50,7 +50,6 @@ const Reports = () => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth"); return; }
-
       const { data } = await supabase.from("tasks").select("*")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
@@ -120,9 +119,11 @@ const Reports = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Reports & Analytics">
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
@@ -131,31 +132,15 @@ const Reports = () => {
     : adminView.viewMode === "all" && isAdmin ? "System-wide" : "Your";
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/home")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div className="h-6 w-px bg-border" />
-              <Logo variant="blue" className="h-8" />
-              <h1 className="font-bold text-lg text-foreground">Reports & Analytics</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-            </div>
-          </div>
+    <AppLayout title="Reports & Analytics">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-end mb-4">
+          <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Admin View Selector */}
         {isAdmin && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <AdminViewSelector
@@ -176,7 +161,6 @@ const Reports = () => {
           </div>
         ) : (
           <>
-            {/* Report Type Selection */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {filteredReportTypes.map((report, index) => (
                 <motion.button
@@ -198,7 +182,6 @@ const Reports = () => {
               ))}
             </div>
 
-            {/* Date Range Filter */}
             <div className="flex gap-2 mb-6">
               {(["week", "month", "quarter", "year"] as const).map((range) => (
                 <Button key={range} variant={dateRange === range ? "default" : "outline"} size="sm" onClick={() => setDateRange(range)}>
@@ -207,7 +190,6 @@ const Reports = () => {
               ))}
             </div>
 
-            {/* Metrics Summary */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
               <div className="bg-card rounded-xl p-4 shadow-lg">
                 <p className="text-sm text-muted-foreground">Total Tasks</p>
@@ -231,7 +213,6 @@ const Reports = () => {
               </div>
             </motion.div>
 
-            {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card rounded-xl p-6 shadow-lg">
                 <div className="flex items-center gap-2 mb-4">
@@ -269,7 +250,6 @@ const Reports = () => {
               </motion.div>
             </div>
 
-            {/* Report Summary */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl p-6 shadow-lg mt-6">
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="w-5 h-5 text-primary" />
@@ -298,8 +278,8 @@ const Reports = () => {
             </motion.div>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
-import { ArrowLeft, Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter, User } from "lucide-react";
-import { Logo } from "@/components/Logo";
-import { motion } from "framer-motion";
+import { Loader2, MoreVertical, Eye, Archive, ExternalLink, UserCheck, Filter, User } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
@@ -277,9 +276,11 @@ const Kanban = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Kanban Board">
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
@@ -295,52 +296,38 @@ const Kanban = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/home")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div className="h-6 w-px bg-border" />
-              <Logo variant="blue" className="h-8" />
-              <h1 className="font-bold text-lg text-foreground">Kanban Board</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <Select value={filterMonth} onValueChange={setFilterMonth}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="All Months" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {monthOptions.map((month) => (
-                      <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+    <AppLayout title="Kanban Board">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+        {/* Page action bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Months" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-              <div className="flex gap-3 text-sm">
-                <span className="px-3 py-1 bg-secondary rounded-full">Total: {stats.total}</span>
-                {overdueCount > 0 && (
-                  <span className="px-3 py-1 bg-destructive/10 text-destructive rounded-full font-medium">Overdue: {overdueCount}</span>
-                )}
-                {dueSoonCount > 0 && (
-                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Due Soon: {dueSoonCount}</span>
-                )}
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">Done: {stats.done}</span>
-              </div>
-            </div>
+          <div className="flex gap-2 text-sm flex-wrap">
+            <span className="px-3 py-1 bg-secondary rounded-full">Total: {stats.total}</span>
+            {overdueCount > 0 && (
+              <span className="px-3 py-1 bg-destructive/10 text-destructive rounded-full font-medium">Overdue: {overdueCount}</span>
+            )}
+            {dueSoonCount > 0 && (
+              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Due Soon: {dueSoonCount}</span>
+            )}
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">Done: {stats.done}</span>
           </div>
         </div>
-      </nav>
 
-      {/* Admin View Selector */}
-      {isAdmin && (
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        {/* Admin View Selector */}
+        {isAdmin && (
           <AdminViewSelector
             viewMode={adminView.viewMode}
             onViewModeChange={adminView.setViewMode}
@@ -350,55 +337,55 @@ const Kanban = () => {
             mentors={adminView.mentors}
             selectedProfile={adminView.selectedProfile}
           />
-        </div>
-      )}
+        )}
 
-      {isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my" ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-      ) : (
-        <main className="p-6 overflow-x-auto">
-          <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="flex gap-4 min-w-max">
-              {columns.map((column) => (
-                <Column key={column.id} column={column} tasks={filteredTasks.filter((t) => t.status === column.id)}>
-                  {filteredTasks
-                    .filter((t) => t.status === column.id)
-                    .map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onView={() => setSelectedTask(task)}
-                        onArchive={() => handleArchive(task)}
-                        assignerName={task.assigned_by ? assignerNames[task.assigned_by] : undefined}
-                        ownerName={adminView.taskOwnerNames[task.user_id]}
-                        showOwner={showOwner}
-                      />
-                    ))}
-                </Column>
-              ))}
-            </div>
-            <DragOverlay>
-              {activeId ? (
-                <div className="bg-card p-3 rounded-lg shadow-xl border-2 border-primary opacity-90">
-                  Dragging...
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        </main>
-      )}
+        {isAdmin && adminView.isLoadingTasks && adminView.viewMode !== "my" ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-2 px-2">
+            <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+              <div className="flex gap-4 min-w-max">
+                {columns.map((column) => (
+                  <Column key={column.id} column={column} tasks={filteredTasks.filter((t) => t.status === column.id)}>
+                    {filteredTasks
+                      .filter((t) => t.status === column.id)
+                      .map((task) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          onView={() => setSelectedTask(task)}
+                          onArchive={() => handleArchive(task)}
+                          assignerName={task.assigned_by ? assignerNames[task.assigned_by] : undefined}
+                          ownerName={adminView.taskOwnerNames[task.user_id]}
+                          showOwner={showOwner}
+                        />
+                      ))}
+                  </Column>
+                ))}
+              </div>
+              <DragOverlay>
+                {activeId ? (
+                  <div className="bg-card p-3 rounded-lg shadow-xl border-2 border-primary opacity-90">
+                    Dragging...
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
+        )}
 
-      <TaskDetailsModal
-        task={selectedTask}
-        isOpen={!!selectedTask}
-        onClose={() => setSelectedTask(null)}
-        onStatusChange={handleStatusChange}
-        canEditAll={canEditAll}
-        assignerName={selectedTask?.assigned_by ? assignerNames[selectedTask.assigned_by] : undefined}
-      />
-    </div>
+        <TaskDetailsModal
+          task={selectedTask}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onStatusChange={handleStatusChange}
+          canEditAll={canEditAll}
+          assignerName={selectedTask?.assigned_by ? assignerNames[selectedTask.assigned_by] : undefined}
+        />
+      </div>
+    </AppLayout>
   );
 };
 

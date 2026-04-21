@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
-import { Logo } from "@/components/Logo";
-import { ArrowLeft, Loader2, Trophy, Flame, Target, TrendingUp, Calendar, Award } from "lucide-react";
+import { Loader2, Trophy, Flame, Target, TrendingUp, Calendar, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts";
 import type { Database } from "@/integrations/supabase/types";
@@ -37,15 +36,12 @@ const Progress = () => {
   const { role, isAdmin, isTeamLeader } = useUserRole();
   const adminView = useAdminView();
 
-  // Determine which tasks to display
   const displayTasks = isAdmin && adminView.viewMode !== "my" ? adminView.tasks : tasks;
 
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth"); return; }
-
-      // Fetch personal tasks (always needed for "my" view)
       const { data } = await supabase.from("tasks").select("*")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: false });
@@ -55,7 +51,6 @@ const Progress = () => {
     fetchData();
   }, [navigate]);
 
-  // Recalculate metrics when displayTasks changes
   useEffect(() => {
     calculateMetrics(displayTasks);
   }, [displayTasks]);
@@ -136,9 +131,11 @@ const Progress = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Progress Tracking">
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
@@ -152,25 +149,8 @@ const Progress = () => {
     : adminView.viewMode === "all" ? "System-wide" : "Your";
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/home")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div className="h-6 w-px bg-border" />
-              <Logo variant="blue" className="h-8" />
-              <h1 className="font-bold text-lg text-foreground">Progress Tracking</h1>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Admin View Selector */}
+    <AppLayout title="Progress Tracking">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isAdmin && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <AdminViewSelector
@@ -191,7 +171,6 @@ const Progress = () => {
           </div>
         ) : (
           <>
-            {/* Metric Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               {[
                 { icon: Calendar, label: "This Week", value: metrics.completedThisWeek, delay: 0 },
@@ -211,7 +190,6 @@ const Progress = () => {
               ))}
             </div>
 
-            {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-card rounded-xl p-6 shadow-lg">
                 <h3 className="font-semibold text-foreground mb-4">Task Type Distribution</h3>
@@ -254,7 +232,6 @@ const Progress = () => {
               </motion.div>
             </div>
 
-            {/* Achievements Section */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="bg-card rounded-xl p-6 shadow-lg">
               <h3 className="font-semibold text-foreground mb-4">{viewLabel} Achievements</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -286,8 +263,8 @@ const Progress = () => {
             </motion.div>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
