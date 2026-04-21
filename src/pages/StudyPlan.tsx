@@ -650,6 +650,19 @@ export default function StudyPlan() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="history">
+            <SnapshotsHistoryCard
+              currentWeekStart={weekStart}
+              onView={(ws) => setWeekStart(ws)}
+            />
+          </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="courses">
+              <CourseManagementCard />
+            </TabsContent>
+          )}
         </Tabs>
 
         <StudyPlanDetailDialog plan={selected} onClose={() => setSelected(null)} />
