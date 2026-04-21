@@ -139,6 +139,10 @@ export function LiveIssuesTable() {
     if (tutorId.trim()) q = q.ilike("from_tutor_id", `%${tutorId.trim()}%`);
     if (teamLeader !== ALL) q = q.eq("team_leader", teamLeader);
     if (issueType !== ALL) q = q.eq("issue_reason", issueType);
+    if (eduDescId !== ALL) {
+      if (eduDescId === "__none__") q = q.is("edu_description_id", null);
+      else q = q.eq("edu_description_id", eduDescId);
+    }
     if (validation !== ALL) {
       if (validation === "__none__") q = q.is("edu_validation", null);
       else q = q.eq("edu_validation", validation as "deduct" | "no_deduction" | "pending");
@@ -169,13 +173,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, page, pageSize]);
+  }, [tutorId, teamLeader, issueType, eduDescId, validation, billingMonth, dateFrom, dateTo, search, page, pageSize]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters or page size change
-  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, pageSize]);
+  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, eduDescId, validation, billingMonth, dateFrom, dateTo, search, pageSize]);
 
   const writeAudit = async (
     row: IssueRow,
