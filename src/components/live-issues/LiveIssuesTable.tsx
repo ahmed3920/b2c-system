@@ -303,6 +303,7 @@ export function LiveIssuesTable() {
                   <TableHead>Case ID</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Tutor</TableHead>
+                  <TableHead>Team Leader</TableHead>
                   <TableHead>Issue</TableHead>
                   <TableHead>Issue Details</TableHead>
                   <TableHead className="bg-amber-50/50 dark:bg-amber-950/10">Edu Validation</TableHead>
