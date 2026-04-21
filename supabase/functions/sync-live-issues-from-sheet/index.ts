@@ -222,6 +222,11 @@ Deno.serve(async (req) => {
       const raw: Record<string, string> = {};
       header.forEach((h, i) => { raw[h] = get(row, i); });
 
+      // Resolve team_leader: prefer tutor map (already normalized), else normalize sheet value
+      const sheetTl = get(row, cols.team_leader) || null;
+      const tutorTl = fromTid ? tutorTlMap.get(fromTid) : undefined;
+      const resolvedTl = tutorTl ?? normalizeTeamLeader(sheetTl);
+
       records.push({
         case_id: caseId,
         session_id: sid || null,
@@ -246,7 +251,7 @@ Deno.serve(async (req) => {
         to_tutor_type: get(row, cols.to_tutor_type) || null,
         language: get(row, cols.language) || null,
         year: get(row, cols.year) || null,
-        team_leader: get(row, cols.team_leader) || null,
+        team_leader: resolvedTl,
         day_of_week: get(row, cols.day_of_week) || null,
         severity: get(row, cols.severity) || null,
         moderator_decision: get(row, cols.moderator_decision) || null,
