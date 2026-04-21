@@ -99,6 +99,7 @@ export function LiveIssuesTable() {
   const [tutorId, setTutorId] = useState("");
   const [teamLeader, setTeamLeader] = useState<string>(ALL);
   const [issueType, setIssueType] = useState<string>(ALL);
+  const [eduDescId, setEduDescId] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
   const [billingMonth, setBillingMonth] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
@@ -138,6 +139,10 @@ export function LiveIssuesTable() {
     if (tutorId.trim()) q = q.ilike("from_tutor_id", `%${tutorId.trim()}%`);
     if (teamLeader !== ALL) q = q.eq("team_leader", teamLeader);
     if (issueType !== ALL) q = q.eq("issue_reason", issueType);
+    if (eduDescId !== ALL) {
+      if (eduDescId === "__none__") q = q.is("edu_description_id", null);
+      else q = q.eq("edu_description_id", eduDescId);
+    }
     if (validation !== ALL) {
       if (validation === "__none__") q = q.is("edu_validation", null);
       else q = q.eq("edu_validation", validation as "deduct" | "no_deduction" | "pending");
@@ -168,13 +173,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, page, pageSize]);
+  }, [tutorId, teamLeader, issueType, eduDescId, validation, billingMonth, dateFrom, dateTo, search, page, pageSize]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters or page size change
-  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, pageSize]);
+  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, eduDescId, validation, billingMonth, dateFrom, dateTo, search, pageSize]);
 
   const writeAudit = async (
     row: IssueRow,
@@ -306,6 +311,19 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
+              <Label className="text-xs">Edu Description</Label>
+              <Select value={eduDescId} onValueChange={setEduDescId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  <SelectItem value="__none__">Not set</SelectItem>
+                  {descriptions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-xs">Edu Validation</Label>
               <Select value={validation} onValueChange={setValidation}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -344,7 +362,7 @@ export function LiveIssuesTable() {
                 className="w-full"
                 onClick={() => {
                   setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
-                  setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
+                  setEduDescId(ALL); setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
                 Clear filters

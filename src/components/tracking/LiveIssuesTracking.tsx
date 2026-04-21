@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { EduValidationBadge, type EduValidation } from "@/components/live-issues/EduValidationBadge";
+import { useEduDescriptions } from "@/hooks/useEduDescriptions";
 
 interface IssueRow {
   id: string;
@@ -34,6 +35,7 @@ interface IssueRow {
   team_leader: string | null;
   issue_reason: string | null;
   edu_validation: EduValidation;
+  edu_description_id: string | null;
   month: string | null;
 }
 
@@ -76,6 +78,12 @@ function monthLabel(key: string): string {
 }
 
 export function LiveIssuesTracking() {
+  const { items: descriptions } = useEduDescriptions(false);
+  const descById = useMemo(
+    () => Object.fromEntries(descriptions.map((d) => [d.id, d])),
+    [descriptions],
+  );
+
   const [allRows, setAllRows] = useState<IssueRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -85,6 +93,7 @@ export function LiveIssuesTracking() {
   const [month, setMonth] = useState<string>(ALL);
   const [tlFilter, setTlFilter] = useState<string>(ALL);
   const [validationFilter, setValidationFilter] = useState<string>(ALL);
+  const [eduDescFilter, setEduDescFilter] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [tutorDrill, setTutorDrill] = useState<string | null>(null);
@@ -102,7 +111,7 @@ export function LiveIssuesTracking() {
     while (true) {
       const { data, error } = await supabase
         .from("live_session_issues")
-        .select("id, case_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, edu_validation, month")
+        .select("id, case_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, edu_validation, edu_description_id, month")
         .order("session_date", { ascending: false, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error) {
@@ -130,7 +139,7 @@ export function LiveIssuesTracking() {
   }, [autoRefresh, load]);
 
   // Reset pagination when filters change
-  useEffect(() => { setPage(0); }, [month, tlFilter, validationFilter, dateFrom, dateTo, tutorDrill]);
+  useEffect(() => { setPage(0); }, [month, tlFilter, validationFilter, eduDescFilter, dateFrom, dateTo, tutorDrill]);
 
   // Distinct months
   const months = useMemo(() => {
@@ -158,11 +167,15 @@ export function LiveIssuesTracking() {
         if (validationFilter === "__none__" && r.edu_validation != null) return false;
         if (validationFilter !== "__none__" && r.edu_validation !== validationFilter) return false;
       }
+      if (eduDescFilter !== ALL) {
+        if (eduDescFilter === "__none__" && r.edu_description_id != null) return false;
+        if (eduDescFilter !== "__none__" && r.edu_description_id !== eduDescFilter) return false;
+      }
       if (dateFrom && r.session_date && r.session_date < dateFrom) return false;
       if (dateTo && r.session_date && r.session_date > dateTo) return false;
       return true;
     });
-  }, [allRows, month, tlFilter, validationFilter, dateFrom, dateTo, tutorDrill]);
+  }, [allRows, month, tlFilter, validationFilter, eduDescFilter, dateFrom, dateTo, tutorDrill]);
 
   // KPI numbers
   const kpis = useMemo(() => {
@@ -258,6 +271,27 @@ export function LiveIssuesTracking() {
       .slice(0, 8);
   }, [filtered]);
 
+  // Edu Description distribution (categorize issues by validated edu description)
+  const eduDescData = useMemo(() => {
+    const map = new Map<string, { name: string; value: number; color: string }>();
+    let unset = 0;
+    filtered.forEach((r) => {
+      if (!r.edu_description_id) {
+        unset++;
+        return;
+      }
+      const d = descById[r.edu_description_id];
+      const name = d?.name ?? "Unknown";
+      const color = d?.color ?? "hsl(var(--muted-foreground))";
+      const cur = map.get(r.edu_description_id);
+      if (cur) cur.value++;
+      else map.set(r.edu_description_id, { name, value: 1, color });
+    });
+    const arr = Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+    if (unset > 0) arr.push({ name: "Not categorized", value: unset, color: COLORS.none });
+    return arr;
+  }, [filtered, descById]);
+
   // Smart insights
   const insights = useMemo(() => {
     const out: { tone: "info" | "warn" | "success"; text: string }[] = [];
@@ -330,12 +364,12 @@ export function LiveIssuesTracking() {
   const totalPages = Math.max(1, Math.ceil(sortedDetail.length / PAGE_SIZE));
 
   const clearFilters = () => {
-    setMonth(ALL); setTlFilter(ALL); setValidationFilter(ALL);
+    setMonth(ALL); setTlFilter(ALL); setValidationFilter(ALL); setEduDescFilter(ALL);
     setDateFrom(""); setDateTo(""); setTutorDrill(null);
   };
 
   const hasFilters = month !== ALL || tlFilter !== ALL || validationFilter !== ALL ||
-    dateFrom || dateTo || tutorDrill;
+    eduDescFilter !== ALL || dateFrom || dateTo || tutorDrill;
 
   return (
     <div className="space-y-4">
@@ -367,7 +401,7 @@ export function LiveIssuesTracking() {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
             <div>
               <Label className="text-xs flex items-center gap-1"><Filter className="h-3 w-3" /> Month</Label>
               <Select value={month} onValueChange={setMonth}>
@@ -402,6 +436,19 @@ export function LiveIssuesTracking() {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="deduct">Deduct</SelectItem>
                   <SelectItem value="no_deduction">No Deduction</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Edu Description</Label>
+              <Select value={eduDescFilter} onValueChange={setEduDescFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  <SelectItem value="__none__">Not categorized</SelectItem>
+                  {descriptions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -520,6 +567,33 @@ export function LiveIssuesTracking() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edu Description breakdown */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Issues by Edu Description</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Categorization of validated cases using the configured Edu Descriptions.
+          </p>
+        </CardHeader>
+        <CardContent className="h-[300px]">
+          {eduDescData.length === 0 ? (
+            <EmptyChart />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={eduDescData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 11 }} />
+                <RTooltip />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {eduDescData.map((d) => <Cell key={d.name} fill={d.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Smart Insights */}
       {insights.length > 0 && (
