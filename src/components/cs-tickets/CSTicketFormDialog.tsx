@@ -11,12 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { tutorRoster } from "@/data/tutorRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { CSTicketCaseType } from "./csTicketCategories";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 
 interface Props {
@@ -29,8 +27,8 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const { byType } = useCSTicketCategories();
   const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
   const [tutorId, setTutorId] = useState<string>("");
-  const [caseTypes, setCaseTypes] = useState<CSTicketCaseType[]>(["CS"]);
-  const [category, setCategory] = useState<string>("");
+  const [csCategory, setCsCategory] = useState<string>("");
+  const [eduCategory, setEduCategory] = useState<string>("");
   const [ticketDate, setTicketDate] = useState<Date>(new Date());
   const [caseDetails, setCaseDetails] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -41,43 +39,21 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
   const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId]);
 
-  // Combined category list across selected case types (deduplicated)
-  const availableCategories = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { name: string; from: CSTicketCaseType[] }[] = [];
-    for (const t of caseTypes) {
-      for (const c of byType[t] ?? []) {
-        if (seen.has(c.name)) {
-          const existing = out.find((o) => o.name === c.name);
-          if (existing && !existing.from.includes(t)) existing.from.push(t);
-          continue;
-        }
-        seen.add(c.name);
-        out.push({ name: c.name, from: [t] });
-      }
-    }
-    return out;
-  }, [byType, caseTypes]);
+  const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
+  const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
 
-  // Reset category if no longer valid
+  // Reset categories if no longer valid
   useEffect(() => {
-    if (category && !availableCategories.some((c) => c.name === category)) setCategory("");
-  }, [availableCategories, category]);
-
-  const toggleCaseType = (t: CSTicketCaseType) => {
-    setCaseTypes((prev) => {
-      if (prev.includes(t)) {
-        if (prev.length === 1) return prev; // keep at least one
-        return prev.filter((x) => x !== t);
-      }
-      return [...prev, t];
-    });
-  };
+    if (csCategory && !csCategories.some((c) => c.name === csCategory)) setCsCategory("");
+  }, [csCategories, csCategory]);
+  useEffect(() => {
+    if (eduCategory && !eduCategories.some((c) => c.name === eduCategory)) setEduCategory("");
+  }, [eduCategories, eduCategory]);
 
   const reset = () => {
     setTutorId("");
-    setCaseTypes(["CS"]);
-    setCategory("");
+    setCsCategory("");
+    setEduCategory("");
     setTicketDate(new Date());
     setCaseDetails("");
     setStudentId("");
@@ -99,23 +75,26 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       toast({ title: "Tutor required", description: "Pick a tutor from the list.", variant: "destructive" });
       return;
     }
-    if (caseTypes.length === 0) {
-      toast({ title: "Case type required", description: "Pick at least one case type.", variant: "destructive" });
+    if (!csCategory) {
+      toast({ title: "CS Category required", description: "Select a CS category.", variant: "destructive" });
       return;
     }
-    if (!category) {
-      toast({ title: "Category required", description: "Select a category.", variant: "destructive" });
+    if (!eduCategory) {
+      toast({ title: "Edu Category required", description: "Select an Edu category.", variant: "destructive" });
       return;
     }
     setSubmitting(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id ?? null;
+      const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
       const { error } = await supabase.from("cs_tickets").insert({
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
-        case_type: caseTypes[0], // legacy single column kept in sync
-        case_types: caseTypes,
-        category,
+        case_type: "CS", // legacy single column
+        case_types: ["CS", "Edu"],
+        category: combinedCategory, // legacy combined for back-compat
+        cs_category: csCategory,
+        edu_category: eduCategory,
         tutor_external_id: selectedTutor.id,
         tutor_name: selectedTutor.name,
         team_leader: selectedTutor.team_leader,
@@ -199,7 +178,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
           {/* Case Info */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Case Info</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Case Info</h3>
+              <span className="text-xs text-muted-foreground">
+                Both <Badge variant="default" className="mx-1">CS</Badge> and <Badge variant="secondary" className="mx-1">Edu</Badge> categories are required
+              </span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Ticket Date</Label>
@@ -222,47 +206,31 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label>Case Type * <span className="text-xs text-muted-foreground">(select one or both)</span></Label>
-                <div className="flex gap-2">
-                  {(["CS", "Edu"] as const).map((t) => {
-                    const checked = caseTypes.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => toggleCaseType(t)}
-                        className={cn(
-                          "flex-1 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
-                          checked
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background hover:bg-muted",
-                        )}
-                      >
-                        <Checkbox checked={checked} className="pointer-events-none" />
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
+                <Label className="flex items-center gap-2">
+                  <Badge variant="default">CS</Badge> Category *
+                </Label>
+                <Select value={csCategory} onValueChange={setCsCategory}>
+                  <SelectTrigger><SelectValue placeholder="Select CS category" /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {csCategories.length === 0 ? (
+                      <div className="px-2 py-3 text-xs text-muted-foreground">No CS categories. Ask admin to add some.</div>
+                    ) : csCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>Category *</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <Label className="flex items-center gap-2">
+                  <Badge variant="secondary">Edu</Badge> Category *
+                </Label>
+                <Select value={eduCategory} onValueChange={setEduCategory}>
+                  <SelectTrigger><SelectValue placeholder="Select Edu category" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    {availableCategories.length === 0 ? (
-                      <div className="px-2 py-3 text-xs text-muted-foreground">No categories. Ask admin to add some.</div>
-                    ) : availableCategories.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>
-                        <span className="flex items-center gap-2">
-                          {c.name}
-                          <span className="flex gap-1">
-                            {c.from.map((f) => (
-                              <Badge key={f} variant="outline" className="text-[10px] px-1 py-0 h-4">{f}</Badge>
-                            ))}
-                          </span>
-                        </span>
-                      </SelectItem>
+                    {eduCategories.length === 0 ? (
+                      <div className="px-2 py-3 text-xs text-muted-foreground">No Edu categories. Ask admin to add some.</div>
+                    ) : eduCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
