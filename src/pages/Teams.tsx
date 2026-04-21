@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { Eye, Users, GraduationCap, Globe2 } from "lucide-react";
+import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
 
 export default function Teams() {
@@ -16,8 +16,10 @@ export default function Teams() {
           tutors: acc.tutors + t.tutors,
           mentors: acc.mentors + t.mentors,
           total: acc.total + t.total,
+          fullTime: acc.fullTime + t.full_time,
+          partTime: acc.partTime + t.part_time,
         }),
-        { tutors: 0, mentors: 0, total: 0 },
+        { tutors: 0, mentors: 0, total: 0, fullTime: 0, partTime: 0 },
       ),
     [teams],
   );
@@ -25,11 +27,13 @@ export default function Teams() {
   return (
     <AppLayout title="Teams" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <SummaryCard label="Teams" value={teams.length} />
           <SummaryCard label="Total Members" value={totals.total} />
           <SummaryCard label="Tutors" value={totals.tutors} />
           <SummaryCard label="Mentors" value={totals.mentors} />
+          <SummaryCard label="Full-time" value={totals.fullTime} />
+          <SummaryCard label="Part-time" value={totals.partTime} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -82,6 +86,18 @@ export default function Teams() {
                     {t.english > 0 && (
                       <Badge variant="outline" className="text-xs">
                         English · {t.english}
+                      </Badge>
+                    )}
+                    {t.full_time > 0 && (
+                      <Badge variant="secondary" className="text-xs gap-1">
+                        <Briefcase className="h-3 w-3" />
+                        FT · {t.full_time}
+                      </Badge>
+                    )}
+                    {t.part_time > 0 && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Briefcase className="h-3 w-3" />
+                        PT · {t.part_time}
                       </Badge>
                     )}
                   </div>

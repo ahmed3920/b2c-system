@@ -27,7 +27,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2 } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tutorRoster } from "@/data/tutorRoster";
 
@@ -38,6 +38,7 @@ export default function Tutors() {
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [langFilter, setLangFilter] = useState<string>("all");
+  const [empFilter, setEmpFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const teamLeaders = useMemo(
@@ -51,6 +52,7 @@ export default function Tutors() {
       if (tlFilter !== "all" && t.team_leader !== tlFilter) return false;
       if (roleFilter !== "all" && t.role !== roleFilter) return false;
       if (langFilter !== "all" && t.language !== langFilter) return false;
+      if (empFilter !== "all" && t.employment_type !== empFilter) return false;
       if (!q) return true;
       return (
         t.name.toLowerCase().includes(q) ||
@@ -59,7 +61,7 @@ export default function Tutors() {
         t.team_leader.toLowerCase().includes(q)
       );
     });
-  }, [query, tlFilter, roleFilter, langFilter]);
+  }, [query, tlFilter, roleFilter, langFilter, empFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -72,6 +74,8 @@ export default function Tutors() {
       mentors: tutorRoster.filter((t) => t.role === "Mentor").length,
       arabic: tutorRoster.filter((t) => t.language === "Arabic").length,
       english: tutorRoster.filter((t) => t.language === "English").length,
+      fullTime: tutorRoster.filter((t) => t.employment_type === "Full-time").length,
+      partTime: tutorRoster.filter((t) => t.employment_type === "Part-time").length,
     }),
     [],
   );
@@ -82,7 +86,7 @@ export default function Tutors() {
     <AppLayout title="Tutors" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 space-y-4 max-w-7xl mx-auto">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <StatCard icon={<Users className="h-4 w-4" />} label="Total" value={stats.total} />
           <StatCard icon={<Users className="h-4 w-4" />} label="Tutors" value={stats.tutors} />
           <StatCard
@@ -92,6 +96,16 @@ export default function Tutors() {
           />
           <StatCard icon={<Globe2 className="h-4 w-4" />} label="Arabic" value={stats.arabic} />
           <StatCard icon={<Globe2 className="h-4 w-4" />} label="English" value={stats.english} />
+          <StatCard
+            icon={<Briefcase className="h-4 w-4" />}
+            label="Full-time"
+            value={stats.fullTime}
+          />
+          <StatCard
+            icon={<Briefcase className="h-4 w-4" />}
+            label="Part-time"
+            value={stats.partTime}
+          />
         </div>
 
         <Card>
@@ -161,6 +175,22 @@ export default function Tutors() {
                   <SelectItem value="English">English</SelectItem>
                 </SelectContent>
               </Select>
+              <Select
+                value={empFilter}
+                onValueChange={(v) => {
+                  setEmpFilter(v);
+                  resetPage();
+                }}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Employment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Employment</SelectItem>
+                  <SelectItem value="Full-time">Full-time</SelectItem>
+                  <SelectItem value="Part-time">Part-time</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent>
@@ -175,13 +205,14 @@ export default function Tutors() {
                     <TableHead>Role</TableHead>
                     <TableHead>Language</TableHead>
                     <TableHead>Ranking</TableHead>
+                    <TableHead>Employment</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         No tutors match the current filters.
                       </TableCell>
                     </TableRow>
@@ -208,6 +239,18 @@ export default function Tutors() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{t.ranking || "—"}</TableCell>
+                        <TableCell>
+                          {t.employment_type ? (
+                            <Badge
+                              variant={t.employment_type === "Full-time" ? "default" : "outline"}
+                              className="text-xs"
+                            >
+                              {t.employment_type}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="ghost" asChild>
                             <Link to={`/tutors/${t.id}`}>
