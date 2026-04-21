@@ -362,7 +362,7 @@ export function LiveIssuesTable() {
                 className="w-full"
                 onClick={() => {
                   setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
-                  setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
+                  setEduDescId(ALL); setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
                 Clear filters
