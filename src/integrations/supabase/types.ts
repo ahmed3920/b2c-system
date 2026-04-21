@@ -1269,7 +1269,12 @@ export type Database = {
         | "no_show_abuse"
       action_plan_evaluation: "improved" | "not_improved"
       action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
-      app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
+      app_role:
+        | "admin"
+        | "team_leader"
+        | "mentor"
+        | "community_moderator"
+        | "super_team_leader"
       cs_ticket_case_type: "CS" | "Edu"
       cs_ticket_status:
         | "Pending"
@@ -1418,7 +1423,13 @@ export const Constants = {
       ],
       action_plan_evaluation: ["improved", "not_improved"],
       action_plan_status: ["active", "on_hold", "resolved", "escalated"],
-      app_role: ["admin", "team_leader", "mentor", "community_moderator"],
+      app_role: [
+        "admin",
+        "team_leader",
+        "mentor",
+        "community_moderator",
+        "super_team_leader",
+      ],
       cs_ticket_case_type: ["CS", "Edu"],
       cs_ticket_status: [
         "Pending",
