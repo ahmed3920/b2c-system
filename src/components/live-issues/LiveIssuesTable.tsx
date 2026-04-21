@@ -242,6 +242,16 @@ export function LiveIssuesTable() {
               <Input value={tutorId} onChange={(e) => setTutorId(e.target.value)} placeholder="T-1234" />
             </div>
             <div>
+              <Label className="text-xs">Team Leader</Label>
+              <Select value={teamLeader} onValueChange={setTeamLeader}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  {teamLeaders.map((tl) => <SelectItem key={tl} value={tl}>{tl}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-xs">Issue Type</Label>
               <Select value={issueType} onValueChange={setIssueType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -277,7 +287,7 @@ export function LiveIssuesTable() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  setSearch(""); setTutorId(""); setIssueType(ALL);
+                  setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
                   setValidation(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
