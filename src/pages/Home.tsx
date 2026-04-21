@@ -245,6 +245,11 @@ const Home = () => {
           </div>
         </motion.div>
 
+        {/* Announcements */}
+        <div className="mb-8">
+          <AnnouncementsSection />
+        </div>
+
         {/* Quick Stats / Breakdown moved into Task Management page */}
 
         {/* Dashboard Cards */}
