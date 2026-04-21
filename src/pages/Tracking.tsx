@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
+import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 
 const tabs = [
   { v: "teams-composition", l: "Teams Composition" },
