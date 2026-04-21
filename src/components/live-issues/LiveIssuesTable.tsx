@@ -144,6 +144,12 @@ export function LiveIssuesTable() {
     }
     if (dateFrom) q = q.gte("session_date", dateFrom);
     if (dateTo) q = q.lte("session_date", dateTo);
+    if (billingMonth !== ALL) {
+      const { from, to } = billingMonthRange(billingMonth);
+      // Apply billing range; combine with manual date filters by tightening bounds
+      q = q.gte("session_date", dateFrom && dateFrom > from ? dateFrom : from);
+      q = q.lte("session_date", dateTo && dateTo < to ? dateTo : to);
+    }
     if (search.trim()) {
       const s = search.trim();
       q = q.or(`case_id.ilike.%${s}%,from_tutor_name.ilike.%${s}%,issue_details.ilike.%${s}%,session_id.ilike.%${s}%`);
