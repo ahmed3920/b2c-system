@@ -214,6 +214,39 @@ export type Database = {
         }
         Relationships: []
       }
+      edu_descriptions: {
+        Row: {
+          color: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          type: Database["public"]["Enums"]["edu_description_type"]
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          type?: Database["public"]["Enums"]["edu_description_type"]
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: Database["public"]["Enums"]["edu_description_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       engagement_uploads: {
         Row: {
           availability_type: string | null
@@ -297,6 +330,220 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      live_issues_sheet_config: {
+        Row: {
+          created_at: string
+          csv_url: string | null
+          id: string
+          last_sync_message: string | null
+          last_sync_rows: number | null
+          last_sync_status: string | null
+          last_synced_at: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          csv_url?: string | null
+          id?: string
+          last_sync_message?: string | null
+          last_sync_rows?: number | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          csv_url?: string | null
+          id?: string
+          last_sync_message?: string | null
+          last_sync_rows?: number | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      live_session_issue_audit: {
+        Row: {
+          case_id: string
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          field_name: string
+          id: string
+          issue_id: string
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          case_id: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          field_name: string
+          id?: string
+          issue_id: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          case_id?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          field_name?: string
+          id?: string
+          issue_id?: string
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_issue_audit_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "live_session_issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_session_issues: {
+        Row: {
+          action_status: string | null
+          case_id: string
+          class_type: string | null
+          created_at: string
+          day_of_week: string | null
+          edu_description_id: string | null
+          edu_notes: string | null
+          edu_validation:
+            | Database["public"]["Enums"]["edu_validation_status"]
+            | null
+          extra_action: string | null
+          from_tutor_id: string | null
+          from_tutor_name: string | null
+          from_tutor_type: string | null
+          group_type: string | null
+          id: string
+          issue_details: string | null
+          issue_reason: string | null
+          issue_time: string | null
+          language: string | null
+          last_synced_at: string
+          moderation_deduction: string | null
+          moderator_decision: string | null
+          moderator_name: string | null
+          month: string | null
+          raw: Json
+          session_date: string | null
+          session_id: string | null
+          severity: string | null
+          source_of_issue: string | null
+          student_id: string | null
+          team_leader: string | null
+          time_slot: string | null
+          to_tutor_id: string | null
+          to_tutor_name: string | null
+          to_tutor_type: string | null
+          updated_at: string
+          updated_by: string | null
+          year: string | null
+        }
+        Insert: {
+          action_status?: string | null
+          case_id: string
+          class_type?: string | null
+          created_at?: string
+          day_of_week?: string | null
+          edu_description_id?: string | null
+          edu_notes?: string | null
+          edu_validation?:
+            | Database["public"]["Enums"]["edu_validation_status"]
+            | null
+          extra_action?: string | null
+          from_tutor_id?: string | null
+          from_tutor_name?: string | null
+          from_tutor_type?: string | null
+          group_type?: string | null
+          id?: string
+          issue_details?: string | null
+          issue_reason?: string | null
+          issue_time?: string | null
+          language?: string | null
+          last_synced_at?: string
+          moderation_deduction?: string | null
+          moderator_decision?: string | null
+          moderator_name?: string | null
+          month?: string | null
+          raw?: Json
+          session_date?: string | null
+          session_id?: string | null
+          severity?: string | null
+          source_of_issue?: string | null
+          student_id?: string | null
+          team_leader?: string | null
+          time_slot?: string | null
+          to_tutor_id?: string | null
+          to_tutor_name?: string | null
+          to_tutor_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          year?: string | null
+        }
+        Update: {
+          action_status?: string | null
+          case_id?: string
+          class_type?: string | null
+          created_at?: string
+          day_of_week?: string | null
+          edu_description_id?: string | null
+          edu_notes?: string | null
+          edu_validation?:
+            | Database["public"]["Enums"]["edu_validation_status"]
+            | null
+          extra_action?: string | null
+          from_tutor_id?: string | null
+          from_tutor_name?: string | null
+          from_tutor_type?: string | null
+          group_type?: string | null
+          id?: string
+          issue_details?: string | null
+          issue_reason?: string | null
+          issue_time?: string | null
+          language?: string | null
+          last_synced_at?: string
+          moderation_deduction?: string | null
+          moderator_decision?: string | null
+          moderator_name?: string | null
+          month?: string | null
+          raw?: Json
+          session_date?: string | null
+          session_id?: string | null
+          severity?: string | null
+          source_of_issue?: string | null
+          student_id?: string | null
+          team_leader?: string | null
+          time_slot?: string | null
+          to_tutor_id?: string | null
+          to_tutor_name?: string | null
+          to_tutor_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          year?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_session_issues_edu_description_id_fkey"
+            columns: ["edu_description_id"]
+            isOneToOne: false
+            referencedRelation: "edu_descriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       login_tokens: {
         Row: {
@@ -924,6 +1171,8 @@ export type Database = {
       action_plan_evaluation: "improved" | "not_improved"
       action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
       app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
+      edu_description_type: "deduction" | "no_deduction" | "neutral"
+      edu_validation_status: "deduct" | "no_deduction" | "pending"
       task_status: "todo" | "in_progress" | "done" | "archived"
     }
     CompositeTypes: {
@@ -1063,6 +1312,8 @@ export const Constants = {
       action_plan_evaluation: ["improved", "not_improved"],
       action_plan_status: ["active", "on_hold", "resolved", "escalated"],
       app_role: ["admin", "team_leader", "mentor", "community_moderator"],
+      edu_description_type: ["deduction", "no_deduction", "neutral"],
+      edu_validation_status: ["deduct", "no_deduction", "pending"],
       task_status: ["todo", "in_progress", "done", "archived"],
     },
   },
