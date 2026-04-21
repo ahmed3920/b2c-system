@@ -1272,6 +1272,48 @@ export type Database = {
           },
         ]
       }
+      weekly_study_plan_snapshots: {
+        Row: {
+          created_at: string
+          generated_by: string | null
+          generated_by_name: string | null
+          id: string
+          items_count: number
+          notes: string | null
+          team_leader: string | null
+          total_free_hours: number
+          total_planned_hours: number
+          tutors_count: number
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          generated_by?: string | null
+          generated_by_name?: string | null
+          id?: string
+          items_count?: number
+          notes?: string | null
+          team_leader?: string | null
+          total_free_hours?: number
+          total_planned_hours?: number
+          tutors_count?: number
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          generated_by?: string | null
+          generated_by_name?: string | null
+          id?: string
+          items_count?: number
+          notes?: string | null
+          team_leader?: string | null
+          total_free_hours?: number
+          total_planned_hours?: number
+          tutors_count?: number
+          week_start?: string
+        }
+        Relationships: []
+      }
       weekly_study_plans: {
         Row: {
           created_at: string

@@ -354,6 +354,42 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Compute snapshot totals from the actual saved plans for this week/scope
+    let totalsQ = admin
+      .from("weekly_study_plans")
+      .select("free_hours, planned_hours, tutor_external_id")
+      .eq("week_start", weekStart);
+    if (tlFilter) totalsQ = totalsQ.eq("team_leader", tlFilter);
+    const { data: totalsRows } = await totalsQ;
+    const totalFree = (totalsRows ?? []).reduce(
+      (s, r: any) => s + Number(r.free_hours ?? 0),
+      0,
+    );
+    const totalPlanned = (totalsRows ?? []).reduce(
+      (s, r: any) => s + Number(r.planned_hours ?? 0),
+      0,
+    );
+
+    // Resolve generator name
+    let generatorName: string | null = null;
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("mentor_name, full_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    generatorName = prof?.full_name ?? prof?.mentor_name ?? null;
+
+    await admin.from("weekly_study_plan_snapshots").insert({
+      week_start: weekStart,
+      team_leader: tlFilter,
+      tutors_count: plansCreated,
+      items_count: itemsCreated,
+      total_free_hours: totalFree,
+      total_planned_hours: totalPlanned,
+      generated_by: userId,
+      generated_by_name: generatorName,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,

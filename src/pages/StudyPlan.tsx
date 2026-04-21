@@ -42,6 +42,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { exportStudyPlanToExcel } from "@/utils/exportStudyPlanToExcel";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { CourseManagementCard } from "@/components/study-plan/CourseManagementCard";
+import { SnapshotsHistoryCard } from "@/components/study-plan/SnapshotsHistoryCard";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -59,6 +63,7 @@ export default function StudyPlan() {
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
 
+  const queryClient = useQueryClient();
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
   const { data: progress = [], isLoading: progressLoading } = useTutorProgress(weekStart);
   const { data: adherenceData, isLoading: adherenceLoading } = useWeekAdherence(weekStart);
@@ -112,6 +117,7 @@ export default function StudyPlan() {
         `Generated ${(data as any).plans_created} plans · ${(data as any).items_created} module assignments`,
       );
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["weekly-study-plan-snapshots"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to generate plan");
     } finally {
@@ -199,6 +205,10 @@ export default function StudyPlan() {
             <TabsTrigger value="plans">Weekly Plans</TabsTrigger>
             <TabsTrigger value="progress">Tutor Progress</TabsTrigger>
             <TabsTrigger value="adherence">Plan vs Actual</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="courses">Course Management</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="plans">
@@ -254,6 +264,7 @@ export default function StudyPlan() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Tutor</TableHead>
+                        <TableHead>Mentor</TableHead>
                         <TableHead>Team Leader</TableHead>
                         <TableHead>Free h</TableHead>
                         <TableHead>Planned h</TableHead>
@@ -274,6 +285,9 @@ export default function StudyPlan() {
                             <div className="text-xs text-muted-foreground">
                               {p.tutor_external_id}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getMentorForTutor(p.tutor_external_id)}
                           </TableCell>
                           <TableCell>{p.team_leader}</TableCell>
                           <TableCell>{p.free_hours}</TableCell>
@@ -367,6 +381,7 @@ export default function StudyPlan() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Tutor</TableHead>
+                          <TableHead>Mentor</TableHead>
                           <TableHead>Team Leader</TableHead>
                           <TableHead className="text-center">Finished (from sheet)</TableHead>
                           <TableHead className="text-center">Remaining to study</TableHead>
@@ -403,6 +418,9 @@ export default function StudyPlan() {
                                   <div className="text-xs text-muted-foreground">
                                     {r.tutor_external_id}
                                   </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {getMentorForTutor(r.tutor_external_id)}
                                 </TableCell>
                                 <TableCell>{r.team_leader}</TableCell>
                                 <TableCell className="text-center">
@@ -632,6 +650,19 @@ export default function StudyPlan() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="history">
+            <SnapshotsHistoryCard
+              currentWeekStart={weekStart}
+              onView={(ws) => setWeekStart(ws)}
+            />
+          </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="courses">
+              <CourseManagementCard />
+            </TabsContent>
+          )}
         </Tabs>
 
         <StudyPlanDetailDialog plan={selected} onClose={() => setSelected(null)} />
