@@ -92,11 +92,8 @@ export function GenerateMentorPdfsDialog({
         <div className="space-y-5 py-2">
           <div className="rounded-md border p-3 text-sm flex items-center justify-between">
             <span>
-              <b>{groups.length}</b> mentor{groups.length === 1 ? "" : "s"} \u00B7{" "}
-              <b>
-                {groups.reduce((s, g) => s + g.plans.length, 0)}
-              </b>{" "}
-              tutors with plans
+              <b>{groups.length}</b> mentor{groups.length === 1 ? "" : "s"} ·{" "}
+              <b>{groups.reduce((s, g) => s + g.plans.length, 0)}</b> tutors with plans
             </span>
           </div>
 
