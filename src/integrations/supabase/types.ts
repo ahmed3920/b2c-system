@@ -1322,6 +1322,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      broadcast_announcement_notification: {
+        Args: { _audience: string; _priority?: string; _title: string }
+        Returns: number
+      }
       cs_ticket_belongs_to_me: {
         Args: { _team_leader: string }
         Returns: boolean
