@@ -70,6 +70,34 @@ function parseDate(s: string): string | null {
 const norm = (s: string) =>
   s.replace(/\uFEFF/g, "").replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 
+// Map sheet/roster team-leader names -> short form used in profiles.mentor_name
+// Keys are normalized (lowercased, single-space). Values are the canonical mentor_name.
+const TL_ALIASES: Record<string, string> = {
+  "ahmed hesham helmy": "Ahmed Hesham",
+  "ahmed hesham": "Ahmed Hesham",
+  "anan mohammed mohammed zewil": "Anan Zewil",
+  "anan zewil": "Anan Zewil",
+  "kareem abdalwahab abdalhaleem": "Kareem Abdalwahab",
+  "kareem abdalwahab": "Kareem Abdalwahab",
+  "ghada mohamed ahmed": "Ghada Mohamed",
+  "ghada mohamed": "Ghada Mohamed",
+  "nermeen alhububati": "Nermeen Alhububati",
+};
+
+function normalizeTeamLeader(raw: string | null): string | null {
+  if (!raw) return null;
+  const key = norm(raw);
+  if (TL_ALIASES[key]) return TL_ALIASES[key];
+  // Try first-two-tokens fallback (e.g. "Ahmed Hesham Helmy" -> "Ahmed Hesham")
+  const tokens = raw.trim().split(/\s+/);
+  if (tokens.length >= 2) {
+    const short = `${tokens[0]} ${tokens[1]}`;
+    const k2 = norm(short);
+    if (TL_ALIASES[k2]) return TL_ALIASES[k2];
+  }
+  return raw.trim();
+}
+
 function findCol(headerNorm: string[], aliases: string[]): number {
   for (const a of aliases) {
     const i = headerNorm.findIndex((h) => h === norm(a));
@@ -167,6 +195,17 @@ Deno.serve(async (req) => {
       moderation_deduction: findCol(headerNorm, ["Education Validation", "Deduction"]),
     };
 
+    // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name)
+    const { data: tutorRows } = await admin
+      .from("action_plan_tutors")
+      .select("tutor_external_id, team_leader");
+    const tutorTlMap = new Map<string, string>();
+    for (const t of (tutorRows ?? [])) {
+      if (t.tutor_external_id && t.team_leader) {
+        tutorTlMap.set(String(t.tutor_external_id).trim(), String(t.team_leader).trim());
+      }
+    }
+
     const get = (row: string[], i: number) => (i >= 0 && i < row.length ? row[i].trim() : "");
 
     type Rec = Record<string, unknown>;
@@ -182,6 +221,11 @@ Deno.serve(async (req) => {
 
       const raw: Record<string, string> = {};
       header.forEach((h, i) => { raw[h] = get(row, i); });
+
+      // Resolve team_leader: prefer tutor map (already normalized), else normalize sheet value
+      const sheetTl = get(row, cols.team_leader) || null;
+      const tutorTl = fromTid ? tutorTlMap.get(fromTid) : undefined;
+      const resolvedTl = tutorTl ?? normalizeTeamLeader(sheetTl);
 
       records.push({
         case_id: caseId,
@@ -207,7 +251,7 @@ Deno.serve(async (req) => {
         to_tutor_type: get(row, cols.to_tutor_type) || null,
         language: get(row, cols.language) || null,
         year: get(row, cols.year) || null,
-        team_leader: get(row, cols.team_leader) || null,
+        team_leader: resolvedTl,
         day_of_week: get(row, cols.day_of_week) || null,
         severity: get(row, cols.severity) || null,
         moderator_decision: get(row, cols.moderator_decision) || null,

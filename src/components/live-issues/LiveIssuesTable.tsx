@@ -303,6 +303,7 @@ export function LiveIssuesTable() {
                   <TableHead>Case ID</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Tutor</TableHead>
+                  <TableHead>Team Leader</TableHead>
                   <TableHead>Issue</TableHead>
                   <TableHead>Issue Details</TableHead>
                   <TableHead className="bg-amber-50/50 dark:bg-amber-950/10">Edu Validation</TableHead>
@@ -313,11 +314,11 @@ export function LiveIssuesTable() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={9} className="h-24 text-center">
+                  <TableRow><TableCell colSpan={10} className="h-24 text-center">
                     <Loader2 className="h-5 w-5 animate-spin inline" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     No cases. Sync the moderation sheet to load data.
                   </TableCell></TableRow>
                 ) : rows.map((row) => {
@@ -335,6 +336,7 @@ export function LiveIssuesTable() {
                         <div className="font-medium">{row.from_tutor_name || "—"}</div>
                         <div className="text-muted-foreground">{row.from_tutor_id}</div>
                       </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{row.team_leader || "—"}</TableCell>
                       <TableCell className="text-xs">{row.issue_reason || "—"}</TableCell>
                       <TableCell className="text-xs max-w-[280px]">
                         <div className="line-clamp-3 whitespace-pre-wrap" title={row.issue_details ?? ""}>
