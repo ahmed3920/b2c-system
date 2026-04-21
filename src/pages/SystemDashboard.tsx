@@ -588,7 +588,7 @@ const SystemDashboard = () => {
             </AnimatePresence>
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
 
       <AdminTaskAssignDialog
         open={isAssignDialogOpen}
@@ -603,7 +603,7 @@ const SystemDashboard = () => {
         open={isCategoryManagerOpen}
         onOpenChange={setIsCategoryManagerOpen}
       />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -177,7 +177,7 @@ const UserManagement = () => {
             teamLeaders={teamLeaders}
           />
         </motion.div>
-      </main>
+      </div>
 
       {/* Create User Dialog */}
       <CreateUserDialog
@@ -203,7 +203,7 @@ const UserManagement = () => {
         user={selectedUser}
         onResetPassword={handleResetPasswordSubmit}
       />
-    </div>
+    </AppLayout>
   );
 };
 
