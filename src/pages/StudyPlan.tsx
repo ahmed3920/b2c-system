@@ -687,6 +687,12 @@ export default function StudyPlan() {
           weekStart={weekStart}
           onClose={() => setAdherenceSelected(null)}
         />
+        <GenerateMentorPdfsDialog
+          open={pdfDialogOpen}
+          onOpenChange={setPdfDialogOpen}
+          weekStart={weekStart}
+          plans={filteredPlans}
+        />
       </div>
     </AppLayout>
   );
