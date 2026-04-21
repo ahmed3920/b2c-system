@@ -174,7 +174,7 @@ export function LiveIssuesTable() {
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters or page size change
-  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, pageSize]);
+  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, pageSize]);
 
   const writeAudit = async (
     row: IssueRow,
