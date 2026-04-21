@@ -30,10 +30,15 @@ import {
 import { Search, Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tutorRoster } from "@/data/tutorRoster";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 
 const PAGE_SIZE = 25;
 
 export default function Tutors() {
+  const { isTeamLeader, isAdmin } = useUserRole();
+  const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+
   const [query, setQuery] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -41,14 +46,22 @@ export default function Tutors() {
   const [empFilter, setEmpFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
+  // Restrict roster to TL's own team when not admin
+  const scopedRoster = useMemo(() => {
+    if (isTeamLeader && !isAdmin && myTeamLeader) {
+      return tutorRoster.filter((t) => t.team_leader === myTeamLeader);
+    }
+    return tutorRoster;
+  }, [isTeamLeader, isAdmin, myTeamLeader]);
+
   const teamLeaders = useMemo(
-    () => Array.from(new Set(tutorRoster.map((t) => t.team_leader))).sort(),
-    [],
+    () => Array.from(new Set(scopedRoster.map((t) => t.team_leader))).sort(),
+    [scopedRoster],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return tutorRoster.filter((t) => {
+    return scopedRoster.filter((t) => {
       if (tlFilter !== "all" && t.team_leader !== tlFilter) return false;
       if (roleFilter !== "all" && t.role !== roleFilter) return false;
       if (langFilter !== "all" && t.language !== langFilter) return false;
@@ -69,15 +82,15 @@ export default function Tutors() {
 
   const stats = useMemo(
     () => ({
-      total: tutorRoster.length,
-      tutors: tutorRoster.filter((t) => t.role === "Tutor").length,
-      mentors: tutorRoster.filter((t) => t.role === "Mentor").length,
-      arabic: tutorRoster.filter((t) => t.language === "Arabic").length,
-      english: tutorRoster.filter((t) => t.language === "English").length,
-      fullTime: tutorRoster.filter((t) => t.employment_type === "Full-time").length,
-      partTime: tutorRoster.filter((t) => t.employment_type === "Part-time").length,
+      total: scopedRoster.length,
+      tutors: scopedRoster.filter((t) => t.role === "Tutor").length,
+      mentors: scopedRoster.filter((t) => t.role === "Mentor").length,
+      arabic: scopedRoster.filter((t) => t.language === "Arabic").length,
+      english: scopedRoster.filter((t) => t.language === "English").length,
+      fullTime: scopedRoster.filter((t) => t.employment_type === "Full-time").length,
+      partTime: scopedRoster.filter((t) => t.employment_type === "Part-time").length,
     }),
-    [],
+    [scopedRoster],
   );
 
   const resetPage = () => setPage(1);
