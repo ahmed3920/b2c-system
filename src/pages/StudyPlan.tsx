@@ -279,17 +279,17 @@ export default function StudyPlan() {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1 max-w-md">
-                              {(p.items ?? []).length === 0 ? (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              ) : (
-                                (p.items ?? [])
-                                  .filter(
-                                    (it) =>
-                                      !blockedKeys.has(
-                                        `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
-                                      ),
-                                  )
-                                  .map((it) => {
+                              {(() => {
+                                const visibleItems = (p.items ?? []).filter(
+                                  (it) =>
+                                    !blockedKeys.has(
+                                      `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                    ),
+                                );
+                                if (visibleItems.length === 0) {
+                                  return <span className="text-xs text-muted-foreground">—</span>;
+                                }
+                                return visibleItems.map((it) => {
                                     const required = it.module?.hours_required ?? 0;
                                     const pct = required > 0
                                       ? Math.round((it.planned_hours / required) * 100)
