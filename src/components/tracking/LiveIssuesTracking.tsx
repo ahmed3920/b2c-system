@@ -139,7 +139,7 @@ export function LiveIssuesTracking() {
   }, [autoRefresh, load]);
 
   // Reset pagination when filters change
-  useEffect(() => { setPage(0); }, [month, tlFilter, validationFilter, dateFrom, dateTo, tutorDrill]);
+  useEffect(() => { setPage(0); }, [month, tlFilter, validationFilter, eduDescFilter, dateFrom, dateTo, tutorDrill]);
 
   // Distinct months
   const months = useMemo(() => {
