@@ -756,6 +756,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          link: string | null
           message: string
           read_status: boolean | null
           related_task_id: string | null
@@ -765,6 +766,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          link?: string | null
           message: string
           read_status?: boolean | null
           related_task_id?: string | null
@@ -774,6 +776,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          link?: string | null
           message?: string
           read_status?: boolean | null
           related_task_id?: string | null
@@ -1323,6 +1326,10 @@ export type Database = {
         Args: { _team_leader: string }
         Returns: boolean
       }
+      find_team_leader_user_ids: {
+        Args: { _team_leader_name: string }
+        Returns: string[]
+      }
       get_current_user_mentor_name: { Args: never; Returns: string }
       get_my_team_cs_tickets: {
         Args: never
@@ -1377,6 +1384,7 @@ export type Database = {
         Returns: boolean
       }
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
+      notify_tickets_due_today: { Args: never; Returns: number }
       team_leader_name_matches: {
         Args: { _candidate: string; _mine: string }
         Returns: boolean

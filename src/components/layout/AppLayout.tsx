@@ -9,6 +9,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { RoleBadge } from "@/components/RoleBadge";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureControls, isFeatureEnabled } from "@/hooks/useFeatureControls";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -91,7 +92,8 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
                 <h1 className="text-base font-semibold text-foreground truncate">{title}</h1>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <NotificationsBell />
               <div className="hidden sm:flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">{displayName}</span>
                 <RoleBadge role={role} size="sm" />
