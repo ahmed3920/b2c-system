@@ -37,6 +37,7 @@ export const EDU_CATEGORIES = [
 ] as const;
 
 export type CSTicketCaseType = "CS" | "Edu";
-export type CSTicketStatus = "Pending" | "Validated" | "Rejected";
+export type CSTicketStatus = "Pending" | "Valid" | "Not Valid" | "Not a Complain" | "Validated" | "Rejected";
 
-export const STATUS_OPTIONS: CSTicketStatus[] = ["Pending", "Validated", "Rejected"];
+// Active options shown in dropdowns (legacy values kept for back-compat in old tickets)
+export const STATUS_OPTIONS: CSTicketStatus[] = ["Pending", "Valid", "Not Valid", "Not a Complain"];

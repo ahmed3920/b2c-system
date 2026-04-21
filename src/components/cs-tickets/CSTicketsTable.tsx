@@ -14,6 +14,9 @@ import type { CSTicketStatus } from "./csTicketCategories";
 
 const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructive" | "outline"> = {
   Pending: "secondary",
+  Valid: "default",
+  "Not Valid": "destructive",
+  "Not a Complain": "outline",
   Validated: "default",
   Rejected: "destructive",
 };
