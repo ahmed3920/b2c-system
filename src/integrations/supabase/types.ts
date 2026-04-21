@@ -214,6 +214,66 @@ export type Database = {
         }
         Relationships: []
       }
+      cs_tickets: {
+        Row: {
+          case_details: string | null
+          case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          need_response_deadline: string | null
+          session_num_or_date: string | null
+          status: Database["public"]["Enums"]["cs_ticket_status"]
+          student_id: string | null
+          team_leader: string
+          team_leader_response: string | null
+          ticket_date: string
+          ticket_number: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+        }
+        Insert: {
+          case_details?: string | null
+          case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          need_response_deadline?: string | null
+          session_num_or_date?: string | null
+          status?: Database["public"]["Enums"]["cs_ticket_status"]
+          student_id?: string | null
+          team_leader: string
+          team_leader_response?: string | null
+          ticket_date?: string
+          ticket_number?: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+        }
+        Update: {
+          case_details?: string | null
+          case_type?: Database["public"]["Enums"]["cs_ticket_case_type"]
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          need_response_deadline?: string | null
+          session_num_or_date?: string | null
+          status?: Database["public"]["Enums"]["cs_ticket_status"]
+          student_id?: string | null
+          team_leader?: string
+          team_leader_response?: string | null
+          ticket_date?: string
+          ticket_number?: string
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       edu_descriptions: {
         Row: {
           color: string
@@ -1171,6 +1231,8 @@ export type Database = {
       action_plan_evaluation: "improved" | "not_improved"
       action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
       app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
+      cs_ticket_case_type: "CS" | "Edu"
+      cs_ticket_status: "Pending" | "Validated" | "Rejected"
       edu_description_type: "deduction" | "no_deduction" | "neutral"
       edu_validation_status: "deduct" | "no_deduction" | "pending"
       task_status: "todo" | "in_progress" | "done" | "archived"
@@ -1312,6 +1374,8 @@ export const Constants = {
       action_plan_evaluation: ["improved", "not_improved"],
       action_plan_status: ["active", "on_hold", "resolved", "escalated"],
       app_role: ["admin", "team_leader", "mentor", "community_moderator"],
+      cs_ticket_case_type: ["CS", "Edu"],
+      cs_ticket_status: ["Pending", "Validated", "Rejected"],
       edu_description_type: ["deduction", "no_deduction", "neutral"],
       edu_validation_status: ["deduct", "no_deduction", "pending"],
       task_status: ["todo", "in_progress", "done", "archived"],
