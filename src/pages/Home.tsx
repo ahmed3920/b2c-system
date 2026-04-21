@@ -22,6 +22,7 @@ import {
   Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
 
 interface Profile {
   mentor_id: string;
@@ -243,6 +244,11 @@ const Home = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Announcements */}
+        <div className="mb-8">
+          <AnnouncementsSection />
+        </div>
 
         {/* Quick Stats / Breakdown moved into Task Management page */}
 
