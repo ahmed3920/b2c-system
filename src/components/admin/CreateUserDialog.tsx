@@ -386,7 +386,7 @@ export function CreateUserDialog({
             </div>
 
             {/* Team Leader specific fields */}
-            {selectedType === "team_leader" && (
+            {(selectedType === "team_leader" || selectedType === "super_team_leader") && (
               <div className="space-y-2">
                 <Label htmlFor="teamName">Team Name *</Label>
                 <Input
