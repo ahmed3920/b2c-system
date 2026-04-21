@@ -438,6 +438,7 @@ export function LiveIssuesTracking() {
                   <SelectItem value="no_deduction">No Deduction</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
             <div>
               <Label className="text-xs">Edu Description</Label>
               <Select value={eduDescFilter} onValueChange={setEduDescFilter}>
