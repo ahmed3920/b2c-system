@@ -273,7 +273,7 @@ export function LiveIssuesTable() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  setSearch(""); setTutorId(""); setIssueType(ALL); setSeverity(ALL);
+                  setSearch(""); setTutorId(""); setIssueType(ALL);
                   setValidation(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
