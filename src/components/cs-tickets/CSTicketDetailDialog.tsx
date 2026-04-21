@@ -480,6 +480,13 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CSTicketAuditDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        ticketId={ticket.id}
+        ticketNumber={ticket.ticket_number}
+      />
     </>
   );
 }
