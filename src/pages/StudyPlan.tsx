@@ -30,6 +30,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
 import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
 import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
+import { AdherenceStatusBadge } from "@/components/study-plan/AdherenceStatusBadge";
+import { AdherenceDetailDialog } from "@/components/study-plan/AdherenceDetailDialog";
+import { useWeekAdherence, type TutorAdherence } from "@/hooks/useWeekAdherence";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -57,7 +61,11 @@ export default function StudyPlan() {
 
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
   const { data: progress = [], isLoading: progressLoading } = useTutorProgress(weekStart);
+  const { data: adherenceData, isLoading: adherenceLoading } = useWeekAdherence(weekStart);
+  const adherenceTutors = adherenceData?.tutors ?? [];
   const [progressFilter, setProgressFilter] = useState("");
+  const [adherenceFilter, setAdherenceFilter] = useState("");
+  const [adherenceSelected, setAdherenceSelected] = useState<TutorAdherence | null>(null);
   const [tlFilter, setTlFilter] = useState<string>("all");
   // UI-only simulation: track blocked module keys (per tutor + module code)
   const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
@@ -190,6 +198,7 @@ export default function StudyPlan() {
           <TabsList>
             <TabsTrigger value="plans">Weekly Plans</TabsTrigger>
             <TabsTrigger value="progress">Tutor Progress</TabsTrigger>
+            <TabsTrigger value="adherence">Plan vs Actual</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans">
