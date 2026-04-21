@@ -17,13 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft, Globe } from "lucide-react";
+import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft, Globe, Crown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { CreateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
 
-type UserType = "admin" | "team_leader" | "mentor" | "community_moderator";
+type UserType = "admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator";
 
 interface UserTypeOption {
   value: UserType;
@@ -44,6 +44,12 @@ const userTypes: UserTypeOption[] = [
     label: "New Team Leader",
     description: "Manage team members and assign tasks",
     icon: <Users className="w-6 h-6" />,
+  },
+  {
+    value: "super_team_leader",
+    label: "New Super Team Leader",
+    description: "Team leader with cross-team CS ticket access",
+    icon: <Crown className="w-6 h-6" />,
   },
   {
     value: "mentor",
@@ -157,6 +163,7 @@ export function CreateUserDialog({
         };
         break;
       case "team_leader":
+      case "super_team_leader":
         schema = teamLeaderSchema;
         dataToValidate = {
           email: formData.email,
@@ -221,6 +228,7 @@ export function CreateUserDialog({
         };
         break;
       case "team_leader":
+      case "super_team_leader":
         createData = {
           email: formData.email,
           password: formData.password,
@@ -228,7 +236,7 @@ export function CreateUserDialog({
           mentorId: finalMentorId,
           mentorName: formData.fullName,
           teamLeader: formData.fullName,
-          role: "team_leader",
+          role: selectedType,
         };
         break;
       case "mentor":
@@ -312,6 +320,7 @@ export function CreateUserDialog({
                   "flex items-center justify-center w-12 h-12 rounded-lg",
                   type.value === "admin" && "bg-destructive/10 text-destructive",
                   type.value === "team_leader" && "bg-secondary/10 text-secondary",
+                  type.value === "super_team_leader" && "bg-amber-100 text-amber-700",
                   type.value === "mentor" && "bg-primary/10 text-primary",
                   type.value === "community_moderator" && "bg-purple-100 text-purple-700"
                 )}>
@@ -377,7 +386,7 @@ export function CreateUserDialog({
             </div>
 
             {/* Team Leader specific fields */}
-            {selectedType === "team_leader" && (
+            {(selectedType === "team_leader" || selectedType === "super_team_leader") && (
               <div className="space-y-2">
                 <Label htmlFor="teamName">Team Name *</Label>
                 <Input
