@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import autoTable, { type RowInput, type CellDef } from "jspdf-autotable";
 import JSZip from "jszip";
 import logoUrl from "@/assets/ischool-icon.png";
 import type { WeeklyPlan } from "@/hooks/useWeeklyStudyPlans";
@@ -9,6 +9,8 @@ import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 const BLUE: [number, number, number] = [5, 110, 236]; // #056eec
 const ORANGE: [number, number, number] = [254, 127, 27]; // #fe7f1b
 const ROW_BG: [number, number, number] = [240, 244, 255];
+const ROW_ALT: [number, number, number] = [255, 255, 255];
+const TIME_BG: [number, number, number] = [255, 240, 220];
 
 // Compute Friday→Tuesday display range for the title (5 working days).
 function formatRange(weekStart: string): string {
@@ -20,7 +22,7 @@ function formatRange(weekStart: string): string {
   return `${f(start)} to ${f(end)}`;
 }
 
-// Compute "Week N" label by counting Fridays from a fixed epoch (the year start).
+// "Week N" label by counting whole weeks from start of year.
 function weekNumber(weekStart: string): number {
   const d = new Date(weekStart + "T00:00:00Z");
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -73,15 +75,32 @@ interface BuildOptions {
   logoDataUrl?: string;
 }
 
-function buildMentorPdf({ weekStart, mentor, plans, logoDataUrl }: BuildOptions): jsPDF {
-  // Landscape A4 to match the sample
+const HEADER_HEIGHT = 220; // reserved space for the title block
+
+function buildMentorPdf({
+  weekStart,
+  mentor,
+  plans,
+  logoDataUrl,
+}: BuildOptions): jsPDF {
+  // Landscape A4 to match the sample (842 x 595 pt)
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = 40;
 
+  // Totals across all tutor items, used in the subtitle.
+  const totalTutors = plans.length;
+  const totalItems = plans.reduce((s, p) => s + (p.items?.length ?? 0), 0);
+  const totalPlanned = plans.reduce(
+    (s, p) =>
+      s +
+      (p.items?.reduce((a, it) => a + Number(it.planned_hours ?? 0), 0) ?? 0),
+    0,
+  );
+
   const drawHeader = () => {
-    // Decorative chevrons top-right
+    // Decorative chevrons top-right (non-overlapping with the title)
     doc.setFillColor(...ORANGE);
     doc.triangle(pageW - 170, 18, pageW - 60, 18, pageW - 115, 110, "F");
     doc.setFillColor(...BLUE);
@@ -99,84 +118,147 @@ function buildMentorPdf({ weekStart, mentor, plans, logoDataUrl }: BuildOptions)
     // Title
     doc.setTextColor(...BLUE);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(36);
-    doc.text(`Study Plan Week ${weekNumber(weekStart)}`, marginX, 150);
+    doc.setFontSize(30);
+    doc.text(`Study Plan Week ${weekNumber(weekStart)}`, marginX, 110);
 
-    // Subtitle
+    // Subtitle (date range)
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(`Start from ${formatRange(weekStart)}`, marginX, 178);
+    doc.setFontSize(13);
+    doc.text(`Start from ${formatRange(weekStart)}`, marginX, 138);
 
-    // Mentor label
+    // Mentor + summary line
     doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text(`Mentor: ${mentor}`, marginX, 198);
+    doc.setFontSize(10.5);
+    doc.text(
+      `Mentor: ${mentor}   ·   ${totalTutors} tutor${totalTutors === 1 ? "" : "s"}   ·   ${totalItems} module${totalItems === 1 ? "" : "s"}   ·   ${totalPlanned} planned hour${totalPlanned === 1 ? "" : "s"}`,
+      marginX,
+      160,
+    );
+
+    // Divider
+    doc.setDrawColor(...BLUE);
+    doc.setLineWidth(1.5);
+    doc.line(marginX, 178, pageW - marginX, 178);
   };
 
   drawHeader();
 
-  // Build rows: one row per plan item. Use rowSpan-like grouping by repeating
-  // the tutor name on the first item only and leaving the rest blank for visual grouping.
-  const body: any[] = [];
+  // Build rows with proper rowSpan grouping per tutor so the tutor name and
+  // the "free time" cell visually merge across all of that tutor's modules.
+  const body: RowInput[] = [];
   for (const p of plans) {
     const items = p.items ?? [];
+    if (items.length === 0) continue;
+    const planned = items.reduce(
+      (s, it) => s + Number(it.planned_hours ?? 0),
+      0,
+    );
     items.forEach((it, idx) => {
       const grade = it.module?.grade_band ?? "?";
       const code = it.module?.module_code ?? "?";
-      const required = it.module?.hours_required ?? 0;
-      const planned = Number(it.planned_hours);
-      const partial = it.is_partial ? " (half)" : " (full)";
-      const moduleText = `Grade ${grade} - ${code}${partial}`;
-      const timeText = `${planned} ${planned === 1 ? "Hour" : "Hours"}${required ? ` of ${required}` : ""}`;
-      const freeText = idx === 0 ? `${p.free_hours} h available` : "";
+      const required = Number(it.module?.hours_required ?? 0);
+      const itemPlanned = Number(it.planned_hours ?? 0);
+      const partial = it.is_partial ? "Half" : "Full";
+      const moduleText = `Grade ${grade} — ${code}  (${partial})`;
+      const timeText = required
+        ? `${itemPlanned} of ${required} h`
+        : `${itemPlanned} h`;
 
-      body.push([
-        idx === 0 ? p.tutor_name : "",
-        moduleText,
-        timeText,
-        freeText,
-      ]);
+      const row: CellDef[] = [];
+
+      // Tutor column — rowSpan on the first item, skip the others
+      if (idx === 0) {
+        row.push({
+          content: p.tutor_name,
+          rowSpan: items.length,
+          styles: {
+            fontStyle: "bold",
+            valign: "middle",
+            halign: "center",
+            fillColor: ROW_BG,
+            textColor: [25, 25, 25],
+          },
+        });
+      }
+
+      row.push({ content: moduleText });
+      row.push({
+        content: timeText,
+        styles: { fillColor: TIME_BG, fontStyle: "bold" },
+      });
+
+      // Free-time column — rowSpan on the first item, skip the others
+      if (idx === 0) {
+        row.push({
+          content: `${p.free_hours} h available\n(planned ${planned} h)`,
+          rowSpan: items.length,
+          styles: {
+            valign: "middle",
+            halign: "center",
+            fontStyle: "bold",
+            textColor: [...BLUE] as [number, number, number],
+            fillColor: [255, 255, 255],
+          },
+        });
+      }
+
+      body.push(row);
     });
   }
 
   if (body.length === 0) {
     doc.setTextColor(120, 120, 120);
     doc.setFontSize(12);
-    doc.text("No modules planned for this mentor's team.", marginX, 240);
+    doc.text(
+      "No modules planned for this mentor's team.",
+      marginX,
+      HEADER_HEIGHT + 20,
+    );
     return doc;
   }
 
+  // Pin column widths so the inner page width is fully used.
+  const innerW = pageW - marginX * 2;
+  const colTutor = 170;
+  const colTime = 110;
+  const colFree = 130;
+  const colModules = innerW - (colTutor + colTime + colFree);
+
   autoTable(doc, {
-    startY: 215,
-    margin: { left: marginX, right: marginX },
-    head: [["Tutor Name", "Modules Name", "Time For it", "Your Free Time"]],
+    startY: HEADER_HEIGHT,
+    margin: { left: marginX, right: marginX, top: HEADER_HEIGHT },
+    head: [["Tutor Name", "Modules Name", "Time For It", "Your Free Time"]],
     body,
     theme: "grid",
+    showHead: "everyPage",
     styles: {
       font: "helvetica",
-      fontSize: 12,
-      cellPadding: 10,
+      fontSize: 11,
+      cellPadding: { top: 8, bottom: 8, left: 10, right: 10 },
       lineColor: [220, 226, 240],
       lineWidth: 0.5,
       valign: "middle",
       halign: "center",
+      overflow: "linebreak",
+      minCellHeight: 26,
     },
     headStyles: {
       fillColor: BLUE,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 13,
+      fontSize: 12,
       halign: "center",
+      cellPadding: { top: 9, bottom: 9, left: 8, right: 8 },
     },
     columnStyles: {
-      0: { fontStyle: "bold", cellWidth: 180 },
-      1: { fontStyle: "bold" },
-      2: { fillColor: [255, 245, 230], fontStyle: "bold" },
-      3: { fontStyle: "bold" },
+      0: { cellWidth: colTutor, fontStyle: "bold" },
+      1: { cellWidth: colModules, fontStyle: "bold", halign: "left" },
+      2: { cellWidth: colTime, fontStyle: "bold" },
+      3: { cellWidth: colFree, fontStyle: "bold" },
     },
-    alternateRowStyles: { fillColor: ROW_BG },
+    alternateRowStyles: { fillColor: ROW_ALT },
     bodyStyles: { fillColor: ROW_BG },
     didDrawPage: (data) => {
       // Re-draw header on continuation pages
@@ -192,6 +274,12 @@ function buildMentorPdf({ weekStart, mentor, plans, logoDataUrl }: BuildOptions)
         pageH - 18,
         { align: "center" },
       );
+      doc.text(
+        `Page ${data.pageNumber}`,
+        pageW - marginX,
+        pageH - 18,
+        { align: "right" },
+      );
     },
   });
 
@@ -202,6 +290,7 @@ function safeFile(name: string): string {
   return name.replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80);
 }
 
+// ---------- Single PDF (download) ----------
 export async function generateMentorStudyPlanPdf(
   weekStart: string,
   mentor: string,
@@ -212,6 +301,68 @@ export async function generateMentorStudyPlanPdf(
   doc.save(`study-plan-${safeFile(mentor)}-${weekStart}.pdf`);
 }
 
+// ---------- Preview (returns blob URL) ----------
+export interface MentorPdfPreview {
+  mentor: string;
+  fileName: string;
+  url: string; // object URL — caller MUST URL.revokeObjectURL when done
+  blob: Blob;
+  tutors: number;
+}
+
+export async function generateMentorStudyPlanPreview(
+  weekStart: string,
+  mentor: string,
+  plans: WeeklyPlan[],
+): Promise<MentorPdfPreview> {
+  const logoDataUrl = await loadImage(logoUrl).catch(() => undefined);
+  const doc = buildMentorPdf({ weekStart, mentor, plans, logoDataUrl });
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  return {
+    mentor,
+    fileName: `study-plan-${safeFile(mentor)}-${weekStart}.pdf`,
+    url,
+    blob,
+    tutors: plans.length,
+  };
+}
+
+export async function generateAllMentorPreviews(
+  weekStart: string,
+  plans: WeeklyPlan[],
+  onEach?: (preview: MentorPdfPreview, index: number, total: number) => void,
+): Promise<MentorPdfPreview[]> {
+  const groups = groupPlansByMentor(plans);
+  if (groups.length === 0) return [];
+  const logoDataUrl = await loadImage(logoUrl).catch(() => undefined);
+  const previews: MentorPdfPreview[] = [];
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    // Yield to let the UI repaint between heavy renders
+    await new Promise((r) => setTimeout(r, 0));
+    const doc = buildMentorPdf({
+      weekStart,
+      mentor: g.mentor,
+      plans: g.plans,
+      logoDataUrl,
+    });
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const item: MentorPdfPreview = {
+      mentor: g.mentor,
+      fileName: `study-plan-${safeFile(g.mentor)}-${weekStart}.pdf`,
+      url,
+      blob,
+      tutors: g.plans.length,
+    };
+    previews.push(item);
+    onEach?.(item, i, groups.length);
+  }
+  return previews;
+}
+
+// ---------- Bulk ZIP (download) ----------
 export interface MentorPdfReady {
   mentor: string;
   fileName: string;
@@ -243,7 +394,6 @@ export async function generateBulkMentorStudyPlansZip(
     const g = groups[i];
     events.onStart?.(g.mentor, i, total);
     try {
-      // Yield to the event loop so the UI can paint the "in-progress" state
       await new Promise((r) => setTimeout(r, 0));
       const doc = buildMentorPdf({
         weekStart,
@@ -261,7 +411,12 @@ export async function generateBulkMentorStudyPlansZip(
         total,
       );
     } catch (e: any) {
-      events.onError?.(g.mentor, e instanceof Error ? e : new Error(String(e)), i, total);
+      events.onError?.(
+        g.mentor,
+        e instanceof Error ? e : new Error(String(e)),
+        i,
+        total,
+      );
     }
   }
 
