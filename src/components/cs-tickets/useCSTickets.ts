@@ -25,25 +25,39 @@ export interface CSTicket {
   updated_at: string;
 }
 
-export function useCSTickets() {
+export type CSTicketScope = "all" | "mine";
+
+const normalize = (rows: any[]): CSTicket[] =>
+  rows.map((r) => ({
+    ...r,
+    case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
+  })) as CSTicket[];
+
+/**
+ * Fetches CS tickets. Scope is enforced server-side:
+ * - "all": every row the caller is allowed to see (RLS).
+ * - "mine": only tickets whose team_leader matches the signed-in user,
+ *   filtered by the SQL function `get_my_team_cs_tickets`. No name
+ *   matching is done in the browser.
+ */
+export function useCSTickets(scope: CSTicketScope = "all") {
   const [tickets, setTickets] = useState<CSTicket[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("cs_tickets")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error && data) {
-      const rows = (data as any[]).map((r) => ({
-        ...r,
-        case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
-      })) as CSTicket[];
-      setTickets(rows);
+    if (scope === "mine") {
+      const { data, error } = await supabase.rpc("get_my_team_cs_tickets");
+      setTickets(!error && data ? normalize(data as any[]) : []);
+    } else {
+      const { data, error } = await supabase
+        .from("cs_tickets")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setTickets(!error && data ? normalize(data as any[]) : []);
     }
     setLoading(false);
-  }, []);
+  }, [scope]);
 
   useEffect(() => {
     refresh();

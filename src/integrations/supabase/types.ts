@@ -1271,7 +1271,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cs_ticket_belongs_to_me: {
+        Args: { _team_leader: string }
+        Returns: boolean
+      }
       get_current_user_mentor_name: { Args: never; Returns: string }
+      get_my_team_cs_tickets: {
+        Args: never
+        Returns: {
+          case_details: string | null
+          case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          case_types: Database["public"]["Enums"]["cs_ticket_case_type"][]
+          category: string
+          created_at: string
+          created_by: string | null
+          cs_category: string | null
+          edu_category: string | null
+          id: string
+          need_response_deadline: string | null
+          session_num_or_date: string | null
+          status: Database["public"]["Enums"]["cs_ticket_status"]
+          student_id: string | null
+          team_leader: string
+          team_leader_response: string | null
+          ticket_date: string
+          ticket_number: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "cs_tickets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_team_task_stats: {
         Args: never
         Returns: {
