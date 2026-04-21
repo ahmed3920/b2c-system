@@ -195,6 +195,17 @@ Deno.serve(async (req) => {
       moderation_deduction: findCol(headerNorm, ["Education Validation", "Deduction"]),
     };
 
+    // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name)
+    const { data: tutorRows } = await admin
+      .from("action_plan_tutors")
+      .select("tutor_external_id, team_leader");
+    const tutorTlMap = new Map<string, string>();
+    for (const t of (tutorRows ?? [])) {
+      if (t.tutor_external_id && t.team_leader) {
+        tutorTlMap.set(String(t.tutor_external_id).trim(), String(t.team_leader).trim());
+      }
+    }
+
     const get = (row: string[], i: number) => (i >= 0 && i < row.length ? row[i].trim() : "");
 
     type Rec = Record<string, unknown>;
