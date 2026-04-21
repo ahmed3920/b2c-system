@@ -252,6 +252,8 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          cs_category: string | null
+          edu_category: string | null
           id: string
           need_response_deadline: string | null
           session_num_or_date: string | null
@@ -272,6 +274,8 @@ export type Database = {
           category: string
           created_at?: string
           created_by?: string | null
+          cs_category?: string | null
+          edu_category?: string | null
           id?: string
           need_response_deadline?: string | null
           session_num_or_date?: string | null
@@ -292,6 +296,8 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          cs_category?: string | null
+          edu_category?: string | null
           id?: string
           need_response_deadline?: string | null
           session_num_or_date?: string | null
