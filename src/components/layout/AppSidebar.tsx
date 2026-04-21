@@ -18,6 +18,7 @@ import {
   Hash,
   Megaphone,
   Rocket,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -71,6 +72,7 @@ const admin: NavItem[] = [
   { title: "User Management", url: "/admin/users", icon: Settings, roles: ["admin"] },
   { title: "Announcements", url: "/admin/announcements", icon: Megaphone, roles: ["admin"] },
   { title: "Feature Plans", url: "/admin/feature-plans", icon: Rocket, roles: ["admin"] },
+  { title: "Edu Descriptions", url: "/admin/edu-descriptions", icon: ShieldCheck, roles: ["admin"] },
   { title: "Team Overview", url: "/team/dashboard", icon: UsersRound, roles: ["team_leader"] },
 ];
 

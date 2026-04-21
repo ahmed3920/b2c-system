@@ -29,6 +29,7 @@ import RiskControl from "./pages/RiskControl";
 import StudyPlan from "./pages/StudyPlan";
 import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
 import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
+import EduDescriptionsAdmin from "./pages/EduDescriptionsAdmin";
 
 import NotFound from "./pages/NotFound";
 
@@ -69,6 +70,7 @@ const App = () => (
           <Route path="/study-plan" element={<StudyPlan />} />
           <Route path="/admin/announcements" element={<AnnouncementsAdmin />} />
           <Route path="/admin/feature-plans" element={<FeaturePlansAdmin />} />
+          <Route path="/admin/edu-descriptions" element={<EduDescriptionsAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
