@@ -284,7 +284,7 @@ export type Database = {
           team_leader: string
           team_leader_response?: string | null
           ticket_date?: string
-          ticket_number?: string
+          ticket_number: string
           tutor_external_id: string
           tutor_name: string
           updated_at?: string
