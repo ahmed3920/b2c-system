@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Target, ClipboardList, Award, Flag, GraduationCap } from "lucide-react";
+import { ArrowLeft, Target, ClipboardList, Award, Flag, GraduationCap, Smartphone, Ban } from "lucide-react";
 
 export default function TutorProfile() {
   const { id } = useParams();
@@ -37,6 +37,29 @@ export default function TutorProfile() {
             </div>
             <Badge className="ml-auto">Active</Badge>
           </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Ban className="h-4 w-4 text-destructive" />
+              Learning Constraints
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="inline-flex items-center gap-3 rounded-md border px-3 py-2 bg-muted/40">
+              <Smartphone className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-sm font-medium">Device Limitation</div>
+                <div className="text-xs text-muted-foreground">
+                  Some modules may be skipped due to device requirements
+                </div>
+              </div>
+              <Badge variant="outline" className="border-destructive/50 text-destructive">
+                Active
+              </Badge>
+            </div>
+          </CardContent>
         </Card>
 
         <Tabs defaultValue="kpis">
