@@ -98,8 +98,9 @@ export function CSTicketsTable() {
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Validated">Validated</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
+                <SelectItem value="Valid">Valid</SelectItem>
+                <SelectItem value="Not Valid">Not Valid</SelectItem>
+                <SelectItem value="Not a Complain">Not a Complain</SelectItem>
               </SelectContent>
             </Select>
           </div>
