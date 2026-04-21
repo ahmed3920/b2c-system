@@ -27,7 +27,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2 } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tutorRoster } from "@/data/tutorRoster";
 
@@ -38,6 +38,7 @@ export default function Tutors() {
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [langFilter, setLangFilter] = useState<string>("all");
+  const [empFilter, setEmpFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const teamLeaders = useMemo(
@@ -51,6 +52,7 @@ export default function Tutors() {
       if (tlFilter !== "all" && t.team_leader !== tlFilter) return false;
       if (roleFilter !== "all" && t.role !== roleFilter) return false;
       if (langFilter !== "all" && t.language !== langFilter) return false;
+      if (empFilter !== "all" && t.employment_type !== empFilter) return false;
       if (!q) return true;
       return (
         t.name.toLowerCase().includes(q) ||
@@ -59,7 +61,7 @@ export default function Tutors() {
         t.team_leader.toLowerCase().includes(q)
       );
     });
-  }, [query, tlFilter, roleFilter, langFilter]);
+  }, [query, tlFilter, roleFilter, langFilter, empFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -72,6 +74,8 @@ export default function Tutors() {
       mentors: tutorRoster.filter((t) => t.role === "Mentor").length,
       arabic: tutorRoster.filter((t) => t.language === "Arabic").length,
       english: tutorRoster.filter((t) => t.language === "English").length,
+      fullTime: tutorRoster.filter((t) => t.employment_type === "Full-time").length,
+      partTime: tutorRoster.filter((t) => t.employment_type === "Part-time").length,
     }),
     [],
   );
