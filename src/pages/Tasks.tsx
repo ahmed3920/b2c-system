@@ -443,74 +443,61 @@ const Tasks = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Task Management">
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/home")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div className="h-6 w-px bg-border" />
-              <Logo variant="blue" className="h-8" />
-              <h1 className="font-bold text-lg text-foreground">Task Management</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              {overdueCount > 0 && (
-                <span className="flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive text-sm rounded-full font-medium">
-                  <AlertTriangle className="w-3 h-3" />
-                  {overdueCount} Overdue
-                </span>
-              )}
-              {dueSoonCount > 0 && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-sm rounded-full font-medium">
-                  {dueSoonCount} Due Soon
-                </span>
-              )}
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    exportTasksToExcel({
-                      tasks: displayTasks,
-                      ownerNames: adminView.taskOwnerNames,
-                    });
-                    toast({ title: "Export Complete", description: "Tasks exported to Excel." });
-                  }}
-                  className="gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Export Excel
-                </Button>
-              )}
-              {isAdmin && adminView.viewMode !== "my" && (
-                <Button onClick={() => setIsAssignDialogOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
-                  <Send className="w-4 h-4" />
-                  Assign Task
-                </Button>
-              )}
-              {(adminView.viewMode === "my" || !isAdmin) && !isTLMentorView && (
-                <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Task
-                </Button>
-              )}
-            </div>
-          </div>
+    <AppLayout title="Task Management">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+        {/* Page header with stats and actions */}
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {overdueCount > 0 && (
+            <span className="flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive text-sm rounded-full font-medium">
+              <AlertTriangle className="w-3 h-3" />
+              {overdueCount} Overdue
+            </span>
+          )}
+          {dueSoonCount > 0 && (
+            <span className="px-2 py-1 bg-orange-100 text-orange-700 text-sm rounded-full font-medium">
+              {dueSoonCount} Due Soon
+            </span>
+          )}
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                exportTasksToExcel({
+                  tasks: displayTasks,
+                  ownerNames: adminView.taskOwnerNames,
+                });
+                toast({ title: "Export Complete", description: "Tasks exported to Excel." });
+              }}
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export Excel
+            </Button>
+          )}
+          {isAdmin && adminView.viewMode !== "my" && (
+            <Button onClick={() => setIsAssignDialogOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
+              <Send className="w-4 h-4" />
+              Assign Task
+            </Button>
+          )}
+          {(adminView.viewMode === "my" || !isAdmin) && !isTLMentorView && (
+            <Button onClick={() => setIsAddModalOpen(true)} className="bg-gradient-primary hover:opacity-90 gap-2">
+              <Plus className="w-4 h-4" />
+              Add Task
+            </Button>
+          )}
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Admin View Selector */}
         {isAdmin && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
