@@ -1258,10 +1258,6 @@ export type Database = {
         Returns: boolean
       }
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
-      team_leader_name_matches: {
-        Args: { _candidate: string; _mine: string }
-        Returns: boolean
-      }
     }
     Enums: {
       action_plan_category:
