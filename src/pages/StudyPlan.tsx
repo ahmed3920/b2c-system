@@ -62,6 +62,7 @@ export default function StudyPlan() {
   const [weekStart, setWeekStart] = useState<string>(fridayOf(new Date()));
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
+  const [activeTab, setActiveTab] = useState("plans");
 
   const queryClient = useQueryClient();
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
@@ -200,7 +201,7 @@ export default function StudyPlan() {
           <StatCard label="Utilization" value={`${stats.utilization}%`} />
         </div>
 
-        <Tabs defaultValue="plans">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="plans">Weekly Plans</TabsTrigger>
             <TabsTrigger value="progress">Tutor Progress</TabsTrigger>
@@ -654,7 +655,11 @@ export default function StudyPlan() {
           <TabsContent value="history">
             <SnapshotsHistoryCard
               currentWeekStart={weekStart}
-              onView={(ws) => setWeekStart(ws)}
+              onView={(ws) => {
+                setWeekStart(ws);
+                setActiveTab("plans");
+                toast.success(`Loaded plan for week of ${ws}`);
+              }}
             />
           </TabsContent>
 
