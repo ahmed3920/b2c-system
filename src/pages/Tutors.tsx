@@ -212,7 +212,7 @@ export default function Tutors() {
                 <TableBody>
                   {pageItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         No tutors match the current filters.
                       </TableCell>
                     </TableRow>
@@ -239,6 +239,18 @@ export default function Tutors() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{t.ranking || "—"}</TableCell>
+                        <TableCell>
+                          {t.employment_type ? (
+                            <Badge
+                              variant={t.employment_type === "Full-time" ? "default" : "outline"}
+                              className="text-xs"
+                            >
+                              {t.employment_type}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="ghost" asChild>
                             <Link to={`/tutors/${t.id}`}>
