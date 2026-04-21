@@ -40,7 +40,8 @@ interface IssueRow {
   updated_at: string;
 }
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE_OPTIONS = [12, 24, 36, 48, 60];
+const DEFAULT_PAGE_SIZE = 24;
 const ALL = "__all__";
 
 export function LiveIssuesTable() {
