@@ -436,17 +436,105 @@ export function LiveIssuesTable() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
-              Page {page + 1} of {totalPages}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Rows per page</span>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="h-8 w-[80px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="ml-2">
+                {total === 0
+                  ? "0 of 0"
+                  : `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, total)} of ${total}`}
+              </span>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline" size="sm"
+                onClick={() => setPage(0)} disabled={page === 0}
+              >
+                « First
+              </Button>
+              <Button
+                variant="outline" size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
+              >
                 <ChevronLeft className="h-4 w-4" /> Prev
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+
+              {/* Numbered pages with ellipsis */}
+              <div className="hidden sm:flex items-center gap-1">
+                {(() => {
+                  const pages: (number | "...")[] = [];
+                  const cur = page; // 0-indexed
+                  const last = totalPages - 1;
+                  const window = 1; // pages on each side of current
+                  const add = (n: number) => { if (!pages.includes(n)) pages.push(n); };
+                  add(0);
+                  for (let i = cur - window; i <= cur + window; i++) {
+                    if (i > 0 && i < last) add(i);
+                  }
+                  if (last > 0) add(last);
+                  // Insert ellipsis where gaps exist
+                  const result: (number | "...")[] = [];
+                  for (let i = 0; i < pages.length; i++) {
+                    const n = pages[i] as number;
+                    if (i > 0 && n - (pages[i - 1] as number) > 1) result.push("...");
+                    result.push(n);
+                  }
+                  return result.map((p, idx) =>
+                    p === "..." ? (
+                      <span key={`e-${idx}`} className="px-2 text-xs text-muted-foreground">…</span>
+                    ) : (
+                      <Button
+                        key={p}
+                        variant={p === cur ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 min-w-8 px-2"
+                        onClick={() => setPage(p)}
+                      >
+                        {p + 1}
+                      </Button>
+                    ),
+                  );
+                })()}
+              </div>
+
+              <Button
+                variant="outline" size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
                 Next <ChevronRight className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline" size="sm"
+                onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}
+              >
+                Last »
+              </Button>
+
+              <div className="flex items-center gap-1 ml-2">
+                <span className="text-xs text-muted-foreground">Go to</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  className="h-8 w-16"
+                  value={page + 1}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isNaN(n) && n >= 1 && n <= totalPages) setPage(n - 1);
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">/ {totalPages}</span>
+              </div>
             </div>
           </div>
         </CardContent>
