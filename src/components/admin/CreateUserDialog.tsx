@@ -46,6 +46,12 @@ const userTypes: UserTypeOption[] = [
     icon: <Users className="w-6 h-6" />,
   },
   {
+    value: "super_team_leader",
+    label: "New Super Team Leader",
+    description: "Team leader with cross-team CS ticket access",
+    icon: <Crown className="w-6 h-6" />,
+  },
+  {
     value: "mentor",
     label: "New Mentor",
     description: "Track personal tasks and progress",
