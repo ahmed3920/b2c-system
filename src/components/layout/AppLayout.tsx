@@ -9,6 +9,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { RoleBadge } from "@/components/RoleBadge";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureControls, isFeatureEnabled } from "@/hooks/useFeatureControls";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 interface AppLayoutProps {
   children: ReactNode;
