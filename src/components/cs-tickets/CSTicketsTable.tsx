@@ -79,6 +79,30 @@ export function CSTicketsTable() {
 
   const renderTable = () => (
     <>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant={quickFilter === "all" ? "default" : "outline"}
+          onClick={() => setQuickFilter("all")}
+        >
+          All ({counts.total})
+        </Button>
+        <Button
+          size="sm"
+          variant={quickFilter === "due_today" ? "default" : "outline"}
+          onClick={() => setQuickFilter(quickFilter === "due_today" ? "all" : "due_today")}
+        >
+          Due Today ({counts.dueToday})
+        </Button>
+        <Button
+          size="sm"
+          variant={quickFilter === "not_validated" ? "default" : "outline"}
+          onClick={() => setQuickFilter(quickFilter === "not_validated" ? "all" : "not_validated")}
+        >
+          Not Validated ({counts.notValidated})
+        </Button>
+      </div>
+
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1">
           <Input
