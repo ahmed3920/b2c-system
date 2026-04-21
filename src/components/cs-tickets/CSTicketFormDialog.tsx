@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { tutorRoster } from "@/data/tutorRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { CS_CATEGORIES, EDU_CATEGORIES, type CSTicketCaseType } from "./csTicketCategories";
+import type { CSTicketCaseType } from "./csTicketCategories";
+import { useCSTicketCategories } from "./useCSTicketCategories";
 
 interface Props {
   open: boolean;
@@ -24,39 +26,81 @@ interface Props {
 }
 
 export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
+  const { byType } = useCSTicketCategories();
   const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
   const [tutorId, setTutorId] = useState<string>("");
-  const [caseType, setCaseType] = useState<CSTicketCaseType>("CS");
+  const [caseTypes, setCaseTypes] = useState<CSTicketCaseType[]>(["CS"]);
   const [category, setCategory] = useState<string>("");
   const [ticketDate, setTicketDate] = useState<Date>(new Date());
   const [caseDetails, setCaseDetails] = useState("");
   const [studentId, setStudentId] = useState("");
   const [sessionNumOrDate, setSessionNumOrDate] = useState("");
-  const [deadline, setDeadline] = useState<Date | undefined>(undefined);
+  const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
+  const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
   const [submitting, setSubmitting] = useState(false);
 
   const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId]);
-  const categories = caseType === "CS" ? CS_CATEGORIES : EDU_CATEGORIES;
 
-  // Reset category when case type switch makes it invalid
+  // Combined category list across selected case types (deduplicated)
+  const availableCategories = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { name: string; from: CSTicketCaseType[] }[] = [];
+    for (const t of caseTypes) {
+      for (const c of byType[t] ?? []) {
+        if (seen.has(c.name)) {
+          const existing = out.find((o) => o.name === c.name);
+          if (existing && !existing.from.includes(t)) existing.from.push(t);
+          continue;
+        }
+        seen.add(c.name);
+        out.push({ name: c.name, from: [t] });
+      }
+    }
+    return out;
+  }, [byType, caseTypes]);
+
+  // Reset category if no longer valid
   useEffect(() => {
-    if (category && !categories.includes(category as never)) setCategory("");
-  }, [caseType, categories, category]);
+    if (category && !availableCategories.some((c) => c.name === category)) setCategory("");
+  }, [availableCategories, category]);
+
+  const toggleCaseType = (t: CSTicketCaseType) => {
+    setCaseTypes((prev) => {
+      if (prev.includes(t)) {
+        if (prev.length === 1) return prev; // keep at least one
+        return prev.filter((x) => x !== t);
+      }
+      return [...prev, t];
+    });
+  };
 
   const reset = () => {
     setTutorId("");
-    setCaseType("CS");
+    setCaseTypes(["CS"]);
     setCategory("");
     setTicketDate(new Date());
     setCaseDetails("");
     setStudentId("");
     setSessionNumOrDate("");
-    setDeadline(undefined);
+    setDeadlineDate(undefined);
+    setDeadlineTime("17:00");
+  };
+
+  const buildDeadline = (): string | null => {
+    if (!deadlineDate) return null;
+    const [h, m] = (deadlineTime || "00:00").split(":").map((n) => parseInt(n, 10) || 0);
+    const d = new Date(deadlineDate);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
   };
 
   const handleSubmit = async () => {
     if (!selectedTutor) {
       toast({ title: "Tutor required", description: "Pick a tutor from the list.", variant: "destructive" });
+      return;
+    }
+    if (caseTypes.length === 0) {
+      toast({ title: "Case type required", description: "Pick at least one case type.", variant: "destructive" });
       return;
     }
     if (!category) {
@@ -69,7 +113,8 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       const userId = sessionData.session?.user.id ?? null;
       const { error } = await supabase.from("cs_tickets").insert({
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
-        case_type: caseType,
+        case_type: caseTypes[0], // legacy single column kept in sync
+        case_types: caseTypes,
         category,
         tutor_external_id: selectedTutor.id,
         tutor_name: selectedTutor.name,
@@ -77,7 +122,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         case_details: caseDetails || null,
         student_id: studentId || null,
         session_num_or_date: sessionNumOrDate || null,
-        need_response_deadline: deadline ? format(deadline, "yyyy-MM-dd") : null,
+        need_response_deadline: buildDeadline(),
         created_by: userId,
       });
       if (error) throw error;
@@ -108,11 +153,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 <Label>Tutor Name *</Label>
                 <Popover open={tutorPickerOpen} onOpenChange={setTutorPickerOpen}>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between font-normal"
-                    >
+                    <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
                       <span className="truncate">{selectedTutor?.name ?? "Search tutor..."}</span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -181,19 +222,27 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label>Case Type *</Label>
+                <Label>Case Type * <span className="text-xs text-muted-foreground">(select one or both)</span></Label>
                 <div className="flex gap-2">
-                  {(["CS", "Edu"] as const).map((t) => (
-                    <Button
-                      key={t}
-                      type="button"
-                      variant={caseType === t ? "default" : "outline"}
-                      className="flex-1"
-                      onClick={() => setCaseType(t)}
-                    >
-                      {t}
-                    </Button>
-                  ))}
+                  {(["CS", "Edu"] as const).map((t) => {
+                    const checked = caseTypes.includes(t);
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => toggleCaseType(t)}
+                        className={cn(
+                          "flex-1 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                          checked
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted",
+                        )}
+                      >
+                        <Checkbox checked={checked} className="pointer-events-none" />
+                        {t}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="space-y-2">
@@ -201,8 +250,19 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    {availableCategories.length === 0 ? (
+                      <div className="px-2 py-3 text-xs text-muted-foreground">No categories. Ask admin to add some.</div>
+                    ) : availableCategories.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>
+                        <span className="flex items-center gap-2">
+                          {c.name}
+                          <span className="flex gap-1">
+                            {c.from.map((f) => (
+                              <Badge key={f} variant="outline" className="text-[10px] px-1 py-0 h-4">{f}</Badge>
+                            ))}
+                          </span>
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -237,23 +297,43 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
               <div className="space-y-2">
                 <Label>Need Response Deadline</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {deadline ? format(deadline, "PPP") : <span className="text-muted-foreground">Pick a date</span>}
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1 justify-start font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {deadlineDate ? format(deadlineDate, "PP") : <span className="text-muted-foreground">Date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={deadlineDate}
+                        onSelect={setDeadlineDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    type="time"
+                    value={deadlineTime}
+                    onChange={(e) => setDeadlineTime(e.target.value)}
+                    className="w-[120px]"
+                    disabled={!deadlineDate}
+                  />
+                  {deadlineDate && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeadlineDate(undefined)}
+                      title="Clear"
+                    >
+                      <X className="h-4 w-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={deadline}
-                      onSelect={setDeadline}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
+                  )}
+                </div>
               </div>
             </div>
           </section>

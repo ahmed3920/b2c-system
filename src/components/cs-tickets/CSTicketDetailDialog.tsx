@@ -61,9 +61,11 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
             {ticket.ticket_number}
-            <Badge variant={ticket.case_type === "CS" ? "default" : "secondary"}>{ticket.case_type}</Badge>
+            {ticket.case_types.map((t) => (
+              <Badge key={t} variant={t === "CS" ? "default" : "secondary"}>{t}</Badge>
+            ))}
           </DialogTitle>
         </DialogHeader>
 
@@ -75,7 +77,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
             <Field label="Team Leader" value={ticket.team_leader} />
             <Field label="Student ID" value={ticket.student_id} />
             <Field label="Session Num or Date" value={ticket.session_num_or_date} />
-            <Field label="Response Deadline" value={ticket.need_response_deadline} />
+            <Field
+              label="Response Deadline"
+              value={ticket.need_response_deadline ? format(new Date(ticket.need_response_deadline), "PPp") : null}
+            />
             <Field label="Created" value={format(new Date(ticket.created_at), "PPp")} />
           </div>
           <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
