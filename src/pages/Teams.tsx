@@ -25,7 +25,14 @@ export default function Teams() {
     );
     const byMentor = new Map<string, typeof myMembers>();
     for (const m of myMembers) {
-      const key = m.mentor?.trim() || "Unassigned";
+      // Tutors without a mentor are mentors themselves (their own sub-team),
+      // except T-7221 which is a genuine unassigned tutor.
+      const hasMentor = !!m.mentor?.trim();
+      const key = hasMentor
+        ? m.mentor.trim()
+        : m.id === "T-7221"
+          ? "Unassigned"
+          : m.name;
       const arr = byMentor.get(key) ?? [];
       arr.push(m);
       byMentor.set(key, arr);
