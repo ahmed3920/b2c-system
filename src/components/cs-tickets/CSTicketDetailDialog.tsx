@@ -222,14 +222,21 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     </Badge>
                   ))}
               </DialogTitle>
-              {canManage && !editMode && (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                    <Pencil className="mr-2 h-3 w-3" /> Edit
+              {!editMode && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" onClick={() => setHistoryOpen(true)}>
+                    <History className="mr-2 h-3 w-3" /> History
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
-                    <Trash2 className="mr-2 h-3 w-3" /> Delete
-                  </Button>
+                  {canManage && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                        <Pencil className="mr-2 h-3 w-3" /> Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                        <Trash2 className="mr-2 h-3 w-3" /> Delete
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
