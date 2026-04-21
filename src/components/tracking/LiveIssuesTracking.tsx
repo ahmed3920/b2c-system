@@ -438,6 +438,18 @@ export function LiveIssuesTracking() {
                   <SelectItem value="no_deduction">No Deduction</SelectItem>
                 </SelectContent>
               </Select>
+            <div>
+              <Label className="text-xs">Edu Description</Label>
+              <Select value={eduDescFilter} onValueChange={setEduDescFilter}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  <SelectItem value="__none__">Not categorized</SelectItem>
+                  {descriptions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-xs">Date from</Label>
