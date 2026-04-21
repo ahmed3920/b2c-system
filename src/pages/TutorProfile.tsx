@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Target, ClipboardList, Award, Flag, GraduationCap } from "lucide-react";
+import { ArrowLeft, Target, ClipboardList, Award, Flag, GraduationCap, Smartphone, Ban } from "lucide-react";
 
 export default function TutorProfile() {
   const { id } = useParams();
