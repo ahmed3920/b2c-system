@@ -102,11 +102,18 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
   const handleSaveValidation = async () => {
     setSaving(true);
     try {
+      const after = { status, team_leader_response: response || null };
       const { error } = await supabase
         .from("cs_tickets")
-        .update({ status, team_leader_response: response || null })
+        .update(after)
         .eq("id", ticket.id);
       if (error) throw error;
+      await logCSTicketChanges({
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        before: { status: ticket.status, team_leader_response: ticket.team_leader_response },
+        after,
+      });
       toast({ title: "Ticket updated" });
       onOpenChange(false);
       onUpdated?.();
