@@ -1,6 +1,20 @@
+import { useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
+import { getTeamSummaries } from "@/data/tutorRosterHelpers";
 
 const tabs = [
   { v: "teams-composition", l: "Teams Composition" },
@@ -19,6 +33,32 @@ const tabs = [
 ];
 
 export default function Tracking() {
+  const teams = useMemo(() => getTeamSummaries(), []);
+  const totals = useMemo(
+    () =>
+      teams.reduce(
+        (acc, t) => ({
+          total: acc.total + t.total,
+          tutors: acc.tutors + t.tutors,
+          mentors: acc.mentors + t.mentors,
+          arabic: acc.arabic + t.arabic,
+          english: acc.english + t.english,
+          fullTime: acc.fullTime + t.full_time,
+          partTime: acc.partTime + t.part_time,
+        }),
+        {
+          total: 0,
+          tutors: 0,
+          mentors: 0,
+          arabic: 0,
+          english: 0,
+          fullTime: 0,
+          partTime: 0,
+        },
+      ),
+    [teams],
+  );
+
   return (
     <AppLayout title="Tracking" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto">
@@ -28,18 +68,151 @@ export default function Tracking() {
               <TabsTrigger key={t.v} value={t.v}>{t.l}</TabsTrigger>
             ))}
           </TabsList>
-          {tabs.map((t) => (
-            <TabsContent key={t.v} value={t.v}>
-              <Card>
-                <CardHeader><CardTitle>{t.l}</CardTitle></CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  Placeholder content for <span className="font-medium text-foreground">{t.l}</span>. Tables and charts will be wired here later.
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
+
+          <TabsContent value="teams-composition" className="space-y-4">
+            {/* Global totals */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+              <SummaryCard icon={<Users className="h-4 w-4" />} label="Teams" value={teams.length} />
+              <SummaryCard icon={<Users className="h-4 w-4" />} label="Members" value={totals.total} />
+              <SummaryCard icon={<Users className="h-4 w-4" />} label="Tutors" value={totals.tutors} />
+              <SummaryCard
+                icon={<GraduationCap className="h-4 w-4" />}
+                label="Mentors"
+                value={totals.mentors}
+              />
+              <SummaryCard
+                icon={<Globe2 className="h-4 w-4" />}
+                label="Arabic"
+                value={totals.arabic}
+              />
+              <SummaryCard
+                icon={<Globe2 className="h-4 w-4" />}
+                label="English"
+                value={totals.english}
+              />
+              <SummaryCard
+                icon={<Briefcase className="h-4 w-4" />}
+                label="Full / Part"
+                value={`${totals.fullTime} / ${totals.partTime}`}
+              />
+            </div>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Teams Composition
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {teams.length} teams · {totals.total} members
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Team Leader</TableHead>
+                        <TableHead className="text-right">Members</TableHead>
+                        <TableHead className="text-right">Tutors</TableHead>
+                        <TableHead className="text-right">Mentors</TableHead>
+                        <TableHead className="text-right">Arabic</TableHead>
+                        <TableHead className="text-right">English</TableHead>
+                        <TableHead className="text-right">Full-time</TableHead>
+                        <TableHead className="text-right">Part-time</TableHead>
+                        <TableHead>Mix</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teams.map((t) => {
+                        const mentorPct = t.total > 0 ? Math.round((t.mentors / t.total) * 100) : 0;
+                        const arabicPct = t.total > 0 ? Math.round((t.arabic / t.total) * 100) : 0;
+                        return (
+                          <TableRow key={t.slug}>
+                            <TableCell className="font-medium">{t.team_leader}</TableCell>
+                            <TableCell className="text-right font-semibold">{t.total}</TableCell>
+                            <TableCell className="text-right">{t.tutors}</TableCell>
+                            <TableCell className="text-right">{t.mentors}</TableCell>
+                            <TableCell className="text-right">{t.arabic}</TableCell>
+                            <TableCell className="text-right">{t.english}</TableCell>
+                            <TableCell className="text-right">{t.full_time}</TableCell>
+                            <TableCell className="text-right">{t.part_time}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {mentorPct}% M
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px]">
+                                  {arabicPct}% AR
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link to={`/teams/${t.slug}`}>
+                                  <Eye className="h-4 w-4 mr-1" /> View
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {/* Totals footer */}
+                      <TableRow className="bg-muted/40 font-semibold">
+                        <TableCell>Total</TableCell>
+                        <TableCell className="text-right">{totals.total}</TableCell>
+                        <TableCell className="text-right">{totals.tutors}</TableCell>
+                        <TableCell className="text-right">{totals.mentors}</TableCell>
+                        <TableCell className="text-right">{totals.arabic}</TableCell>
+                        <TableCell className="text-right">{totals.english}</TableCell>
+                        <TableCell className="text-right">{totals.fullTime}</TableCell>
+                        <TableCell className="text-right">{totals.partTime}</TableCell>
+                        <TableCell />
+                        <TableCell />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {tabs
+            .filter((t) => t.v !== "teams-composition")
+            .map((t) => (
+              <TabsContent key={t.v} value={t.v}>
+                <Card>
+                  <CardHeader><CardTitle>{t.l}</CardTitle></CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    Placeholder content for <span className="font-medium text-foreground">{t.l}</span>. Tables and charts will be wired here later.
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
         </Tabs>
       </div>
     </AppLayout>
+  );
+}
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {icon}
+          {label}
+        </div>
+        <div className="text-2xl font-semibold mt-1">{value}</div>
+      </CardContent>
+    </Card>
   );
 }
