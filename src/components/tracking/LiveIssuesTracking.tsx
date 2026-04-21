@@ -111,7 +111,7 @@ export function LiveIssuesTracking() {
     while (true) {
       const { data, error } = await supabase
         .from("live_session_issues")
-        .select("id, case_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, edu_validation, month")
+        .select("id, case_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, edu_validation, edu_description_id, month")
         .order("session_date", { ascending: false, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error) {
