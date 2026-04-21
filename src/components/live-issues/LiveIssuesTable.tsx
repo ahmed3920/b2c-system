@@ -336,9 +336,11 @@ export function LiveIssuesTable() {
                         <div className="text-muted-foreground">{row.from_tutor_id}</div>
                       </TableCell>
                       <TableCell className="text-xs">{row.issue_reason || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.severity || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.moderator_decision || "—"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{row.moderation_deduction || "—"}</TableCell>
+                      <TableCell className="text-xs max-w-[280px]">
+                        <div className="line-clamp-3 whitespace-pre-wrap" title={row.issue_details ?? ""}>
+                          {row.issue_details || "—"}
+                        </div>
+                      </TableCell>
                       <TableCell className="bg-amber-50/50 dark:bg-amber-950/10">
                         {canEdit ? (
                           <Select
