@@ -30,9 +30,7 @@ interface IssueRow {
   from_tutor_name: string | null;
   team_leader: string | null;
   issue_reason: string | null;
-  severity: string | null;
-  moderator_decision: string | null;
-  moderation_deduction: string | null;
+  issue_details: string | null;
   edu_validation: EduValidation;
   edu_description_id: string | null;
   edu_notes: string | null;
