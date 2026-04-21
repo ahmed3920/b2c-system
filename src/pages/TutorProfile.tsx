@@ -39,6 +39,29 @@ export default function TutorProfile() {
           </CardHeader>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Ban className="h-4 w-4 text-destructive" />
+              Learning Constraints
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="inline-flex items-center gap-3 rounded-md border px-3 py-2 bg-muted/40">
+              <Smartphone className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-sm font-medium">Device Limitation</div>
+                <div className="text-xs text-muted-foreground">
+                  Some modules may be skipped due to device requirements
+                </div>
+              </div>
+              <Badge variant="outline" className="border-destructive/50 text-destructive">
+                Active
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="kpis">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="kpis"><Award className="h-4 w-4 mr-1" /> KPIs</TabsTrigger>
