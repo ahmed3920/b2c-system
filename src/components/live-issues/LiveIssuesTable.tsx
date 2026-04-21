@@ -57,6 +57,7 @@ export function LiveIssuesTable() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   // Filters
