@@ -304,8 +304,8 @@ export default function StudyPlan() {
                                         {it.module?.grade_band ?? "?"} · {it.module?.module_code ?? "?"} — {pct}%
                                       </Badge>
                                     );
-                                  })
-                              )}
+                                  });
+                              })()}
                             </div>
                           </TableCell>
                           <TableCell>
