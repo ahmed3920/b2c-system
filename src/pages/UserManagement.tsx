@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminUsers, type UserWithRole } from "@/hooks/useAdminUsers";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/Logo";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { UserTable } from "@/components/admin/UserTable";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { EditUserDialog } from "@/components/admin/EditUserDialog";
@@ -71,9 +71,11 @@ const UserManagement = () => {
 
   if (roleLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="User Management">
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
@@ -82,37 +84,18 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/home")}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <Logo variant="blue" className="h-8" />
-              <div className="h-6 w-px bg-border" />
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-foreground">User Management</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => fetchUsers()}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add User
-              </Button>
-            </div>
-          </div>
+    <AppLayout title="User Management">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-end items-center gap-2 mb-6">
+          <Button variant="outline" size="sm" onClick={() => fetchUsers()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add User
+          </Button>
         </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

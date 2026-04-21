@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Logo } from "@/components/Logo";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { RoleBadge } from "@/components/RoleBadge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -291,58 +291,41 @@ const SystemDashboard = () => {
 
   if (roleLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Admin Command Center">
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/home")}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <Logo variant="blue" className="h-8" />
-              <div className="h-6 w-px bg-border" />
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-foreground">Admin Command Center</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={fetchMetrics}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setIsFormConfigOpen(true)}>
-                <Settings2 className="w-4 h-4 mr-2" />
-                Task Form
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setIsCategoryManagerOpen(true)}>
-                <Tags className="w-4 h-4 mr-2" />
-                Categories
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate("/action-plans")}>
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Action Plans
-              </Button>
-              <Button size="sm" onClick={() => setIsAssignDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Assign Task
-              </Button>
-            </div>
-          </div>
+    <AppLayout title="Admin Command Center">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="flex flex-wrap justify-end items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchMetrics}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsFormConfigOpen(true)}>
+            <Settings2 className="w-4 h-4 mr-2" />
+            Task Form
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsCategoryManagerOpen(true)}>
+            <Tags className="w-4 h-4 mr-2" />
+            Categories
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/action-plans")}>
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Action Plans
+          </Button>
+          <Button size="sm" onClick={() => setIsAssignDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Assign Task
+          </Button>
         </div>
-      </nav>
-
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* KPI Metric Cards */}
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
