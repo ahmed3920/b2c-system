@@ -198,6 +198,14 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
+                <Label>Ticket # *</Label>
+                <Input
+                  value={ticketNumber}
+                  onChange={(e) => setTicketNumber(e.target.value)}
+                  placeholder="e.g. CS-001234"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Ticket Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -320,7 +328,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
           <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground flex items-center justify-between">
             <span>Status will start as <Badge variant="secondary" className="ml-1">Pending</Badge></span>
-            <span>Ticket # will be auto-generated</span>
+            <span>Ticket # must be unique</span>
           </div>
         </div>
 
