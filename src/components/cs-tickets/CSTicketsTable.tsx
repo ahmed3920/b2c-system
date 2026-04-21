@@ -10,11 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CSTicketFormDialog } from "./CSTicketFormDialog";
 import { CSTicketDetailDialog } from "./CSTicketDetailDialog";
-import { useCSTickets, type CSTicket } from "./useCSTickets";
+import { useCSTickets, type CSTicket, type CSTicketScope } from "./useCSTickets";
 import type { CSTicketStatus } from "./csTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
-import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 
 const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructive" | "outline"> = {
   Pending: "secondary",
@@ -26,26 +24,22 @@ const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructi
 };
 
 export function CSTicketsTable() {
-  const { tickets, loading, refresh } = useCSTickets();
   const { isAdmin, isSuperTeamLeader } = useUserRole();
-  const { teamLeader: myTeamLeaderName } = useCurrentTeamLeader();
   const canCreate = isAdmin || isSuperTeamLeader;
+
+  // Scope is the source of truth — passed to the hook so the database
+  // performs all team-leader matching. No client-side name matching.
+  const [scope, setScope] = useState<CSTicketScope>("all");
+  const { tickets, loading, refresh } = useCSTickets(scope);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<CSTicket | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [scope, setScope] = useState<"all" | "mine">("all");
-
-  // Apply scope first (only meaningful for super team leaders)
-  const scoped = useMemo(() => {
-    if (!isSuperTeamLeader || scope === "all" || !myTeamLeaderName) return tickets;
-    return tickets.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeaderName));
-  }, [tickets, isSuperTeamLeader, scope, myTeamLeaderName]);
 
   const filtered = useMemo(() => {
-    return scoped.filter((t) => {
+    return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
       if (search) {
@@ -62,14 +56,14 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [scoped, statusFilter, caseTypeFilter, search]);
+  }, [tickets, statusFilter, caseTypeFilter, search]);
 
   const counts = useMemo(() => ({
-    total: scoped.length,
-    pending: scoped.filter((t) => t.status === "Pending").length,
-    valid: scoped.filter((t) => t.status === "Valid" || t.status === "Validated").length,
-    notValid: scoped.filter((t) => t.status === "Not Valid" || t.status === "Rejected").length,
-  }), [scoped]);
+    total: tickets.length,
+    pending: tickets.filter((t) => t.status === "Pending").length,
+    valid: tickets.filter((t) => t.status === "Valid" || t.status === "Validated").length,
+    notValid: tickets.filter((t) => t.status === "Not Valid" || t.status === "Rejected").length,
+  }), [tickets]);
 
   const renderTable = () => (
     <>
@@ -178,7 +172,7 @@ export function CSTicketsTable() {
       </CardHeader>
       <CardContent className="space-y-4">
         {isSuperTeamLeader ? (
-          <Tabs value={scope} onValueChange={(v) => setScope(v as "all" | "mine")}>
+          <Tabs value={scope} onValueChange={(v) => setScope(v as CSTicketScope)}>
             <TabsList>
               <TabsTrigger value="all">All Tickets</TabsTrigger>
               <TabsTrigger value="mine">My Team's Tickets</TabsTrigger>
