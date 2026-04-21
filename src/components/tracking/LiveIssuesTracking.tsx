@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { EduValidationBadge, type EduValidation } from "@/components/live-issues/EduValidationBadge";
+import { useEduDescriptions } from "@/hooks/useEduDescriptions";
 
 interface IssueRow {
   id: string;
@@ -34,6 +35,7 @@ interface IssueRow {
   team_leader: string | null;
   issue_reason: string | null;
   edu_validation: EduValidation;
+  edu_description_id: string | null;
   month: string | null;
 }
 
