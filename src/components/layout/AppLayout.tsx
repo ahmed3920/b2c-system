@@ -50,6 +50,21 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
     }
   }, [role, roleLoading, allowedRoles, navigate]);
 
+  // Block disabled features per role (sidebar already hides them).
+  // Admin's "Feature Control" page is never blocked.
+  useEffect(() => {
+    if (roleLoading || featuresLoading || !role) return;
+    if (location.pathname.startsWith("/admin/feature-control")) return;
+    if (!isFeatureEnabled(features, location.pathname, role)) {
+      toast({
+        title: "Feature unavailable",
+        description: "This section has been disabled for your role.",
+        variant: "destructive",
+      });
+      navigate("/home");
+    }
+  }, [features, featuresLoading, role, roleLoading, location.pathname, navigate, toast]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "Logged out" });
