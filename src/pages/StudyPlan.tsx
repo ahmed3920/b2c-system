@@ -378,7 +378,7 @@ export default function StudyPlan() {
                           .map((r) => {
                             const blockedCount = r.remaining_modules.reduce(
                               (n, m) =>
-                                blockedKeys.has(`${r.tutor_external_id}::${m.module_code}`)
+                                blockedKeys.has(`${r.tutor_external_id}::${m.grade_band}::${m.module_code}`)
                                   ? n + 1
                                   : n,
                               0,
