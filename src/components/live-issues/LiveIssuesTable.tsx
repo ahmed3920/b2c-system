@@ -99,6 +99,7 @@ export function LiveIssuesTable() {
   const [tutorId, setTutorId] = useState("");
   const [teamLeader, setTeamLeader] = useState<string>(ALL);
   const [issueType, setIssueType] = useState<string>(ALL);
+  const [eduDescId, setEduDescId] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
   const [billingMonth, setBillingMonth] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
