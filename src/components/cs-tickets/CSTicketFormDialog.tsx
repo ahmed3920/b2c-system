@@ -27,6 +27,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const { byType } = useCSTicketCategories();
   const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
   const [tutorId, setTutorId] = useState<string>("");
+  const [ticketNumber, setTicketNumber] = useState<string>("");
   const [csCategory, setCsCategory] = useState<string>("");
   const [eduCategory, setEduCategory] = useState<string>("");
   const [ticketDate, setTicketDate] = useState<Date>(new Date());
@@ -52,6 +53,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
   const reset = () => {
     setTutorId("");
+    setTicketNumber("");
     setCsCategory("");
     setEduCategory("");
     setTicketDate(new Date());
@@ -71,6 +73,10 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (!ticketNumber.trim()) {
+      toast({ title: "Ticket # required", description: "Enter a unique ticket number.", variant: "destructive" });
+      return;
+    }
     if (!selectedTutor) {
       toast({ title: "Tutor required", description: "Pick a tutor from the list.", variant: "destructive" });
       return;
@@ -89,10 +95,11 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       const userId = sessionData.session?.user.id ?? null;
       const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
       const { error } = await supabase.from("cs_tickets").insert({
+        ticket_number: ticketNumber.trim(),
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
-        case_type: "CS", // legacy single column
+        case_type: "CS",
         case_types: ["CS", "Edu"],
-        category: combinedCategory, // legacy combined for back-compat
+        category: combinedCategory,
         cs_category: csCategory,
         edu_category: eduCategory,
         tutor_external_id: selectedTutor.id,
@@ -104,7 +111,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         need_response_deadline: buildDeadline(),
         created_by: userId,
       });
-      if (error) throw error;
+      if (error) {
+        if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
+          throw new Error(`Ticket # "${ticketNumber.trim()}" already exists. Choose a different one.`);
+        }
+        throw error;
+      }
       toast({ title: "Ticket created", description: "The CS ticket has been logged." });
       reset();
       onOpenChange(false);
