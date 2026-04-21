@@ -228,6 +228,7 @@ export function CreateUserDialog({
         };
         break;
       case "team_leader":
+      case "super_team_leader":
         createData = {
           email: formData.email,
           password: formData.password,
@@ -235,7 +236,7 @@ export function CreateUserDialog({
           mentorId: finalMentorId,
           mentorName: formData.fullName,
           teamLeader: formData.fullName,
-          role: "team_leader",
+          role: selectedType,
         };
         break;
       case "mentor":
