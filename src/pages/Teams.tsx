@@ -6,9 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 
 export default function Teams() {
-  const teams = useMemo(() => getTeamSummaries(), []);
+  const { isTeamLeader, isAdmin } = useUserRole();
+  const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const teams = useMemo(() => {
+    const all = getTeamSummaries();
+    if (isTeamLeader && !isAdmin && myTeamLeader) {
+      return all.filter((t) => t.team_leader === myTeamLeader);
+    }
+    return all;
+  }, [isTeamLeader, isAdmin, myTeamLeader]);
   const totals = useMemo(
     () =>
       teams.reduce(
