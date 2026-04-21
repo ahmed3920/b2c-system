@@ -235,7 +235,16 @@ export default function StudyPlan() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="ml-auto">
+                  <div className="ml-auto flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPdfDialogOpen(true)}
+                      disabled={filteredPlans.length === 0}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Generate PDFs
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
