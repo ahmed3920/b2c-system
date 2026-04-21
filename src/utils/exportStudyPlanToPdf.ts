@@ -269,26 +269,22 @@ function drawCoverPage(
   doc.setFillColor(...BLUE_TINT);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  // Big gradient hero block (top half)
-  drawGradientBar(doc, 0, 0, pageW, pageH * 0.55, BLUE, BLUE_DEEP);
+  // Hero gradient block — compact (top ~38% of page)
+  const heroH = pageH * 0.38;
+  drawGradientBar(doc, 0, 0, pageW, heroH, BLUE, BLUE_DEEP);
 
-  // Decorative chevrons
+  // Soft pastel chevrons (smaller, subtler than before)
   doc.setFillColor(...ORANGE);
-  doc.triangle(pageW - 220, 0, pageW - 60, 0, pageW - 140, 130, "F");
-  doc.setFillColor(255, 168, 90);
-  doc.triangle(pageW - 160, 0, pageW, 0, pageW - 80, 100, "F");
-  doc.setFillColor(255, 255, 255);
-  // floating orb bottom-left for visual balance
-  doc.circle(60, pageH - 80, 90, "F");
-  doc.setFillColor(...ORANGE_SOFT);
-  doc.circle(120, pageH - 40, 50, "F");
+  doc.triangle(pageW - 150, 0, pageW - 50, 0, pageW - 100, 80, "F");
+  doc.setFillColor(255, 188, 130);
+  doc.triangle(pageW - 100, 0, pageW - 10, 0, pageW - 55, 60, "F");
 
-  // Logo badge
+  // Logo badge (top-left)
   if (logoDataUrl) {
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(MARGIN_X + 6, 50, 90, 90, 16, 16, "F");
+    doc.roundedRect(MARGIN_X + 6, 38, 80, 80, 14, 14, "F");
     try {
-      doc.addImage(logoDataUrl, "PNG", MARGIN_X + 16, 60, 70, 70);
+      doc.addImage(logoDataUrl, "PNG", MARGIN_X + 14, 46, 64, 64);
     } catch {
       /* ignore */
     }
@@ -298,16 +294,16 @@ function drawCoverPage(
   doc.setTextColor(255, 220, 180);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("ISCHOOL · WEEKLY STUDY PLAN", MARGIN_X + 110, 80);
+  doc.text("ISCHOOL · WEEKLY STUDY PLAN", MARGIN_X + 100, 64);
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(40);
-  doc.text(`Week ${weekNumber(weekStart)}`, MARGIN_X + 110, 120);
+  doc.setFontSize(36);
+  doc.text(`Week ${weekNumber(weekStart)}`, MARGIN_X + 100, 100);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(225, 235, 255);
-  doc.text(formatRange(weekStart), MARGIN_X + 110, 144);
+  doc.text(formatRange(weekStart), MARGIN_X + 100, 122);
 
   // Mentor card (pastel, sits over the hero edge)
   const cardY = pageH * 0.55 - 30;
