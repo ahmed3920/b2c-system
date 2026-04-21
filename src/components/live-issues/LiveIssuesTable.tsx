@@ -248,12 +248,15 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Severity</Label>
-              <Select value={severity} onValueChange={setSeverity}>
+              <Label className="text-xs">Edu Validation</Label>
+              <Select value={validation} onValueChange={setValidation}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL}>All</SelectItem>
-                  {severities.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  <SelectItem value="__none__">Not validated</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="deduct">Deduct</SelectItem>
+                  <SelectItem value="no_deduction">No Deduction</SelectItem>
                 </SelectContent>
               </Select>
             </div>
