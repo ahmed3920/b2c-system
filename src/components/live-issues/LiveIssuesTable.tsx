@@ -100,8 +100,10 @@ export function LiveIssuesTable() {
   const [teamLeader, setTeamLeader] = useState<string>(ALL);
   const [issueType, setIssueType] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
+  const [billingMonth, setBillingMonth] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const monthOptions = useMemo(() => buildBillingMonthOptions(), []);
 
   // Audit
   const [auditOpen, setAuditOpen] = useState(false);
