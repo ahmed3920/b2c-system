@@ -85,6 +85,15 @@ export default function TutorProfile() {
                     <Globe2 className="h-3 w-3" />
                     {tutor.language || "—"}
                   </Badge>
+                  {tutor.employment_type && (
+                    <Badge
+                      variant={tutor.employment_type === "Full-time" ? "default" : "secondary"}
+                      className="gap-1"
+                    >
+                      <Briefcase className="h-3 w-3" />
+                      {tutor.employment_type}
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -97,7 +106,7 @@ export default function TutorProfile() {
             <CardHeader>
               <CardTitle className="text-base">Profile Details</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <Detail
                 icon={<User className="h-4 w-4" />}
                 label="Mentor"
@@ -117,6 +126,11 @@ export default function TutorProfile() {
                 icon={<Award className="h-4 w-4" />}
                 label="Ranking"
                 value={tutor.ranking || "—"}
+              />
+              <Detail
+                icon={<Briefcase className="h-4 w-4" />}
+                label="Employment"
+                value={tutor.employment_type || "—"}
               />
             </CardContent>
           </Card>
