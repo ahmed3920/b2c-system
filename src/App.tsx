@@ -31,6 +31,7 @@ import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
 import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
 import EduDescriptionsAdmin from "./pages/EduDescriptionsAdmin";
 import CSTicketCategoriesAdmin from "./pages/CSTicketCategoriesAdmin";
+import FeatureControlAdmin from "./pages/FeatureControlAdmin";
 
 import NotFound from "./pages/NotFound";
 
