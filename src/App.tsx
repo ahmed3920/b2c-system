@@ -28,6 +28,7 @@ import Growth from "./pages/Growth";
 import RiskControl from "./pages/RiskControl";
 import StudyPlan from "./pages/StudyPlan";
 import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
+import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
 
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +68,7 @@ const App = () => (
           <Route path="/risk-control" element={<RiskControl />} />
           <Route path="/study-plan" element={<StudyPlan />} />
           <Route path="/admin/announcements" element={<AnnouncementsAdmin />} />
+          <Route path="/admin/feature-plans" element={<FeaturePlansAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

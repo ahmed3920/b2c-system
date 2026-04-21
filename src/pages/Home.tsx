@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
+import { ProductUpdatesSection } from "@/components/feature-plans/ProductUpdatesSection";
 
 interface Profile {
   mentor_id: string;
@@ -248,6 +249,11 @@ const Home = () => {
         {/* Announcements */}
         <div className="mb-8">
           <AnnouncementsSection />
+        </div>
+
+        {/* Product Updates */}
+        <div className="mb-8">
+          <ProductUpdatesSection />
         </div>
 
         {/* Quick Stats / Breakdown moved into Task Management page */}

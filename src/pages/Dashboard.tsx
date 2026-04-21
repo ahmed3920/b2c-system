@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Award, Smile, Flag, Users, ArrowUpRight, ClipboardList, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
+import { ProductUpdatesSection } from "@/components/feature-plans/ProductUpdatesSection";
 
 const kpis = [
   { label: "Quality Score", value: "87.3%", delta: "+2.1%", icon: Award, tone: "text-success" },
@@ -42,6 +43,8 @@ export default function Dashboard() {
         </div>
 
         <AnnouncementsSection />
+
+        <ProductUpdatesSection />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2">
