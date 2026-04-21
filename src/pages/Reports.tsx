@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
-import { Logo } from "@/components/Logo";
 import {
-  ArrowLeft, Loader2, FileText, Download, Calendar,
+  Loader2, FileText, Download, Calendar,
   TrendingUp, Users, BarChart3, PieChart as PieChartIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -298,8 +298,8 @@ const Reports = () => {
             </motion.div>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

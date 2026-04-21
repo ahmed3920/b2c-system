@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
-import { Logo } from "@/components/Logo";
-import { ArrowLeft, Loader2, Trophy, Flame, Target, TrendingUp, Calendar, Award } from "lucide-react";
+import { Loader2, Trophy, Flame, Target, TrendingUp, Calendar, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, Tooltip } from "recharts";
 import type { Database } from "@/integrations/supabase/types";
@@ -286,8 +285,8 @@ const Progress = () => {
             </motion.div>
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
