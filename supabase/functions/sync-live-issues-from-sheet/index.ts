@@ -273,7 +273,16 @@ Deno.serve(async (req) => {
       const tutorTl = fromTid ? tutorTlMap.get(fromTid) : undefined;
       const resolvedTl = tutorTl ?? normalizeTeamLeader(sheetTl);
 
-      records.push({
+      // Pull validation fields from sheet, but don't overwrite TL edits already in DB
+      const sheetValidationRaw = get(row, cols.edu_validation_sheet);
+      const sheetCaseRaw = get(row, cols.edu_case);
+      const sheetClarificationRaw = get(row, cols.edu_clarification);
+      const sheetValidation = resolveEduValidation(sheetValidationRaw);
+      const sheetEduDescId = resolveEduDescriptionId(sheetCaseRaw);
+      const sheetEduNotes = sheetClarificationRaw || null;
+      const alreadyValidated = existingValidated.has(caseId);
+
+      const rec: Record<string, unknown> = {
         case_id: caseId,
         session_id: sid || null,
         student_id: get(row, cols.student_id) || null,
@@ -304,7 +313,17 @@ Deno.serve(async (req) => {
         moderation_deduction: get(row, cols.moderation_deduction) || null,
         raw,
         last_synced_at: new Date().toISOString(),
-      });
+      };
+
+      // Only seed validation fields when DB row hasn't been validated by a TL yet,
+      // and the sheet actually has a validation value. This avoids overwriting TL work.
+      if (!alreadyValidated && sheetValidation) {
+        rec.edu_validation = sheetValidation;
+        if (sheetEduDescId) rec.edu_description_id = sheetEduDescId;
+        if (sheetEduNotes) rec.edu_notes = sheetEduNotes;
+      }
+
+      records.push(rec);
     }
 
     const seen = new Map<string, Rec>();
