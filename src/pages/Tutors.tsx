@@ -82,15 +82,15 @@ export default function Tutors() {
 
   const stats = useMemo(
     () => ({
-      total: tutorRoster.length,
-      tutors: tutorRoster.filter((t) => t.role === "Tutor").length,
-      mentors: tutorRoster.filter((t) => t.role === "Mentor").length,
-      arabic: tutorRoster.filter((t) => t.language === "Arabic").length,
-      english: tutorRoster.filter((t) => t.language === "English").length,
-      fullTime: tutorRoster.filter((t) => t.employment_type === "Full-time").length,
-      partTime: tutorRoster.filter((t) => t.employment_type === "Part-time").length,
+      total: scopedRoster.length,
+      tutors: scopedRoster.filter((t) => t.role === "Tutor").length,
+      mentors: scopedRoster.filter((t) => t.role === "Mentor").length,
+      arabic: scopedRoster.filter((t) => t.language === "Arabic").length,
+      english: scopedRoster.filter((t) => t.language === "English").length,
+      fullTime: scopedRoster.filter((t) => t.employment_type === "Full-time").length,
+      partTime: scopedRoster.filter((t) => t.employment_type === "Part-time").length,
     }),
-    [],
+    [scopedRoster],
   );
 
   const resetPage = () => setPage(1);
