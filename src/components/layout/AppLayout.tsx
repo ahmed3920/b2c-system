@@ -13,7 +13,7 @@ interface AppLayoutProps {
   children: ReactNode;
   title?: string;
   /** If set, only these roles can access. Others are redirected to /home. */
-  allowedRoles?: ("admin" | "team_leader" | "mentor" | "community_moderator")[];
+  allowedRoles?: ("admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator")[];
 }
 
 export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
