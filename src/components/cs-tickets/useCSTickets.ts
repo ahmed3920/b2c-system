@@ -9,6 +9,8 @@ export interface CSTicket {
   case_type: CSTicketCaseType;
   case_types: CSTicketCaseType[];
   category: string;
+  cs_category: string | null;
+  edu_category: string | null;
   tutor_external_id: string;
   tutor_name: string;
   team_leader: string;

@@ -36,6 +36,8 @@ export function CSTicketsTable() {
           !t.ticket_number.toLowerCase().includes(q) &&
           !t.tutor_name.toLowerCase().includes(q) &&
           !t.tutor_external_id.toLowerCase().includes(q) &&
+          !(t.cs_category ?? "").toLowerCase().includes(q) &&
+          !(t.edu_category ?? "").toLowerCase().includes(q) &&
           !t.category.toLowerCase().includes(q)
         )
           return false;
@@ -106,8 +108,8 @@ export function CSTicketsTable() {
               <TableRow>
                 <TableHead>Ticket #</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Category</TableHead>
+                <TableHead>CS Category</TableHead>
+                <TableHead>Edu Category</TableHead>
                 <TableHead>Tutor</TableHead>
                 <TableHead>Team Leader</TableHead>
                 <TableHead>Deadline</TableHead>
@@ -124,14 +126,12 @@ export function CSTicketsTable() {
                   <TableRow key={t.id} onClick={() => setSelected(t)} className="cursor-pointer">
                     <TableCell className="font-mono text-xs">{t.ticket_number}</TableCell>
                     <TableCell>{t.ticket_date}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 flex-wrap">
-                        {t.case_types.map((ct) => (
-                          <Badge key={ct} variant={ct === "CS" ? "default" : "secondary"}>{ct}</Badge>
-                        ))}
-                      </div>
+                    <TableCell className="max-w-[200px] truncate">
+                      {t.cs_category || (t.case_types.includes("CS") ? t.category : "—")}
                     </TableCell>
-                    <TableCell className="max-w-[220px] truncate">{t.category}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {t.edu_category || (t.case_types.includes("Edu") ? t.category : "—")}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-sm">{t.tutor_name}</span>
