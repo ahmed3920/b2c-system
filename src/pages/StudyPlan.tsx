@@ -202,7 +202,7 @@ export default function StudyPlan() {
           <StatCard label="Utilization" value={`${stats.utilization}%`} />
         </div>
 
-        <Tabs defaultValue="plans">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="plans">Weekly Plans</TabsTrigger>
             <TabsTrigger value="progress">Tutor Progress</TabsTrigger>
