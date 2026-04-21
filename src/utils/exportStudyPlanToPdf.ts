@@ -203,11 +203,13 @@ function drawWatermark(doc: jsPDF, logoDataUrl?: string) {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   try {
-    // jsPDF 2.x supports the alpha via GState
-    // @ts-expect-error - GState typed loosely
-    const gs = doc.GState ? new doc.GState({ opacity: 0.05 }) : null;
-    // @ts-expect-error - setGState typed loosely
-    if (gs) doc.setGState(gs);
+    // jsPDF 2.x supports alpha via GState (loosely typed in jspdf)
+    const anyDoc = doc as unknown as {
+      GState?: new (opts: { opacity: number }) => unknown;
+      setGState?: (gs: unknown) => void;
+    };
+    const gs = anyDoc.GState ? new anyDoc.GState({ opacity: 0.05 }) : null;
+    if (gs && anyDoc.setGState) anyDoc.setGState(gs);
     const size = 320;
     doc.addImage(
       logoDataUrl,
@@ -217,8 +219,9 @@ function drawWatermark(doc: jsPDF, logoDataUrl?: string) {
       size,
       size,
     );
-    // @ts-expect-error - reset
-    if (gs) doc.setGState(new doc.GState({ opacity: 1 }));
+    if (gs && anyDoc.setGState && anyDoc.GState) {
+      anyDoc.setGState(new anyDoc.GState({ opacity: 1 }));
+    }
   } catch {
     /* ignore */
   }
