@@ -30,6 +30,7 @@ import StudyPlan from "./pages/StudyPlan";
 import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
 import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
 import EduDescriptionsAdmin from "./pages/EduDescriptionsAdmin";
+import CSTicketCategoriesAdmin from "./pages/CSTicketCategoriesAdmin";
 
 import NotFound from "./pages/NotFound";
 
@@ -71,6 +72,7 @@ const App = () => (
           <Route path="/admin/announcements" element={<AnnouncementsAdmin />} />
           <Route path="/admin/feature-plans" element={<FeaturePlansAdmin />} />
           <Route path="/admin/edu-descriptions" element={<EduDescriptionsAdmin />} />
+          <Route path="/admin/cs-ticket-categories" element={<CSTicketCategoriesAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

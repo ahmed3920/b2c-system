@@ -7,6 +7,7 @@ export interface CSTicket {
   ticket_number: string;
   ticket_date: string;
   case_type: CSTicketCaseType;
+  case_types: CSTicketCaseType[];
   category: string;
   tutor_external_id: string;
   tutor_name: string;
@@ -32,7 +33,13 @@ export function useCSTickets() {
       .from("cs_tickets")
       .select("*")
       .order("created_at", { ascending: false });
-    if (!error && data) setTickets(data as unknown as CSTicket[]);
+    if (!error && data) {
+      const rows = (data as any[]).map((r) => ({
+        ...r,
+        case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
+      })) as CSTicket[];
+      setTickets(rows);
+    }
     setLoading(false);
   }, []);
 

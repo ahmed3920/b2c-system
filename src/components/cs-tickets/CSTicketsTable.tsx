@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
 import { Plus, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export function CSTicketsTable() {
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
-      if (caseTypeFilter !== "all" && t.case_type !== caseTypeFilter) return false;
+      if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
       if (search) {
         const q = search.toLowerCase();
         if (
@@ -124,7 +125,11 @@ export function CSTicketsTable() {
                     <TableCell className="font-mono text-xs">{t.ticket_number}</TableCell>
                     <TableCell>{t.ticket_date}</TableCell>
                     <TableCell>
-                      <Badge variant={t.case_type === "CS" ? "default" : "secondary"}>{t.case_type}</Badge>
+                      <div className="flex gap-1 flex-wrap">
+                        {t.case_types.map((ct) => (
+                          <Badge key={ct} variant={ct === "CS" ? "default" : "secondary"}>{ct}</Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate">{t.category}</TableCell>
                     <TableCell>
@@ -134,7 +139,9 @@ export function CSTicketsTable() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{t.team_leader}</TableCell>
-                    <TableCell className="text-sm">{t.need_response_deadline ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {t.need_response_deadline ? format(new Date(t.need_response_deadline), "PP p") : "—"}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
                     </TableCell>
