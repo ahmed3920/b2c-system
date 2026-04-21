@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { Logo } from "@/components/Logo";
+import ischoolIcon from "@/assets/ischool-icon.png";
 import { useUserRole } from "@/hooks/useUserRole";
 
 type NavItem = { title: string; url: string; icon: any; roles?: string[] };
@@ -120,9 +121,13 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-1">
-          <Logo variant="blue" className="h-8" />
-          {!collapsed && (
-            <span className="font-semibold text-sm text-sidebar-foreground">B2C_MS</span>
+          {collapsed ? (
+            <img src={ischoolIcon} alt="iSchool" className="h-8 w-8 object-contain" />
+          ) : (
+            <>
+              <Logo variant="blue" className="h-8" />
+              <span className="font-semibold text-sm text-sidebar-foreground">B2C_MS</span>
+            </>
           )}
         </div>
       </SidebarHeader>
