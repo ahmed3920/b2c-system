@@ -70,6 +70,34 @@ function parseDate(s: string): string | null {
 const norm = (s: string) =>
   s.replace(/\uFEFF/g, "").replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
 
+// Map sheet/roster team-leader names -> short form used in profiles.mentor_name
+// Keys are normalized (lowercased, single-space). Values are the canonical mentor_name.
+const TL_ALIASES: Record<string, string> = {
+  "ahmed hesham helmy": "Ahmed Hesham",
+  "ahmed hesham": "Ahmed Hesham",
+  "anan mohammed mohammed zewil": "Anan Zewil",
+  "anan zewil": "Anan Zewil",
+  "kareem abdalwahab abdalhaleem": "Kareem Abdalwahab",
+  "kareem abdalwahab": "Kareem Abdalwahab",
+  "ghada mohamed ahmed": "Ghada Mohamed",
+  "ghada mohamed": "Ghada Mohamed",
+  "nermeen alhububati": "Nermeen Alhububati",
+};
+
+function normalizeTeamLeader(raw: string | null): string | null {
+  if (!raw) return null;
+  const key = norm(raw);
+  if (TL_ALIASES[key]) return TL_ALIASES[key];
+  // Try first-two-tokens fallback (e.g. "Ahmed Hesham Helmy" -> "Ahmed Hesham")
+  const tokens = raw.trim().split(/\s+/);
+  if (tokens.length >= 2) {
+    const short = `${tokens[0]} ${tokens[1]}`;
+    const k2 = norm(short);
+    if (TL_ALIASES[k2]) return TL_ALIASES[k2];
+  }
+  return raw.trim();
+}
+
 function findCol(headerNorm: string[], aliases: string[]): number {
   for (const a of aliases) {
     const i = headerNorm.findIndex((h) => h === norm(a));
