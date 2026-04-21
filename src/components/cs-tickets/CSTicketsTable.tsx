@@ -66,13 +66,15 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, search]);
+  }, [tickets, statusFilter, caseTypeFilter, quickFilter, search]);
 
   const counts = useMemo(() => ({
     total: tickets.length,
     pending: tickets.filter((t) => t.status === "Pending").length,
     valid: tickets.filter((t) => t.status === "Valid" || t.status === "Validated").length,
     notValid: tickets.filter((t) => t.status === "Not Valid" || t.status === "Rejected").length,
+    dueToday: tickets.filter((t) => isSameDay(t.need_response_deadline)).length,
+    notValidated: tickets.filter((t) => t.status === "Pending").length,
   }), [tickets]);
 
   const renderTable = () => (
