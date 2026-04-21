@@ -136,28 +136,43 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     setSaving(true);
     try {
       const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const { error } = await supabase
-        .from("cs_tickets")
-        .update({
-          ticket_number: ticketNumber.trim(),
-          ticket_date: format(ticketDate, "yyyy-MM-dd"),
-          cs_category: csCategory,
-          edu_category: eduCategory,
-          category: combinedCategory,
-          case_details: caseDetails || null,
-          student_id: studentId || null,
-          session_num_or_date: sessionNumOrDate || null,
-          need_response_deadline: buildDeadline(),
-          status,
-          team_leader_response: response || null,
-        })
-        .eq("id", ticket.id);
+      const after = {
+        ticket_number: ticketNumber.trim(),
+        ticket_date: format(ticketDate, "yyyy-MM-dd"),
+        cs_category: csCategory,
+        edu_category: eduCategory,
+        category: combinedCategory,
+        case_details: caseDetails || null,
+        student_id: studentId || null,
+        session_num_or_date: sessionNumOrDate || null,
+        need_response_deadline: buildDeadline(),
+        status,
+        team_leader_response: response || null,
+      };
+      const { error } = await supabase.from("cs_tickets").update(after).eq("id", ticket.id);
       if (error) {
         if ((error as any).code === "23505") {
           throw new Error(`Ticket # "${ticketNumber.trim()}" already exists.`);
         }
         throw error;
       }
+      await logCSTicketChanges({
+        ticketId: ticket.id,
+        ticketNumber: after.ticket_number,
+        before: {
+          ticket_number: ticket.ticket_number,
+          ticket_date: ticket.ticket_date,
+          cs_category: ticket.cs_category,
+          edu_category: ticket.edu_category,
+          case_details: ticket.case_details,
+          student_id: ticket.student_id,
+          session_num_or_date: ticket.session_num_or_date,
+          need_response_deadline: ticket.need_response_deadline,
+          status: ticket.status,
+          team_leader_response: ticket.team_leader_response,
+        },
+        after,
+      });
       toast({ title: "Ticket saved" });
       setEditMode(false);
       onOpenChange(false);
