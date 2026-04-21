@@ -118,7 +118,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 px-2 py-1">
           <Logo variant="blue" className="h-8" />
           {!collapsed && (
-            <span className="font-semibold text-sm text-sidebar-foreground">Tutor Platform</span>
+            <span className="font-semibold text-sm text-sidebar-foreground">B2C_MS</span>
           )}
         </div>
       </SidebarHeader>
