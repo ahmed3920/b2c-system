@@ -44,6 +44,40 @@ const PAGE_SIZE_OPTIONS = [12, 24, 36, 48, 60];
 const DEFAULT_PAGE_SIZE = 24;
 const ALL = "__all__";
 
+// Billing month: "YYYY-MM" label covers prev-month-26 .. this-month-25
+// e.g. "2026-04" => 2026-03-26 .. 2026-04-25
+function billingMonthRange(key: string): { from: string; to: string } {
+  const [yStr, mStr] = key.split("-");
+  const y = Number(yStr);
+  const m = Number(mStr);
+  let sy = y, sm = m - 1;
+  if (sm < 1) { sm = 12; sy -= 1; }
+  const from = `${sy}-${String(sm).padStart(2, "0")}-26`;
+  const to = `${y}-${String(m).padStart(2, "0")}-25`;
+  return { from, to };
+}
+
+function buildBillingMonthOptions(): { key: string; label: string }[] {
+  const now = new Date();
+  let curY = now.getFullYear();
+  let curM = now.getMonth() + 1;
+  if (now.getDate() >= 26) {
+    curM += 1;
+    if (curM > 12) { curM = 1; curY += 1; }
+  }
+  const out: { key: string; label: string }[] = [];
+  for (let offset = 2; offset >= -18; offset--) {
+    let y = curY;
+    let m = curM + offset;
+    while (m > 12) { m -= 12; y += 1; }
+    while (m < 1) { m += 12; y -= 1; }
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    const label = new Date(y, m - 1, 1).toLocaleString("en-US", { month: "short", year: "numeric" });
+    out.push({ key, label });
+  }
+  return out;
+}
+
 export function LiveIssuesTable() {
   const { isAdmin, isTeamLeader } = useUserRole();
   const canEdit = isAdmin || isTeamLeader;
@@ -66,8 +100,10 @@ export function LiveIssuesTable() {
   const [teamLeader, setTeamLeader] = useState<string>(ALL);
   const [issueType, setIssueType] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
+  const [billingMonth, setBillingMonth] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const monthOptions = useMemo(() => buildBillingMonthOptions(), []);
 
   // Audit
   const [auditOpen, setAuditOpen] = useState(false);
@@ -108,6 +144,12 @@ export function LiveIssuesTable() {
     }
     if (dateFrom) q = q.gte("session_date", dateFrom);
     if (dateTo) q = q.lte("session_date", dateTo);
+    if (billingMonth !== ALL) {
+      const { from, to } = billingMonthRange(billingMonth);
+      // Apply billing range; combine with manual date filters by tightening bounds
+      q = q.gte("session_date", dateFrom && dateFrom > from ? dateFrom : from);
+      q = q.lte("session_date", dateTo && dateTo < to ? dateTo : to);
+    }
     if (search.trim()) {
       const s = search.trim();
       q = q.or(`case_id.ilike.%${s}%,from_tutor_name.ilike.%${s}%,issue_details.ilike.%${s}%,session_id.ilike.%${s}%`);
@@ -126,13 +168,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, page, pageSize]);
+  }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, page, pageSize]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters or page size change
-  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, pageSize]);
+  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, pageSize]);
 
   const writeAudit = async (
     row: IssueRow,
@@ -277,6 +319,18 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
+              <Label className="text-xs">Month (26→25)</Label>
+              <Select value={billingMonth} onValueChange={setBillingMonth}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All months</SelectItem>
+                  {monthOptions.map((m) => (
+                    <SelectItem key={m.key} value={m.key}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-xs">Date from</Label>
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
@@ -290,7 +344,7 @@ export function LiveIssuesTable() {
                 className="w-full"
                 onClick={() => {
                   setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
-                  setValidation(ALL); setDateFrom(""); setDateTo("");
+                  setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
                 Clear filters
