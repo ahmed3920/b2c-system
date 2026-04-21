@@ -32,6 +32,7 @@ import { Link } from "react-router-dom";
 import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
+import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 
 const PAGE_SIZE = 25;
 
@@ -49,7 +50,7 @@ export default function Tutors() {
   // Restrict roster to TL's own team when not admin
   const scopedRoster = useMemo(() => {
     if (isTeamLeader && !isAdmin && myTeamLeader) {
-      return tutorRoster.filter((t) => t.team_leader === myTeamLeader);
+      return tutorRoster.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
     }
     return tutorRoster;
   }, [isTeamLeader, isAdmin, myTeamLeader]);
@@ -74,7 +75,7 @@ export default function Tutors() {
         t.team_leader.toLowerCase().includes(q)
       );
     });
-  }, [query, tlFilter, roleFilter, langFilter, empFilter]);
+  }, [query, tlFilter, roleFilter, langFilter, empFilter, scopedRoster]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
