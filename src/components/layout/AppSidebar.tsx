@@ -120,9 +120,9 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-1">
+        <div className="flex items-center gap-2 px-1 py-1">
           {collapsed ? (
-            <img src={ischoolIcon} alt="iSchool" className="h-8 w-8 object-contain" />
+            <img src={ischoolIcon} alt="iSchool" className="h-12 w-12 object-contain mx-auto" />
           ) : (
             <>
               <Logo variant="blue" className="h-8" />
