@@ -42,6 +42,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { exportStudyPlanToExcel } from "@/utils/exportStudyPlanToExcel";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { CourseManagementCard } from "@/components/study-plan/CourseManagementCard";
+import { SnapshotsHistoryCard } from "@/components/study-plan/SnapshotsHistoryCard";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -59,6 +63,7 @@ export default function StudyPlan() {
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
 
+  const queryClient = useQueryClient();
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
   const { data: progress = [], isLoading: progressLoading } = useTutorProgress(weekStart);
   const { data: adherenceData, isLoading: adherenceLoading } = useWeekAdherence(weekStart);
@@ -112,6 +117,7 @@ export default function StudyPlan() {
         `Generated ${(data as any).plans_created} plans · ${(data as any).items_created} module assignments`,
       );
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["weekly-study-plan-snapshots"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to generate plan");
     } finally {
