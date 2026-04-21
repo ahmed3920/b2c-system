@@ -214,10 +214,41 @@ export type Database = {
         }
         Relationships: []
       }
+      cs_ticket_categories: {
+        Row: {
+          case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          case_type?: Database["public"]["Enums"]["cs_ticket_case_type"]
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cs_tickets: {
         Row: {
           case_details: string | null
           case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          case_types: Database["public"]["Enums"]["cs_ticket_case_type"][]
           category: string
           created_at: string
           created_by: string | null
@@ -237,6 +268,7 @@ export type Database = {
         Insert: {
           case_details?: string | null
           case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          case_types?: Database["public"]["Enums"]["cs_ticket_case_type"][]
           category: string
           created_at?: string
           created_by?: string | null
@@ -256,6 +288,7 @@ export type Database = {
         Update: {
           case_details?: string | null
           case_type?: Database["public"]["Enums"]["cs_ticket_case_type"]
+          case_types?: Database["public"]["Enums"]["cs_ticket_case_type"][]
           category?: string
           created_at?: string
           created_by?: string | null
