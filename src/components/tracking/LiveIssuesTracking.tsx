@@ -78,6 +78,12 @@ function monthLabel(key: string): string {
 }
 
 export function LiveIssuesTracking() {
+  const { items: descriptions } = useEduDescriptions(false);
+  const descById = useMemo(
+    () => Object.fromEntries(descriptions.map((d) => [d.id, d])),
+    [descriptions],
+  );
+
   const [allRows, setAllRows] = useState<IssueRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -87,6 +93,7 @@ export function LiveIssuesTracking() {
   const [month, setMonth] = useState<string>(ALL);
   const [tlFilter, setTlFilter] = useState<string>(ALL);
   const [validationFilter, setValidationFilter] = useState<string>(ALL);
+  const [eduDescFilter, setEduDescFilter] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [tutorDrill, setTutorDrill] = useState<string | null>(null);
