@@ -63,7 +63,6 @@ export default function StudyPlan() {
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
   const [activeTab, setActiveTab] = useState("plans");
-  const [highlightWeek, setHighlightWeek] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
@@ -658,8 +657,8 @@ export default function StudyPlan() {
               currentWeekStart={weekStart}
               onView={(ws) => {
                 setWeekStart(ws);
-                setHighlightWeek(ws);
                 setActiveTab("plans");
+                toast.success(`Loaded plan for week of ${ws}`);
               }}
             />
           </TabsContent>
