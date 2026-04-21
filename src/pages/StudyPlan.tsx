@@ -381,6 +381,7 @@ export default function StudyPlan() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Tutor</TableHead>
+                          <TableHead>Mentor</TableHead>
                           <TableHead>Team Leader</TableHead>
                           <TableHead className="text-center">Finished (from sheet)</TableHead>
                           <TableHead className="text-center">Remaining to study</TableHead>
@@ -417,6 +418,9 @@ export default function StudyPlan() {
                                   <div className="text-xs text-muted-foreground">
                                     {r.tutor_external_id}
                                   </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {getMentorForTutor(r.tutor_external_id)}
                                 </TableCell>
                                 <TableCell>{r.team_leader}</TableCell>
                                 <TableCell className="text-center">
