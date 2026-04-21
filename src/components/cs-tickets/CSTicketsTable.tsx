@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CSTicketFormDialog } from "./CSTicketFormDialog";
 import { CSTicketDetailDialog } from "./CSTicketDetailDialog";
 import { useCSTickets, type CSTicket } from "./useCSTickets";
 import type { CSTicketStatus } from "./csTicketCategories";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 
 const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructive" | "outline"> = {
   Pending: "secondary",
@@ -23,14 +26,25 @@ const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructi
 
 export function CSTicketsTable() {
   const { tickets, loading, refresh } = useCSTickets();
+  const { isAdmin, isSuperTeamLeader } = useUserRole();
+  const { teamLeader: myTeamLeaderName } = useCurrentTeamLeader();
+  const canCreate = isAdmin || isSuperTeamLeader;
+
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<CSTicket | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<"all" | "mine">("all");
+
+  // Apply scope first (only meaningful for super team leaders)
+  const scoped = useMemo(() => {
+    if (!isSuperTeamLeader || scope === "all" || !myTeamLeaderName) return tickets;
+    return tickets.filter((t) => t.team_leader === myTeamLeaderName);
+  }, [tickets, isSuperTeamLeader, scope, myTeamLeaderName]);
 
   const filtered = useMemo(() => {
-    return tickets.filter((t) => {
+    return scoped.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
       if (search) {
@@ -47,14 +61,104 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, search]);
+  }, [scoped, statusFilter, caseTypeFilter, search]);
 
   const counts = useMemo(() => ({
-    total: tickets.length,
-    pending: tickets.filter((t) => t.status === "Pending").length,
-    validated: tickets.filter((t) => t.status === "Validated").length,
-    rejected: tickets.filter((t) => t.status === "Rejected").length,
-  }), [tickets]);
+    total: scoped.length,
+    pending: scoped.filter((t) => t.status === "Pending").length,
+    valid: scoped.filter((t) => t.status === "Valid" || t.status === "Validated").length,
+    notValid: scoped.filter((t) => t.status === "Not Valid" || t.status === "Rejected").length,
+  }), [scoped]);
+
+  const renderTable = () => (
+    <>
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex-1">
+          <Input
+            placeholder="Search by ticket #, tutor, category..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Select value={caseTypeFilter} onValueChange={setCaseTypeFilter}>
+            <SelectTrigger className="w-[140px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Case Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="CS">CS</SelectItem>
+              <SelectItem value="Edu">Edu</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Valid">Valid</SelectItem>
+              <SelectItem value="Not Valid">Not Valid</SelectItem>
+              <SelectItem value="Not a Complain">Not a Complain</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="rounded-md border mt-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ticket #</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>CS Category</TableHead>
+              <TableHead>Edu Category</TableHead>
+              <TableHead>Tutor</TableHead>
+              <TableHead>Team Leader</TableHead>
+              <TableHead>Deadline</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No tickets found</TableCell></TableRow>
+            ) : (
+              filtered.map((t) => (
+                <TableRow key={t.id} onClick={() => setSelected(t)} className="cursor-pointer">
+                  <TableCell className="font-mono text-xs">{t.ticket_number}</TableCell>
+                  <TableCell>{t.ticket_date}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">
+                    {t.cs_category || (t.case_types.includes("CS") ? t.category : "—")}
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate">
+                    {t.edu_category || (t.case_types.includes("Edu") ? t.category : "—")}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm">{t.tutor_name}</span>
+                      <span className="text-xs text-muted-foreground">{t.tutor_external_id}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{t.team_leader}</TableCell>
+                  <TableCell className="text-sm">
+                    {t.need_response_deadline ? format(new Date(t.need_response_deadline), "PP p") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
+  );
 
   return (
     <Card>
@@ -62,102 +166,33 @@ export function CSTicketsTable() {
         <div>
           <CardTitle>CS Ticket Validation</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            {counts.total} total · {counts.pending} pending · {counts.validated} validated · {counts.rejected} rejected
+            {counts.total} total · {counts.pending} pending · {counts.valid} valid · {counts.notValid} not valid
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> New Ticket
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> New Ticket
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by ticket #, tutor, category..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Select value={caseTypeFilter} onValueChange={setCaseTypeFilter}>
-              <SelectTrigger className="w-[140px]">
-                <Filter className="mr-2 h-3 w-3" />
-                <SelectValue placeholder="Case Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="CS">CS</SelectItem>
-                <SelectItem value="Edu">Edu</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <Filter className="mr-2 h-3 w-3" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Valid">Valid</SelectItem>
-                <SelectItem value="Not Valid">Not Valid</SelectItem>
-                <SelectItem value="Not a Complain">Not a Complain</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket #</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>CS Category</TableHead>
-                <TableHead>Edu Category</TableHead>
-                <TableHead>Tutor</TableHead>
-                <TableHead>Team Leader</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No tickets found</TableCell></TableRow>
-              ) : (
-                filtered.map((t) => (
-                  <TableRow key={t.id} onClick={() => setSelected(t)} className="cursor-pointer">
-                    <TableCell className="font-mono text-xs">{t.ticket_number}</TableCell>
-                    <TableCell>{t.ticket_date}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {t.cs_category || (t.case_types.includes("CS") ? t.category : "—")}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {t.edu_category || (t.case_types.includes("Edu") ? t.category : "—")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm">{t.tutor_name}</span>
-                        <span className="text-xs text-muted-foreground">{t.tutor_external_id}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{t.team_leader}</TableCell>
-                    <TableCell className="text-sm">
-                      {t.need_response_deadline ? format(new Date(t.need_response_deadline), "PP p") : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {isSuperTeamLeader ? (
+          <Tabs value={scope} onValueChange={(v) => setScope(v as "all" | "mine")}>
+            <TabsList>
+              <TabsTrigger value="all">All Tickets</TabsTrigger>
+              <TabsTrigger value="mine">My Team's Tickets</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all" className="mt-4">{renderTable()}</TabsContent>
+            <TabsContent value="mine" className="mt-4">{renderTable()}</TabsContent>
+          </Tabs>
+        ) : (
+          renderTable()
+        )}
       </CardContent>
 
-      <CSTicketFormDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
+      {canCreate && (
+        <CSTicketFormDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
+      )}
       <CSTicketDetailDialog
         ticket={selected}
         open={!!selected}
