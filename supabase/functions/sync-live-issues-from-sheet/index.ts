@@ -193,6 +193,9 @@ Deno.serve(async (req) => {
       severity: findCol(headerNorm, ["Severity"]),
       moderator_decision: findCol(headerNorm, ["Moderator Decision", "Decision"]),
       moderation_deduction: findCol(headerNorm, ["Education Validation", "Deduction"]),
+      edu_validation_sheet: findCol(headerNorm, ["Education Validation"]),
+      edu_clarification: findCol(headerNorm, ["Education Clarification", "Clarification"]),
+      edu_case: findCol(headerNorm, ["Edu Case Mar", "Edu Case", "Education Case"]),
     };
 
     // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name)
@@ -204,6 +207,49 @@ Deno.serve(async (req) => {
       if (t.tutor_external_id && t.team_leader) {
         tutorTlMap.set(String(t.tutor_external_id).trim(), String(t.team_leader).trim());
       }
+    }
+
+    // Load edu_descriptions name -> id map (normalized)
+    const { data: eduRows } = await admin
+      .from("edu_descriptions")
+      .select("id, name")
+      .eq("is_active", true);
+    const eduNameMap = new Map<string, string>();
+    for (const e of (eduRows ?? [])) {
+      if (e.name && e.id) eduNameMap.set(norm(String(e.name)), String(e.id));
+    }
+    const resolveEduDescriptionId = (raw: string): string | null => {
+      if (!raw) return null;
+      const key = norm(raw);
+      if (eduNameMap.has(key)) return eduNameMap.get(key)!;
+      // Try stripped of leading dashes/punct (sheet has "- Accepted Sick Leave")
+      const stripped = norm(raw.replace(/^[-\s]+/, ""));
+      if (eduNameMap.has(stripped)) return eduNameMap.get(stripped)!;
+      // Try contains match either direction
+      for (const [k, v] of eduNameMap) {
+        if (k.includes(key) || key.includes(k)) return v;
+      }
+      return null;
+    };
+
+    // Map sheet "Education Validation" text -> edu_validation_status enum
+    const resolveEduValidation = (raw: string): string | null => {
+      if (!raw) return null;
+      const k = norm(raw);
+      if (k === "deducted" || k === "deduct" || k === "deduction") return "deduct";
+      if (k === "non deducted" || k === "no deduction" || k === "not deducted" || k === "no deduct") return "no_deduction";
+      if (k.includes("pending") || k.includes("hr validation") || k.includes("need")) return "pending";
+      return null;
+    };
+
+    // Existing rows to avoid overwriting team-leader edits.
+    // We preserve any DB row that already has edu_validation set.
+    const { data: existingRows } = await admin
+      .from("live_session_issues")
+      .select("case_id, edu_validation");
+    const existingValidated = new Set<string>();
+    for (const r of (existingRows ?? [])) {
+      if (r.edu_validation) existingValidated.add(String(r.case_id));
     }
 
     const get = (row: string[], i: number) => (i >= 0 && i < row.length ? row[i].trim() : "");
