@@ -656,7 +656,11 @@ export default function StudyPlan() {
           <TabsContent value="history">
             <SnapshotsHistoryCard
               currentWeekStart={weekStart}
-              onView={(ws) => setWeekStart(ws)}
+              onView={(ws) => {
+                setWeekStart(ws);
+                setHighlightWeek(ws);
+                setActiveTab("plans");
+              }}
             />
           </TabsContent>
 
