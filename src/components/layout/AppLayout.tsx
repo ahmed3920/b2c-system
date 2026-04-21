@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { RoleBadge } from "@/components/RoleBadge";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureControls, isFeatureEnabled } from "@/hooks/useFeatureControls";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -18,8 +19,10 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { role, isLoading: roleLoading } = useUserRole();
+  const { features, loading: featuresLoading } = useFeatureControls();
   const [authChecked, setAuthChecked] = useState(false);
   const [displayName, setDisplayName] = useState("");
 
@@ -46,6 +49,21 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
       navigate("/home");
     }
   }, [role, roleLoading, allowedRoles, navigate]);
+
+  // Block disabled features per role (sidebar already hides them).
+  // Admin's "Feature Control" page is never blocked.
+  useEffect(() => {
+    if (roleLoading || featuresLoading || !role) return;
+    if (location.pathname.startsWith("/admin/feature-control")) return;
+    if (!isFeatureEnabled(features, location.pathname, role)) {
+      toast({
+        title: "Feature unavailable",
+        description: "This section has been disabled for your role.",
+        variant: "destructive",
+      });
+      navigate("/home");
+    }
+  }, [features, featuresLoading, role, roleLoading, location.pathname, navigate, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

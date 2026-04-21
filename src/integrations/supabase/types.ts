@@ -433,6 +433,54 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_controls: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          enabled_admin: boolean
+          enabled_community_moderator: boolean
+          enabled_mentor: boolean
+          enabled_super_team_leader: boolean
+          enabled_team_leader: boolean
+          feature_key: string
+          id: string
+          name: string
+          route_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          enabled_admin?: boolean
+          enabled_community_moderator?: boolean
+          enabled_mentor?: boolean
+          enabled_super_team_leader?: boolean
+          enabled_team_leader?: boolean
+          feature_key: string
+          id?: string
+          name: string
+          route_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          enabled_admin?: boolean
+          enabled_community_moderator?: boolean
+          enabled_mentor?: boolean
+          enabled_super_team_leader?: boolean
+          enabled_team_leader?: boolean
+          feature_key?: string
+          id?: string
+          name?: string
+          route_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           created_at: string

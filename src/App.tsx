@@ -31,6 +31,7 @@ import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
 import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
 import EduDescriptionsAdmin from "./pages/EduDescriptionsAdmin";
 import CSTicketCategoriesAdmin from "./pages/CSTicketCategoriesAdmin";
+import FeatureControlAdmin from "./pages/FeatureControlAdmin";
 
 import NotFound from "./pages/NotFound";
 
@@ -73,6 +74,7 @@ const App = () => (
           <Route path="/admin/feature-plans" element={<FeaturePlansAdmin />} />
           <Route path="/admin/edu-descriptions" element={<EduDescriptionsAdmin />} />
           <Route path="/admin/cs-ticket-categories" element={<CSTicketCategoriesAdmin />} />
+          <Route path="/admin/feature-control" element={<FeatureControlAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

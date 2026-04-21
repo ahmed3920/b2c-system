@@ -19,6 +19,7 @@ import {
   Megaphone,
   Rocket,
   ShieldCheck,
+  ToggleLeft,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,46 +37,56 @@ import { NavLink } from "@/components/NavLink";
 import { Logo } from "@/components/Logo";
 import ischoolIcon from "@/assets/ischool-icon.png";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useFeatureControls, isFeatureEnabled } from "@/hooks/useFeatureControls";
 
-type NavItem = { title: string; url: string; icon: any; roles?: string[] };
+type NavItem = {
+  title: string;
+  url: string;
+  icon: any;
+  roles?: string[];
+  /** Optional feature key from `feature_controls`. If unset, the URL is used. */
+  featureKey?: string;
+};
 
 const overview: NavItem[] = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, featureKey: "dashboard" },
+  { title: "Home", url: "/home", icon: LayoutDashboard, featureKey: "home" },
 ];
 
 const operations: NavItem[] = [
-  { title: "Tutors", url: "/tutors", icon: Users },
-  { title: "Teams", url: "/teams", icon: UsersRound },
-  { title: "Performance", url: "/performance", icon: Activity },
+  { title: "Tutors", url: "/tutors", icon: Users, featureKey: "tutors" },
+  { title: "Teams", url: "/teams", icon: UsersRound, featureKey: "teams" },
+  { title: "Performance", url: "/performance", icon: Activity, featureKey: "performance" },
 ];
 
 const tracking: NavItem[] = [
-  { title: "Tracking", url: "/tracking", icon: LineChart },
-  { title: "Engagement", url: "/engagement", icon: Star, roles: ["admin"] },
-  { title: "Weekly Study Plan", url: "/study-plan", icon: BookOpen, roles: ["admin", "team_leader"] },
+  { title: "Tracking", url: "/tracking", icon: LineChart, featureKey: "tracking" },
+  { title: "Engagement", url: "/engagement", icon: Star, roles: ["admin"], featureKey: "engagement" },
+  { title: "Weekly Study Plan", url: "/study-plan", icon: BookOpen, roles: ["admin", "team_leader"], featureKey: "study_plan" },
 ];
 
 const growthRisk: NavItem[] = [
-  { title: "Growth", url: "/growth", icon: TrendingUp },
-  { title: "Risk Control", url: "/risk-control", icon: ShieldAlert },
-  { title: "Action Plans", url: "/action-plans", icon: Target },
+  { title: "Growth", url: "/growth", icon: TrendingUp, featureKey: "growth" },
+  { title: "Risk Control", url: "/risk-control", icon: ShieldAlert, featureKey: "risk_control" },
+  { title: "Action Plans", url: "/action-plans", icon: Target, featureKey: "action_plans" },
 ];
 
 const taskTracker: NavItem[] = [
-  { title: "Tasks", url: "/tasks", icon: ClipboardList },
-  { title: "Kanban", url: "/kanban", icon: KanbanIcon },
-  { title: "Progress", url: "/progress", icon: BarChart3 },
-  { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Tasks", url: "/tasks", icon: ClipboardList, featureKey: "tasks" },
+  { title: "Kanban", url: "/kanban", icon: KanbanIcon, featureKey: "kanban" },
+  { title: "Progress", url: "/progress", icon: BarChart3, featureKey: "progress" },
+  { title: "Reports", url: "/reports", icon: FileText, featureKey: "reports" },
 ];
 
 const admin: NavItem[] = [
-  { title: "System Dashboard", url: "/admin/dashboard", icon: LayoutDashboard, roles: ["admin"] },
-  { title: "User Management", url: "/admin/users", icon: Settings, roles: ["admin"] },
-  { title: "Announcements", url: "/admin/announcements", icon: Megaphone, roles: ["admin"] },
-  { title: "Feature Plans", url: "/admin/feature-plans", icon: Rocket, roles: ["admin"] },
-  { title: "Edu Descriptions", url: "/admin/edu-descriptions", icon: ShieldCheck, roles: ["admin"] },
-  { title: "CS Ticket Categories", url: "/admin/cs-ticket-categories", icon: Hash, roles: ["admin"] },
-  { title: "Team Overview", url: "/team/dashboard", icon: UsersRound, roles: ["team_leader"] },
+  { title: "System Dashboard", url: "/admin/dashboard", icon: LayoutDashboard, roles: ["admin"], featureKey: "admin_dashboard" },
+  { title: "User Management", url: "/admin/users", icon: Settings, roles: ["admin"], featureKey: "admin_users" },
+  { title: "Feature Control", url: "/admin/feature-control", icon: ToggleLeft, roles: ["admin"] },
+  { title: "Announcements", url: "/admin/announcements", icon: Megaphone, roles: ["admin"], featureKey: "admin_announcements" },
+  { title: "Feature Plans", url: "/admin/feature-plans", icon: Rocket, roles: ["admin"], featureKey: "admin_feature_plans" },
+  { title: "Edu Descriptions", url: "/admin/edu-descriptions", icon: ShieldCheck, roles: ["admin"], featureKey: "admin_edu_descriptions" },
+  { title: "CS Ticket Categories", url: "/admin/cs-ticket-categories", icon: Hash, roles: ["admin"], featureKey: "admin_cs_ticket_categories" },
+  { title: "Team Overview", url: "/team/dashboard", icon: UsersRound, roles: ["team_leader"], featureKey: "team_dashboard" },
 ];
 
 export function AppSidebar() {
@@ -83,9 +94,15 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { role } = useUserRole();
+  const { features } = useFeatureControls();
 
   const filterByRole = (items: NavItem[]) =>
-    items.filter((i) => !i.roles || (role && i.roles.includes(role)));
+    items.filter((i) => {
+      if (i.roles && (!role || !i.roles.includes(role))) return false;
+      // Feature Control itself is always visible to admins (no toggle).
+      if (!i.featureKey) return true;
+      return isFeatureEnabled(features, i.featureKey, role);
+    });
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
