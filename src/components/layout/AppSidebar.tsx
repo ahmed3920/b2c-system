@@ -17,6 +17,7 @@ import {
   Settings,
   Hash,
   Megaphone,
+  Rocket,
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,6 +70,7 @@ const admin: NavItem[] = [
   { title: "System Dashboard", url: "/admin/dashboard", icon: LayoutDashboard, roles: ["admin"] },
   { title: "User Management", url: "/admin/users", icon: Settings, roles: ["admin"] },
   { title: "Announcements", url: "/admin/announcements", icon: Megaphone, roles: ["admin"] },
+  { title: "Feature Plans", url: "/admin/feature-plans", icon: Rocket, roles: ["admin"] },
   { title: "Team Overview", url: "/team/dashboard", icon: UsersRound, roles: ["team_leader"] },
 ];
 
