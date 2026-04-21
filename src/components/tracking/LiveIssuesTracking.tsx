@@ -167,11 +167,15 @@ export function LiveIssuesTracking() {
         if (validationFilter === "__none__" && r.edu_validation != null) return false;
         if (validationFilter !== "__none__" && r.edu_validation !== validationFilter) return false;
       }
+      if (eduDescFilter !== ALL) {
+        if (eduDescFilter === "__none__" && r.edu_description_id != null) return false;
+        if (eduDescFilter !== "__none__" && r.edu_description_id !== eduDescFilter) return false;
+      }
       if (dateFrom && r.session_date && r.session_date < dateFrom) return false;
       if (dateTo && r.session_date && r.session_date > dateTo) return false;
       return true;
     });
-  }, [allRows, month, tlFilter, validationFilter, dateFrom, dateTo, tutorDrill]);
+  }, [allRows, month, tlFilter, validationFilter, eduDescFilter, dateFrom, dateTo, tutorDrill]);
 
   // KPI numbers
   const kpis = useMemo(() => {
