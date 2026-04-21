@@ -271,6 +271,27 @@ export function LiveIssuesTracking() {
       .slice(0, 8);
   }, [filtered]);
 
+  // Edu Description distribution (categorize issues by validated edu description)
+  const eduDescData = useMemo(() => {
+    const map = new Map<string, { name: string; value: number; color: string }>();
+    let unset = 0;
+    filtered.forEach((r) => {
+      if (!r.edu_description_id) {
+        unset++;
+        return;
+      }
+      const d = descById[r.edu_description_id];
+      const name = d?.name ?? "Unknown";
+      const color = d?.color ?? "hsl(var(--muted-foreground))";
+      const cur = map.get(r.edu_description_id);
+      if (cur) cur.value++;
+      else map.set(r.edu_description_id, { name, value: 1, color });
+    });
+    const arr = Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+    if (unset > 0) arr.push({ name: "Not categorized", value: unset, color: COLORS.none });
+    return arr;
+  }, [filtered, descById]);
+
   // Smart insights
   const insights = useMemo(() => {
     const out: { tone: "info" | "warn" | "success"; text: string }[] = [];
