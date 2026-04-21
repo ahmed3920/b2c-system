@@ -59,6 +59,18 @@ export default function StudyPlan() {
   const { data: progress = [], isLoading: progressLoading } = useTutorProgress(weekStart);
   const [progressFilter, setProgressFilter] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
+  // UI-only simulation: track blocked module keys (per tutor + module code)
+  const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
+  const [hideBlocked, setHideBlocked] = useState(false);
+
+  const toggleBlocked = (key: string) => {
+    setBlockedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const teamLeaders = useMemo(() => {
     const set = new Set(plans.map((p) => p.team_leader).filter(Boolean));
