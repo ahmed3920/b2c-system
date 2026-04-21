@@ -174,6 +174,7 @@ export function EditUserDialog({
                   <SelectItem value="mentor">Mentor</SelectItem>
                   <SelectItem value="community_moderator">Community Moderator</SelectItem>
                   <SelectItem value="team_leader">Team Leader</SelectItem>
+                  <SelectItem value="super_team_leader">Super Team Leader</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
