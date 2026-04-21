@@ -17,13 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft, Globe } from "lucide-react";
+import { Loader2, Eye, EyeOff, Shield, Users, UserCircle, ChevronRight, ChevronLeft, Globe, Crown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { CreateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
 
-type UserType = "admin" | "team_leader" | "mentor" | "community_moderator";
+type UserType = "admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator";
 
 interface UserTypeOption {
   value: UserType;
