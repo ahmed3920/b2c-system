@@ -424,7 +424,7 @@ export default function StudyPlan() {
                                     ) : (
                                       r.remaining_modules
                                         .map((m, i) => {
-                                          const key = `${r.tutor_external_id}::${m.module_code}`;
+                                          const key = `${r.tutor_external_id}::${m.grade_band}::${m.module_code}`;
                                           const isBlocked = blockedKeys.has(key);
                                           if (isBlocked && hideBlocked) return null;
                                           return (
