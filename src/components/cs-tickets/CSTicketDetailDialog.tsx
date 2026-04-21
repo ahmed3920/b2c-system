@@ -27,6 +27,8 @@ import { STATUS_OPTIONS, type CSTicketStatus } from "./csTicketCategories";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
 import type { CSTicket } from "./useCSTickets";
+import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
+import { logCSTicketChanges } from "./logCSTicketChanges";
 
 interface Props {
   ticket: CSTicket | null;
