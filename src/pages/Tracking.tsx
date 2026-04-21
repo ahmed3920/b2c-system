@@ -15,7 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
+import { tutorRoster } from "@/data/tutorRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
+import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 
 const tabs = [
   { v: "teams-composition", l: "Teams Composition" },
@@ -34,7 +38,40 @@ const tabs = [
 ];
 
 export default function Tracking() {
-  const teams = useMemo(() => getTeamSummaries(), []);
+  const { isTeamLeader, isAdmin } = useUserRole();
+  const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
+
+  // Admin: one row per team leader. TL: one row per mentor inside their team.
+  const teams = useMemo(() => {
+    if (!isTLView) return getTeamSummaries();
+
+    const myMembers = tutorRoster.filter((t) =>
+      teamLeaderMatches(t.team_leader, myTeamLeader),
+    );
+    const byMentor = new Map<string, typeof myMembers>();
+    for (const m of myMembers) {
+      const key = m.mentor?.trim() || "Unassigned";
+      const arr = byMentor.get(key) ?? [];
+      arr.push(m);
+      byMentor.set(key, arr);
+    }
+    return Array.from(byMentor.entries())
+      .map(([mentor, members]) => ({
+        slug: mentor.toLowerCase().replace(/\s+/g, "-"),
+        team_leader: mentor, // displayed in the "Team Leader" column as the mentor name
+        total: members.length,
+        tutors: members.filter((m) => m.role === "Tutor").length,
+        mentors: members.filter((m) => m.role === "Mentor").length,
+        arabic: members.filter((m) => m.language === "Arabic").length,
+        english: members.filter((m) => m.language === "English").length,
+        full_time: members.filter((m) => m.employment_type === "Full-time").length,
+        part_time: members.filter((m) => m.employment_type === "Part-time").length,
+        members,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [isTLView, myTeamLeader]);
+
   const totals = useMemo(
     () =>
       teams.reduce(
@@ -73,7 +110,7 @@ export default function Tracking() {
           <TabsContent value="teams-composition" className="space-y-4">
             {/* Global totals */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-              <SummaryCard icon={<Users className="h-4 w-4" />} label="Teams" value={teams.length} />
+              <SummaryCard icon={<Users className="h-4 w-4" />} label={isTLView ? "Mentors" : "Teams"} value={teams.length} />
               <SummaryCard icon={<Users className="h-4 w-4" />} label="Members" value={totals.total} />
               <SummaryCard icon={<Users className="h-4 w-4" />} label="Tutors" value={totals.tutors} />
               <SummaryCard
@@ -101,10 +138,10 @@ export default function Tracking() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Teams Composition
+                  <Users className="h-4 w-4" /> {isTLView ? "Mentors Composition" : "Teams Composition"}
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  {teams.length} teams · {totals.total} members
+                  {teams.length} {isTLView ? "mentors" : "teams"} · {totals.total} members
                 </p>
               </CardHeader>
               <CardContent>
@@ -112,7 +149,7 @@ export default function Tracking() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Team Leader</TableHead>
+                        <TableHead>{isTLView ? "Mentor" : "Team Leader"}</TableHead>
                         <TableHead className="text-right">Members</TableHead>
                         <TableHead className="text-right">Tutors</TableHead>
                         <TableHead className="text-right">Mentors</TableHead>
@@ -149,11 +186,15 @@ export default function Tracking() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button size="sm" variant="ghost" asChild>
-                                <Link to={`/teams/${t.slug}`}>
-                                  <Eye className="h-4 w-4 mr-1" /> View
-                                </Link>
-                              </Button>
+                              {isTLView ? (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              ) : (
+                                <Button size="sm" variant="ghost" asChild>
+                                  <Link to={`/teams/${t.slug}`}>
+                                    <Eye className="h-4 w-4 mr-1" /> View
+                                  </Link>
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
