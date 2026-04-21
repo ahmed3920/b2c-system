@@ -61,6 +61,7 @@ export function LiveIssuesTable() {
   // Filters
   const [search, setSearch] = useState("");
   const [tutorId, setTutorId] = useState("");
+  const [teamLeader, setTeamLeader] = useState<string>(ALL);
   const [issueType, setIssueType] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
@@ -72,14 +73,16 @@ export function LiveIssuesTable() {
 
   // Distinct filter options (from current page-agnostic small query)
   const [issueTypes, setIssueTypes] = useState<string[]>([]);
+  const [teamLeaders, setTeamLeaders] = useState<string[]>([]);
 
   const loadFilters = useCallback(async () => {
     const { data } = await supabase
       .from("live_session_issues")
-      .select("issue_reason")
+      .select("issue_reason, team_leader")
       .limit(1000);
     if (data) {
       setIssueTypes(Array.from(new Set(data.map((r) => r.issue_reason).filter(Boolean) as string[])).sort());
+      setTeamLeaders(Array.from(new Set(data.map((r) => r.team_leader).filter(Boolean) as string[])).sort());
     }
   }, []);
 
@@ -95,6 +98,7 @@ export function LiveIssuesTable() {
       .order("created_at", { ascending: false });
 
     if (tutorId.trim()) q = q.ilike("from_tutor_id", `%${tutorId.trim()}%`);
+    if (teamLeader !== ALL) q = q.eq("team_leader", teamLeader);
     if (issueType !== ALL) q = q.eq("issue_reason", issueType);
     if (validation !== ALL) {
       if (validation === "__none__") q = q.is("edu_validation", null);
@@ -120,13 +124,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, issueType, validation, dateFrom, dateTo, search, page]);
+  }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, page]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters change
-  useEffect(() => { setPage(0); }, [tutorId, issueType, validation, dateFrom, dateTo, search]);
+  useEffect(() => { setPage(0); }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search]);
 
   const writeAudit = async (
     row: IssueRow,
@@ -238,6 +242,16 @@ export function LiveIssuesTable() {
               <Input value={tutorId} onChange={(e) => setTutorId(e.target.value)} placeholder="T-1234" />
             </div>
             <div>
+              <Label className="text-xs">Team Leader</Label>
+              <Select value={teamLeader} onValueChange={setTeamLeader}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  {teamLeaders.map((tl) => <SelectItem key={tl} value={tl}>{tl}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-xs">Issue Type</Label>
               <Select value={issueType} onValueChange={setIssueType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -273,7 +287,7 @@ export function LiveIssuesTable() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  setSearch(""); setTutorId(""); setIssueType(ALL);
+                  setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
                   setValidation(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
