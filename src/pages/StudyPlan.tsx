@@ -550,6 +550,7 @@ export default function StudyPlan() {
                         <TableHead className="text-center">Planned modules</TableHead>
                         <TableHead className="text-center">Finished (planned)</TableHead>
                         <TableHead className="text-center">Sessions (actual / sched.)</TableHead>
+                        <TableHead className="text-center">Sessions variance</TableHead>
                         <TableHead className="min-w-[180px]">Adherence</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
@@ -566,48 +567,65 @@ export default function StudyPlan() {
                             t.team_leader.toLowerCase().includes(q)
                           );
                         })
-                        .map((t) => (
-                          <TableRow
-                            key={t.tutor_external_id}
-                            className="cursor-pointer"
-                            onClick={() => setAdherenceSelected(t)}
-                          >
-                            <TableCell className="font-medium">
-                              {t.tutor_name}
-                              <div className="text-xs text-muted-foreground">
-                                {t.tutor_external_id}
-                              </div>
-                            </TableCell>
-                            <TableCell>{t.team_leader}</TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="outline">{t.planned_count}</Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="secondary">
-                                {t.finished_planned_count} / {t.planned_count}
-                              </Badge>
-                              {t.extra_finished_count > 0 && (
-                                <div className="text-[10px] text-muted-foreground mt-1">
-                                  +{t.extra_finished_count} extra
+                        .map((t) => {
+                          const sessionsVariance =
+                            t.actual_sessions_post != null && t.scheduled_sessions_pre != null
+                              ? t.actual_sessions_post - t.scheduled_sessions_pre
+                              : null;
+                          return (
+                            <TableRow
+                              key={t.tutor_external_id}
+                              className="cursor-pointer"
+                              onClick={() => setAdherenceSelected(t)}
+                            >
+                              <TableCell className="font-medium">
+                                {t.tutor_name}
+                                <div className="text-xs text-muted-foreground">
+                                  {t.tutor_external_id}
                                 </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {t.actual_sessions_post ?? "—"} / {t.scheduled_sessions_pre ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Progress value={t.adherence_pct} className="h-2 w-28" />
-                                <span className="text-xs tabular-nums w-10">
-                                  {t.adherence_pct}%
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <AdherenceStatusBadge status={t.status} />
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              </TableCell>
+                              <TableCell>{t.team_leader}</TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline">{t.planned_count}</Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="secondary">
+                                  {t.finished_planned_count} / {t.planned_count}
+                                </Badge>
+                                {t.extra_finished_count > 0 && (
+                                  <div className="text-[10px] text-muted-foreground mt-1">
+                                    +{t.extra_finished_count} extra
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {t.actual_sessions_post ?? "—"} / {t.scheduled_sessions_pre ?? "—"}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {sessionsVariance === null ? (
+                                  <span className="text-muted-foreground">—</span>
+                                ) : sessionsVariance > 0 ? (
+                                  <span className="text-green-600 font-medium">+{sessionsVariance}</span>
+                                ) : sessionsVariance < 0 ? (
+                                  <span className="text-red-600 font-medium">{sessionsVariance}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Progress value={t.adherence_pct} className="h-2 w-28" />
+                                  <span className="text-xs tabular-nums w-10">
+                                    {t.adherence_pct}%
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <AdherenceStatusBadge status={t.status} />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                     </TableBody>
                   </Table>
                 )}
