@@ -414,7 +414,7 @@ const ActionPlans = () => {
           </TabsContent>
         </Tabs>
 
-      </main>
+      </div>
 
       <CreateActionPlanDialog
         open={createOpen}
@@ -452,7 +452,7 @@ const ActionPlans = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppLayout>
   );
 };
 
