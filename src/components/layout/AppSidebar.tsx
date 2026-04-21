@@ -48,7 +48,6 @@ const operations: NavItem[] = [
 
 const tracking: NavItem[] = [
   { title: "Tracking", url: "/tracking", icon: LineChart },
-  { title: "Tracking Numbers", url: "/tracking-numbers", icon: Hash, roles: ["admin"] },
   { title: "Engagement", url: "/engagement", icon: Star, roles: ["admin"] },
   { title: "Weekly Study Plan", url: "/study-plan", icon: BookOpen, roles: ["admin", "team_leader"] },
 ];

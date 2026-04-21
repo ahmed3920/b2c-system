@@ -14,7 +14,7 @@ import Reports from "./pages/Reports";
 import UserManagement from "./pages/UserManagement";
 import TeamDashboard from "./pages/TeamDashboard";
 import SystemDashboard from "./pages/SystemDashboard";
-import TrackingNumbers from "./pages/TrackingNumbers";
+
 import ActionPlans from "./pages/ActionPlans";
 import Engagement from "./pages/Engagement";
 import Dashboard from "./pages/Dashboard";
@@ -52,7 +52,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<SystemDashboard />} />
           {/* All System Tasks route removed - Admins only see team-level aggregates */}
           <Route path="/team/dashboard" element={<TeamDashboard />} />
-          <Route path="/tracking-numbers" element={<TrackingNumbers />} />
+          
           <Route path="/action-plans" element={<ActionPlans />} />
           <Route path="/engagement" element={<Engagement />} />
           {/* New B2C dashboard sections */}
