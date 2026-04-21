@@ -36,12 +36,22 @@ export function CSTicketsTable() {
   const [selected, setSelected] = useState<CSTicket | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
+  const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
   const [search, setSearch] = useState("");
+
+  const isSameDay = (iso: string | null) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  };
 
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
+      if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
+      if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
       if (search) {
         const q = search.toLowerCase();
         if (
