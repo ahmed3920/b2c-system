@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
+import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 
 const tabs = [
   { v: "teams-composition", l: "Teams Composition" },
@@ -177,8 +178,12 @@ export default function Tracking() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="live-issues" className="mt-4">
+            <LiveIssuesTracking />
+          </TabsContent>
+
           {tabs
-            .filter((t) => t.v !== "teams-composition")
+            .filter((t) => t.v !== "teams-composition" && t.v !== "live-issues")
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>
                 <Card>
