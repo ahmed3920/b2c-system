@@ -48,9 +48,31 @@ const COLORS = {
   none: "hsl(215 16% 47%)",
 };
 
+// Custom billing month: runs from the 26th of previous calendar month
+// through the 25th of the labeled month.
+// e.g. "April 2026" = 2026-03-26 .. 2026-04-25  -> key "2026-04"
 function monthKey(d: string | null): string | null {
   if (!d) return null;
-  return d.slice(0, 7); // YYYY-MM
+  // Parse YYYY-MM-DD safely without timezone shifts
+  const [yStr, mStr, dayStr] = d.slice(0, 10).split("-");
+  const y = Number(yStr);
+  const m = Number(mStr); // 1-12
+  const day = Number(dayStr);
+  if (!y || !m || !day) return null;
+  // Days 1..25 belong to current calendar month's billing window
+  // Days 26..31 belong to NEXT calendar month's billing window
+  let billY = y;
+  let billM = m;
+  if (day >= 26) {
+    billM += 1;
+    if (billM > 12) { billM = 1; billY += 1; }
+  }
+  return `${billY}-${String(billM).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string): string {
+  // key = "YYYY-MM" billing month label
+  return format(parseISO(key + "-01"), "MMM yyyy");
 }
 
 export function LiveIssuesTracking() {
