@@ -178,8 +178,12 @@ export default function Tracking() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="live-issues" className="mt-4">
+            <LiveIssuesTracking />
+          </TabsContent>
+
           {tabs
-            .filter((t) => t.v !== "teams-composition")
+            .filter((t) => t.v !== "teams-composition" && t.v !== "live-issues")
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>
                 <Card>
