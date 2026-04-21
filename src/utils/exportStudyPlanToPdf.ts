@@ -305,18 +305,19 @@ function drawCoverPage(
   doc.setTextColor(225, 235, 255);
   doc.text(formatRange(weekStart), MARGIN_X + 100, 122);
 
-  // Mentor card (pastel, sits over the hero edge)
-  const cardY = pageH * 0.55 - 30;
+  // Mentor card sits across the hero edge
+  const cardY = heroH - 36;
   const cardW = pageW - MARGIN_X * 2;
+  const cardH = 110;
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(MARGIN_X, cardY, cardW, 110, 14, 14, "F");
+  doc.roundedRect(MARGIN_X, cardY, cardW, cardH, 14, 14, "F");
   doc.setDrawColor(...BLUE_SOFT);
   doc.setLineWidth(0.8);
-  doc.roundedRect(MARGIN_X, cardY, cardW, 110, 14, 14, "S");
+  doc.roundedRect(MARGIN_X, cardY, cardW, cardH, 14, 14, "S");
 
   // Orange accent bar inside card
   doc.setFillColor(...ORANGE);
-  doc.roundedRect(MARGIN_X + 14, cardY + 14, 4, 82, 2, 2, "F");
+  doc.roundedRect(MARGIN_X + 14, cardY + 14, 4, cardH - 28, 2, 2, "F");
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
@@ -337,9 +338,10 @@ function drawCoverPage(
   );
 
   // KPI tiles below the mentor card
-  const tilesY = cardY + 130;
-  const gap = 14;
+  const tilesY = cardY + cardH + 24;
+  const gap = 16;
   const tileW = (cardW - gap * 3) / 4;
+  const tileH = 110;
   const tiles: Array<{ label: string; value: string; color: [number, number, number]; bg: [number, number, number] }> = [
     { label: "Tutors", value: `${totals.tutors}`, color: BLUE, bg: BLUE_SOFT },
     { label: "Modules", value: `${totals.modules}`, color: ORANGE, bg: ORANGE_SOFT },
@@ -349,16 +351,36 @@ function drawCoverPage(
   tiles.forEach((t, i) => {
     const x = MARGIN_X + (tileW + gap) * i;
     doc.setFillColor(...t.bg);
-    doc.roundedRect(x, tilesY, tileW, 84, 12, 12, "F");
+    doc.roundedRect(x, tilesY, tileW, tileH, 12, 12, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(28);
+    doc.setFontSize(34);
     doc.setTextColor(...t.color);
-    doc.text(t.value, x + 18, tilesY + 44);
+    doc.text(t.value, x + 22, tilesY + 56);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...SUBINK);
-    doc.text(t.label.toUpperCase(), x + 18, tilesY + 66);
+    doc.text(t.label.toUpperCase(), x + 22, tilesY + 82);
   });
+
+  // Tagline strip
+  const tagY = tilesY + tileH + 30;
+  if (tagY < pageH - 50) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...BLUE_DEEP);
+    doc.text("Empowering tutors. Inspiring learners.", pageW / 2, tagY, {
+      align: "center",
+    });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...SUBINK);
+    doc.text(
+      "Planned study modules, allocated hours, and free-time distribution for the team.",
+      pageW / 2,
+      tagY + 18,
+      { align: "center" },
+    );
+  }
 
   // Footer brand line on cover
   drawGradientBar(doc, 0, pageH - 18, pageW, 4, BLUE, ORANGE);
