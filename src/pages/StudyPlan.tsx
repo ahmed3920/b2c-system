@@ -62,6 +62,8 @@ export default function StudyPlan() {
   const [weekStart, setWeekStart] = useState<string>(fridayOf(new Date()));
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
+  const [activeTab, setActiveTab] = useState("plans");
+  const [highlightWeek, setHighlightWeek] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
