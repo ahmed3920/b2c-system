@@ -1271,7 +1271,13 @@ export type Database = {
       action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
       app_role: "admin" | "team_leader" | "mentor" | "community_moderator"
       cs_ticket_case_type: "CS" | "Edu"
-      cs_ticket_status: "Pending" | "Validated" | "Rejected"
+      cs_ticket_status:
+        | "Pending"
+        | "Validated"
+        | "Rejected"
+        | "Valid"
+        | "Not Valid"
+        | "Not a Complain"
       edu_description_type: "deduction" | "no_deduction" | "neutral"
       edu_validation_status: "deduct" | "no_deduction" | "pending"
       task_status: "todo" | "in_progress" | "done" | "archived"
@@ -1414,7 +1420,14 @@ export const Constants = {
       action_plan_status: ["active", "on_hold", "resolved", "escalated"],
       app_role: ["admin", "team_leader", "mentor", "community_moderator"],
       cs_ticket_case_type: ["CS", "Edu"],
-      cs_ticket_status: ["Pending", "Validated", "Rejected"],
+      cs_ticket_status: [
+        "Pending",
+        "Validated",
+        "Rejected",
+        "Valid",
+        "Not Valid",
+        "Not a Complain",
+      ],
       edu_description_type: ["deduction", "no_deduction", "neutral"],
       edu_validation_status: ["deduct", "no_deduction", "pending"],
       task_status: ["todo", "in_progress", "done", "archived"],
