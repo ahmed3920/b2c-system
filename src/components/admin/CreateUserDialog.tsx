@@ -163,6 +163,7 @@ export function CreateUserDialog({
         };
         break;
       case "team_leader":
+      case "super_team_leader":
         schema = teamLeaderSchema;
         dataToValidate = {
           email: formData.email,
