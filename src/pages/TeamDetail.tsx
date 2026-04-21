@@ -140,13 +140,14 @@ export default function TeamDetail() {
                     <TableHead>Role</TableHead>
                     <TableHead>Language</TableHead>
                     <TableHead>Ranking</TableHead>
+                    <TableHead>Employment</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {members.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         No members match the current filters.
                       </TableCell>
                     </TableRow>
@@ -172,6 +173,18 @@ export default function TeamDetail() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{m.ranking || "—"}</TableCell>
+                        <TableCell>
+                          {m.employment_type ? (
+                            <Badge
+                              variant={m.employment_type === "Full-time" ? "default" : "outline"}
+                              className="text-xs"
+                            >
+                              {m.employment_type}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="ghost" asChild>
                             <Link to={`/tutors/${m.id}`}>

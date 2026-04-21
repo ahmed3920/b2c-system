@@ -16,8 +16,11 @@ import {
   Phone,
   User,
   Globe2,
+  Briefcase,
 } from "lucide-react";
 import { getTutorById } from "@/data/tutorRosterHelpers";
+
+// keep import order stable
 
 export default function TutorProfile() {
   const { id } = useParams();
