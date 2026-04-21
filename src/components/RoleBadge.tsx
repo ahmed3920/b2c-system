@@ -35,8 +35,7 @@ const sizeClasses = {
 };
 
 export const RoleBadge = ({ role, size = "md" }: RoleBadgeProps) => {
-  const config = roleConfig[role || "mentor"];
-  
+  const config = roleConfig[(role as keyof typeof roleConfig) || "mentor"] ?? roleConfig.mentor;
   return (
     <span className={`inline-flex items-center rounded-full border font-medium ${config.className} ${sizeClasses[size]}`}>
       {config.label}
