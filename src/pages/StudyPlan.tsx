@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, Sparkles, Download, Ban, CheckCircle2, Circle } from "lucide-react";
+import { Loader2, Sparkles, Download, Ban, CheckCircle2, Circle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeeklyStudyPlans, type WeeklyPlan } from "@/hooks/useWeeklyStudyPlans";
@@ -46,6 +46,7 @@ import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { CourseManagementCard } from "@/components/study-plan/CourseManagementCard";
 import { SnapshotsHistoryCard } from "@/components/study-plan/SnapshotsHistoryCard";
 import { useQueryClient } from "@tanstack/react-query";
+import { GenerateMentorPdfsDialog } from "@/components/study-plan/GenerateMentorPdfsDialog";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -63,6 +64,7 @@ export default function StudyPlan() {
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<WeeklyPlan | null>(null);
   const [activeTab, setActiveTab] = useState("plans");
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { data: plans = [], isLoading, refetch } = useWeeklyStudyPlans(weekStart);
