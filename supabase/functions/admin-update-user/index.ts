@@ -83,16 +83,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update role if provided
+    // Update role if provided — delete existing roles, then insert the new one
+    // (avoids unique constraint violations on (user_id, role) when promoting/demoting)
     if (newRole) {
-      const { error: roleError } = await supabaseAdmin
+      const { error: deleteError } = await supabaseAdmin
         .from("user_roles")
-        .update({ role: newRole })
+        .delete()
         .eq("user_id", userId);
 
-      if (roleError) {
+      if (deleteError) {
         return new Response(
-          JSON.stringify({ error: roleError.message }),
+          JSON.stringify({ error: deleteError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: insertError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) {
+        return new Response(
+          JSON.stringify({ error: insertError.message }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
