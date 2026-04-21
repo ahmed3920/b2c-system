@@ -2,12 +2,13 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
+import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
 
 const sections = [
   { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
   { v: "live-issues", l: "Live Issues" },
   { v: "lateness", l: "Lateness", desc: "Late starts and end-of-shift overruns." },
-  { v: "cs-tickets", l: "CS Tickets", desc: "Customer-support tickets linked to tutors." },
+  { v: "cs-tickets", l: "CS Tickets" },
 ];
 
 export default function Performance() {
@@ -25,7 +26,11 @@ export default function Performance() {
             <LiveIssuesTable />
           </TabsContent>
 
-          {sections.filter((s) => s.v !== "live-issues").map((s) => (
+          <TabsContent value="cs-tickets" className="mt-4">
+            <CSTicketsTable />
+          </TabsContent>
+
+          {sections.filter((s) => s.v !== "live-issues" && s.v !== "cs-tickets").map((s) => (
             <TabsContent key={s.v} value={s.v}>
               <Card>
                 <CardHeader><CardTitle>{s.l}</CardTitle></CardHeader>
