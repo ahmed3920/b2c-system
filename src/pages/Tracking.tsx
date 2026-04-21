@@ -110,7 +110,7 @@ export default function Tracking() {
           <TabsContent value="teams-composition" className="space-y-4">
             {/* Global totals */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-              <SummaryCard icon={<Users className="h-4 w-4" />} label="Teams" value={teams.length} />
+              <SummaryCard icon={<Users className="h-4 w-4" />} label={isTLView ? "Mentors" : "Teams"} value={teams.length} />
               <SummaryCard icon={<Users className="h-4 w-4" />} label="Members" value={totals.total} />
               <SummaryCard icon={<Users className="h-4 w-4" />} label="Tutors" value={totals.tutors} />
               <SummaryCard
@@ -138,10 +138,10 @@ export default function Tracking() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Teams Composition
+                  <Users className="h-4 w-4" /> {isTLView ? "Mentors Composition" : "Teams Composition"}
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  {teams.length} teams · {totals.total} members
+                  {teams.length} {isTLView ? "mentors" : "teams"} · {totals.total} members
                 </p>
               </CardHeader>
               <CardContent>
@@ -149,7 +149,7 @@ export default function Tracking() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Team Leader</TableHead>
+                        <TableHead>{isTLView ? "Mentor" : "Team Leader"}</TableHead>
                         <TableHead className="text-right">Members</TableHead>
                         <TableHead className="text-right">Tutors</TableHead>
                         <TableHead className="text-right">Mentors</TableHead>
