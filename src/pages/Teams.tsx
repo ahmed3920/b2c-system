@@ -8,6 +8,7 @@ import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
+import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 
 export default function Teams() {
   const { isTeamLeader, isAdmin } = useUserRole();
@@ -15,7 +16,7 @@ export default function Teams() {
   const teams = useMemo(() => {
     const all = getTeamSummaries();
     if (isTeamLeader && !isAdmin && myTeamLeader) {
-      return all.filter((t) => t.team_leader === myTeamLeader);
+      return all.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
     }
     return all;
   }, [isTeamLeader, isAdmin, myTeamLeader]);
