@@ -319,6 +319,18 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
+              <Label className="text-xs">Month (26→25)</Label>
+              <Select value={billingMonth} onValueChange={setBillingMonth}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All months</SelectItem>
+                  {monthOptions.map((m) => (
+                    <SelectItem key={m.key} value={m.key}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-xs">Date from</Label>
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
@@ -332,7 +344,7 @@ export function LiveIssuesTable() {
                 className="w-full"
                 onClick={() => {
                   setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
-                  setValidation(ALL); setDateFrom(""); setDateTo("");
+                  setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
                 Clear filters
