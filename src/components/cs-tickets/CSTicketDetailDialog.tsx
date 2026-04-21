@@ -46,6 +46,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
   const [editMode, setEditMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Validation fields
   const [status, setStatus] = useState<CSTicketStatus>("Pending");
