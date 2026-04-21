@@ -186,11 +186,15 @@ export default function Tracking() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button size="sm" variant="ghost" asChild>
-                                <Link to={`/teams/${t.slug}`}>
-                                  <Eye className="h-4 w-4 mr-1" /> View
-                                </Link>
-                              </Button>
+                              {isTLView ? (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              ) : (
+                                <Button size="sm" variant="ghost" asChild>
+                                  <Link to={`/teams/${t.slug}`}>
+                                    <Eye className="h-4 w-4 mr-1" /> View
+                                  </Link>
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
