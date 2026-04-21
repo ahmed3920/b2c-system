@@ -217,7 +217,7 @@ export function LiveIssuesTable() {
     return { label: "—", overridden: false };
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="space-y-4">
