@@ -269,28 +269,42 @@ export default function StudyPlan() {
                           <TableCell>{p.team_leader}</TableCell>
                           <TableCell>{p.free_hours}</TableCell>
                           <TableCell>{p.planned_hours}</TableCell>
-                          <TableCell>{p.items?.length ?? 0}</TableCell>
+                          <TableCell>
+                            {(p.items ?? []).filter(
+                              (it) =>
+                                !blockedKeys.has(
+                                  `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                ),
+                            ).length}
+                          </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1 max-w-md">
                               {(p.items ?? []).length === 0 ? (
                                 <span className="text-xs text-muted-foreground">—</span>
                               ) : (
-                                (p.items ?? []).map((it) => {
-                                  const required = it.module?.hours_required ?? 0;
-                                  const pct = required > 0
-                                    ? Math.round((it.planned_hours / required) * 100)
-                                    : 0;
-                                  return (
-                                    <Badge
-                                      key={it.id}
-                                      variant={it.is_partial ? "outline" : "secondary"}
-                                      className="text-xs"
-                                      title={`${it.planned_hours}h of ${required}h required`}
-                                    >
-                                      {it.module?.grade_band ?? "?"} · {it.module?.module_code ?? "?"} — {pct}%
-                                    </Badge>
-                                  );
-                                })
+                                (p.items ?? [])
+                                  .filter(
+                                    (it) =>
+                                      !blockedKeys.has(
+                                        `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                      ),
+                                  )
+                                  .map((it) => {
+                                    const required = it.module?.hours_required ?? 0;
+                                    const pct = required > 0
+                                      ? Math.round((it.planned_hours / required) * 100)
+                                      : 0;
+                                    return (
+                                      <Badge
+                                        key={it.id}
+                                        variant={it.is_partial ? "outline" : "secondary"}
+                                        className="text-xs"
+                                        title={`${it.planned_hours}h of ${required}h required`}
+                                      >
+                                        {it.module?.grade_band ?? "?"} · {it.module?.module_code ?? "?"} — {pct}%
+                                      </Badge>
+                                    );
+                                  })
                               )}
                             </div>
                           </TableCell>
@@ -364,7 +378,7 @@ export default function StudyPlan() {
                           .map((r) => {
                             const blockedCount = r.remaining_modules.reduce(
                               (n, m) =>
-                                blockedKeys.has(`${r.tutor_external_id}::${m.module_code}`)
+                                blockedKeys.has(`${r.tutor_external_id}::${m.grade_band}::${m.module_code}`)
                                   ? n + 1
                                   : n,
                               0,
@@ -410,7 +424,7 @@ export default function StudyPlan() {
                                     ) : (
                                       r.remaining_modules
                                         .map((m, i) => {
-                                          const key = `${r.tutor_external_id}::${m.module_code}`;
+                                          const key = `${r.tutor_external_id}::${m.grade_band}::${m.module_code}`;
                                           const isBlocked = blockedKeys.has(key);
                                           if (isBlocked && hideBlocked) return null;
                                           return (
