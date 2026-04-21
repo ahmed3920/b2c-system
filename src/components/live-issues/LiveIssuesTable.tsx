@@ -168,7 +168,7 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, teamLeader, issueType, validation, dateFrom, dateTo, search, page, pageSize]);
+  }, [tutorId, teamLeader, issueType, validation, billingMonth, dateFrom, dateTo, search, page, pageSize]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
