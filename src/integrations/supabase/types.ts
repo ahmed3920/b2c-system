@@ -231,7 +231,6 @@ export type Database = {
           ticket_date: string
           ticket_number: string
           tutor_external_id: string
-          tutor_id: string
           tutor_name: string
           updated_at: string
         }
@@ -251,7 +250,6 @@ export type Database = {
           ticket_date?: string
           ticket_number?: string
           tutor_external_id: string
-          tutor_id: string
           tutor_name: string
           updated_at?: string
         }
@@ -271,19 +269,10 @@ export type Database = {
           ticket_date?: string
           ticket_number?: string
           tutor_external_id?: string
-          tutor_id?: string
           tutor_name?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "cs_tickets_tutor_id_fkey"
-            columns: ["tutor_id"]
-            isOneToOne: false
-            referencedRelation: "tutors"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       edu_descriptions: {
         Row: {
@@ -1082,33 +1071,6 @@ export type Database = {
           tutor_name?: string
           updated_at?: string
           week_start?: string
-        }
-        Relationships: []
-      }
-      tutors: {
-        Row: {
-          created_at: string
-          full_name: string
-          id: string
-          team_leader: string
-          tutor_external_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          full_name: string
-          id?: string
-          team_leader: string
-          tutor_external_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          full_name?: string
-          id?: string
-          team_leader?: string
-          tutor_external_id?: string
-          updated_at?: string
         }
         Relationships: []
       }
