@@ -1271,6 +1271,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cs_ticket_belongs_to_me: {
+        Args: { _team_leader: string }
+        Returns: boolean
+      }
       get_current_user_mentor_name: { Args: never; Returns: string }
       get_team_task_stats: {
         Args: never
