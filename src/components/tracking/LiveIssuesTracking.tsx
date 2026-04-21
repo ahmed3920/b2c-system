@@ -568,6 +568,33 @@ export function LiveIssuesTracking() {
         </Card>
       </div>
 
+      {/* Edu Description breakdown */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Issues by Edu Description</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Categorization of validated cases using the configured Edu Descriptions.
+          </p>
+        </CardHeader>
+        <CardContent className="h-[300px]">
+          {eduDescData.length === 0 ? (
+            <EmptyChart />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={eduDescData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 11 }} />
+                <RTooltip />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {eduDescData.map((d) => <Cell key={d.name} fill={d.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Smart Insights */}
       {insights.length > 0 && (
         <Card>
