@@ -128,8 +128,33 @@ export const getVisibleFeaturePlans = (): FeaturePlan[] =>
   store.filter((f) => f.visibility !== "hidden");
 
 export const addFeaturePlan = (f: Omit<FeaturePlan, "id">) => {
-  store = [{ ...f, id: `f-${Date.now()}` }, ...store];
+  const newPlan = { ...f, id: `f-${Date.now()}` };
+  store = [newPlan, ...store];
   notify();
+  // Also register the feature in Feature Control so admins can toggle visibility per role.
+  // Imported lazily to avoid circular dependencies.
+  import("@/integrations/supabase/client").then(({ supabase }) => {
+    const featureKey = `plan_${newPlan.id}`.replace(/[^a-z0-9_]/gi, "_").toLowerCase();
+    const visibleToTL = newPlan.visibility === "team_leaders" || newPlan.visibility === "both";
+    const visibleToMentor = newPlan.visibility === "mentors" || newPlan.visibility === "both";
+    supabase
+      .from("feature_controls")
+      .insert({
+        feature_key: featureKey,
+        name: newPlan.name,
+        description: newPlan.description,
+        route_path: null,
+        display_order: 1000,
+        enabled_admin: true,
+        enabled_super_team_leader: visibleToTL,
+        enabled_team_leader: visibleToTL,
+        enabled_mentor: visibleToMentor,
+        enabled_community_moderator: visibleToMentor,
+      })
+      .then(() => {
+        /* best-effort; fail silently if duplicate or no permission */
+      });
+  });
 };
 
 export const updateFeaturePlan = (id: string, patch: Partial<FeaturePlan>) => {
