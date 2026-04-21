@@ -312,12 +312,24 @@ export default function StudyPlan() {
                 <CardTitle>Tutor module progress — week of {weekStart}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Input
-                  placeholder="Filter by tutor name, ID or team leader…"
-                  value={progressFilter}
-                  onChange={(e) => setProgressFilter(e.target.value)}
-                  className="max-w-md"
-                />
+                <div className="flex flex-wrap items-center gap-4">
+                  <Input
+                    placeholder="Filter by tutor name, ID or team leader…"
+                    value={progressFilter}
+                    onChange={(e) => setProgressFilter(e.target.value)}
+                    className="max-w-md"
+                  />
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Switch
+                      id="hide-blocked"
+                      checked={hideBlocked}
+                      onCheckedChange={setHideBlocked}
+                    />
+                    <Label htmlFor="hide-blocked" className="text-sm cursor-pointer">
+                      Hide Blocked Modules
+                    </Label>
+                  </div>
+                </div>
                 {progressLoading ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -327,67 +339,152 @@ export default function StudyPlan() {
                     No tutors synced for this week yet.
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tutor</TableHead>
-                        <TableHead>Team Leader</TableHead>
-                        <TableHead className="text-center">Finished (from sheet)</TableHead>
-                        <TableHead className="text-center">Remaining to study</TableHead>
-                        <TableHead>Remaining modules (to study)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {progress
-                        .filter((r) => {
-                          const q = progressFilter.trim().toLowerCase();
-                          if (!q) return true;
-                          return (
-                            r.tutor_name.toLowerCase().includes(q) ||
-                            r.tutor_external_id.toLowerCase().includes(q) ||
-                            r.team_leader.toLowerCase().includes(q)
-                          );
-                        })
-                        .map((r) => (
-                          <TableRow key={r.tutor_external_id}>
-                            <TableCell className="font-medium">
-                              {r.tutor_name}
-                              <div className="text-xs text-muted-foreground">
-                                {r.tutor_external_id}
-                              </div>
-                            </TableCell>
-                            <TableCell>{r.team_leader}</TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="secondary">
-                                {r.finished_count} / {r.total_modules}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {r.remaining_count === 0 ? (
-                                <Badge className="bg-primary hover:bg-primary text-primary-foreground">Done</Badge>
-                              ) : (
-                                <Badge variant="outline">{r.remaining_count}</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1 max-w-xl">
-                                {r.remaining_modules.length === 0 ? (
-                                  <span className="text-xs text-muted-foreground">
-                                    All modules completed
-                                  </span>
-                                ) : (
-                                  r.remaining_modules.map((m, i) => (
-                                    <Badge key={i} variant="outline" className="text-xs">
-                                      {m.grade_band} · {m.module_code}
+                  <TooltipProvider delayDuration={200}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tutor</TableHead>
+                          <TableHead>Team Leader</TableHead>
+                          <TableHead className="text-center">Finished (from sheet)</TableHead>
+                          <TableHead className="text-center">Remaining to study</TableHead>
+                          <TableHead>Remaining modules (to study)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {progress
+                          .filter((r) => {
+                            const q = progressFilter.trim().toLowerCase();
+                            if (!q) return true;
+                            return (
+                              r.tutor_name.toLowerCase().includes(q) ||
+                              r.tutor_external_id.toLowerCase().includes(q) ||
+                              r.team_leader.toLowerCase().includes(q)
+                            );
+                          })
+                          .map((r) => {
+                            const blockedCount = r.remaining_modules.reduce(
+                              (n, m) =>
+                                blockedKeys.has(`${r.tutor_external_id}::${m.module_code}`)
+                                  ? n + 1
+                                  : n,
+                              0,
+                            );
+                            const effectiveRemaining = Math.max(
+                              0,
+                              r.remaining_count - blockedCount,
+                            );
+                            return (
+                              <TableRow key={r.tutor_external_id}>
+                                <TableCell className="font-medium">
+                                  {r.tutor_name}
+                                  <div className="text-xs text-muted-foreground">
+                                    {r.tutor_external_id}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{r.team_leader}</TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant="secondary">
+                                    {r.finished_count} / {r.total_modules}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {effectiveRemaining === 0 ? (
+                                    <Badge className="bg-primary hover:bg-primary text-primary-foreground">
+                                      Done
                                     </Badge>
-                                  ))
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
+                                  ) : (
+                                    <Badge variant="outline">{effectiveRemaining}</Badge>
+                                  )}
+                                  {blockedCount > 0 && (
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                      {blockedCount} blocked excluded
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1.5 max-w-xl">
+                                    {r.remaining_modules.length === 0 ? (
+                                      <span className="text-xs text-muted-foreground">
+                                        All modules completed
+                                      </span>
+                                    ) : (
+                                      r.remaining_modules
+                                        .map((m, i) => {
+                                          const key = `${r.tutor_external_id}::${m.module_code}`;
+                                          const isBlocked = blockedKeys.has(key);
+                                          if (isBlocked && hideBlocked) return null;
+                                          return (
+                                            <div
+                                              key={i}
+                                              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
+                                                isBlocked
+                                                  ? "opacity-50 bg-muted/40 border-dashed"
+                                                  : "bg-background"
+                                              }`}
+                                            >
+                                              <span className="font-medium">
+                                                {m.grade_band} · {m.module_code}
+                                              </span>
+                                              {isBlocked ? (
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="border-destructive/50 text-destructive text-[10px] py-0 px-1.5"
+                                                    >
+                                                      <Ban className="h-3 w-3 mr-0.5" />
+                                                      Blocked – Device Limitation
+                                                    </Badge>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent>
+                                                    Module skipped due to device requirements
+                                                  </TooltipContent>
+                                                </Tooltip>
+                                              ) : (
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="text-[10px] py-0 px-1.5"
+                                                >
+                                                  <Circle className="h-2.5 w-2.5 mr-0.5" />
+                                                  Not Studied
+                                                </Badge>
+                                              )}
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => toggleBlocked(key)}
+                                                    className="ml-0.5 text-muted-foreground hover:text-foreground"
+                                                    aria-label={
+                                                      isBlocked ? "Unblock module" : "Mark as Blocked"
+                                                    }
+                                                  >
+                                                    {isBlocked ? (
+                                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                      <Ban className="h-3.5 w-3.5" />
+                                                    )}
+                                                  </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                  {isBlocked
+                                                    ? "Restore module"
+                                                    : "Mark as Blocked (Device Limitation)"}
+                                                </TooltipContent>
+                                              </Tooltip>
+                                            </div>
+                                          );
+                                        })
+                                        .filter(Boolean)
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </TooltipProvider>
                 )}
               </CardContent>
             </Card>
