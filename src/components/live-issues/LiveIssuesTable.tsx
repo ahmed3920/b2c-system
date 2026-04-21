@@ -311,6 +311,19 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
+              <Label className="text-xs">Edu Description</Label>
+              <Select value={eduDescId} onValueChange={setEduDescId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>All</SelectItem>
+                  <SelectItem value="__none__">Not set</SelectItem>
+                  {descriptions.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-xs">Edu Validation</Label>
               <Select value={validation} onValueChange={setValidation}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
