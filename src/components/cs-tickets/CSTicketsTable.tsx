@@ -14,6 +14,7 @@ import { useCSTickets, type CSTicket } from "./useCSTickets";
 import type { CSTicketStatus } from "./csTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
+import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 
 const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructive" | "outline"> = {
   Pending: "secondary",
