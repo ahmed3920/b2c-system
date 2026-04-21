@@ -212,37 +212,69 @@ export async function generateMentorStudyPlanPdf(
   doc.save(`study-plan-${safeFile(mentor)}-${weekStart}.pdf`);
 }
 
+export interface MentorPdfReady {
+  mentor: string;
+  fileName: string;
+  url: string; // object URL for individual download
+  blob: Blob;
+  tutors: number;
+}
+
+export interface BulkProgressEvents {
+  onStart?: (mentor: string, index: number, total: number) => void;
+  onReady?: (info: MentorPdfReady, index: number, total: number) => void;
+  onError?: (mentor: string, error: Error, index: number, total: number) => void;
+  onZipReady?: (zipFileName: string, zipUrl: string) => void;
+}
+
 export async function generateBulkMentorStudyPlansZip(
   weekStart: string,
   plans: WeeklyPlan[],
-): Promise<{ mentors: number; fileName: string } | null> {
+  events: BulkProgressEvents = {},
+): Promise<{ mentors: number; fileName: string; zipUrl: string } | null> {
   const groups = groupPlansByMentor(plans);
   if (groups.length === 0) return null;
 
   const logoDataUrl = await loadImage(logoUrl).catch(() => undefined);
   const zip = new JSZip();
+  const total = groups.length;
 
-  for (const g of groups) {
-    const doc = buildMentorPdf({
-      weekStart,
-      mentor: g.mentor,
-      plans: g.plans,
-      logoDataUrl,
-    });
-    const blob = doc.output("blob");
-    zip.file(`study-plan-${safeFile(g.mentor)}-${weekStart}.pdf`, blob);
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    events.onStart?.(g.mentor, i, total);
+    try {
+      // Yield to the event loop so the UI can paint the "in-progress" state
+      await new Promise((r) => setTimeout(r, 0));
+      const doc = buildMentorPdf({
+        weekStart,
+        mentor: g.mentor,
+        plans: g.plans,
+        logoDataUrl,
+      });
+      const blob = doc.output("blob");
+      const fileName = `study-plan-${safeFile(g.mentor)}-${weekStart}.pdf`;
+      zip.file(fileName, blob);
+      const url = URL.createObjectURL(blob);
+      events.onReady?.(
+        { mentor: g.mentor, fileName, url, blob, tutors: g.plans.length },
+        i,
+        total,
+      );
+    } catch (e: any) {
+      events.onError?.(g.mentor, e instanceof Error ? e : new Error(String(e)), i, total);
+    }
   }
 
   const zipBlob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(zipBlob);
-  const a = document.createElement("a");
+  const zipUrl = URL.createObjectURL(zipBlob);
   const fileName = `study-plans-${weekStart}.zip`;
-  a.href = url;
+  const a = document.createElement("a");
+  a.href = zipUrl;
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  events.onZipReady?.(fileName, zipUrl);
 
-  return { mentors: groups.length, fileName };
+  return { mentors: groups.length, fileName, zipUrl };
 }
