@@ -30,9 +30,7 @@ interface IssueRow {
   from_tutor_name: string | null;
   team_leader: string | null;
   issue_reason: string | null;
-  severity: string | null;
-  moderator_decision: string | null;
-  moderation_deduction: string | null;
+  issue_details: string | null;
   edu_validation: EduValidation;
   edu_description_id: string | null;
   edu_notes: string | null;
@@ -64,7 +62,6 @@ export function LiveIssuesTable() {
   const [search, setSearch] = useState("");
   const [tutorId, setTutorId] = useState("");
   const [issueType, setIssueType] = useState<string>(ALL);
-  const [severity, setSeverity] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -75,16 +72,14 @@ export function LiveIssuesTable() {
 
   // Distinct filter options (from current page-agnostic small query)
   const [issueTypes, setIssueTypes] = useState<string[]>([]);
-  const [severities, setSeverities] = useState<string[]>([]);
 
   const loadFilters = useCallback(async () => {
     const { data } = await supabase
       .from("live_session_issues")
-      .select("issue_reason, severity")
+      .select("issue_reason")
       .limit(1000);
     if (data) {
       setIssueTypes(Array.from(new Set(data.map((r) => r.issue_reason).filter(Boolean) as string[])).sort());
-      setSeverities(Array.from(new Set(data.map((r) => r.severity).filter(Boolean) as string[])).sort());
     }
   }, []);
 
@@ -93,7 +88,7 @@ export function LiveIssuesTable() {
     let q = supabase
       .from("live_session_issues")
       .select(
-        "id, case_id, session_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, severity, moderator_decision, moderation_deduction, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
+        "id, case_id, session_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
         { count: "exact" },
       )
       .order("session_date", { ascending: false, nullsFirst: false })
@@ -101,7 +96,6 @@ export function LiveIssuesTable() {
 
     if (tutorId.trim()) q = q.ilike("from_tutor_id", `%${tutorId.trim()}%`);
     if (issueType !== ALL) q = q.eq("issue_reason", issueType);
-    if (severity !== ALL) q = q.eq("severity", severity);
     if (validation !== ALL) {
       if (validation === "__none__") q = q.is("edu_validation", null);
       else q = q.eq("edu_validation", validation as "deduct" | "no_deduction" | "pending");
@@ -126,13 +120,13 @@ export function LiveIssuesTable() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [tutorId, issueType, severity, validation, dateFrom, dateTo, search, page]);
+  }, [tutorId, issueType, validation, dateFrom, dateTo, search, page]);
 
   useEffect(() => { loadFilters(); }, [loadFilters]);
   useEffect(() => { load(); }, [load]);
 
   // Reset page when filters change
-  useEffect(() => { setPage(0); }, [tutorId, issueType, severity, validation, dateFrom, dateTo, search]);
+  useEffect(() => { setPage(0); }, [tutorId, issueType, validation, dateFrom, dateTo, search]);
 
   const writeAudit = async (
     row: IssueRow,
@@ -214,7 +208,7 @@ export function LiveIssuesTable() {
       const map: Record<string, string> = { deduct: "Deduct", no_deduction: "No Deduction", pending: "Pending" };
       return { label: map[row.edu_validation], overridden: true };
     }
-    return { label: row.moderation_deduction || "—", overridden: false };
+    return { label: "—", overridden: false };
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -254,16 +248,6 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Severity</Label>
-              <Select value={severity} onValueChange={setSeverity}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>All</SelectItem>
-                  {severities.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label className="text-xs">Edu Validation</Label>
               <Select value={validation} onValueChange={setValidation}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -289,7 +273,7 @@ export function LiveIssuesTable() {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  setSearch(""); setTutorId(""); setIssueType(ALL); setSeverity(ALL);
+                  setSearch(""); setTutorId(""); setIssueType(ALL);
                   setValidation(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
@@ -320,9 +304,7 @@ export function LiveIssuesTable() {
                   <TableHead>Date</TableHead>
                   <TableHead>Tutor</TableHead>
                   <TableHead>Issue</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Mod. Decision</TableHead>
-                  <TableHead>Mod. Deduction</TableHead>
+                  <TableHead>Issue Details</TableHead>
                   <TableHead className="bg-amber-50/50 dark:bg-amber-950/10">Edu Validation</TableHead>
                   <TableHead className="bg-amber-50/50 dark:bg-amber-950/10">Edu Description</TableHead>
                   <TableHead>Final</TableHead>
@@ -331,11 +313,11 @@ export function LiveIssuesTable() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={11} className="h-24 text-center">
+                  <TableRow><TableCell colSpan={9} className="h-24 text-center">
                     <Loader2 className="h-5 w-5 animate-spin inline" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
+                  <TableRow><TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                     No cases. Sync the moderation sheet to load data.
                   </TableCell></TableRow>
                 ) : rows.map((row) => {
@@ -354,9 +336,11 @@ export function LiveIssuesTable() {
                         <div className="text-muted-foreground">{row.from_tutor_id}</div>
                       </TableCell>
                       <TableCell className="text-xs">{row.issue_reason || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.severity || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.moderator_decision || "—"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{row.moderation_deduction || "—"}</TableCell>
+                      <TableCell className="text-xs max-w-[280px]">
+                        <div className="line-clamp-3 whitespace-pre-wrap" title={row.issue_details ?? ""}>
+                          {row.issue_details || "—"}
+                        </div>
+                      </TableCell>
                       <TableCell className="bg-amber-50/50 dark:bg-amber-950/10">
                         {canEdit ? (
                           <Select
