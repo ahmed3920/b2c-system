@@ -62,7 +62,6 @@ export function LiveIssuesTable() {
   const [search, setSearch] = useState("");
   const [tutorId, setTutorId] = useState("");
   const [issueType, setIssueType] = useState<string>(ALL);
-  const [severity, setSeverity] = useState<string>(ALL);
   const [validation, setValidation] = useState<string>(ALL);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -73,16 +72,14 @@ export function LiveIssuesTable() {
 
   // Distinct filter options (from current page-agnostic small query)
   const [issueTypes, setIssueTypes] = useState<string[]>([]);
-  const [severities, setSeverities] = useState<string[]>([]);
 
   const loadFilters = useCallback(async () => {
     const { data } = await supabase
       .from("live_session_issues")
-      .select("issue_reason, severity")
+      .select("issue_reason")
       .limit(1000);
     if (data) {
       setIssueTypes(Array.from(new Set(data.map((r) => r.issue_reason).filter(Boolean) as string[])).sort());
-      setSeverities(Array.from(new Set(data.map((r) => r.severity).filter(Boolean) as string[])).sort());
     }
   }, []);
 
