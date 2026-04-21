@@ -19,8 +19,10 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { role, isLoading: roleLoading } = useUserRole();
+  const { features, loading: featuresLoading } = useFeatureControls();
   const [authChecked, setAuthChecked] = useState(false);
   const [displayName, setDisplayName] = useState("");
 
