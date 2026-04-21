@@ -320,6 +320,7 @@ export function CreateUserDialog({
                   "flex items-center justify-center w-12 h-12 rounded-lg",
                   type.value === "admin" && "bg-destructive/10 text-destructive",
                   type.value === "team_leader" && "bg-secondary/10 text-secondary",
+                  type.value === "super_team_leader" && "bg-amber-100 text-amber-700",
                   type.value === "mentor" && "bg-primary/10 text-primary",
                   type.value === "community_moderator" && "bg-purple-100 text-purple-700"
                 )}>
