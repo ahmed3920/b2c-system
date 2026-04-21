@@ -401,7 +401,7 @@ export function LiveIssuesTracking() {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
             <div>
               <Label className="text-xs flex items-center gap-1"><Filter className="h-3 w-3" /> Month</Label>
               <Select value={month} onValueChange={setMonth}>
