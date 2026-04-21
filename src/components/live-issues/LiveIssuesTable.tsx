@@ -261,19 +261,6 @@ export function LiveIssuesTable() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Edu Validation</Label>
-              <Select value={validation} onValueChange={setValidation}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>All</SelectItem>
-                  <SelectItem value="__none__">Not validated</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="deduct">Deduct</SelectItem>
-                  <SelectItem value="no_deduction">No Deduction</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label className="text-xs">Date from</Label>
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
