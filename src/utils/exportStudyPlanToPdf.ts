@@ -160,8 +160,12 @@ function buildMentorPdf({
       const code = it.module?.module_code ?? "?";
       const required = Number(it.module?.hours_required ?? 0);
       const itemPlanned = Number(it.planned_hours ?? 0);
-      const partial = it.is_partial ? "Half" : "Full";
-      const moduleText = `Grade ${grade} — ${code}  (${partial})`;
+      // Completion % of this module for this week = planned / required hours.
+      const pct =
+        required > 0
+          ? Math.min(100, Math.round((itemPlanned / required) * 100))
+          : 0;
+      const moduleText = `Grade ${grade} — ${code}  (${pct}%)`;
       const timeText = required
         ? `${itemPlanned} of ${required} h`
         : `${itemPlanned} h`;
