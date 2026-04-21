@@ -44,7 +44,7 @@ export function AnnouncementFormDialog({ open, onOpenChange, announcement }: Pro
     }
   }, [open, announcement]);
 
-  const handleSubmit = (status: "published" | "draft") => {
+  const handleSubmit = async (status: "published" | "draft") => {
     if (!title.trim()) {
       toast({ title: "Title is required", variant: "destructive" });
       return;
@@ -61,12 +61,33 @@ export function AnnouncementFormDialog({ open, onOpenChange, announcement }: Pro
       date: date.toISOString(),
       status,
     };
+    const wasPublished = announcement?.status === "published";
     if (announcement) {
       updateAnnouncement(announcement.id, payload);
-      toast({ title: status === "published" ? "Announcement published" : "Draft saved" });
     } else {
       addAnnouncement(payload);
-      toast({ title: status === "published" ? "Announcement published" : "Draft saved" });
+    }
+
+    // Send notifications when publishing (newly published only)
+    if (status === "published" && !wasPublished) {
+      try {
+        const { error } = await supabase.rpc("broadcast_announcement_notification", {
+          _title: payload.title,
+          _audience: payload.audience,
+          _priority: payload.priority,
+        });
+        if (error) throw error;
+        toast({ title: "Announcement published", description: "Recipients have been notified." });
+      } catch (e) {
+        console.error("Failed to send announcement notifications", e);
+        toast({
+          title: "Published, but notifications failed",
+          description: "The announcement was saved but recipients were not notified.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({ title: status === "published" ? "Announcement updated" : "Draft saved" });
     }
     onOpenChange(false);
   };
