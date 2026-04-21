@@ -205,6 +205,10 @@ export default function StudyPlan() {
             <TabsTrigger value="plans">Weekly Plans</TabsTrigger>
             <TabsTrigger value="progress">Tutor Progress</TabsTrigger>
             <TabsTrigger value="adherence">Plan vs Actual</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="courses">Course Management</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="plans">
@@ -260,6 +264,7 @@ export default function StudyPlan() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Tutor</TableHead>
+                        <TableHead>Mentor</TableHead>
                         <TableHead>Team Leader</TableHead>
                         <TableHead>Free h</TableHead>
                         <TableHead>Planned h</TableHead>
@@ -280,6 +285,9 @@ export default function StudyPlan() {
                             <div className="text-xs text-muted-foreground">
                               {p.tutor_external_id}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getMentorForTutor(p.tutor_external_id)}
                           </TableCell>
                           <TableCell>{p.team_leader}</TableCell>
                           <TableCell>{p.free_hours}</TableCell>
