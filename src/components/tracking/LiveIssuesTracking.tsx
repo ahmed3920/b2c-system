@@ -364,12 +364,12 @@ export function LiveIssuesTracking() {
   const totalPages = Math.max(1, Math.ceil(sortedDetail.length / PAGE_SIZE));
 
   const clearFilters = () => {
-    setMonth(ALL); setTlFilter(ALL); setValidationFilter(ALL);
+    setMonth(ALL); setTlFilter(ALL); setValidationFilter(ALL); setEduDescFilter(ALL);
     setDateFrom(""); setDateTo(""); setTutorDrill(null);
   };
 
   const hasFilters = month !== ALL || tlFilter !== ALL || validationFilter !== ALL ||
-    dateFrom || dateTo || tutorDrill;
+    eduDescFilter !== ALL || dateFrom || dateTo || tutorDrill;
 
   return (
     <div className="space-y-4">
