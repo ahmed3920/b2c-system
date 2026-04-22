@@ -198,14 +198,19 @@ Deno.serve(async (req) => {
       edu_case: findCol(headerNorm, ["Edu Case Mar", "Edu Case", "Education Case"]),
     };
 
-    // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name)
+    // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name).
+    // Keys are lowercased + trimmed so lookups are case-insensitive — sheet rows sometimes
+    // arrive with mixed casing (e.g. "T-12183" vs "t-12183").
     const { data: tutorRows } = await admin
       .from("action_plan_tutors")
       .select("tutor_external_id, team_leader");
     const tutorTlMap = new Map<string, string>();
     for (const t of (tutorRows ?? [])) {
       if (t.tutor_external_id && t.team_leader) {
-        tutorTlMap.set(String(t.tutor_external_id).trim(), String(t.team_leader).trim());
+        tutorTlMap.set(
+          String(t.tutor_external_id).trim().toLowerCase(),
+          String(t.team_leader).trim(),
+        );
       }
     }
 
@@ -268,9 +273,9 @@ Deno.serve(async (req) => {
       const raw: Record<string, string> = {};
       header.forEach((h, i) => { raw[h] = get(row, i); });
 
-      // Resolve team_leader: prefer tutor map (already normalized), else normalize sheet value
+      // Resolve team_leader: prefer tutor map (case-insensitive lookup), else normalize sheet value
       const sheetTl = get(row, cols.team_leader) || null;
-      const tutorTl = fromTid ? tutorTlMap.get(fromTid) : undefined;
+      const tutorTl = fromTid ? tutorTlMap.get(fromTid.trim().toLowerCase()) : undefined;
       const resolvedTl = tutorTl ?? normalizeTeamLeader(sheetTl);
 
       // Pull validation fields from sheet, but don't overwrite TL edits already in DB
