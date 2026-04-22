@@ -12,7 +12,9 @@ export interface Announcement {
   status: AnnouncementStatus;
 }
 
-let store: Announcement[] = [
+const STORAGE_KEY = "ischool_announcements_v1";
+
+const seed: Announcement[] = [
   {
     id: "a1",
     title: "Q2 Performance Review Window Open",
@@ -55,8 +57,35 @@ let store: Announcement[] = [
   },
 ];
 
+const loadStore = (): Announcement[] => {
+  if (typeof window === "undefined") return [...seed];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [...seed];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as Announcement[];
+    return [...seed];
+  } catch {
+    return [...seed];
+  }
+};
+
+let store: Announcement[] = loadStore();
+
+const persist = () => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    /* ignore quota errors */
+  }
+};
+
 const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((l) => l());
+const notify = () => {
+  persist();
+  listeners.forEach((l) => l());
+};
 
 export const subscribeAnnouncements = (cb: () => void) => {
   listeners.add(cb);

@@ -52,7 +52,9 @@ export const visibilityLabel = (v: FeatureVisibility) =>
     ? "Both"
     : "Hidden";
 
-let store: FeaturePlan[] = [
+const STORAGE_KEY = "ischool_feature_plans_v1";
+
+const seed: FeaturePlan[] = [
   {
     id: "f1",
     name: "Bulk Task Assignment",
@@ -114,8 +116,35 @@ let store: FeaturePlan[] = [
   },
 ];
 
+const loadStore = (): FeaturePlan[] => {
+  if (typeof window === "undefined") return [...seed];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [...seed];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as FeaturePlan[];
+    return [...seed];
+  } catch {
+    return [...seed];
+  }
+};
+
+let store: FeaturePlan[] = loadStore();
+
+const persist = () => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    /* ignore quota errors */
+  }
+};
+
 const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((l) => l());
+const notify = () => {
+  persist();
+  listeners.forEach((l) => l());
+};
 
 export const subscribeFeaturePlans = (cb: () => void) => {
   listeners.add(cb);
