@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CATEGORY_LABELS, SELECTABLE_CATEGORIES, useActionPlanTutors, type ActionPlanCategory } from "@/hooks/useActionPlans";
+import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 import { CategoryDecisionHelper } from "./CategoryDecisionHelper";
 
 interface Props {
@@ -41,7 +42,8 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
   // Admins can pick any tutor; TLs only see their own (RLS already enforces)
   const visibleTutors = useMemo(() => {
     if (isAdmin) return tutors;
-    return tutors.filter((t) => t.team_leader === currentTeamLeader);
+    if (!currentTeamLeader) return tutors; // RLS already filters; don't hide while loading
+    return tutors.filter((t) => teamLeaderMatches(t.team_leader, currentTeamLeader));
   }, [tutors, isAdmin, currentTeamLeader]);
 
   const selectedTutor = visibleTutors.find((t) => t.id === tutorId);
