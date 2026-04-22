@@ -42,7 +42,8 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
   // Admins can pick any tutor; TLs only see their own (RLS already enforces)
   const visibleTutors = useMemo(() => {
     if (isAdmin) return tutors;
-    return tutors.filter((t) => t.team_leader === currentTeamLeader);
+    if (!currentTeamLeader) return tutors; // RLS already filters; don't hide while loading
+    return tutors.filter((t) => teamLeaderMatches(t.team_leader, currentTeamLeader));
   }, [tutors, isAdmin, currentTeamLeader]);
 
   const selectedTutor = visibleTutors.find((t) => t.id === tutorId);
