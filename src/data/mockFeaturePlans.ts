@@ -52,7 +52,9 @@ export const visibilityLabel = (v: FeatureVisibility) =>
     ? "Both"
     : "Hidden";
 
-let store: FeaturePlan[] = [
+const STORAGE_KEY = "ischool_feature_plans_v1";
+
+const seed: FeaturePlan[] = [
   {
     id: "f1",
     name: "Bulk Task Assignment",
