@@ -57,45 +57,85 @@ const seed: Announcement[] = [
   },
 ];
 
-const loadStore = (): Announcement[] => {
-  if (typeof window === "undefined") return [...seed];
+const cloneSeed = (): Announcement[] => seed.map((item) => ({ ...item }));
+
+const readStoredAnnouncements = (): Announcement[] | null => {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [...seed];
+    if (raw === null) return null;
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as Announcement[];
-    return [...seed];
+    return Array.isArray(parsed) ? (parsed as Announcement[]) : null;
   } catch {
-    return [...seed];
+    return null;
   }
 };
 
-let store: Announcement[] = loadStore();
+let store: Announcement[] = cloneSeed();
 
-const persist = () => {
+const persist = (nextStore: Announcement[] = store) => {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextStore));
   } catch {
-    /* ignore quota errors */
+    /* ignore storage write errors */
   }
 };
 
+const syncStoreFromStorage = () => {
+  const stored = readStoredAnnouncements();
+  if (stored) {
+    store = stored;
+    return;
+  }
+
+  store = cloneSeed();
+  persist(store);
+};
+
+syncStoreFromStorage();
+
 const listeners = new Set<() => void>();
+
+const emit = () => {
+  listeners.forEach((l) => l());
+};
+
+const handleStorageChange = (event: StorageEvent) => {
+  if (event.key !== STORAGE_KEY) return;
+  syncStoreFromStorage();
+  emit();
+};
+
 const notify = () => {
   persist();
-  listeners.forEach((l) => l());
+  emit();
 };
 
 export const subscribeAnnouncements = (cb: () => void) => {
   listeners.add(cb);
-  return () => listeners.delete(cb);
+
+  if (typeof window !== "undefined" && listeners.size === 1) {
+    window.addEventListener("storage", handleStorageChange);
+  }
+
+  return () => {
+    listeners.delete(cb);
+    if (typeof window !== "undefined" && listeners.size === 0) {
+      window.removeEventListener("storage", handleStorageChange);
+    }
+  };
 };
 
-export const getAnnouncements = (): Announcement[] => [...store];
+export const getAnnouncements = (): Announcement[] => {
+  syncStoreFromStorage();
+  return [...store];
+};
 
-export const getPublishedAnnouncements = (): Announcement[] =>
-  store.filter((a) => a.status === "published");
+export const getPublishedAnnouncements = (): Announcement[] => {
+  syncStoreFromStorage();
+  return store.filter((a) => a.status === "published");
+};
 
 export const addAnnouncement = (a: Omit<Announcement, "id">) => {
   store = [{ ...a, id: `a-${Date.now()}` }, ...store];
