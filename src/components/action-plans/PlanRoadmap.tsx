@@ -59,10 +59,11 @@ const ROADMAPS: Record<ActionPlanCategory, RoadmapStep[]> = {
     { kind: "escalate", label: "Escalate to HR after 3 repeated incidents", detail: "If the same issue repeats 3 times, escalate the case to HR.", matchEscalated: true, isMain: true },
   ],
   communication: [
-    { kind: "schedule_meeting", label: "Hold coaching conversation", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"] },
-    { kind: "meeting_followup", label: "Log conversation notes", matchMarkers: ["📝 **Meeting Follow-up**"] },
-    { kind: "monitor", label: "Monitor channels for 2 weeks", matchUpdatesAtLeast: 3 },
-    { kind: "escalate", label: "Re-evaluate at end of plan", matchEscalated: true },
+    { kind: "warning_email", label: "1st violation — Send formal warning email", detail: "Document the formal warning email sent to the tutor for the first violation.", matchMarkers: ["📧 **Warning Email Sent**"], isMain: true },
+    { kind: "monitor", label: "Monitor channels for 2 weeks", detail: "Add a free-note update with the follow-up date and observations.", matchUpdatesAtLeast: 2 },
+    { kind: "warning_email", label: "2nd violation — Warning email + schedule evaluation meeting", detail: "Send a second formal warning email and schedule an evaluation meeting to discuss the behavior and its impact.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"], isMain: true },
+    { kind: "meeting_followup", label: "Log follow-up meeting notes", detail: "Document the meeting outcomes, agreed actions and recording link.", matchMarkers: ["📝 **Meeting Follow-up**"] },
+    { kind: "escalate", label: "3rd violation — Financial deduction & escalate to HR", detail: "Apply the financial deduction and escalate to HR for further disciplinary action.", matchEscalated: true, isMain: true },
   ],
   leaves_abuse: [],
 };
