@@ -50,10 +50,15 @@ export default function AnnouncementsAdmin() {
     setFormOpen(true);
   };
 
-  const handleDelete = () => {
-    if (deletingId) {
-      removeAnnouncement(deletingId);
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    try {
+      await removeAnnouncement(deletingId);
       toast({ title: "Announcement deleted" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Please try again.";
+      toast({ title: "Failed to delete announcement", description: message, variant: "destructive" });
+    } finally {
       setDeletingId(null);
     }
   };

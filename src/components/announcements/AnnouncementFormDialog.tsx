@@ -62,10 +62,16 @@ export function AnnouncementFormDialog({ open, onOpenChange, announcement }: Pro
       status,
     };
     const wasPublished = announcement?.status === "published";
-    if (announcement) {
-      updateAnnouncement(announcement.id, payload);
-    } else {
-      addAnnouncement(payload);
+    try {
+      if (announcement) {
+        await updateAnnouncement(announcement.id, payload);
+      } else {
+        await addAnnouncement(payload);
+      }
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Please try again.";
+      toast({ title: "Failed to save announcement", description: message, variant: "destructive" });
+      return;
     }
 
     // Send notifications when publishing (newly published only)

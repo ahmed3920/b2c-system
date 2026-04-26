@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type FeatureModule =
   | "Tasks"
   | "Action Plans"
@@ -52,146 +54,131 @@ export const visibilityLabel = (v: FeatureVisibility) =>
     ? "Both"
     : "Hidden";
 
-const STORAGE_KEY = "ischool_feature_plans_v1";
-
-const seed: FeaturePlan[] = [
-  {
-    id: "f1",
-    name: "Bulk Task Assignment",
-    description:
-      "Assign tasks to multiple mentors at once from the Admin dashboard with templates and recurring schedules.",
-    module: "Tasks",
-    status: "in_progress",
-    progress: 65,
-    assignedTo: "Product Team",
-    targetRelease: new Date(Date.now() + 1000 * 60 * 60 * 24 * 21).toISOString(),
-    visibility: "both",
-  },
-  {
-    id: "f2",
-    name: "Mentor Engagement Heatmap",
-    description:
-      "Visual heatmap showing student engagement trends over time, segmented by mentor and subject.",
-    module: "Engagement",
-    status: "planned",
-    progress: 10,
-    assignedTo: "Analytics Team",
-    targetRelease: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
-    visibility: "team_leaders",
-  },
-  {
-    id: "f3",
-    name: "Action Plan Templates Library",
-    description:
-      "A library of pre-built action plan templates that mentors can quickly adopt and customize.",
-    module: "Action Plans",
-    status: "completed",
-    progress: 100,
-    assignedTo: "Sarah K.",
-    targetRelease: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-    visibility: "mentors",
-  },
-  {
-    id: "f4",
-    name: "Weekly Performance Reports Export",
-    description:
-      "Automated PDF export of weekly performance reports delivered via email to Team Leaders.",
-    module: "Reports",
-    status: "blocked",
-    progress: 30,
-    assignedTo: "Mohammed R.",
-    targetRelease: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60).toISOString(),
-    visibility: "both",
-  },
-  {
-    id: "f5",
-    name: "Internal QA Dashboard",
-    description: "Internal tooling for the QA team — not user-facing.",
-    module: "Other",
-    status: "in_progress",
-    progress: 40,
-    assignedTo: "QA Team",
-    targetRelease: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-    visibility: "hidden",
-  },
-];
-
-const loadStore = (): FeaturePlan[] => {
-  if (typeof window === "undefined") return [...seed];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [...seed];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as FeaturePlan[];
-    return [...seed];
-  } catch {
-    return [...seed];
-  }
-};
-
-let store: FeaturePlan[] = loadStore();
-
-const persist = () => {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch {
-    /* ignore quota errors */
-  }
-};
+let store: FeaturePlan[] = [];
+let initialized = false;
+let inflight: Promise<void> | null = null;
 
 const listeners = new Set<() => void>();
-const notify = () => {
-  persist();
-  listeners.forEach((l) => l());
+const emit = () => listeners.forEach((l) => l());
+
+const mapRow = (r: Record<string, unknown>): FeaturePlan => ({
+  id: String(r.id),
+  name: String(r.name ?? ""),
+  description: String(r.description ?? ""),
+  module: (r.module as FeatureModule) ?? "Other",
+  status: (r.status as FeatureStatus) ?? "planned",
+  progress: Number(r.progress ?? 0),
+  assignedTo: String(r.assigned_to ?? ""),
+  targetRelease: String(r.target_release ?? new Date().toISOString()),
+  visibility: (r.visibility as FeatureVisibility) ?? "both",
+});
+
+const fetchAll = async () => {
+  const { data, error } = await supabase
+    .from("feature_plans")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Failed to load feature plans", error);
+    return;
+  }
+  store = (data ?? []).map(mapRow);
+  initialized = true;
+  emit();
 };
+
+const ensureLoaded = () => {
+  if (initialized || inflight) return inflight;
+  inflight = fetchAll().finally(() => {
+    inflight = null;
+  });
+  return inflight;
+};
+
+if (typeof window !== "undefined") {
+  supabase
+    .channel("feature-plans-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "feature_plans" },
+      () => {
+        fetchAll();
+      },
+    )
+    .subscribe();
+}
 
 export const subscribeFeaturePlans = (cb: () => void) => {
   listeners.add(cb);
-  return () => listeners.delete(cb);
+  ensureLoaded();
+  return () => {
+    listeners.delete(cb);
+  };
 };
 
-export const getFeaturePlans = (): FeaturePlan[] => [...store];
-
-export const getVisibleFeaturePlans = (): FeaturePlan[] =>
-  store.filter((f) => f.visibility !== "hidden");
-
-export const addFeaturePlan = (f: Omit<FeaturePlan, "id">) => {
-  const newPlan = { ...f, id: `f-${Date.now()}` };
-  store = [newPlan, ...store];
-  notify();
-  // Also register the feature in Feature Control so admins can toggle visibility per role.
-  // Imported lazily to avoid circular dependencies.
-  import("@/integrations/supabase/client").then(({ supabase }) => {
-    const featureKey = `plan_${newPlan.id}`.replace(/[^a-z0-9_]/gi, "_").toLowerCase();
-    const visibleToTL = newPlan.visibility === "team_leaders" || newPlan.visibility === "both";
-    const visibleToMentor = newPlan.visibility === "mentors" || newPlan.visibility === "both";
-    supabase
-      .from("feature_controls")
-      .insert({
-        feature_key: featureKey,
-        name: newPlan.name,
-        description: newPlan.description,
-        route_path: null,
-        display_order: 1000,
-        enabled_admin: true,
-        enabled_super_team_leader: visibleToTL,
-        enabled_team_leader: visibleToTL,
-        enabled_mentor: visibleToMentor,
-        enabled_community_moderator: visibleToMentor,
-      })
-      .then(() => {
-        /* best-effort; fail silently if duplicate or no permission */
-      });
-  });
+export const getFeaturePlans = (): FeaturePlan[] => {
+  ensureLoaded();
+  return [...store];
 };
 
-export const updateFeaturePlan = (id: string, patch: Partial<FeaturePlan>) => {
-  store = store.map((f) => (f.id === id ? { ...f, ...patch } : f));
-  notify();
+export const getVisibleFeaturePlans = (): FeaturePlan[] => {
+  ensureLoaded();
+  return store.filter((f) => f.visibility !== "hidden");
 };
 
-export const removeFeaturePlan = (id: string) => {
+const toRow = (f: Partial<FeaturePlan>) => {
+  const row: Record<string, unknown> = {};
+  if (f.name !== undefined) row.name = f.name;
+  if (f.description !== undefined) row.description = f.description;
+  if (f.module !== undefined) row.module = f.module;
+  if (f.status !== undefined) row.status = f.status;
+  if (f.progress !== undefined) row.progress = f.progress;
+  if (f.assignedTo !== undefined) row.assigned_to = f.assignedTo;
+  if (f.targetRelease !== undefined) row.target_release = f.targetRelease;
+  if (f.visibility !== undefined) row.visibility = f.visibility;
+  return row;
+};
+
+export const addFeaturePlan = async (f: Omit<FeaturePlan, "id">) => {
+  const { data, error } = await supabase
+    .from("feature_plans")
+    .insert(toRow(f) as never)
+    .select()
+    .single();
+  if (error) {
+    console.error("Failed to add feature plan", error);
+    throw error;
+  }
+  if (data) {
+    store = [mapRow(data), ...store];
+    emit();
+  }
+};
+
+export const updateFeaturePlan = async (id: string, patch: Partial<FeaturePlan>) => {
+  const { data, error } = await supabase
+    .from("feature_plans")
+    .update(toRow(patch))
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) {
+    console.error("Failed to update feature plan", error);
+    throw error;
+  }
+  if (data) {
+    const mapped = mapRow(data);
+    store = store.map((x) => (x.id === id ? mapped : x));
+    emit();
+  }
+};
+
+export const removeFeaturePlan = async (id: string) => {
+  const { error } = await supabase.from("feature_plans").delete().eq("id", id);
+  if (error) {
+    console.error("Failed to delete feature plan", error);
+    throw error;
+  }
   store = store.filter((f) => f.id !== id);
-  notify();
+  emit();
 };

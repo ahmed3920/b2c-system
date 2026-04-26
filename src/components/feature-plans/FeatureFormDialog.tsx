@@ -73,7 +73,7 @@ export function FeatureFormDialog({ open, onOpenChange, feature }: Props) {
     }
   }, [open, feature]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       toast({ title: "Name required", variant: "destructive" });
       return;
@@ -89,14 +89,19 @@ export function FeatureFormDialog({ open, onOpenChange, feature }: Props) {
       targetRelease: date.toISOString(),
       visibility,
     };
-    if (feature) {
-      updateFeaturePlan(feature.id, payload);
-      toast({ title: "Feature updated" });
-    } else {
-      addFeaturePlan(payload);
-      toast({ title: "Feature created" });
+    try {
+      if (feature) {
+        await updateFeaturePlan(feature.id, payload);
+        toast({ title: "Feature updated" });
+      } else {
+        await addFeaturePlan(payload);
+        toast({ title: "Feature created" });
+      }
+      onOpenChange(false);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Please try again.";
+      toast({ title: "Failed to save feature", description: message, variant: "destructive" });
     }
-    onOpenChange(false);
   };
 
   return (

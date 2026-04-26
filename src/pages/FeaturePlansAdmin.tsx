@@ -89,10 +89,15 @@ export default function FeaturePlansAdmin() {
     setDetailsOpen(true);
   };
 
-  const handleDelete = () => {
-    if (deletingId) {
-      removeFeaturePlan(deletingId);
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    try {
+      await removeFeaturePlan(deletingId);
       toast({ title: "Feature deleted" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Please try again.";
+      toast({ title: "Failed to delete feature", description: message, variant: "destructive" });
+    } finally {
       setDeletingId(null);
     }
   };
