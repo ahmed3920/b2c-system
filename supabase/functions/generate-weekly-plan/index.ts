@@ -263,20 +263,26 @@ Deno.serve(async (req) => {
         continue;
       }
       const finished = finishedByTutor.get(tutor.tutor_external_id)!;
-      // Candidates = catalog modules this tutor has not yet finished
+      const blocked = blockedByTutor.get(tutor.tutor_external_id) ?? new Set<string>();
+      // Candidates = catalog modules this tutor has not yet finished AND is not blocked from
       const candidates = new Set<string>();
-      for (const id of allModuleIds) if (!finished.has(id)) candidates.add(id);
+      for (const id of allModuleIds) {
+        if (finished.has(id)) continue;
+        if (blocked.has(id)) continue;
+        candidates.add(id);
+      }
       if (candidates.size === 0) {
         skippedAllDone++;
         continue;
       }
 
-      // Subtract 5h per planned-leave day during this working week.
+      // Subtract 5h per planned-leave day AND per official-holiday day during this working week.
       const leaveDays = leavesByTutor.get(tutor.tutor_external_id) ?? 0;
+      const totalDeductionDays = leaveDays + holidayDays;
       const rawFree = Number(tutor.free_hours);
       const adjustedFree = Math.max(
         0,
-        (Number.isFinite(rawFree) ? rawFree : 0) - leaveDays * HOURS_PER_LEAVE_DAY,
+        (Number.isFinite(rawFree) ? rawFree : 0) - totalDeductionDays * HOURS_PER_LEAVE_DAY,
       );
       let remaining = adjustedFree;
       if (!Number.isFinite(remaining) || remaining <= 0) {
