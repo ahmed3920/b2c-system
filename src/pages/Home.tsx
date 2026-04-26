@@ -24,6 +24,7 @@ import {
 import { motion } from "framer-motion";
 import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
 import { ProductUpdatesSection } from "@/components/feature-plans/ProductUpdatesSection";
+import { CheckinCard } from "@/components/attendance/CheckinCard";
 
 interface Profile {
   mentor_id: string;
