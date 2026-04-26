@@ -341,7 +341,7 @@ export default function StudyPlan() {
                             {(p.items ?? []).filter(
                               (it) =>
                                 !blockedKeys.has(
-                                  `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                  `${p.tutor_external_id}::${it.module_id}`,
                                 ),
                             ).length}
                           </TableCell>
@@ -351,7 +351,7 @@ export default function StudyPlan() {
                                 const visibleItems = (p.items ?? []).filter(
                                   (it) =>
                                     !blockedKeys.has(
-                                      `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                      `${p.tutor_external_id}::${it.module_id}`,
                                     ),
                                 );
                                 if (visibleItems.length === 0) {
@@ -447,7 +447,7 @@ export default function StudyPlan() {
                           .map((r) => {
                             const blockedCount = r.remaining_modules.reduce(
                               (n, m) =>
-                                blockedKeys.has(`${r.tutor_external_id}::${m.grade_band}::${m.module_code}`)
+                                blockedKeys.has(`${r.tutor_external_id}::${m.module_id}`)
                                   ? n + 1
                                   : n,
                               0,
@@ -496,14 +496,14 @@ export default function StudyPlan() {
                                     ) : (
                                       r.remaining_modules
                                         .map((m, i) => {
-                                          const key = `${r.tutor_external_id}::${m.grade_band}::${m.module_code}`;
-                                          const isBlocked = blockedKeys.has(key);
-                                          if (isBlocked && hideBlocked) return null;
+                                          const key = `${r.tutor_external_id}::${m.module_id}`;
+                                          const blocked = blockedKeys.has(key);
+                                          if (blocked && hideBlocked) return null;
                                           return (
                                             <div
                                               key={i}
                                               className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
-                                                isBlocked
+                                                blocked
                                                   ? "opacity-50 bg-muted/40 border-dashed"
                                                   : "bg-background"
                                               }`}
@@ -511,7 +511,7 @@ export default function StudyPlan() {
                                               <span className="font-medium">
                                                 {m.grade_band} · {m.module_code}
                                               </span>
-                                              {isBlocked ? (
+                                              {blocked ? (
                                                 <Tooltip>
                                                   <TooltipTrigger asChild>
                                                     <Badge
@@ -539,13 +539,19 @@ export default function StudyPlan() {
                                                 <TooltipTrigger asChild>
                                                   <button
                                                     type="button"
-                                                    onClick={() => toggleBlocked(key)}
+                                                    onClick={() =>
+                                                      toggleBlocked(
+                                                        r.tutor_external_id,
+                                                        m.module_id,
+                                                        r.team_leader,
+                                                      )
+                                                    }
                                                     className="ml-0.5 text-muted-foreground hover:text-foreground"
                                                     aria-label={
-                                                      isBlocked ? "Unblock module" : "Mark as Blocked"
+                                                      blocked ? "Unblock module" : "Mark as Blocked"
                                                     }
                                                   >
-                                                    {isBlocked ? (
+                                                    {blocked ? (
                                                       <CheckCircle2 className="h-3.5 w-3.5" />
                                                     ) : (
                                                       <Ban className="h-3.5 w-3.5" />
@@ -553,7 +559,7 @@ export default function StudyPlan() {
                                                   </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                  {isBlocked
+                                                  {blocked
                                                     ? "Restore module"
                                                     : "Mark as Blocked (Device Limitation)"}
                                                 </TooltipContent>
