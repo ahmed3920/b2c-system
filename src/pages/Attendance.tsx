@@ -146,7 +146,7 @@ export default function AttendancePage() {
   useEffect(() => {
     if (!roleLoading) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from, to, roleLoading]);
+  }, [from, to, roleLoading, isAdmin]);
 
   const tlOptions = useMemo(() => {
     const set = new Map<string, string>();
