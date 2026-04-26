@@ -520,6 +520,66 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_documentation: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          display_order: number
+          feature_name: string
+          functionalities: string[]
+          how_it_works: string
+          id: string
+          module: string
+          notes: string
+          purpose: string
+          route_path: string | null
+          screenshots: string[]
+          status: Database["public"]["Enums"]["feature_doc_status"]
+          ui_explanation: string
+          updated_at: string
+          user_roles: string[]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          display_order?: number
+          feature_name: string
+          functionalities?: string[]
+          how_it_works?: string
+          id?: string
+          module: string
+          notes?: string
+          purpose?: string
+          route_path?: string | null
+          screenshots?: string[]
+          status?: Database["public"]["Enums"]["feature_doc_status"]
+          ui_explanation?: string
+          updated_at?: string
+          user_roles?: string[]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          display_order?: number
+          feature_name?: string
+          functionalities?: string[]
+          how_it_works?: string
+          id?: string
+          module?: string
+          notes?: string
+          purpose?: string
+          route_path?: string | null
+          screenshots?: string[]
+          status?: Database["public"]["Enums"]["feature_doc_status"]
+          ui_explanation?: string
+          updated_at?: string
+          user_roles?: string[]
+        }
+        Relationships: []
+      }
       feature_plans: {
         Row: {
           assigned_to: string
@@ -1695,6 +1755,11 @@ export type Database = {
         | "Not a Complain"
       edu_description_type: "deduction" | "no_deduction" | "neutral"
       edu_validation_status: "deduct" | "no_deduction" | "pending"
+      feature_doc_status:
+        | "planned"
+        | "in_progress"
+        | "completed"
+        | "needs_review"
       feature_module:
         | "Tasks"
         | "Action Plans"
@@ -1866,6 +1931,12 @@ export const Constants = {
       ],
       edu_description_type: ["deduction", "no_deduction", "neutral"],
       edu_validation_status: ["deduct", "no_deduction", "pending"],
+      feature_doc_status: [
+        "planned",
+        "in_progress",
+        "completed",
+        "needs_review",
+      ],
       feature_module: [
         "Tasks",
         "Action Plans",

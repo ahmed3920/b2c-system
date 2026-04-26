@@ -33,6 +33,7 @@ import EduDescriptionsAdmin from "./pages/EduDescriptionsAdmin";
 import CSTicketCategoriesAdmin from "./pages/CSTicketCategoriesAdmin";
 import FeatureControlAdmin from "./pages/FeatureControlAdmin";
 import Attendance from "./pages/Attendance";
+import FeatureDocumentation from "./pages/FeatureDocumentation";
 
 import NotFound from "./pages/NotFound";
 
@@ -77,6 +78,7 @@ const App = () => (
           <Route path="/admin/edu-descriptions" element={<EduDescriptionsAdmin />} />
           <Route path="/admin/cs-ticket-categories" element={<CSTicketCategoriesAdmin />} />
           <Route path="/admin/feature-control" element={<FeatureControlAdmin />} />
+          <Route path="/admin/feature-documentation" element={<FeatureDocumentation />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
