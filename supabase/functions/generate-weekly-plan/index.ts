@@ -339,9 +339,14 @@ Deno.serve(async (req) => {
             team_leader: tutor.team_leader,
             week_start: weekStart,
             free_hours: adjustedFree,
-            notes: leaveDays > 0
-              ? `Adjusted: original ${rawFree}h − ${leaveDays} leave day${leaveDays > 1 ? "s" : ""} × 5h`
-              : null,
+            notes: (() => {
+              const parts: string[] = [];
+              if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
+              if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
+              return parts.length > 0
+                ? `Adjusted: original ${rawFree}h − (${parts.join(" + ")}) × 5h`
+                : null;
+            })(),
             planned_hours: planned,
             status: "draft",
             generated_by: userId,
