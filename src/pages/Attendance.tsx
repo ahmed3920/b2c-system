@@ -123,13 +123,21 @@ export default function AttendancePage() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    let query = supabase
       .from("team_leader_attendance")
       .select("*")
       .gte("date", from)
       .lte("date", to)
       .order("date", { ascending: false })
       .order("team_leader_name", { ascending: true });
+    // Non-admins only see their own attendance, even if RLS would allow more.
+    if (!isAdmin && session?.user?.id) {
+      query = query.eq("team_leader_id", session.user.id);
+    }
+    const { data, error } = await query;
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
     setRows(((data ?? []) as Row[]));
     setLoading(false);
@@ -138,7 +146,7 @@ export default function AttendancePage() {
   useEffect(() => {
     if (!roleLoading) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from, to, roleLoading]);
+  }, [from, to, roleLoading, isAdmin]);
 
   const tlOptions = useMemo(() => {
     const set = new Map<string, string>();
@@ -208,36 +216,37 @@ export default function AttendancePage() {
   return (
     <AppLayout title="Attendance Tracking" allowedRoles={["admin", "team_leader", "super_team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-4">
-        {/* Daily summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard
-            icon={<CalendarCheck className="h-4 w-4" />}
-            label="Team Leaders"
-            value={totalTLs}
-          />
-          <SummaryCard
-            icon={<Clock className="h-4 w-4" />}
-            label="Checked In Today"
-            value={checkedInToday}
-            tone="green"
-          />
-          <SummaryCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="Late Today"
-            value={lateToday}
-            tone="red"
-          />
-          <SummaryCard
-            icon={<UserX className="h-4 w-4" />}
-            label="Absent Today"
-            value={absentToday}
-            tone="gray"
-          />
-        </div>
-
+        {/* Daily summary - admin only */}
+        {isAdmin && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <SummaryCard
+              icon={<CalendarCheck className="h-4 w-4" />}
+              label="Team Leaders"
+              value={totalTLs}
+            />
+            <SummaryCard
+              icon={<Clock className="h-4 w-4" />}
+              label="Checked In Today"
+              value={checkedInToday}
+              tone="green"
+            />
+            <SummaryCard
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label="Late Today"
+              value={lateToday}
+              tone="red"
+            />
+            <SummaryCard
+              icon={<UserX className="h-4 w-4" />}
+              label="Absent Today"
+              value={absentToday}
+              tone="gray"
+            />
+          </div>
+        )}
         {/* Filters */}
         <Card>
-          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+          <CardContent className={`p-4 grid grid-cols-1 ${isAdmin ? "md:grid-cols-5" : "md:grid-cols-4"} gap-3`}>
             <div>
               <Label htmlFor="from" className="text-xs">From</Label>
               <Input
@@ -271,18 +280,20 @@ export default function AttendancePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs">Team Leader</Label>
-              <Select value={tlFilter} onValueChange={setTlFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {tlOptions.map(([id, name]) => (
-                    <SelectItem key={id} value={id}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {isAdmin && (
+              <div>
+                <Label className="text-xs">Team Leader</Label>
+                <Select value={tlFilter} onValueChange={setTlFilter}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {tlOptions.map(([id, name]) => (
+                      <SelectItem key={id} value={id}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <Button variant="outline" onClick={load} className="flex-1">
                 <RefreshCw className="h-4 w-4 mr-1" /> Refresh
@@ -299,7 +310,7 @@ export default function AttendancePage() {
         <Tabs defaultValue="log">
           <TabsList>
             <TabsTrigger value="log">Daily Log</TabsTrigger>
-            <TabsTrigger value="monthly">Monthly Report</TabsTrigger>
+            {isAdmin && <TabsTrigger value="monthly">Monthly Report</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="log" className="mt-3">
