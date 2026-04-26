@@ -308,9 +308,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Subtract 5h per planned-leave day AND per official-holiday day during this working week.
-      const leaveDays = leavesByTutor.get(tutor.tutor_external_id) ?? 0;
+      // Determine this tutor's weekend (off) days; default Wed/Thu (Fri→Tue work week).
+      const weekend = weekendByTutor.get(tutor.tutor_external_id) ?? DEFAULT_WEEKEND;
+      const isWorkingDay = (isoDate: string) => !weekend.has(dayNameOf(isoDate));
+
+      // Count only leave dates and holiday dates that fall on this tutor's working days.
+      const tutorLeaveDates = leaveDatesByTutor.get(tutor.tutor_external_id) ?? [];
+      const leaveDays = tutorLeaveDates.filter(isWorkingDay).length;
+      const holidayDays = holidayDates.filter(isWorkingDay).length;
       const totalDeductionDays = leaveDays + holidayDays;
+
       const rawFree = Number(tutor.free_hours);
       const adjustedFree = Math.max(
         0,
