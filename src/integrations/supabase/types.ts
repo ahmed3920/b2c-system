@@ -193,6 +193,45 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          audience: Database["public"]["Enums"]["announcement_audience"]
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string
+          id: string
+          priority: Database["public"]["Enums"]["announcement_priority"]
+          status: Database["public"]["Enums"]["announcement_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["announcement_audience"]
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["announcement_priority"]
+          status?: Database["public"]["Enums"]["announcement_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["announcement_audience"]
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["announcement_priority"]
+          status?: Database["public"]["Enums"]["announcement_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
@@ -478,6 +517,51 @@ export type Database = {
           name?: string
           route_path?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      feature_plans: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          module: Database["public"]["Enums"]["feature_module"]
+          name: string
+          progress: number
+          status: Database["public"]["Enums"]["feature_plan_status"]
+          target_release: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["feature_plan_visibility"]
+        }
+        Insert: {
+          assigned_to?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          module?: Database["public"]["Enums"]["feature_module"]
+          name: string
+          progress?: number
+          status?: Database["public"]["Enums"]["feature_plan_status"]
+          target_release?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["feature_plan_visibility"]
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          module?: Database["public"]["Enums"]["feature_module"]
+          name?: string
+          progress?: number
+          status?: Database["public"]["Enums"]["feature_plan_status"]
+          target_release?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["feature_plan_visibility"]
         }
         Relationships: []
       }
@@ -1591,6 +1675,9 @@ export type Database = {
         | "no_show_abuse"
       action_plan_evaluation: "improved" | "not_improved"
       action_plan_status: "active" | "on_hold" | "resolved" | "escalated"
+      announcement_audience: "team_leaders" | "mentors" | "both"
+      announcement_priority: "important" | "normal"
+      announcement_status: "published" | "draft"
       app_role:
         | "admin"
         | "team_leader"
@@ -1608,6 +1695,17 @@ export type Database = {
         | "Not a Complain"
       edu_description_type: "deduction" | "no_deduction" | "neutral"
       edu_validation_status: "deduct" | "no_deduction" | "pending"
+      feature_module:
+        | "Tasks"
+        | "Action Plans"
+        | "Engagement"
+        | "Tracking"
+        | "Reports"
+        | "User Management"
+        | "Announcements"
+        | "Other"
+      feature_plan_status: "planned" | "in_progress" | "completed" | "blocked"
+      feature_plan_visibility: "team_leaders" | "mentors" | "both" | "hidden"
       task_status: "todo" | "in_progress" | "done" | "archived"
     }
     CompositeTypes: {
@@ -1746,6 +1844,9 @@ export const Constants = {
       ],
       action_plan_evaluation: ["improved", "not_improved"],
       action_plan_status: ["active", "on_hold", "resolved", "escalated"],
+      announcement_audience: ["team_leaders", "mentors", "both"],
+      announcement_priority: ["important", "normal"],
+      announcement_status: ["published", "draft"],
       app_role: [
         "admin",
         "team_leader",
@@ -1765,6 +1866,18 @@ export const Constants = {
       ],
       edu_description_type: ["deduction", "no_deduction", "neutral"],
       edu_validation_status: ["deduct", "no_deduction", "pending"],
+      feature_module: [
+        "Tasks",
+        "Action Plans",
+        "Engagement",
+        "Tracking",
+        "Reports",
+        "User Management",
+        "Announcements",
+        "Other",
+      ],
+      feature_plan_status: ["planned", "in_progress", "completed", "blocked"],
+      feature_plan_visibility: ["team_leaders", "mentors", "both", "hidden"],
       task_status: ["todo", "in_progress", "done", "archived"],
     },
   },
