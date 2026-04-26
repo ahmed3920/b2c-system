@@ -32,6 +32,7 @@ import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
 import EduDescriptionsAdmin from "./pages/EduDescriptionsAdmin";
 import CSTicketCategoriesAdmin from "./pages/CSTicketCategoriesAdmin";
 import FeatureControlAdmin from "./pages/FeatureControlAdmin";
+import Attendance from "./pages/Attendance";
 
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +68,7 @@ const App = () => (
           <Route path="/teams/:id" element={<TeamDetail />} />
           <Route path="/performance" element={<Performance />} />
           <Route path="/tracking" element={<Tracking />} />
+          <Route path="/attendance" element={<Attendance />} />
           <Route path="/growth" element={<Growth />} />
           <Route path="/risk-control" element={<RiskControl />} />
           <Route path="/study-plan" element={<StudyPlan />} />
