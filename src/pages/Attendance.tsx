@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, CalendarCheck, Clock, AlertTriangle, UserX } from "lucide-react";
+import { Loader2, RefreshCw, CalendarCheck, Clock, AlertTriangle, UserX, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { cairoDateStr } from "@/hooks/useTodayAttendance";
 import { useToast } from "@/hooks/use-toast";
+import { AdminEditAttendanceDialog, type EditableRow } from "@/components/attendance/AdminEditAttendanceDialog";
 
 type Status = "on_time" | "late" | "absent";
 
@@ -117,6 +118,8 @@ export default function AttendancePage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
+  const [editRow, setEditRow] = useState<EditableRow | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -317,18 +320,19 @@ export default function AttendancePage() {
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Min Late</TableHead>
                         <TableHead>Reason</TableHead>
+                        {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8">
+                          <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8">
                             <Loader2 className="h-5 w-5 animate-spin inline-block text-muted-foreground" />
                           </TableCell>
                         </TableRow>
                       ) : filtered.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">
                             No records in this range.
                           </TableCell>
                         </TableRow>
@@ -347,6 +351,21 @@ export default function AttendancePage() {
                             <TableCell className="text-muted-foreground text-xs max-w-[260px] truncate">
                               {r.late_reason || "—"}
                             </TableCell>
+                            {isAdmin && (
+                              <TableCell className="text-right">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditRow(r as EditableRow);
+                                    setEditOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5 mr-1" />
+                                  Edit
+                                </Button>
+                              </TableCell>
+                            )}
                           </TableRow>
                         ))
                       )}
