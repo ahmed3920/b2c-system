@@ -149,14 +149,46 @@ Deno.serve(async (req) => {
     }
 
     // Load planned leaves overlapping this working week.
-    // The week starts Friday; tutors work Fri→Tue OR Sat→Wed (5 working days).
-    // To safely cover both schedules, count leaves Fri (week_start) → Wed (+5).
+    // The week starts Friday; tutors work either Fri→Tue OR Sat→Wed (5 working days).
+    // To safely cover both schedules, look at the full Fri (week_start) → Thu (+6) span,
+    // then per tutor we filter to only their actual working days (using tutor_weekend_days).
     const weekStartDate = new Date(weekStart + "T00:00:00Z");
     const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 5); // Fri + 5 = Wed
+    weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6); // Fri + 6 = Thu (full 7-day span)
     const weekEndStr = weekEndDate.toISOString().slice(0, 10);
 
-    const leavesByTutor = new Map<string, number>();
+    const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const dayNameOf = (isoDate: string): string => {
+      const d = new Date(isoDate + "T00:00:00Z");
+      return DAY_NAMES[d.getUTCDay()];
+    };
+
+    // Load per-tutor weekend days (lowercase day names like 'thursday', 'friday')
+    const weekendByTutor = new Map<string, Set<string>>();
+    {
+      const PAGE_W = 1000;
+      let fromW = 0;
+      while (true) {
+        const { data: wBatch, error: wErr } = await admin
+          .from("tutor_weekend_days")
+          .select("tutor_external_id, weekend_days")
+          .range(fromW, fromW + PAGE_W - 1);
+        if (wErr) throw wErr;
+        const batch = wBatch ?? [];
+        for (const r of batch) {
+          weekendByTutor.set(
+            r.tutor_external_id,
+            new Set((r.weekend_days ?? []).map((d: string) => String(d).toLowerCase())),
+          );
+        }
+        if (batch.length < PAGE_W) break;
+        fromW += PAGE_W;
+      }
+    }
+    const DEFAULT_WEEKEND = new Set(["wednesday", "thursday"]); // Fri→Tue work week
+
+    // Leaves: store actual dates per tutor so we can later filter by their working days
+    const leaveDatesByTutor = new Map<string, string[]>();
     {
       const PAGE2 = 1000;
       let from2 = 0;
@@ -170,10 +202,9 @@ Deno.serve(async (req) => {
         if (leaveErr) throw leaveErr;
         const batch = leaveBatch ?? [];
         for (const l of batch) {
-          leavesByTutor.set(
-            l.tutor_external_id,
-            (leavesByTutor.get(l.tutor_external_id) ?? 0) + 1,
-          );
+          const arr = leaveDatesByTutor.get(l.tutor_external_id) ?? [];
+          arr.push(l.leave_date);
+          leaveDatesByTutor.set(l.tutor_external_id, arr);
         }
         if (batch.length < PAGE2) break;
         from2 += PAGE2;
@@ -181,15 +212,16 @@ Deno.serve(async (req) => {
     }
     const HOURS_PER_LEAVE_DAY = 5;
 
-    // Load official holidays inside this working week (Fri → Wed range).
-    // Each holiday day deducts 5h from EVERY tutor's free hours.
+    // Load official holidays inside the 7-day window. We'll filter per tutor by
+    // their actual working days so a Friday holiday doesn't deduct from a tutor
+    // whose weekend is Thu/Fri.
     const { data: holidayRows, error: holErr } = await admin
       .from("official_holidays")
       .select("holiday_date")
       .gte("holiday_date", weekStart)
       .lte("holiday_date", weekEndStr);
     if (holErr) throw holErr;
-    const holidayDays = (holidayRows ?? []).length;
+    const holidayDates: string[] = (holidayRows ?? []).map((r: any) => r.holiday_date);
 
     // Load persistent blocked modules per tutor (e.g. device limitation).
     // These modules are excluded from the candidate set when generating the plan.
@@ -276,9 +308,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Subtract 5h per planned-leave day AND per official-holiday day during this working week.
-      const leaveDays = leavesByTutor.get(tutor.tutor_external_id) ?? 0;
+      // Determine this tutor's weekend (off) days; default Wed/Thu (Fri→Tue work week).
+      const weekend = weekendByTutor.get(tutor.tutor_external_id) ?? DEFAULT_WEEKEND;
+      const isWorkingDay = (isoDate: string) => !weekend.has(dayNameOf(isoDate));
+
+      // Count only leave dates and holiday dates that fall on this tutor's working days.
+      const tutorLeaveDates = leaveDatesByTutor.get(tutor.tutor_external_id) ?? [];
+      const leaveDays = tutorLeaveDates.filter(isWorkingDay).length;
+      const holidayDays = holidayDates.filter(isWorkingDay).length;
       const totalDeductionDays = leaveDays + holidayDays;
+
       const rawFree = Number(tutor.free_hours);
       const adjustedFree = Math.max(
         0,
@@ -445,8 +484,9 @@ Deno.serve(async (req) => {
         skipped_not_in_finished_sheet: skippedNoFinishedData,
         skipped_all_modules_done: skippedAllDone,
         skipped_no_free_hours: skippedNoHours,
-        tutors_with_leaves: leavesByTutor.size,
-        leave_days_total: Array.from(leavesByTutor.values()).reduce((s, v) => s + v, 0),
+        tutors_with_leaves: leaveDatesByTutor.size,
+        leave_days_total: Array.from(leaveDatesByTutor.values()).reduce((s, v) => s + v.length, 0),
+        holiday_dates_in_week: holidayDates,
       }),
       {
         status: 200,
