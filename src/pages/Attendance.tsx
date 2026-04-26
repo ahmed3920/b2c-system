@@ -246,7 +246,7 @@ export default function AttendancePage() {
         )}
         {/* Filters */}
         <Card>
-          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+          <CardContent className={`p-4 grid grid-cols-1 ${isAdmin ? "md:grid-cols-5" : "md:grid-cols-4"} gap-3`}>
             <div>
               <Label htmlFor="from" className="text-xs">From</Label>
               <Input
@@ -280,18 +280,20 @@ export default function AttendancePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs">Team Leader</Label>
-              <Select value={tlFilter} onValueChange={setTlFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {tlOptions.map(([id, name]) => (
-                    <SelectItem key={id} value={id}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {isAdmin && (
+              <div>
+                <Label className="text-xs">Team Leader</Label>
+                <Select value={tlFilter} onValueChange={setTlFilter}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {tlOptions.map(([id, name]) => (
+                      <SelectItem key={id} value={id}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <Button variant="outline" onClick={load} className="flex-1">
                 <RefreshCw className="h-4 w-4 mr-1" /> Refresh
