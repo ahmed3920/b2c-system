@@ -1,18 +1,44 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Flag, ArrowUpRight, ClipboardList, Target } from "lucide-react";
+import { Flag, ArrowUpRight, ClipboardList, Target, CalendarCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
 import { ProductUpdatesSection } from "@/components/feature-plans/ProductUpdatesSection";
+import { CheckinCard } from "@/components/attendance/CheckinCard";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export default function Dashboard() {
+  const { role } = useUserRole();
+  const showCheckin = role === "team_leader" || role === "super_team_leader";
   return (
     <AppLayout title="Dashboard" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        {showCheckin && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <CheckinCard />
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CalendarCheck className="h-4 w-4" /> Attendance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild>
+                  <Link to="/attendance">
+                    <span>View attendance history</span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <AnnouncementsSection />
 
         <ProductUpdatesSection />
+
 
         <Card>
           <CardHeader>
