@@ -216,33 +216,34 @@ export default function AttendancePage() {
   return (
     <AppLayout title="Attendance Tracking" allowedRoles={["admin", "team_leader", "super_team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-4">
-        {/* Daily summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard
-            icon={<CalendarCheck className="h-4 w-4" />}
-            label="Team Leaders"
-            value={totalTLs}
-          />
-          <SummaryCard
-            icon={<Clock className="h-4 w-4" />}
-            label="Checked In Today"
-            value={checkedInToday}
-            tone="green"
-          />
-          <SummaryCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="Late Today"
-            value={lateToday}
-            tone="red"
-          />
-          <SummaryCard
-            icon={<UserX className="h-4 w-4" />}
-            label="Absent Today"
-            value={absentToday}
-            tone="gray"
-          />
-        </div>
-
+        {/* Daily summary - admin only */}
+        {isAdmin && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <SummaryCard
+              icon={<CalendarCheck className="h-4 w-4" />}
+              label="Team Leaders"
+              value={totalTLs}
+            />
+            <SummaryCard
+              icon={<Clock className="h-4 w-4" />}
+              label="Checked In Today"
+              value={checkedInToday}
+              tone="green"
+            />
+            <SummaryCard
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label="Late Today"
+              value={lateToday}
+              tone="red"
+            />
+            <SummaryCard
+              icon={<UserX className="h-4 w-4" />}
+              label="Absent Today"
+              value={absentToday}
+              tone="gray"
+            />
+          </div>
+        )}
         {/* Filters */}
         <Card>
           <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
