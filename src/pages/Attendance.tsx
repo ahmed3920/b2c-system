@@ -310,7 +310,7 @@ export default function AttendancePage() {
         <Tabs defaultValue="log">
           <TabsList>
             <TabsTrigger value="log">Daily Log</TabsTrigger>
-            <TabsTrigger value="monthly">Monthly Report</TabsTrigger>
+            {isAdmin && <TabsTrigger value="monthly">Monthly Report</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="log" className="mt-3">
