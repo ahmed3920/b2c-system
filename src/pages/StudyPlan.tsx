@@ -229,6 +229,8 @@ export default function StudyPlan() {
           </Card>
         )}
 
+        {isAdmin && <OfficialHolidaysCard />}
+
         <div className="grid gap-3 md:grid-cols-4">
           <StatCard label="Tutors" value={stats.tutors} />
           <StatCard label="Total free hours" value={stats.totalFree} />
