@@ -1099,6 +1099,45 @@ export type Database = {
         }
         Relationships: []
       }
+      team_leader_attendance: {
+        Row: {
+          check_in_time: string | null
+          created_at: string
+          date: string
+          id: string
+          late_reason: string | null
+          minutes_late: number
+          status: Database["public"]["Enums"]["attendance_status"]
+          team_leader_id: string
+          team_leader_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          check_in_time?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          late_reason?: string | null
+          minutes_late?: number
+          status?: Database["public"]["Enums"]["attendance_status"]
+          team_leader_id: string
+          team_leader_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          check_in_time?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          late_reason?: string | null
+          minutes_late?: number
+          status?: Database["public"]["Enums"]["attendance_status"]
+          team_leader_id?: string
+          team_leader_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_blocked_modules: {
         Row: {
           blocked_by: string | null
@@ -1531,6 +1570,10 @@ export type Database = {
         Returns: boolean
       }
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
+      mark_absent_team_leaders: {
+        Args: { _target_date?: string }
+        Returns: number
+      }
       notify_tickets_due_today: { Args: never; Returns: number }
       team_leader_name_matches: {
         Args: { _candidate: string; _mine: string }
@@ -1553,6 +1596,7 @@ export type Database = {
         | "mentor"
         | "community_moderator"
         | "super_team_leader"
+      attendance_status: "on_time" | "late" | "absent"
       cs_ticket_case_type: "CS" | "Edu"
       cs_ticket_status:
         | "Pending"
@@ -1708,6 +1752,7 @@ export const Constants = {
         "community_moderator",
         "super_team_leader",
       ],
+      attendance_status: ["on_time", "late", "absent"],
       cs_ticket_case_type: ["CS", "Edu"],
       cs_ticket_status: [
         "Pending",
