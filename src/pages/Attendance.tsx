@@ -123,13 +123,21 @@ export default function AttendancePage() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    let query = supabase
       .from("team_leader_attendance")
       .select("*")
       .gte("date", from)
       .lte("date", to)
       .order("date", { ascending: false })
       .order("team_leader_name", { ascending: true });
+    // Non-admins only see their own attendance, even if RLS would allow more.
+    if (!isAdmin && session?.user?.id) {
+      query = query.eq("team_leader_id", session.user.id);
+    }
+    const { data, error } = await query;
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
     setRows(((data ?? []) as Row[]));
     setLoading(false);
