@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Clock, CheckCircle2, AlertTriangle, Loader2, Pencil, X, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   useTodayAttendance,
@@ -43,10 +43,12 @@ function statusBadge(status: "on_time" | "late" | "absent") {
 }
 
 export function CheckinCard() {
-  const { row, loading, submitting, checkIn } = useTodayAttendance();
+  const { row, loading, submitting, checkIn, updateReason } = useTodayAttendance();
   const { toast } = useToast();
   const [, force] = useState(0);
   const [reason, setReason] = useState("");
+  const [editingReason, setEditingReason] = useState(false);
+  const [reasonDraft, setReasonDraft] = useState("");
 
   // Re-render every 30s so the time-window check updates without refresh.
   useEffect(() => {
@@ -72,6 +74,16 @@ export function CheckinCard() {
   // Already checked in
   if (row && row.check_in_time) {
     const checkInLocal = new Date(row.check_in_time);
+    const handleSaveReason = async () => {
+      const res = await updateReason(reasonDraft);
+      if (!res.ok) {
+        toast({ title: "Failed to save", description: res.error, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Reason updated" });
+      setEditingReason(false);
+    };
+
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -80,7 +92,7 @@ export function CheckinCard() {
           </CardTitle>
           {statusBadge(row.status)}
         </CardHeader>
-        <CardContent className="space-y-1">
+        <CardContent className="space-y-2">
           <p className="text-sm text-muted-foreground">
             Checked in at{" "}
             <span className="font-medium text-foreground">{formatTime(checkInLocal)}</span>
@@ -88,8 +100,61 @@ export function CheckinCard() {
           {row.status === "late" && row.minutes_late > 0 && (
             <p className="text-xs text-red-600 dark:text-red-400">
               {row.minutes_late} min late
-              {row.late_reason ? ` · "${row.late_reason}"` : ""}
             </p>
+          )}
+
+          {row.status === "late" && !editingReason && (
+            <div className="flex items-start justify-between gap-2 rounded-md border bg-muted/40 p-2">
+              <p className="text-xs text-muted-foreground italic">
+                {row.late_reason ? `"${row.late_reason}"` : "No reason provided"}
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2"
+                onClick={() => {
+                  setReasonDraft(row.late_reason ?? "");
+                  setEditingReason(true);
+                }}
+              >
+                <Pencil className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          )}
+
+          {row.status === "late" && editingReason && (
+            <div className="space-y-2">
+              <Textarea
+                value={reasonDraft}
+                onChange={(e) => setReasonDraft(e.target.value)}
+                placeholder="Reason for being late"
+                rows={2}
+                className="text-sm"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveReason} disabled={submitting} className="flex-1">
+                  {submitting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="h-3 w-3 mr-1" /> Save
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditingReason(false)}
+                  disabled={submitting}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                You can edit this reason until the end of today.
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -52,6 +52,7 @@ type NavItem = {
 const overview: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, featureKey: "dashboard" },
   { title: "Home", url: "/home", icon: LayoutDashboard, featureKey: "home" },
+  { title: "Attendance", url: "/attendance", icon: CalendarCheck, roles: ["admin", "team_leader", "super_team_leader"] },
 ];
 
 const operations: NavItem[] = [
@@ -62,7 +63,6 @@ const operations: NavItem[] = [
 
 const tracking: NavItem[] = [
   { title: "Tracking", url: "/tracking", icon: LineChart, featureKey: "tracking" },
-  { title: "Attendance", url: "/attendance", icon: CalendarCheck, roles: ["admin", "team_leader", "super_team_leader"] },
   { title: "Engagement", url: "/engagement", icon: Star, roles: ["admin"], featureKey: "engagement" },
   { title: "Weekly Study Plan", url: "/study-plan", icon: BookOpen, roles: ["admin", "team_leader"], featureKey: "study_plan" },
 ];
