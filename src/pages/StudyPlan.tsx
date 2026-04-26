@@ -44,9 +44,15 @@ import {
 import { exportStudyPlanToExcel } from "@/utils/exportStudyPlanToExcel";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { CourseManagementCard } from "@/components/study-plan/CourseManagementCard";
+import { OfficialHolidaysCard } from "@/components/study-plan/OfficialHolidaysCard";
 import { SnapshotsHistoryCard } from "@/components/study-plan/SnapshotsHistoryCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { GenerateMentorPdfsDialog } from "@/components/study-plan/GenerateMentorPdfsDialog";
+import {
+  useBlockModule,
+  useTutorBlockedModules,
+  useUnblockModule,
+} from "@/hooks/useTutorBlockedModules";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -75,17 +81,44 @@ export default function StudyPlan() {
   const [adherenceFilter, setAdherenceFilter] = useState("");
   const [adherenceSelected, setAdherenceSelected] = useState<TutorAdherence | null>(null);
   const [tlFilter, setTlFilter] = useState<string>("all");
-  // UI-only simulation: track blocked module keys (per tutor + module code)
-  const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
+  // Persistent blocked modules (per tutor + module_id) — backed by DB so they
+  // affect plan generation, PDFs and survive reloads.
+  const { data: blockedRows = [] } = useTutorBlockedModules();
+  const blockMutation = useBlockModule();
+  const unblockMutation = useUnblockModule();
   const [hideBlocked, setHideBlocked] = useState(false);
 
-  const toggleBlocked = (key: string) => {
-    setBlockedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const blockedKeys = useMemo(() => {
+    // key by tutor + module_id (stable identity)
+    return new Set(blockedRows.map((b) => `${b.tutor_external_id}::${b.module_id}`));
+  }, [blockedRows]);
+
+  const isBlocked = (tutorId: string, moduleId: string) =>
+    blockedKeys.has(`${tutorId}::${moduleId}`);
+
+  const toggleBlocked = async (
+    tutorId: string,
+    moduleId: string,
+    teamLeader: string | null,
+  ) => {
+    try {
+      if (isBlocked(tutorId, moduleId)) {
+        await unblockMutation.mutateAsync({
+          tutor_external_id: tutorId,
+          module_id: moduleId,
+        });
+        toast.success("Module unblocked");
+      } else {
+        await blockMutation.mutateAsync({
+          tutor_external_id: tutorId,
+          module_id: moduleId,
+          team_leader: teamLeader,
+        });
+        toast.success("Module blocked — re-run Generate Plan to apply");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update block");
+    }
   };
 
   const teamLeaders = useMemo(() => {
