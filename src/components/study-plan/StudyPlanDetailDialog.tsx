@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { WeeklyPlan } from "@/hooks/useWeeklyStudyPlans";
+import { useTutorWeekendDays, formatWeekendDays } from "@/hooks/useTutorWeekendDays";
 
 interface Props {
   plan: WeeklyPlan | null;
@@ -22,6 +23,9 @@ interface Props {
 }
 
 export function StudyPlanDetailDialog({ plan, onClose }: Props) {
+  const { data: weekendMap } = useTutorWeekendDays();
+  const weekendDays = plan ? weekendMap?.get(plan.tutor_external_id) : undefined;
+
   return (
     <Dialog open={!!plan} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl">
@@ -32,8 +36,17 @@ export function StudyPlanDetailDialog({ plan, onClose }: Props) {
               <DialogDescription>
                 {plan.tutor_external_id} · {plan.team_leader} · Week of{" "}
                 {plan.week_start}
+                <span className="ml-2 inline-flex items-center gap-1">
+                  · Weekend: <Badge variant="outline">{formatWeekendDays(weekendDays)}</Badge>
+                </span>
               </DialogDescription>
             </DialogHeader>
+
+            {plan.notes && (
+              <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                {plan.notes}
+              </div>
+            )}
 
             <div className="grid grid-cols-3 gap-3 py-2">
               <div className="rounded-md border p-3">
