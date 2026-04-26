@@ -181,6 +181,39 @@ Deno.serve(async (req) => {
     }
     const HOURS_PER_LEAVE_DAY = 5;
 
+    // Load official holidays inside this working week (Fri → Wed range).
+    // Each holiday day deducts 5h from EVERY tutor's free hours.
+    const { data: holidayRows, error: holErr } = await admin
+      .from("official_holidays")
+      .select("holiday_date")
+      .gte("holiday_date", weekStart)
+      .lte("holiday_date", weekEndStr);
+    if (holErr) throw holErr;
+    const holidayDays = (holidayRows ?? []).length;
+
+    // Load persistent blocked modules per tutor (e.g. device limitation).
+    // These modules are excluded from the candidate set when generating the plan.
+    const blockedByTutor = new Map<string, Set<string>>();
+    {
+      const PAGE3 = 1000;
+      let from3 = 0;
+      while (true) {
+        const { data: blockBatch, error: blockErr } = await admin
+          .from("tutor_blocked_modules")
+          .select("tutor_external_id, module_id")
+          .range(from3, from3 + PAGE3 - 1);
+        if (blockErr) throw blockErr;
+        const batch = blockBatch ?? [];
+        for (const b of batch) {
+          if (!blockedByTutor.has(b.tutor_external_id))
+            blockedByTutor.set(b.tutor_external_id, new Set());
+          blockedByTutor.get(b.tutor_external_id)!.add(b.module_id);
+        }
+        if (batch.length < PAGE3) break;
+        from3 += PAGE3;
+      }
+    }
+
     const allModuleIds = new Set((modules as ModuleRow[]).map((m) => m.id));
     let skippedNoFinishedData = 0;
     let skippedAllDone = 0;
