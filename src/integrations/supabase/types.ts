@@ -793,6 +793,30 @@ export type Database = {
           },
         ]
       }
+      official_holidays: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          holiday_date: string
+          id: string
+          label: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          holiday_date: string
+          id?: string
+          label?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          holiday_date?: string
+          id?: string
+          label?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_status: boolean | null
@@ -1074,6 +1098,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tutor_blocked_modules: {
+        Row: {
+          blocked_by: string | null
+          blocked_by_name: string | null
+          created_at: string
+          id: string
+          module_id: string
+          reason: string | null
+          team_leader: string | null
+          tutor_external_id: string
+          updated_at: string
+        }
+        Insert: {
+          blocked_by?: string | null
+          blocked_by_name?: string | null
+          created_at?: string
+          id?: string
+          module_id: string
+          reason?: string | null
+          team_leader?: string | null
+          tutor_external_id: string
+          updated_at?: string
+        }
+        Update: {
+          blocked_by?: string | null
+          blocked_by_name?: string | null
+          created_at?: string
+          id?: string
+          module_id?: string
+          reason?: string | null
+          team_leader?: string | null
+          tutor_external_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_blocked_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "study_modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_leaves: {
         Row: {

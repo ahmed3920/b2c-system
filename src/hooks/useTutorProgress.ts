@@ -8,7 +8,7 @@ export interface TutorProgressRow {
   finished_count: number;
   remaining_count: number;
   total_modules: number;
-  remaining_modules: { grade_band: string; module_code: string }[];
+  remaining_modules: { module_id: string; grade_band: string; module_code: string }[];
 }
 
 export const useTutorProgress = (weekStart: string | null) => {
@@ -71,6 +71,7 @@ export const useTutorProgress = (weekStart: string | null) => {
           remaining_count: remaining.length,
           total_modules: allModules.length,
           remaining_modules: remaining.map((m) => ({
+            module_id: m.id,
             grade_band: m.grade_band,
             module_code: m.module_code,
           })),

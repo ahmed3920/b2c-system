@@ -44,9 +44,15 @@ import {
 import { exportStudyPlanToExcel } from "@/utils/exportStudyPlanToExcel";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { CourseManagementCard } from "@/components/study-plan/CourseManagementCard";
+import { OfficialHolidaysCard } from "@/components/study-plan/OfficialHolidaysCard";
 import { SnapshotsHistoryCard } from "@/components/study-plan/SnapshotsHistoryCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { GenerateMentorPdfsDialog } from "@/components/study-plan/GenerateMentorPdfsDialog";
+import {
+  useBlockModule,
+  useTutorBlockedModules,
+  useUnblockModule,
+} from "@/hooks/useTutorBlockedModules";
 
 // Week starts on Friday for this organisation
 function fridayOf(d: Date): string {
@@ -75,17 +81,44 @@ export default function StudyPlan() {
   const [adherenceFilter, setAdherenceFilter] = useState("");
   const [adherenceSelected, setAdherenceSelected] = useState<TutorAdherence | null>(null);
   const [tlFilter, setTlFilter] = useState<string>("all");
-  // UI-only simulation: track blocked module keys (per tutor + module code)
-  const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
+  // Persistent blocked modules (per tutor + module_id) — backed by DB so they
+  // affect plan generation, PDFs and survive reloads.
+  const { data: blockedRows = [] } = useTutorBlockedModules();
+  const blockMutation = useBlockModule();
+  const unblockMutation = useUnblockModule();
   const [hideBlocked, setHideBlocked] = useState(false);
 
-  const toggleBlocked = (key: string) => {
-    setBlockedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const blockedKeys = useMemo(() => {
+    // key by tutor + module_id (stable identity)
+    return new Set(blockedRows.map((b) => `${b.tutor_external_id}::${b.module_id}`));
+  }, [blockedRows]);
+
+  const isBlocked = (tutorId: string, moduleId: string) =>
+    blockedKeys.has(`${tutorId}::${moduleId}`);
+
+  const toggleBlocked = async (
+    tutorId: string,
+    moduleId: string,
+    teamLeader: string | null,
+  ) => {
+    try {
+      if (isBlocked(tutorId, moduleId)) {
+        await unblockMutation.mutateAsync({
+          tutor_external_id: tutorId,
+          module_id: moduleId,
+        });
+        toast.success("Module unblocked");
+      } else {
+        await blockMutation.mutateAsync({
+          tutor_external_id: tutorId,
+          module_id: moduleId,
+          team_leader: teamLeader,
+        });
+        toast.success("Module blocked — re-run Generate Plan to apply");
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update block");
+    }
   };
 
   const teamLeaders = useMemo(() => {
@@ -195,6 +228,8 @@ export default function StudyPlan() {
             </CardContent>
           </Card>
         )}
+
+        {isAdmin && <OfficialHolidaysCard />}
 
         <div className="grid gap-3 md:grid-cols-4">
           <StatCard label="Tutors" value={stats.tutors} />
@@ -308,7 +343,7 @@ export default function StudyPlan() {
                             {(p.items ?? []).filter(
                               (it) =>
                                 !blockedKeys.has(
-                                  `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                  `${p.tutor_external_id}::${it.module_id}`,
                                 ),
                             ).length}
                           </TableCell>
@@ -318,7 +353,7 @@ export default function StudyPlan() {
                                 const visibleItems = (p.items ?? []).filter(
                                   (it) =>
                                     !blockedKeys.has(
-                                      `${p.tutor_external_id}::${it.module?.grade_band ?? "?"}::${it.module?.module_code ?? "?"}`,
+                                      `${p.tutor_external_id}::${it.module_id}`,
                                     ),
                                 );
                                 if (visibleItems.length === 0) {
@@ -414,7 +449,7 @@ export default function StudyPlan() {
                           .map((r) => {
                             const blockedCount = r.remaining_modules.reduce(
                               (n, m) =>
-                                blockedKeys.has(`${r.tutor_external_id}::${m.grade_band}::${m.module_code}`)
+                                blockedKeys.has(`${r.tutor_external_id}::${m.module_id}`)
                                   ? n + 1
                                   : n,
                               0,
@@ -463,14 +498,14 @@ export default function StudyPlan() {
                                     ) : (
                                       r.remaining_modules
                                         .map((m, i) => {
-                                          const key = `${r.tutor_external_id}::${m.grade_band}::${m.module_code}`;
-                                          const isBlocked = blockedKeys.has(key);
-                                          if (isBlocked && hideBlocked) return null;
+                                          const key = `${r.tutor_external_id}::${m.module_id}`;
+                                          const blocked = blockedKeys.has(key);
+                                          if (blocked && hideBlocked) return null;
                                           return (
                                             <div
                                               key={i}
                                               className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
-                                                isBlocked
+                                                blocked
                                                   ? "opacity-50 bg-muted/40 border-dashed"
                                                   : "bg-background"
                                               }`}
@@ -478,7 +513,7 @@ export default function StudyPlan() {
                                               <span className="font-medium">
                                                 {m.grade_band} · {m.module_code}
                                               </span>
-                                              {isBlocked ? (
+                                              {blocked ? (
                                                 <Tooltip>
                                                   <TooltipTrigger asChild>
                                                     <Badge
@@ -506,13 +541,19 @@ export default function StudyPlan() {
                                                 <TooltipTrigger asChild>
                                                   <button
                                                     type="button"
-                                                    onClick={() => toggleBlocked(key)}
+                                                    onClick={() =>
+                                                      toggleBlocked(
+                                                        r.tutor_external_id,
+                                                        m.module_id,
+                                                        r.team_leader,
+                                                      )
+                                                    }
                                                     className="ml-0.5 text-muted-foreground hover:text-foreground"
                                                     aria-label={
-                                                      isBlocked ? "Unblock module" : "Mark as Blocked"
+                                                      blocked ? "Unblock module" : "Mark as Blocked"
                                                     }
                                                   >
-                                                    {isBlocked ? (
+                                                    {blocked ? (
                                                       <CheckCircle2 className="h-3.5 w-3.5" />
                                                     ) : (
                                                       <Ban className="h-3.5 w-3.5" />
@@ -520,7 +561,7 @@ export default function StudyPlan() {
                                                   </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                  {isBlocked
+                                                  {blocked
                                                     ? "Restore module"
                                                     : "Mark as Blocked (Device Limitation)"}
                                                 </TooltipContent>
