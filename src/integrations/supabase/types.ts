@@ -1226,6 +1226,39 @@ export type Database = {
           },
         ]
       }
+      tutor_weekend_days: {
+        Row: {
+          created_at: string
+          id: string
+          source: string | null
+          team_leader: string | null
+          tutor_external_id: string
+          tutor_name: string | null
+          updated_at: string
+          weekend_days: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source?: string | null
+          team_leader?: string | null
+          tutor_external_id: string
+          tutor_name?: string | null
+          updated_at?: string
+          weekend_days?: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source?: string | null
+          team_leader?: string | null
+          tutor_external_id?: string
+          tutor_name?: string | null
+          updated_at?: string
+          weekend_days?: string[]
+        }
+        Relationships: []
+      }
       tutor_weekly_occupation: {
         Row: {
           created_at: string
