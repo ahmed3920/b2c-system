@@ -135,5 +135,24 @@ export function useTodayAttendance() {
     [userId, today],
   );
 
-  return { row, loading, submitting, checkIn, refresh: load };
+  const updateReason = useCallback(
+    async (newReason: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!userId || !row) return { ok: false, error: "No check-in to edit" };
+      if (row.date !== today) return { ok: false, error: "Past records are locked" };
+      setSubmitting(true);
+      const { data, error } = await supabase
+        .from("team_leader_attendance")
+        .update({ late_reason: newReason.trim() || null })
+        .eq("id", row.id)
+        .select("*")
+        .maybeSingle();
+      setSubmitting(false);
+      if (error) return { ok: false, error: error.message };
+      setRow((data as AttendanceRow | null) ?? row);
+      return { ok: true };
+    },
+    [userId, row, today],
+  );
+
+  return { row, loading, submitting, checkIn, updateReason, refresh: load };
 }
