@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   ToggleLeft,
   CalendarCheck,
+  BookOpen as BookOpenIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -88,6 +89,7 @@ const admin: NavItem[] = [
   { title: "Feature Plans", url: "/admin/feature-plans", icon: Rocket, roles: ["admin"], featureKey: "admin_feature_plans" },
   { title: "Edu Descriptions", url: "/admin/edu-descriptions", icon: ShieldCheck, roles: ["admin"], featureKey: "admin_edu_descriptions" },
   { title: "CS Ticket Categories", url: "/admin/cs-ticket-categories", icon: Hash, roles: ["admin"], featureKey: "admin_cs_ticket_categories" },
+  { title: "Feature Documentation", url: "/admin/feature-documentation", icon: BookOpenIcon, roles: ["admin"] },
   { title: "Team Overview", url: "/team/dashboard", icon: UsersRound, roles: ["team_leader"], featureKey: "team_dashboard" },
 ];
 
