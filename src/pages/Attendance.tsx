@@ -431,6 +431,13 @@ export default function AttendancePage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AdminEditAttendanceDialog
+        row={editRow}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={load}
+      />
     </AppLayout>
   );
 }
