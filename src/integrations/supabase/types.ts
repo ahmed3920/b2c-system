@@ -1575,6 +1575,7 @@ export type Database = {
         Returns: number
       }
       notify_tickets_due_today: { Args: never; Returns: number }
+      notify_tl_checkin_reminder: { Args: never; Returns: number }
       team_leader_name_matches: {
         Args: { _candidate: string; _mine: string }
         Returns: boolean
