@@ -113,24 +113,59 @@ export function useTodayAttendance() {
         .maybeSingle();
 
       setSubmitting(true);
-      const { data, error } = await supabase
+
+      // A row may already exist for today (e.g. auto-created "absent" by the daily job).
+      // Check first, then UPDATE or INSERT accordingly to avoid the unique-day collision.
+      const { data: existing } = await supabase
         .from("team_leader_attendance")
-        .insert({
-          team_leader_id: userId,
-          team_leader_name: profile?.full_name ?? profile?.mentor_name ?? null,
-          date: today,
-          check_in_time: new Date().toISOString(),
-          status,
-          minutes_late,
-          late_reason: status === "late" ? (lateReason?.trim() || null) : null,
-        })
-        .select("*")
+        .select("id, check_in_time")
+        .eq("team_leader_id", userId)
+        .eq("date", today)
         .maybeSingle();
+
+      const payload = {
+        team_leader_name: profile?.full_name ?? profile?.mentor_name ?? null,
+        check_in_time: new Date().toISOString(),
+        status,
+        minutes_late,
+        late_reason: status === "late" ? (lateReason?.trim() || null) : null,
+      };
+
+      let data: AttendanceRow | null = null;
+      let error: { message: string } | null = null;
+
+      if (existing?.id) {
+        if (existing.check_in_time) {
+          setSubmitting(false);
+          return { ok: false, error: "You've already checked in today." };
+        }
+        const res = await supabase
+          .from("team_leader_attendance")
+          .update(payload)
+          .eq("id", existing.id)
+          .select("*")
+          .maybeSingle();
+        data = (res.data as AttendanceRow | null) ?? null;
+        error = res.error;
+      } else {
+        const res = await supabase
+          .from("team_leader_attendance")
+          .insert({
+            team_leader_id: userId,
+            date: today,
+            ...payload,
+          })
+          .select("*")
+          .maybeSingle();
+        data = (res.data as AttendanceRow | null) ?? null;
+        error = res.error;
+      }
+
       setSubmitting(false);
 
       if (error) return { ok: false, error: error.message };
-      setRow((data as AttendanceRow | null) ?? null);
-      return { ok: true, row: (data as AttendanceRow | null) ?? undefined };
+      setRow(data);
+      return { ok: true, row: data ?? undefined };
     },
     [userId, today],
   );
