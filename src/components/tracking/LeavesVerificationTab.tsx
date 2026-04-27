@@ -1005,7 +1005,11 @@ export function LeavesVerificationTab() {
                         <TableHead className="text-right">Records</TableHead>
                         {tlBreakdownColumns.map((c) => (
                           <TableHead key={c} className="text-right">
-                            {c === "Excuse" ? "Excuses (#)" : `${c} (days)`}
+                            {c === "Excuse"
+                              ? "Excuses (#)"
+                              : c === "Emergency"
+                                ? "Emergencies (#)"
+                                : `${c} (days)`}
                           </TableHead>
                         ))}
                         <TableHead className="text-right">Total days</TableHead>
@@ -1029,11 +1033,13 @@ export function LeavesVerificationTab() {
                             const display =
                               c === "Excuse"
                                 ? count
-                                : c === "Request"
+                                : c === "Emergency"
                                   ? count
-                                  : days
-                                    ? days.toFixed(days % 1 === 0 ? 0 : 1)
-                                    : "—";
+                                  : c === "Request"
+                                    ? count
+                                    : days
+                                      ? days.toFixed(days % 1 === 0 ? 0 : 1)
+                                      : "—";
                             return (
                               <TableCell
                                 key={c}
