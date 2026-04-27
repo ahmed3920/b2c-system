@@ -376,7 +376,7 @@ export function LeavesVerificationTab() {
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
-                        <TableHead>Date</TableHead>
+                        <TableHead>Date range</TableHead>
                         <TableHead>Tutor</TableHead>
                         <TableHead>T ID</TableHead>
                         <TableHead>Team Leader</TableHead>
@@ -386,10 +386,21 @@ export function LeavesVerificationTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRows.map((r) => (
+                      {filteredRows.map((r) => {
+                        const end = r.leave_end_date ?? r.leave_date;
+                        const sameDay = end === r.leave_date;
+                        const span = daysBetween(r.leave_date, end);
+                        return (
                         <TableRow key={r.id}>
-                          <TableCell className="font-mono text-xs">
-                            {r.leave_date}
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {sameDay ? (
+                              formatDateShort(r.leave_date)
+                            ) : (
+                              <>
+                                {formatDateShort(r.leave_date)} – {formatDateShort(end)}{" "}
+                                <span className="text-muted-foreground">({span} day{span > 1 ? "s" : ""})</span>
+                              </>
+                            )}
                           </TableCell>
                           <TableCell className="font-medium">
                             {r.tutor_name ?? "—"}
