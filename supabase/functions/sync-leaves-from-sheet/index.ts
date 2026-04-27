@@ -314,6 +314,10 @@ Deno.serve(async (req) => {
           if (!existing.leave_reason && r.leave_reason) existing.leave_reason = r.leave_reason;
           if (r.is_request) existing.is_request = true;
           if (r.is_mentor) existing.is_mentor = true;
+          // Extend end date to the latest of the two
+          if (r.leave_end_date && (!existing.leave_end_date || r.leave_end_date > existing.leave_end_date)) {
+            existing.leave_end_date = r.leave_end_date;
+          }
         }
       }
       const unique = Array.from(seen.values());
