@@ -556,20 +556,75 @@ export function LeavesVerificationTab() {
           </SelectContent>
         </Select>
 
-        <Select value={reasonFilter} onValueChange={setReasonFilter}>
-          <SelectTrigger className="h-8 w-[160px]">
-            <SelectValue placeholder="Reason" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All reasons</SelectItem>
-            {reasonOptions.map((r) => (
-              <SelectItem key={r} value={r}>
-                {r}
-              </SelectItem>
-            ))}
-            <SelectItem value="requests">Requests only</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-[180px] justify-between font-normal"
+            >
+              <span className="truncate">
+                {reasonFilter.size === 0
+                  ? "All reasons"
+                  : `${reasonFilter.size} selected`}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-xs font-medium">Reasons</span>
+              {reasonFilter.size > 0 && (
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                  onClick={() => setReasonFilter(new Set())}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {reasonOptions.map((r) => {
+                const checked = reasonFilter.has(r);
+                return (
+                  <label
+                    key={r}
+                    className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setReasonFilter((prev) => {
+                          const next = new Set(prev);
+                          if (v) next.add(r);
+                          else next.delete(r);
+                          return next;
+                        });
+                      }}
+                    />
+                    {r}
+                  </label>
+                );
+              })}
+              <div className="border-t my-1" />
+              <label className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox
+                  checked={reasonFilter.has("__requests__")}
+                  onCheckedChange={(v) => {
+                    setReasonFilter((prev) => {
+                      const next = new Set(prev);
+                      if (v) next.add("__requests__");
+                      else next.delete("__requests__");
+                      return next;
+                    });
+                  }}
+                />
+                Requests (slot/resign/term.)
+              </label>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {!isAdmin && myTeamLeader && (
           <Badge variant="outline" className="text-xs">
