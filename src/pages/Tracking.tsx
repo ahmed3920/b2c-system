@@ -17,6 +17,7 @@ import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
 import { tutorRoster } from "@/data/tutorRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
+import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
@@ -228,8 +229,17 @@ export default function Tracking() {
             <LiveIssuesTracking />
           </TabsContent>
 
+          <TabsContent value="leaves" className="mt-4">
+            <LeavesVerificationTab />
+          </TabsContent>
+
           {tabs
-            .filter((t) => t.v !== "teams-composition" && t.v !== "live-issues")
+            .filter(
+              (t) =>
+                t.v !== "teams-composition" &&
+                t.v !== "live-issues" &&
+                t.v !== "leaves",
+            )
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>
                 <Card>
