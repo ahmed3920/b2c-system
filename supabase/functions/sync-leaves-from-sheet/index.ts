@@ -85,6 +85,7 @@ function normReason(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+// These are administrative requests, NOT leaves. They never consume effective days.
 const REQUEST_TYPES = new Set([
   "add slot",
   "remove slot",
@@ -93,6 +94,10 @@ const REQUEST_TYPES = new Set([
   "termination",
   "terminate",
 ]);
+
+// Full list of recognized leave reasons (excluding requests + excuse, handled separately):
+//   Death Leave, Emergency, Marriage, Maternity, Paternity,
+//   Sick leave, special request, unpaid_vacation, Vacation
 
 function isExcuse(reason: string): boolean {
   const r = normReason(reason);
