@@ -222,6 +222,7 @@ Deno.serve(async (req) => {
       if (isReq) {
         const fromS = parseDate(get(row, iFrom));
         if (!fromS) { skipped++; continue; }
+        const toS = parseDate(iTo >= 0 ? get(row, iTo) : "") ?? fromS;
         records.push({
           tutor_external_id: tid,
           tutor_name: tname,
@@ -230,6 +231,7 @@ Deno.serve(async (req) => {
           leave_reason: reason || null,
           leave_rule_id: ruleId || null,
           leave_date: fromS,
+          leave_end_date: toS,
           effective_days: 0,
           is_request: true,
           source: "google_sheet",
@@ -254,6 +256,7 @@ Deno.serve(async (req) => {
           leave_reason: reason || "Excuse",
           leave_rule_id: ruleId || null,
           leave_date: fromS,
+          leave_end_date: fromS,
           effective_days: 0.2,
           is_request: false,
           source: "google_sheet",
@@ -262,8 +265,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Regular leaves: use the sheet's "Effective Days" column as the source of truth.
-      // Store a single record on the start date carrying the full effective_days value.
+      // Regular leaves: ONE row per request, carrying full effective_days from sheet
+      // and the start→end range. No per-day expansion.
       const fromS = parseDate(get(row, iFrom));
       const toS = parseDate(iTo >= 0 ? get(row, iTo) : "") ?? fromS;
       if (!fromS) {
@@ -271,7 +274,6 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-      // Effective days strictly from the sheet column. Default to 1 if missing/invalid.
       const effective = !isNaN(sheetEffective) && sheetEffective > 0
         ? sheetEffective
         : 1;
@@ -283,29 +285,11 @@ Deno.serve(async (req) => {
         leave_reason: reason || null,
         leave_rule_id: ruleId || null,
         leave_date: fromS,
+        leave_end_date: toS,
         effective_days: effective,
         is_request: false,
         source: "google_sheet",
       });
-      // Also mark the end date so calendars/range views still see the span,
-      // but with 0 effective days to avoid double-counting.
-      if (toS && toS !== fromS) {
-        for (const d of dateRange(fromS, toS)) {
-          if (d === fromS) continue;
-          records.push({
-            tutor_external_id: tid,
-            tutor_name: tname,
-            team_leader: tl,
-            is_mentor: isMentor,
-            leave_reason: reason || null,
-            leave_rule_id: ruleId || null,
-            leave_date: d,
-            effective_days: 0,
-            is_request: false,
-            source: "google_sheet",
-          });
-        }
-      }
     }
 
     // Replace strategy: clear existing sheet-source rows in the window (or all of them)
