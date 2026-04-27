@@ -504,10 +504,11 @@ export function LeavesVerificationTab() {
     }
     return Array.from(grouped.values())
       .filter((g) => g.count >= EMERGENCY_ABUSE_THRESHOLD)
+      .map((g) => ({ ...g, status: tutorStatusMap.get(g.tutor_external_id) }))
       .sort((a, b) =>
         b.count - a.count || (a.monthKey < b.monthKey ? 1 : -1),
       );
-  }, [rows, tlFilter, roleFilter, search, monthFilter]);
+  }, [rows, tlFilter, roleFilter, search, monthFilter, tutorStatusMap]);
 
   /* ---------- Auto insights ---------- */
   const insights = useMemo(() => {
