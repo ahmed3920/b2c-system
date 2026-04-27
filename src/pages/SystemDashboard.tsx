@@ -412,6 +412,10 @@ const SystemDashboard = () => {
               <Users className="w-4 h-4 mr-2" />
               All Members
             </TabsTrigger>
+            <TabsTrigger value="vision">
+              <Target className="w-4 h-4 mr-2" />
+              Vision Board
+            </TabsTrigger>
           </TabsList>
 
           {/* Teams Tab */}
