@@ -432,7 +432,8 @@ export function LeavesVerificationTab() {
                             {Number(r.effective_days ?? 0).toFixed(1)}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
