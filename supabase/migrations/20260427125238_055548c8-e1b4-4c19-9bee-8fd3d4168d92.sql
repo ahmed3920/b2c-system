@@ -1,0 +1,1 @@
+ALTER TABLE public.tutor_leaves ADD COLUMN IF NOT EXISTS leave_end_date date;

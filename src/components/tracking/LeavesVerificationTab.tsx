@@ -36,10 +36,24 @@ type LeaveRow = {
   leave_reason: string | null;
   leave_rule_id: string | null;
   leave_date: string;
+  leave_end_date: string | null;
   effective_days: number | null;
   is_request: boolean | null;
   source: string | null;
 };
+
+function formatDateShort(iso: string): string {
+  // YYYY-MM-DD → DD/MM/YYYY
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+function daysBetween(startISO: string, endISO: string): number {
+  const s = new Date(startISO + "T00:00:00Z").getTime();
+  const e = new Date(endISO + "T00:00:00Z").getTime();
+  return Math.max(1, Math.round((e - s) / 86400000) + 1);
+}
 
 // Group reasons into a fixed set of buckets aligned with the official leave types.
 // Requests (Add slot, Remove slot, Resign, Termination) are grouped under "Request"
@@ -362,7 +376,7 @@ export function LeavesVerificationTab() {
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
-                        <TableHead>Date</TableHead>
+                        <TableHead>Date range</TableHead>
                         <TableHead>Tutor</TableHead>
                         <TableHead>T ID</TableHead>
                         <TableHead>Team Leader</TableHead>
@@ -372,10 +386,21 @@ export function LeavesVerificationTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRows.map((r) => (
+                      {filteredRows.map((r) => {
+                        const end = r.leave_end_date ?? r.leave_date;
+                        const sameDay = end === r.leave_date;
+                        const span = daysBetween(r.leave_date, end);
+                        return (
                         <TableRow key={r.id}>
-                          <TableCell className="font-mono text-xs">
-                            {r.leave_date}
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {sameDay ? (
+                              formatDateShort(r.leave_date)
+                            ) : (
+                              <>
+                                {formatDateShort(r.leave_date)} – {formatDateShort(end)}{" "}
+                                <span className="text-muted-foreground">({span} day{span > 1 ? "s" : ""})</span>
+                              </>
+                            )}
                           </TableCell>
                           <TableCell className="font-medium">
                             {r.tutor_name ?? "—"}
@@ -407,7 +432,8 @@ export function LeavesVerificationTab() {
                             {Number(r.effective_days ?? 0).toFixed(1)}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
