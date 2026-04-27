@@ -261,33 +261,49 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Regular leaves: expand From → To range, distribute effective days
+      // Regular leaves: use the sheet's "Effective Days" column as the source of truth.
+      // Store a single record on the start date carrying the full effective_days value.
       const fromS = parseDate(get(row, iFrom));
       const toS = parseDate(iTo >= 0 ? get(row, iTo) : "") ?? fromS;
-      if (!fromS || !toS) {
-        warnings.push(`Bad dates for ${tid}: "${get(row, iFrom)}" → "${get(row, iTo)}"`);
+      if (!fromS) {
+        warnings.push(`Bad start date for ${tid}: "${get(row, iFrom)}"`);
         skipped++;
         continue;
       }
-      const days: string[] = [];
-      for (const d of dateRange(fromS, toS)) days.push(d);
-      const totalDays = days.length || 1;
-      const perDay = !isNaN(sheetEffective) && sheetEffective > 0
-        ? sheetEffective / totalDays
+      // Effective days strictly from the sheet column. Default to 1 if missing/invalid.
+      const effective = !isNaN(sheetEffective) && sheetEffective > 0
+        ? sheetEffective
         : 1;
-      for (const d of days) {
-        records.push({
-          tutor_external_id: tid,
-          tutor_name: tname,
-          team_leader: tl,
-          is_mentor: isMentor,
-          leave_reason: reason || null,
-          leave_rule_id: ruleId || null,
-          leave_date: d,
-          effective_days: perDay,
-          is_request: false,
-          source: "google_sheet",
-        });
+      records.push({
+        tutor_external_id: tid,
+        tutor_name: tname,
+        team_leader: tl,
+        is_mentor: isMentor,
+        leave_reason: reason || null,
+        leave_rule_id: ruleId || null,
+        leave_date: fromS,
+        effective_days: effective,
+        is_request: false,
+        source: "google_sheet",
+      });
+      // Also mark the end date so calendars/range views still see the span,
+      // but with 0 effective days to avoid double-counting.
+      if (toS && toS !== fromS) {
+        for (const d of dateRange(fromS, toS)) {
+          if (d === fromS) continue;
+          records.push({
+            tutor_external_id: tid,
+            tutor_name: tname,
+            team_leader: tl,
+            is_mentor: isMentor,
+            leave_reason: reason || null,
+            leave_rule_id: ruleId || null,
+            leave_date: d,
+            effective_days: 0,
+            is_request: false,
+            source: "google_sheet",
+          });
+        }
       }
     }
 
