@@ -25,6 +25,7 @@ import { Loader2, Search, Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
+import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
 
 type LeaveRow = {
   id: string;
