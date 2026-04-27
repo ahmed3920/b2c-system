@@ -13,13 +13,27 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
-const FIELDS = ["tutor_external_id", "tutor_name", "team_leader", "leave_start", "leave_end"];
+const FIELDS = [
+  "tutor_external_id",
+  "tutor_name",
+  "team_leader",
+  "is_mentor",
+  "leave_reason",
+  "leave_start",
+  "leave_end",
+  "leave_rule_id",
+  "effective_days",
+];
 const DEFAULTS: Record<string, string> = {
-  tutor_external_id: "T ID",
-  tutor_name: "Name I18n → En",
-  team_leader: "Admins - Team Lead → Name",
-  leave_start: "From",
-  leave_end: "To",
+  tutor_external_id: "Tutors - Requester  T ID",
+  tutor_name: "Name I18n  En",
+  team_leader: "Admins - Team Lead Name",
+  is_mentor: "IsMentor",
+  leave_reason: "Leaves Reason",
+  leave_start: "Start Date: Day",
+  leave_end: "End Date: Day",
+  leave_rule_id: "Leave Rule ID",
+  effective_days: "Effective Days",
 };
 
 export function LeavesSyncCard() {
