@@ -194,6 +194,7 @@ Deno.serve(async (req) => {
       leave_reason: string | null;
       leave_rule_id: string | null;
       leave_date: string;
+      leave_end_date: string | null;
       effective_days: number;
       is_request: boolean;
       source: string;
