@@ -1329,8 +1329,14 @@ export type Database = {
       tutor_leaves: {
         Row: {
           created_at: string
+          effective_days: number | null
           id: string
+          is_mentor: boolean | null
+          is_request: boolean | null
+          language: string | null
           leave_date: string
+          leave_reason: string | null
+          leave_rule_id: string | null
           source: string | null
           team_leader: string | null
           tutor_external_id: string
@@ -1339,8 +1345,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          effective_days?: number | null
           id?: string
+          is_mentor?: boolean | null
+          is_request?: boolean | null
+          language?: string | null
           leave_date: string
+          leave_reason?: string | null
+          leave_rule_id?: string | null
           source?: string | null
           team_leader?: string | null
           tutor_external_id: string
@@ -1349,8 +1361,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          effective_days?: number | null
           id?: string
+          is_mentor?: boolean | null
+          is_request?: boolean | null
+          language?: string | null
           leave_date?: string
+          leave_reason?: string | null
+          leave_rule_id?: string | null
           source?: string | null
           team_leader?: string | null
           tutor_external_id?: string
