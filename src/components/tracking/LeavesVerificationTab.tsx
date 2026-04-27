@@ -363,6 +363,64 @@ export function LeavesVerificationTab() {
       .slice(0, 10);
   }, [balance]);
 
+  /* ---------- Top requesters per leave type ----------
+   * For each leave bucket present in the filtered range, list the top 5
+   * tutors who requested that type (ranked by request count, then days).
+   * For Excuse / Emergency / Request we rank by occurrences; for everything
+   * else by total effective days.
+   */
+  const topByLeaveType = useMemo(() => {
+    type RowAgg = {
+      tutor_external_id: string;
+      tutor_name: string;
+      team_leader: string;
+      count: number;
+      days: number;
+    };
+    // bucket -> tutorId -> agg
+    const byBucket = new Map<string, Map<string, RowAgg>>();
+    for (const r of filteredRows) {
+      const bucket = bucketReason(r.leave_reason, !!r.is_request);
+      let inner = byBucket.get(bucket);
+      if (!inner) {
+        inner = new Map();
+        byBucket.set(bucket, inner);
+      }
+      const id = r.tutor_external_id;
+      let agg = inner.get(id);
+      if (!agg) {
+        agg = {
+          tutor_external_id: id,
+          tutor_name: r.tutor_name ?? id,
+          team_leader: r.team_leader ?? "—",
+          count: 0,
+          days: 0,
+        };
+        inner.set(id, agg);
+      }
+      agg.count += 1;
+      agg.days += Number(r.effective_days ?? 0);
+    }
+    const COUNT_RANKED = new Set(["Excuse", "Emergency", "Request"]);
+    const ordered = ALL_BUCKETS.filter((b) => byBucket.has(b));
+    for (const k of byBucket.keys()) if (!ordered.includes(k)) ordered.push(k);
+    return ordered.map((bucket) => {
+      const inner = byBucket.get(bucket)!;
+      const rankByCount = COUNT_RANKED.has(bucket);
+      const list = Array.from(inner.values()).sort((a, b) =>
+        rankByCount
+          ? b.count - a.count || b.days - a.days
+          : b.days - a.days || b.count - a.count,
+      );
+      return {
+        bucket,
+        rankByCount,
+        rows: list.slice(0, 5),
+        totalTutors: list.length,
+      };
+    });
+  }, [filteredRows]);
+
   /* ---------- Emergency abuse detection (per policy month) ---------- */
   type EmergencyAbuse = {
     tutor_external_id: string;
