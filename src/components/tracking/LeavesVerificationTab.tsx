@@ -215,13 +215,14 @@ export function LeavesVerificationTab() {
       if (monthFilter !== "all") {
         if (policyMonthOf(r.leave_date).key !== monthFilter) return false;
       }
-      if (reasonFilter !== "all") {
+      if (reasonFilter.size > 0) {
         const b = bucketReason(r.leave_reason, !!r.is_request);
-        if (reasonFilter === "requests" && !r.is_request) return false;
-        if (reasonFilter !== "requests" && b !== reasonFilter) return false;
+        if (r.is_request) {
+          if (!reasonFilter.has("__requests__")) return false;
+        } else {
+          if (!reasonFilter.has(b)) return false;
+        }
       }
-      if (!q) return true;
-      return (
         (r.tutor_name ?? "").toLowerCase().includes(q) ||
         (r.tutor_external_id ?? "").toLowerCase().includes(q) ||
         (r.team_leader ?? "").toLowerCase().includes(q) ||
