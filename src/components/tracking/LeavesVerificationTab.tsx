@@ -769,7 +769,7 @@ export function LeavesVerificationTab() {
                     className={
                       "text-sm rounded-md border px-3 py-2 " +
                       (i.tone === "warn"
-                        ? "bg-destructive/5 border-destructive/30 text-destructive-foreground"
+                        ? "bg-destructive/5 border-destructive/30 text-primary"
                         : i.tone === "good"
                           ? "bg-emerald-500/5 border-emerald-500/30"
                           : "bg-muted/40")
