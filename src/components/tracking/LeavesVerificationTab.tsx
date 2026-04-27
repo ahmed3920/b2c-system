@@ -609,7 +609,11 @@ export function LeavesVerificationTab() {
                         <TableHead className="text-center">Role</TableHead>
                         {balanceColumns.map((c) => (
                           <TableHead key={c} className="text-right">
-                            {c === "Excuse" ? "Excuses (#)" : `${c} (days)`}
+                            {c === "Excuse"
+                              ? "Excuses (#)"
+                              : c === "Emergency"
+                                ? "Emergencies (#)"
+                                : `${c} (days)`}
                           </TableHead>
                         ))}
                         <TableHead className="text-right">Total days</TableHead>
@@ -638,11 +642,13 @@ export function LeavesVerificationTab() {
                             const display =
                               c === "Excuse"
                                 ? t.excuseCount
-                                : c === "Request"
-                                  ? t.requestCount
-                                  : days
-                                    ? days.toFixed(days % 1 === 0 ? 0 : 1)
-                                    : "—";
+                                : c === "Emergency"
+                                  ? t.emergencyCount
+                                  : c === "Request"
+                                    ? t.requestCount
+                                    : days
+                                      ? days.toFixed(days % 1 === 0 ? 0 : 1)
+                                      : "—";
                             return (
                               <TableCell
                                 key={c}
