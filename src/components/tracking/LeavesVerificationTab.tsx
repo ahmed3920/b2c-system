@@ -195,6 +195,7 @@ export function LeavesVerificationTab() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && <LeavesSyncCard />}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search className="h-3.5 w-3.5 absolute left-2 top-2.5 text-muted-foreground" />
