@@ -1327,3 +1327,68 @@ function Empty() {
     </div>
   );
 }
+
+/**
+ * Wraps a wide table with a horizontal scrollbar shown ABOVE the content
+ * (in addition to the native one below). The two scrollbars stay in sync.
+ */
+function TopScrollWrapper({ children }: { children: React.ReactNode }) {
+  const topRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [innerWidth, setInnerWidth] = useState(0);
+  const syncing = useRef<"top" | "bottom" | null>(null);
+
+  useLayoutEffect(() => {
+    if (!innerRef.current) return;
+    const el = innerRef.current;
+    const update = () => setInnerWidth(el.scrollWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const onTopScroll = () => {
+    if (syncing.current === "bottom") {
+      syncing.current = null;
+      return;
+    }
+    if (topRef.current && bottomRef.current) {
+      syncing.current = "top";
+      bottomRef.current.scrollLeft = topRef.current.scrollLeft;
+    }
+  };
+  const onBottomScroll = () => {
+    if (syncing.current === "top") {
+      syncing.current = null;
+      return;
+    }
+    if (topRef.current && bottomRef.current) {
+      syncing.current = "bottom";
+      topRef.current.scrollLeft = bottomRef.current.scrollLeft;
+    }
+  };
+
+  return (
+    <div className="rounded-md border">
+      <div
+        ref={topRef}
+        onScroll={onTopScroll}
+        className="overflow-x-auto"
+        style={{ height: 12 }}
+      >
+        <div style={{ width: innerWidth, height: 1 }} />
+      </div>
+      <div
+        ref={bottomRef}
+        onScroll={onBottomScroll}
+        className="overflow-x-auto"
+      >
+        <div ref={innerRef} className="min-w-max">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
