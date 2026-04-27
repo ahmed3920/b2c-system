@@ -438,6 +438,21 @@ export function LeavesVerificationTab() {
     });
   }, [filteredRows]);
 
+  /* ---------- Tutor status (resigned / terminated) ---------- */
+  const tutorStatusMap = useMemo(() => {
+    const map = new Map<string, "Resigned" | "Terminated">();
+    for (const r of rows) {
+      const reason = (r.leave_reason ?? "").toLowerCase();
+      if (!r.tutor_external_id) continue;
+      if (reason.includes("terminat")) {
+        map.set(r.tutor_external_id, "Terminated");
+      } else if (reason.includes("resign") && !map.has(r.tutor_external_id)) {
+        map.set(r.tutor_external_id, "Resigned");
+      }
+    }
+    return map;
+  }, [rows]);
+
   /* ---------- Emergency abuse detection (per policy month) ---------- */
   type EmergencyAbuse = {
     tutor_external_id: string;
@@ -447,6 +462,7 @@ export function LeavesVerificationTab() {
     monthLabel: string;
     count: number;
     dates: string[];
+    status?: "Resigned" | "Terminated";
   };
   const emergencyAbuse = useMemo<EmergencyAbuse[]>(() => {
     // Always evaluate over rows (ignoring monthFilter) so admins see all months,
