@@ -29,6 +29,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
   Loader2,
   Search,
   Calendar as CalendarIcon,
@@ -36,6 +43,7 @@ import {
   TrendingUp,
   Users,
   Lightbulb,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -157,7 +165,9 @@ export function LeavesVerificationTab() {
   const [rows, setRows] = useState<LeaveRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [reasonFilter, setReasonFilter] = useState<string>("all");
+  // Multi-select: empty Set = "all". A special "__requests__" entry means
+  // "include request rows". Otherwise entries are bucket names.
+  const [reasonFilter, setReasonFilter] = useState<Set<string>>(new Set());
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all"); // all | tutor | mentor
   const [monthFilter, setMonthFilter] = useState<string>("all"); // policy month key
@@ -213,10 +223,13 @@ export function LeavesVerificationTab() {
       if (monthFilter !== "all") {
         if (policyMonthOf(r.leave_date).key !== monthFilter) return false;
       }
-      if (reasonFilter !== "all") {
+      if (reasonFilter.size > 0) {
         const b = bucketReason(r.leave_reason, !!r.is_request);
-        if (reasonFilter === "requests" && !r.is_request) return false;
-        if (reasonFilter !== "requests" && b !== reasonFilter) return false;
+        if (r.is_request) {
+          if (!reasonFilter.has("__requests__")) return false;
+        } else {
+          if (!reasonFilter.has(b)) return false;
+        }
       }
       if (!q) return true;
       return (
@@ -237,6 +250,7 @@ export function LeavesVerificationTab() {
       is_mentor: boolean;
       buckets: Record<string, number>;
       excuseCount: number;
+      emergencyCount: number;
       requestCount: number;
       total: number;
     };
@@ -252,6 +266,7 @@ export function LeavesVerificationTab() {
           is_mentor: !!r.is_mentor,
           buckets: {},
           excuseCount: 0,
+          emergencyCount: 0,
           requestCount: 0,
           total: 0,
         };
@@ -263,6 +278,9 @@ export function LeavesVerificationTab() {
       if (r.is_request) agg.requestCount += 1;
       else if (bucket === "Excuse") {
         agg.excuseCount += 1;
+        agg.total += days;
+      } else if (bucket === "Emergency") {
+        agg.emergencyCount += 1;
         agg.total += days;
       } else {
         agg.total += days;
@@ -538,20 +556,75 @@ export function LeavesVerificationTab() {
           </SelectContent>
         </Select>
 
-        <Select value={reasonFilter} onValueChange={setReasonFilter}>
-          <SelectTrigger className="h-8 w-[160px]">
-            <SelectValue placeholder="Reason" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All reasons</SelectItem>
-            {reasonOptions.map((r) => (
-              <SelectItem key={r} value={r}>
-                {r}
-              </SelectItem>
-            ))}
-            <SelectItem value="requests">Requests only</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-[180px] justify-between font-normal"
+            >
+              <span className="truncate">
+                {reasonFilter.size === 0
+                  ? "All reasons"
+                  : `${reasonFilter.size} selected`}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-xs font-medium">Reasons</span>
+              {reasonFilter.size > 0 && (
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                  onClick={() => setReasonFilter(new Set())}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {reasonOptions.map((r) => {
+                const checked = reasonFilter.has(r);
+                return (
+                  <label
+                    key={r}
+                    className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setReasonFilter((prev) => {
+                          const next = new Set(prev);
+                          if (v) next.add(r);
+                          else next.delete(r);
+                          return next;
+                        });
+                      }}
+                    />
+                    {r}
+                  </label>
+                );
+              })}
+              <div className="border-t my-1" />
+              <label className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox
+                  checked={reasonFilter.has("__requests__")}
+                  onCheckedChange={(v) => {
+                    setReasonFilter((prev) => {
+                      const next = new Set(prev);
+                      if (v) next.add("__requests__");
+                      else next.delete("__requests__");
+                      return next;
+                    });
+                  }}
+                />
+                Requests (slot/resign/term.)
+              </label>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {!isAdmin && myTeamLeader && (
           <Badge variant="outline" className="text-xs">
@@ -599,7 +672,11 @@ export function LeavesVerificationTab() {
                         <TableHead className="text-center">Role</TableHead>
                         {balanceColumns.map((c) => (
                           <TableHead key={c} className="text-right">
-                            {c === "Excuse" ? "Excuses (#)" : `${c} (days)`}
+                            {c === "Excuse"
+                              ? "Excuses (#)"
+                              : c === "Emergency"
+                                ? "Emergencies (#)"
+                                : `${c} (days)`}
                           </TableHead>
                         ))}
                         <TableHead className="text-right">Total days</TableHead>
@@ -628,11 +705,13 @@ export function LeavesVerificationTab() {
                             const display =
                               c === "Excuse"
                                 ? t.excuseCount
-                                : c === "Request"
-                                  ? t.requestCount
-                                  : days
-                                    ? days.toFixed(days % 1 === 0 ? 0 : 1)
-                                    : "—";
+                                : c === "Emergency"
+                                  ? t.emergencyCount
+                                  : c === "Request"
+                                    ? t.requestCount
+                                    : days
+                                      ? days.toFixed(days % 1 === 0 ? 0 : 1)
+                                      : "—";
                             return (
                               <TableCell
                                 key={c}
@@ -989,7 +1068,11 @@ export function LeavesVerificationTab() {
                         <TableHead className="text-right">Records</TableHead>
                         {tlBreakdownColumns.map((c) => (
                           <TableHead key={c} className="text-right">
-                            {c === "Excuse" ? "Excuses (#)" : `${c} (days)`}
+                            {c === "Excuse"
+                              ? "Excuses (#)"
+                              : c === "Emergency"
+                                ? "Emergencies (#)"
+                                : `${c} (days)`}
                           </TableHead>
                         ))}
                         <TableHead className="text-right">Total days</TableHead>
@@ -1013,11 +1096,13 @@ export function LeavesVerificationTab() {
                             const display =
                               c === "Excuse"
                                 ? count
-                                : c === "Request"
+                                : c === "Emergency"
                                   ? count
-                                  : days
-                                    ? days.toFixed(days % 1 === 0 ? 0 : 1)
-                                    : "—";
+                                  : c === "Request"
+                                    ? count
+                                    : days
+                                      ? days.toFixed(days % 1 === 0 ? 0 : 1)
+                                      : "—";
                             return (
                               <TableCell
                                 key={c}
