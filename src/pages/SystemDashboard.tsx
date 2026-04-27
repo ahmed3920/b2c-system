@@ -49,6 +49,7 @@ import { AdminTaskAssignDialog } from "@/components/admin/AdminTaskAssignDialog"
 import { TaskFormConfigDialog } from "@/components/admin/TaskFormConfigDialog";
 import { TaskCategoryManagerDialog } from "@/components/admin/TaskCategoryManagerDialog";
 import { EngagementTab } from "@/components/engagement/EngagementTab";
+import { VisionBoard } from "@/components/vision-board/VisionBoard";
 import { Star } from "lucide-react";
 import {
   BarChart,
@@ -592,6 +593,10 @@ const SystemDashboard = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+          </TabsContent>
+
+          <TabsContent value="vision" className="space-y-4">
+            <VisionBoard />
           </TabsContent>
         </Tabs>
       </div>
