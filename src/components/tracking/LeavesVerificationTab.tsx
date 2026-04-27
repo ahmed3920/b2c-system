@@ -29,6 +29,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
   Loader2,
   Search,
   Calendar as CalendarIcon,
@@ -36,6 +43,7 @@ import {
   TrendingUp,
   Users,
   Lightbulb,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
