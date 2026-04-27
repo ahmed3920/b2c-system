@@ -754,7 +754,7 @@ export function LeavesVerificationTab() {
               ) : balance.length === 0 ? (
                 <Empty />
               ) : (
-                <div className="rounded-md border overflow-x-auto">
+                <TopScrollWrapper>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -820,7 +820,7 @@ export function LeavesVerificationTab() {
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                </TopScrollWrapper>
               )}
             </CardContent>
           </Card>
