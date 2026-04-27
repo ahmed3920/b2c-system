@@ -223,6 +223,8 @@ export function LeavesVerificationTab() {
           if (!reasonFilter.has(b)) return false;
         }
       }
+      if (!q) return true;
+      return (
         (r.tutor_name ?? "").toLowerCase().includes(q) ||
         (r.tutor_external_id ?? "").toLowerCase().includes(q) ||
         (r.team_leader ?? "").toLowerCase().includes(q) ||
