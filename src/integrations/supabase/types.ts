@@ -1335,6 +1335,7 @@ export type Database = {
           is_request: boolean | null
           language: string | null
           leave_date: string
+          leave_end_date: string | null
           leave_reason: string | null
           leave_rule_id: string | null
           source: string | null
@@ -1351,6 +1352,7 @@ export type Database = {
           is_request?: boolean | null
           language?: string | null
           leave_date: string
+          leave_end_date?: string | null
           leave_reason?: string | null
           leave_rule_id?: string | null
           source?: string | null
@@ -1367,6 +1369,7 @@ export type Database = {
           is_request?: boolean | null
           language?: string | null
           leave_date?: string
+          leave_end_date?: string | null
           leave_reason?: string | null
           leave_rule_id?: string | null
           source?: string | null
