@@ -157,7 +157,9 @@ export function LeavesVerificationTab() {
   const [rows, setRows] = useState<LeaveRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [reasonFilter, setReasonFilter] = useState<string>("all");
+  // Multi-select: empty Set = "all". A special "__requests__" entry means
+  // "include request rows". Otherwise entries are bucket names.
+  const [reasonFilter, setReasonFilter] = useState<Set<string>>(new Set());
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all"); // all | tutor | mentor
   const [monthFilter, setMonthFilter] = useState<string>("all"); // policy month key
