@@ -998,10 +998,28 @@ export function LeavesVerificationTab() {
                         return (
                           <TableRow
                             key={`${g.tutor_external_id}-${g.monthKey}`}
-                            className="bg-destructive/5"
+                            className={
+                              g.status
+                                ? "bg-amber-500/10 border-l-4 border-l-amber-500"
+                                : "bg-destructive/5"
+                            }
                           >
                             <TableCell className="font-medium">
-                              {g.tutor_name}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span>{g.tutor_name}</span>
+                                {g.status && (
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      g.status === "Terminated"
+                                        ? "border-destructive text-destructive bg-destructive/10"
+                                        : "border-amber-600 text-amber-700 bg-amber-500/10 dark:text-amber-400"
+                                    }
+                                  >
+                                    {g.status}
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {g.tutor_external_id}
