@@ -1526,6 +1526,84 @@ export type Database = {
         }
         Relationships: []
       }
+      vision_board_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deadline: string | null
+          description: string
+          id: string
+          owner_name: string | null
+          owner_user_id: string | null
+          position: number
+          status: Database["public"]["Enums"]["vision_plan_status"]
+          tags: string[]
+          title: string
+          updated_at: string
+          urgency: Database["public"]["Enums"]["vision_plan_urgency"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string
+          id?: string
+          owner_name?: string | null
+          owner_user_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["vision_plan_status"]
+          tags?: string[]
+          title: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["vision_plan_urgency"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string
+          id?: string
+          owner_name?: string | null
+          owner_user_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["vision_plan_status"]
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["vision_plan_urgency"]
+        }
+        Relationships: []
+      }
+      vision_board_tags: {
+        Row: {
+          color: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       weekly_study_plan_items: {
         Row: {
           created_at: string
@@ -1793,6 +1871,8 @@ export type Database = {
       feature_plan_status: "planned" | "in_progress" | "completed" | "blocked"
       feature_plan_visibility: "team_leaders" | "mentors" | "both" | "hidden"
       task_status: "todo" | "in_progress" | "done" | "archived"
+      vision_plan_status: "not_started" | "in_progress" | "completed"
+      vision_plan_urgency: "critical" | "high" | "medium" | "low"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1971,6 +2051,8 @@ export const Constants = {
       feature_plan_status: ["planned", "in_progress", "completed", "blocked"],
       feature_plan_visibility: ["team_leaders", "mentors", "both", "hidden"],
       task_status: ["todo", "in_progress", "done", "archived"],
+      vision_plan_status: ["not_started", "in_progress", "completed"],
+      vision_plan_urgency: ["critical", "high", "medium", "low"],
     },
   },
 } as const
