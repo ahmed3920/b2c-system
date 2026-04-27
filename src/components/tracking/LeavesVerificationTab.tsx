@@ -176,17 +176,34 @@ export function LeavesVerificationTab() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("tutor_leaves")
-        .select("*")
-        .order("leave_date", { ascending: false })
-        .limit(10000);
-      if (!cancelled) {
+      const PAGE = 1000;
+      let from = 0;
+      let all: LeaveRow[] = [];
+      let fetchError: unknown = null;
+      // Paginate because Supabase caps each request at 1000 rows
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from("tutor_leaves")
+          .select("*")
+          .order("leave_date", { ascending: false })
+          .range(from, from + PAGE - 1);
         if (error) {
-          console.error("Failed to load leaves", error);
+          fetchError = error;
+          break;
+        }
+        const batch = (data ?? []) as LeaveRow[];
+        all = all.concat(batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+        if (from > 100000) break; // safety cap
+      }
+      if (!cancelled) {
+        if (fetchError) {
+          console.error("Failed to load leaves", fetchError);
           setRows([]);
         } else {
-          setRows((data ?? []) as LeaveRow[]);
+          setRows(all);
         }
         setLoading(false);
       }
