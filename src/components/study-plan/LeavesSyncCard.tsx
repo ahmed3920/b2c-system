@@ -154,8 +154,10 @@ export function LeavesSyncCard() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Dates can be DD/MM/YYYY, YYYY-MM-DD, etc. A row with From=24/4 To=27/4
-              creates 4 leave-days (24, 25, 26, 27).
+              Dates can be DD/MM/YYYY, YYYY-MM-DD, etc. A row Start=24/4 End=27/4
+              creates 4 leave-days. <strong>Add slot / Remove slot / Resign /
+              Termination</strong> are stored as requests (0 effective days).
+              Each <strong>Excuse</strong> counts as 0.2 day (5 excuses = 1 day).
             </p>
           </CollapsibleContent>
         </Collapsible>
