@@ -242,6 +242,7 @@ export function LeavesVerificationTab() {
       is_mentor: boolean;
       buckets: Record<string, number>;
       excuseCount: number;
+      emergencyCount: number;
       requestCount: number;
       total: number;
     };
@@ -257,6 +258,7 @@ export function LeavesVerificationTab() {
           is_mentor: !!r.is_mentor,
           buckets: {},
           excuseCount: 0,
+          emergencyCount: 0,
           requestCount: 0,
           total: 0,
         };
@@ -268,6 +270,9 @@ export function LeavesVerificationTab() {
       if (r.is_request) agg.requestCount += 1;
       else if (bucket === "Excuse") {
         agg.excuseCount += 1;
+        agg.total += days;
+      } else if (bucket === "Emergency") {
+        agg.emergencyCount += 1;
         agg.total += days;
       } else {
         agg.total += days;
