@@ -438,6 +438,21 @@ export function LeavesVerificationTab() {
     });
   }, [filteredRows]);
 
+  /* ---------- Tutor status (resigned / terminated) ---------- */
+  const tutorStatusMap = useMemo(() => {
+    const map = new Map<string, "Resigned" | "Terminated">();
+    for (const r of rows) {
+      const reason = (r.leave_reason ?? "").toLowerCase();
+      if (!r.tutor_external_id) continue;
+      if (reason.includes("terminat")) {
+        map.set(r.tutor_external_id, "Terminated");
+      } else if (reason.includes("resign") && !map.has(r.tutor_external_id)) {
+        map.set(r.tutor_external_id, "Resigned");
+      }
+    }
+    return map;
+  }, [rows]);
+
   /* ---------- Emergency abuse detection (per policy month) ---------- */
   type EmergencyAbuse = {
     tutor_external_id: string;
@@ -447,6 +462,7 @@ export function LeavesVerificationTab() {
     monthLabel: string;
     count: number;
     dates: string[];
+    status?: "Resigned" | "Terminated";
   };
   const emergencyAbuse = useMemo<EmergencyAbuse[]>(() => {
     // Always evaluate over rows (ignoring monthFilter) so admins see all months,
@@ -488,10 +504,11 @@ export function LeavesVerificationTab() {
     }
     return Array.from(grouped.values())
       .filter((g) => g.count >= EMERGENCY_ABUSE_THRESHOLD)
+      .map((g) => ({ ...g, status: tutorStatusMap.get(g.tutor_external_id) }))
       .sort((a, b) =>
         b.count - a.count || (a.monthKey < b.monthKey ? 1 : -1),
       );
-  }, [rows, tlFilter, roleFilter, search, monthFilter]);
+  }, [rows, tlFilter, roleFilter, search, monthFilter, tutorStatusMap]);
 
   /* ---------- Auto insights ---------- */
   const insights = useMemo(() => {
@@ -981,10 +998,28 @@ export function LeavesVerificationTab() {
                         return (
                           <TableRow
                             key={`${g.tutor_external_id}-${g.monthKey}`}
-                            className="bg-destructive/5"
+                            className={
+                              g.status
+                                ? "bg-amber-500/10 border-l-4 border-l-amber-500"
+                                : "bg-destructive/5"
+                            }
                           >
                             <TableCell className="font-medium">
-                              {g.tutor_name}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span>{g.tutor_name}</span>
+                                {g.status && (
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      g.status === "Terminated"
+                                        ? "border-destructive text-destructive bg-destructive/10"
+                                        : "border-amber-600 text-amber-700 bg-amber-500/10 dark:text-amber-400"
+                                    }
+                                  >
+                                    {g.status}
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {g.tutor_external_id}
