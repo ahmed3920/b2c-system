@@ -363,6 +363,64 @@ export function LeavesVerificationTab() {
       .slice(0, 10);
   }, [balance]);
 
+  /* ---------- Top requesters per leave type ----------
+   * For each leave bucket present in the filtered range, list the top 5
+   * tutors who requested that type (ranked by request count, then days).
+   * For Excuse / Emergency / Request we rank by occurrences; for everything
+   * else by total effective days.
+   */
+  const topByLeaveType = useMemo(() => {
+    type RowAgg = {
+      tutor_external_id: string;
+      tutor_name: string;
+      team_leader: string;
+      count: number;
+      days: number;
+    };
+    // bucket -> tutorId -> agg
+    const byBucket = new Map<string, Map<string, RowAgg>>();
+    for (const r of filteredRows) {
+      const bucket = bucketReason(r.leave_reason, !!r.is_request);
+      let inner = byBucket.get(bucket);
+      if (!inner) {
+        inner = new Map();
+        byBucket.set(bucket, inner);
+      }
+      const id = r.tutor_external_id;
+      let agg = inner.get(id);
+      if (!agg) {
+        agg = {
+          tutor_external_id: id,
+          tutor_name: r.tutor_name ?? id,
+          team_leader: r.team_leader ?? "—",
+          count: 0,
+          days: 0,
+        };
+        inner.set(id, agg);
+      }
+      agg.count += 1;
+      agg.days += Number(r.effective_days ?? 0);
+    }
+    const COUNT_RANKED = new Set(["Excuse", "Emergency", "Request"]);
+    const ordered = ALL_BUCKETS.filter((b) => byBucket.has(b));
+    for (const k of byBucket.keys()) if (!ordered.includes(k)) ordered.push(k);
+    return ordered.map((bucket) => {
+      const inner = byBucket.get(bucket)!;
+      const rankByCount = COUNT_RANKED.has(bucket);
+      const list = Array.from(inner.values()).sort((a, b) =>
+        rankByCount
+          ? b.count - a.count || b.days - a.days
+          : b.days - a.days || b.count - a.count,
+      );
+      return {
+        bucket,
+        rankByCount,
+        rows: list.slice(0, 5),
+        totalTutors: list.length,
+      };
+    });
+  }, [filteredRows]);
+
   /* ---------- Emergency abuse detection (per policy month) ---------- */
   type EmergencyAbuse = {
     tutor_external_id: string;
@@ -1043,6 +1101,79 @@ export function LeavesVerificationTab() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Top requesters per leave type */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" /> Top Requesters by Leave Type
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Top 5 tutors per leave type for the selected period
+                {monthFilter !== "all" ? " (current filter)" : " (all months)"}.
+                Excuse / Emergency / Request are ranked by occurrences; other
+                types by total effective days.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {topByLeaveType.length === 0 ? (
+                <Empty />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {topByLeaveType.map((group) => (
+                    <div
+                      key={group.bucket}
+                      className="rounded-md border bg-card"
+                    >
+                      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/40">
+                        <div className="font-medium text-sm">
+                          {group.bucket}
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">
+                          {group.totalTutors} tutor
+                          {group.totalTutors === 1 ? "" : "s"}
+                        </Badge>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="h-8 w-8">#</TableHead>
+                            <TableHead className="h-8">Tutor</TableHead>
+                            <TableHead className="h-8">Team</TableHead>
+                            <TableHead className="h-8 text-right">
+                              {group.rankByCount ? "#" : "Days"}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.rows.map((r, i) => (
+                            <TableRow key={r.tutor_external_id}>
+                              <TableCell className="text-muted-foreground py-1.5">
+                                {i + 1}
+                              </TableCell>
+                              <TableCell className="font-medium py-1.5">
+                                {r.tutor_name}
+                              </TableCell>
+                              <TableCell className="py-1.5 text-xs text-muted-foreground">
+                                {r.team_leader}
+                              </TableCell>
+                              <TableCell className="py-1.5 text-right tabular-nums font-semibold">
+                                {group.rankByCount
+                                  ? r.count
+                                  : r.days.toFixed(
+                                      r.days % 1 === 0 ? 0 : 1,
+                                    )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Team Leader breakdown */}
           <Card>
