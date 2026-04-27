@@ -29,7 +29,7 @@ import { useTutorProgress } from "@/hooks/useTutorProgress";
 import { useUserRole } from "@/hooks/useUserRole";
 import { StudyPlanDetailDialog } from "@/components/study-plan/StudyPlanDetailDialog";
 import { SheetSyncCard } from "@/components/study-plan/SheetSyncCard";
-import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
+
 import { AdherenceStatusBadge } from "@/components/study-plan/AdherenceStatusBadge";
 import { AdherenceDetailDialog } from "@/components/study-plan/AdherenceDetailDialog";
 import { useWeekAdherence, type TutorAdherence } from "@/hooks/useWeekAdherence";
@@ -223,7 +223,7 @@ export default function StudyPlan() {
                   description="Post-week: which modules each tutor finished."
                   weekStart={weekStart}
                 />
-                <LeavesSyncCard />
+                
               </div>
             </CardContent>
           </Card>
