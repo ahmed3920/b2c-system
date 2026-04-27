@@ -41,19 +41,23 @@ type LeaveRow = {
   source: string | null;
 };
 
-// Group reasons into a small set of buckets for the balance table
+// Group reasons into a fixed set of buckets aligned with the official leave types.
+// Requests (Add slot, Remove slot, Resign, Termination) are grouped under "Request"
+// and never count toward effective days.
 function bucketReason(reason: string | null | undefined, isRequest: boolean): string {
   if (isRequest) return "Request";
   const r = (reason ?? "").toLowerCase().trim();
   if (!r) return "Other";
   if (r.includes("excuse")) return "Excuse";
   if (r.includes("sick")) return "Sick";
-  if (r.includes("annual")) return "Annual";
-  if (r.includes("unpaid")) return "Unpaid";
   if (r.includes("emergency")) return "Emergency";
-  if (r.includes("maternity") || r.includes("paternity")) return "Maternity/Paternity";
-  if (r.includes("bereavement")) return "Bereavement";
-  if (r.includes("compensation") || r.includes("comp ")) return "Compensation";
+  if (r.includes("death") || r.includes("bereavement")) return "Death";
+  if (r.includes("marriage")) return "Marriage";
+  if (r.includes("maternity")) return "Maternity";
+  if (r.includes("paternity")) return "Paternity";
+  if (r.includes("unpaid")) return "Unpaid Vacation";
+  if (r.includes("special")) return "Special Request";
+  if (r.includes("vacation") || r.includes("annual")) return "Vacation";
   return reason ?? "Other";
 }
 
