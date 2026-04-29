@@ -58,7 +58,7 @@ export function TutorEmailsBulkImport({ open, onOpenChange, onImported }: Props)
   const handleImport = async () => {
     const rows = parseCsv(csv);
     if (rows.length === 0) {
-      toast.error("No valid rows found", { description: "Headers required: tutor_id,tutor_name,email,status,team_leader,notes" });
+      toast.error("No valid rows found", { description: "Headers required: id,name,email" });
       return;
     }
     setImporting(true);
