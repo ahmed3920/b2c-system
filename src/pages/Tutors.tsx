@@ -380,6 +380,23 @@ export default function Tutors() {
           </CardContent>
         </Card>
       </div>
+
+      <TutorStatusDialog
+        open={!!statusTarget}
+        onOpenChange={(o) => !o && setStatusTarget(null)}
+        tutor={
+          statusTarget
+            ? {
+                id: statusTarget.id,
+                name: statusTarget.name,
+                team_leader: statusTarget.team_leader,
+                is_mentor: statusTarget.role === "Mentor",
+              }
+            : null
+        }
+        current={statusTarget ? byTutorId.get(statusTarget.id) ?? null : null}
+        onSubmit={upsertStatus}
+      />
     </AppLayout>
   );
 }
