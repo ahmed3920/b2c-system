@@ -799,15 +799,29 @@ export function LiveIssuesTracking() {
                     <TableHead className="text-right">Cases</TableHead>
                     <TableHead>Top Issue</TableHead>
                     <TableHead>Risk</TableHead>
+                    <TableHead className="text-right">Action Plan</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {repeaters.map((r) => {
                     const highRisk = r.cases >= REPEATER_THRESHOLD;
+                    const existingPlan = plansByTutor.get(r.tutor_id) ?? null;
+                    const isNoShowTop = (r.topReason?.[0] ?? "").toLowerCase().includes("no show");
+                    const suggestedCategory: ActionPlanCategory = isNoShowTop ? "no_show_abuse" : "quality";
                     return (
                       <TableRow key={r.tutor_id} className={highRisk ? "bg-red-50/50 dark:bg-red-950/10" : ""}>
-                        <TableCell className="font-medium text-sm">{r.tutor_name}</TableCell>
+                        <TableCell className="font-medium text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{r.tutor_name}</span>
+                            {existingPlan && (
+                              <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20" variant="outline">
+                                <Target className="h-3 w-3 mr-1" />
+                                On Action Plan
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-mono text-xs">{r.tutor_id}</TableCell>
                         <TableCell className="text-xs">{r.team_leader}</TableCell>
                         <TableCell className="text-right font-semibold">{r.cases}</TableCell>
@@ -821,6 +835,42 @@ export function LiveIssuesTracking() {
                             <Badge variant="outline" className="text-[10px]">Watch</Badge>
                           )}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
+                            {existingPlan ? (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => setViewPlan(existingPlan)}>
+                                  <Eye className="h-3.5 w-3.5 mr-1" />
+                                  View Plan
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setCreatePlanForTutorId(r.tutor_id);
+                                    setCreatePlanCategory(suggestedCategory);
+                                    setCreatePlanOpen(true);
+                                  }}
+                                >
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  New Action Plan
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setCreatePlanForTutorId(r.tutor_id);
+                                  setCreatePlanCategory(suggestedCategory);
+                                  setCreatePlanOpen(true);
+                                }}
+                              >
+                                <Target className="h-3.5 w-3.5 mr-1" />
+                                Create Action Plan
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Button
                             size="sm"
@@ -830,6 +880,105 @@ export function LiveIssuesTracking() {
                           >
                             View cases
                           </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Single No-Show this month — first no-show requires a warning email + 2x deduction */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            Single No-Show This Month
+            <Badge variant="outline" className="text-[10px]">
+              {month !== ALL ? format(parseISO(month + "-01"), "MMM yyyy") : (months[0] ? format(parseISO(months[0] + "-01"), "MMM yyyy") : "—")}
+            </Badge>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Per No-Show Policy, the first no-show in a month requires a warning email + 2x deduction notice.
+            These tutors have exactly 1 no-show and should receive that warning.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {singleNoShow.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No single no-show cases for this month.</p>
+          ) : (
+            <div className="border rounded-md overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tutor</TableHead>
+                    <TableHead>Tutor ID</TableHead>
+                    <TableHead>Team Leader</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Suggested action</TableHead>
+                    <TableHead className="text-right">Action Plan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {singleNoShow.map((r) => {
+                    const existingPlan = plansByTutor.get(r.tutor_id) ?? null;
+                    return (
+                      <TableRow key={r.tutor_id} className="bg-amber-500/5 border-l-4 border-l-amber-500">
+                        <TableCell className="font-medium text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{r.tutor_name}</span>
+                            {existingPlan && (
+                              <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20" variant="outline">
+                                <Target className="h-3 w-3 mr-1" />
+                                On Action Plan
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{r.tutor_id}</TableCell>
+                        <TableCell className="text-xs">{r.team_leader}</TableCell>
+                        <TableCell className="text-xs font-mono">
+                          {r.dates.map((d) => format(new Date(d), "PP")).join(", ") || "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">Warning Email + 2x deduction notice</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
+                            {existingPlan ? (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => setViewPlan(existingPlan)}>
+                                  <Eye className="h-3.5 w-3.5 mr-1" />
+                                  View Plan
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setCreatePlanForTutorId(r.tutor_id);
+                                    setCreatePlanCategory("no_show_abuse");
+                                    setCreatePlanOpen(true);
+                                  }}
+                                >
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  New Action Plan
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setCreatePlanForTutorId(r.tutor_id);
+                                  setCreatePlanCategory("no_show_abuse");
+                                  setCreatePlanOpen(true);
+                                }}
+                              >
+                                <Target className="h-3.5 w-3.5 mr-1" />
+                                Create Action Plan
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
