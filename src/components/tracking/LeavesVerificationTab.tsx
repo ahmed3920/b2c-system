@@ -1393,6 +1393,27 @@ export function LeavesVerificationTab() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CreateActionPlanDialog
+        open={createPlanOpen}
+        onOpenChange={(v) => {
+          setCreatePlanOpen(v);
+          if (!v) setCreatePlanForTutorId(null);
+        }}
+        onCreated={() => setPlanRefreshTick((t) => t + 1)}
+        isAdmin={isAdmin}
+        currentTeamLeader={myTeamLeader ?? null}
+        preselectTutorExternalId={createPlanForTutorId}
+        preselectCategory="emergency_abuse"
+        lockCategory
+      />
+
+      <ActionPlanDetailDialog
+        plan={viewPlan}
+        open={!!viewPlan}
+        onOpenChange={(v) => { if (!v) setViewPlan(null); }}
+        onChanged={() => setPlanRefreshTick((t) => t + 1)}
+      />
     </div>
   );
 }
