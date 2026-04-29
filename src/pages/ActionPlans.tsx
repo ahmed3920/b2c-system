@@ -467,6 +467,7 @@ const ActionPlans = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <EmailTemplatesDialog open={templatesOpen} onOpenChange={setTemplatesOpen} />
     </AppLayout>
   );
 };
