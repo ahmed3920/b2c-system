@@ -79,6 +79,7 @@ export function AddUpdateForm({
   const tutorEmail = useTutorEmailFor(plan.tutor_external_id).record;
   const tlEmail = useTeamLeaderEmailFor(plan.team_leader);
   const { templates } = useEmailTemplates();
+  const { list: defaultCcList } = useDefaultEmailCc();
   const [emailTemplateId, setEmailTemplateId] = useState<string>("none");
   const [emailTo, setEmailTo] = useState("");
   const [emailCc, setEmailCc] = useState("");
