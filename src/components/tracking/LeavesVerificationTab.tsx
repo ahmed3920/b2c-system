@@ -1024,6 +1024,7 @@ export function LeavesVerificationTab() {
                         <TableHead className="text-right">Emergencies</TableHead>
                         <TableHead>Suggested action</TableHead>
                         <TableHead>Dates</TableHead>
+                        <TableHead className="text-right">Action Plan</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
