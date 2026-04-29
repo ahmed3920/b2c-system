@@ -21,12 +21,27 @@ interface Props {
   onCreated: () => void;
   isAdmin: boolean;
   currentTeamLeader: string | null;
+  /** Optional: preselect a tutor by external id (e.g. from analysis tables). */
+  preselectTutorExternalId?: string | null;
+  /** Optional: preselect & lock category (e.g. emergency_abuse from leaves abuse view). */
+  preselectCategory?: ActionPlanCategory | null;
+  /** Optional: lock category picker when preselectCategory is set. */
+  lockCategory?: boolean;
 }
 
-export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin, currentTeamLeader }: Props) {
+export function CreateActionPlanDialog({
+  open,
+  onOpenChange,
+  onCreated,
+  isAdmin,
+  currentTeamLeader,
+  preselectTutorExternalId,
+  preselectCategory,
+  lockCategory,
+}: Props) {
   const { tutors } = useActionPlanTutors();
   const [tutorId, setTutorId] = useState<string>("");
-  const [category, setCategory] = useState<ActionPlanCategory>("quality");
+  const [category, setCategory] = useState<ActionPlanCategory>(preselectCategory ?? "quality");
   const [summary, setSummary] = useState("");
   const [days, setDays] = useState(30);
   const [baselineScore, setBaselineScore] = useState<string>("");
@@ -48,9 +63,21 @@ export function CreateActionPlanDialog({ open, onOpenChange, onCreated, isAdmin,
 
   const selectedTutor = visibleTutors.find((t) => t.id === tutorId);
 
+  // Apply preselection when the dialog opens
+  useEffect(() => {
+    if (!open) return;
+    if (preselectCategory) setCategory(preselectCategory);
+    if (preselectTutorExternalId && visibleTutors.length > 0) {
+      const match = visibleTutors.find(
+        (t) => (t.tutor_external_id ?? "") === preselectTutorExternalId,
+      );
+      if (match) setTutorId(match.id);
+    }
+  }, [open, preselectTutorExternalId, preselectCategory, visibleTutors]);
+
   const reset = () => {
     setTutorId("");
-    setCategory("quality");
+    setCategory(preselectCategory ?? "quality");
     setSummary("");
     setDays(30);
     setBaselineScore("");
