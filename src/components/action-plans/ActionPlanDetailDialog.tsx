@@ -383,12 +383,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
                       ) : (
                         <StepNoteRenderer text={s.note} />
                       )}
-                      {!isEditing && (s.status_change || s.progress_change !== null) && (
-                        <div className="flex gap-2 mt-2 text-xs">
+                      {!isEditing && (
+                        <div className="flex gap-2 mt-2 text-xs items-center flex-wrap">
                           {s.status_change && <StatusBadge status={s.status_change} />}
                           {s.progress_change !== null && (
                             <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
                           )}
+                          <StepEditHistory stepId={s.id} />
                         </div>
                       )}
                     </div>
