@@ -25,6 +25,12 @@ import {
 import { format, parseISO } from "date-fns";
 import { EduValidationBadge, type EduValidation } from "@/components/live-issues/EduValidationBadge";
 import { useEduDescriptions } from "@/hooks/useEduDescriptions";
+import { Target, Plus, Eye } from "lucide-react";
+import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
+import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
+import type { ActionPlan, ActionPlanCategory } from "@/hooks/useActionPlans";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 
 interface IssueRow {
   id: string;
