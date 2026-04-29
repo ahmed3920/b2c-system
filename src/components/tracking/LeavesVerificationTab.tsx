@@ -49,6 +49,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
+import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
+import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
+import type { ActionPlan } from "@/hooks/useActionPlans";
+import { Target, Plus, Eye } from "lucide-react";
 
 type LeaveRow = {
   id: string;
@@ -171,6 +175,41 @@ export function LeavesVerificationTab() {
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all"); // all | tutor | mentor
   const [monthFilter, setMonthFilter] = useState<string>("all"); // policy month key
+
+  /* ---------- Emergency-abuse action plans (existing) ---------- */
+  // Map of tutor_external_id → most-recent active emergency_abuse plan.
+  const [emergencyPlansByTutor, setEmergencyPlansByTutor] = useState<Map<string, ActionPlan>>(new Map());
+  const [planRefreshTick, setPlanRefreshTick] = useState(0);
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [createPlanForTutorId, setCreatePlanForTutorId] = useState<string | null>(null);
+  const [viewPlan, setViewPlan] = useState<ActionPlan | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("action_plans")
+        .select("*")
+        .eq("category", "emergency_abuse")
+        .in("status", ["active", "on_hold", "escalated"])
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load emergency action plans", error);
+        return;
+      }
+      const map = new Map<string, ActionPlan>();
+      for (const p of (data ?? []) as ActionPlan[]) {
+        const id = p.tutor_external_id;
+        if (!id) continue;
+        if (!map.has(id)) map.set(id, p); // keep most recent (already sorted)
+      }
+      setEmergencyPlansByTutor(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [planRefreshTick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -985,6 +1024,7 @@ export function LeavesVerificationTab() {
                         <TableHead className="text-right">Emergencies</TableHead>
                         <TableHead>Suggested action</TableHead>
                         <TableHead>Dates</TableHead>
+                        <TableHead className="text-right">Action Plan</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -995,6 +1035,7 @@ export function LeavesVerificationTab() {
                             : g.count === 3
                               ? "Warning Email + Meeting + 2x or 3x deduction"
                               : "HR Investigation / Action Plan";
+                        const existingPlan = emergencyPlansByTutor.get(g.tutor_external_id) ?? null;
                         return (
                           <TableRow
                             key={`${g.tutor_external_id}-${g.monthKey}`}
@@ -1017,6 +1058,12 @@ export function LeavesVerificationTab() {
                                     }
                                   >
                                     {g.status}
+                                  </Badge>
+                                )}
+                                {existingPlan && (
+                                  <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20" variant="outline">
+                                    <Target className="h-3 w-3 mr-1" />
+                                    On Action Plan
                                   </Badge>
                                 )}
                               </div>
@@ -1043,6 +1090,44 @@ export function LeavesVerificationTab() {
                                 .sort()
                                 .map((d) => formatDateShort(d))
                                 .join(", ")}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1 flex-wrap">
+                                {existingPlan ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setViewPlan(existingPlan)}
+                                    >
+                                      <Eye className="h-3.5 w-3.5 mr-1" />
+                                      View Plan
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        setCreatePlanForTutorId(g.tutor_external_id);
+                                        setCreatePlanOpen(true);
+                                      }}
+                                    >
+                                      <Plus className="h-3.5 w-3.5 mr-1" />
+                                      New Action Plan
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setCreatePlanForTutorId(g.tutor_external_id);
+                                      setCreatePlanOpen(true);
+                                    }}
+                                  >
+                                    <Target className="h-3.5 w-3.5 mr-1" />
+                                    Create Action Plan
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -1308,6 +1393,27 @@ export function LeavesVerificationTab() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CreateActionPlanDialog
+        open={createPlanOpen}
+        onOpenChange={(v) => {
+          setCreatePlanOpen(v);
+          if (!v) setCreatePlanForTutorId(null);
+        }}
+        onCreated={() => setPlanRefreshTick((t) => t + 1)}
+        isAdmin={isAdmin}
+        currentTeamLeader={myTeamLeader ?? null}
+        preselectTutorExternalId={createPlanForTutorId}
+        preselectCategory="emergency_abuse"
+        lockCategory
+      />
+
+      <ActionPlanDetailDialog
+        plan={viewPlan}
+        open={!!viewPlan}
+        onOpenChange={(v) => { if (!v) setViewPlan(null); }}
+        onChanged={() => setPlanRefreshTick((t) => t + 1)}
+      />
     </div>
   );
 }
