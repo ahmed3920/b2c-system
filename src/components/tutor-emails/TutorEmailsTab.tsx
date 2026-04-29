@@ -14,6 +14,14 @@ import { TutorEmailsBulkImport } from "./TutorEmailsBulkImport";
 
 export function TutorEmailsTab() {
   const { emails, isLoading, refetch } = useTutorEmails();
+  const { tutors } = useActionPlanTutors();
+  const tlByExternalId = useMemo(() => {
+    const m = new Map<string, string>();
+    tutors.forEach((t) => {
+      if (t.tutor_external_id) m.set(t.tutor_external_id, t.team_leader);
+    });
+    return m;
+  }, [tutors]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
