@@ -81,8 +81,9 @@ export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
 
     // Build mailto URL — opens in user's default email client (Gmail/Outlook/etc)
     // so it sends FROM the team leader's own email address.
+    const finalCc = mergeCcList(defaultCcList, cc);
     const params = new URLSearchParams();
-    if (cc.trim()) params.set("cc", cc.trim());
+    if (finalCc) params.set("cc", finalCc);
     params.set("subject", subject);
     params.set("body", body);
     const mailto = `mailto:${encodeURIComponent(recipient.trim())}?${params.toString().replace(/\+/g, "%20")}`;
@@ -97,7 +98,7 @@ export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
       tutor_external_id: plan.tutor_external_id,
       tutor_name: plan.tutor_name,
       recipient_email: recipient.trim(),
-      cc_emails: cc.trim() || null,
+      cc_emails: finalCc || null,
       subject,
       body,
       status: "sent",
