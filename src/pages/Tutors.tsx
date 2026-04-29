@@ -115,7 +115,7 @@ export default function Tutors() {
   const resetPage = () => setPage(1);
 
   return (
-    <AppLayout title="Tutors" allowedRoles={["admin", "team_leader"]}>
+    <AppLayout title="Tutors" allowedRoles={["admin", "team_leader", "super_team_leader"]}>
       <div className="p-6 space-y-4 max-w-7xl mx-auto">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
