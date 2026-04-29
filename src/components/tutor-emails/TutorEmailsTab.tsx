@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Plus, Pencil, Upload, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { useTutorEmails, type TutorEmail } from "@/hooks/useTutorEmails";
+import { useActionPlanTutors } from "@/hooks/useActionPlans";
 import { TutorEmailDialog } from "./TutorEmailDialog";
 import { TutorEmailsBulkImport } from "./TutorEmailsBulkImport";
 
