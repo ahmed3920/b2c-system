@@ -429,16 +429,12 @@ export function AddUpdateForm({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">To *</Label>
-              <Input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="tutor@example.com" />
-            </div>
-            <div>
-              <Label className="text-xs">CC (comma-separated)</Label>
-              <Input value={emailCc} onChange={(e) => setEmailCc(e.target.value)} placeholder="manager@example.com" />
-            </div>
+          <div>
+            <Label className="text-xs">To *</Label>
+            <Input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="tutor@example.com" />
           </div>
+
+          <DefaultCcManager extraCc={emailCc} onExtraCcChange={setEmailCc} />
 
           <div>
             <Label className="text-xs">Subject *</Label>
