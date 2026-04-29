@@ -185,8 +185,8 @@ export function CreateActionPlanDialog({
 
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as ActionPlanCategory)}>
-              <SelectTrigger>
+            <Select value={category} onValueChange={(v) => setCategory(v as ActionPlanCategory)} disabled={!!lockCategory}>
+              <SelectTrigger disabled={!!lockCategory}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
