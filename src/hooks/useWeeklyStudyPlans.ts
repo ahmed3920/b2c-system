@@ -35,13 +35,19 @@ export const useWeeklyStudyPlans = (weekStart: string | null) => {
     queryKey: ["weekly-study-plans", weekStart, Array.from(inactiveIds).sort().join(",")],
     enabled: !!weekStart,
     queryFn: async (): Promise<WeeklyPlan[]> => {
-      const { data: plans, error } = await supabase
+      const { data: plansRaw, error } = await supabase
         .from("weekly_study_plans")
         .select("*")
         .eq("week_start", weekStart!)
         .order("tutor_name");
       if (error) throw error;
-      if (!plans || plans.length === 0) return [];
+      if (!plansRaw || plansRaw.length === 0) return [];
+
+      // Hide plans for resigned/terminated tutors
+      const plans = plansRaw.filter(
+        (p: any) => !p.tutor_external_id || !inactiveIds.has(p.tutor_external_id),
+      );
+      if (plans.length === 0) return [];
 
       const ids = plans.map((p) => p.id);
       const { data: items } = await supabase
