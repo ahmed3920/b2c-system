@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTutorEmailFor } from "@/hooks/useTutorEmails";
 import { useEmailTemplates, fillTemplate } from "@/hooks/useEmailTemplates";
+import { useDefaultEmailCc, mergeCcList } from "@/hooks/useDefaultEmailCc";
+import { DefaultCcManager } from "@/components/tutor-emails/DefaultCcManager";
 import { CATEGORY_LABELS, type ActionPlan } from "@/hooks/useActionPlans";
 
 interface Props {
