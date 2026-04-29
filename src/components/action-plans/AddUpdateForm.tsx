@@ -1,20 +1,24 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Loader2, MessageSquarePlus, Mail, CalendarClock, FileText,
-  ImagePlus, X, MessageSquare, Sparkles,
+  ImagePlus, X, MessageSquare, Sparkles, Send, AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { STATUS_LABELS, type ActionPlanStatus, type ActionPlanCategory } from "@/hooks/useActionPlans";
+import { STATUS_LABELS, CATEGORY_LABELS, type ActionPlanStatus, type ActionPlanCategory, type ActionPlan } from "@/hooks/useActionPlans";
 import { CATEGORY_FIRST_STEP, type FirstStepKind } from "./categoryFirstStep";
+import { useTutorEmailFor } from "@/hooks/useTutorEmails";
+import { useTeamLeaderEmailFor } from "@/hooks/useTeamLeaderEmails";
+import { useEmailTemplates, fillTemplate } from "@/hooks/useEmailTemplates";
 
 type TemplateKey = "free" | "warning_email" | "schedule_meeting" | "meeting_followup";
 
@@ -45,6 +49,8 @@ interface Props {
   currentProgress: number;
   firstStepDone: boolean;
   onPosted: (planUpdates: Partial<{ status: ActionPlanStatus; progress: number; resolved_at: string }>) => void;
+  /** Full plan, used by the warning email composer for tutor lookup, template vars, and Reply-To. */
+  plan: ActionPlan;
 }
 
 const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
@@ -54,7 +60,9 @@ const STATUS_PROGRESS: Record<ActionPlanStatus, number> = {
   resolved: 100,
 };
 
-export function AddUpdateForm({ planId, category, currentStatus, currentProgress, firstStepDone, onPosted }: Props) {
+export function AddUpdateForm({
+  planId, category, currentStatus, currentProgress, firstStepDone, onPosted, plan,
+}: Props) {
   const firstStepSpec = CATEGORY_FIRST_STEP[category];
   const suggestedTemplate: TemplateKey =
     !firstStepDone && firstStepSpec ? FIRST_STEP_TO_TEMPLATE[firstStepSpec.kind] : "free";
@@ -62,16 +70,58 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
   const [posting, setPosting] = useState(false);
   const [statusChange, setStatusChange] = useState<ActionPlanStatus | "none">("none");
 
-  // Free / warning email
+  // Free
   const [note, setNote] = useState("");
 
-  // Warning email specifics
+  // Warning email — now actually sends
+  const tutorEmail = useTutorEmailFor(plan.tutor_external_id).record;
+  const tlEmail = useTeamLeaderEmailFor(plan.team_leader);
+  const { templates } = useEmailTemplates();
+  const [emailTemplateId, setEmailTemplateId] = useState<string>("none");
+  const [emailTo, setEmailTo] = useState("");
+  const [emailCc, setEmailCc] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
-  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const [emailDate, setEmailDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fill recipient from tutor email row
+  useEffect(() => {
+    if (tutorEmail && !emailTo) setEmailTo(tutorEmail.email);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorEmail?.email]);
+
+  const categoryTemplates = useMemo(
+    () => templates.filter((t) =>
+      t.is_active && (t.action_plan_category === plan.category || t.action_plan_category === null),
+    ),
+    [templates, plan.category],
+  );
+
+  const templateVars = useMemo(() => ({
+    tutor_name: plan.tutor_name,
+    tutor_id: plan.tutor_external_id ?? "",
+    team_leader: plan.team_leader,
+    category: CATEGORY_LABELS[plan.category],
+    summary: plan.summary ?? "",
+    start_date: format(new Date(plan.start_date), "MMM d, yyyy"),
+    due_date: format(new Date(plan.due_date), "MMM d, yyyy"),
+    status: plan.status,
+    progress: String(plan.progress),
+    date: format(new Date(), "MMM d, yyyy"),
+  }), [plan]);
+
+  const applyEmailTemplate = (id: string) => {
+    setEmailTemplateId(id);
+    if (id === "none") return;
+    const tpl = templates.find((t) => t.id === id);
+    if (!tpl) return;
+    const filled = fillTemplate(tpl, templateVars);
+    setEmailSubject(filled.subject);
+    setEmailBody(filled.body);
+  };
 
   // Schedule meeting
   const [meetingDate, setMeetingDate] = useState<string>("");
@@ -84,7 +134,10 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
 
   const reset = () => {
     setNote("");
-    setEmailSubject(""); setEmailRecipient(""); setEmailDate(format(new Date(), "yyyy-MM-dd"));
+    setEmailTemplateId("none");
+    setEmailTo(tutorEmail?.email ?? "");
+    setEmailCc(""); setEmailSubject(""); setEmailBody("");
+    setEmailDate(format(new Date(), "yyyy-MM-dd"));
     setScreenshotFile(null); setScreenshotPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setMeetingDate(""); setMeetingTime(""); setMeetingTopic("");
@@ -118,7 +171,7 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
     }
 
     if (template === "warning_email") {
-      if (!emailSubject.trim() || !emailRecipient.trim()) {
+      if (!emailSubject.trim() || !emailTo.trim()) {
         toast.error("Subject and recipient are required");
         return null;
       }
@@ -139,10 +192,12 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
       const lines = [
         "📧 **Warning Email Sent**",
         `**Subject:** ${emailSubject.trim()}`,
-        `**To:** ${emailRecipient.trim()}`,
-        `**Date:** ${emailDate}`,
+        `**To:** ${emailTo.trim()}`,
       ];
-      if (note.trim()) lines.push("", note.trim());
+      if (emailCc.trim()) lines.push(`**CC:** ${emailCc.trim()}`);
+      lines.push(`**Date:** ${emailDate}`);
+      if (tlEmail?.email) lines.push(`**Reply-To:** ${tlEmail.email}`);
+      if (emailBody.trim()) lines.push("", emailBody.trim());
       if (imageUrl) lines.push("", `![Email screenshot](${imageUrl})`);
       return lines.join("\n");
     }
@@ -181,6 +236,37 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
     setPosting(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setPosting(false); return; }
+
+    // For warning_email, send the email FIRST
+    if (template === "warning_email") {
+      const { data: sendRes, error: sendErr } = await supabase.functions.invoke(
+        "send-action-plan-email",
+        {
+          body: {
+            to: emailTo.trim(),
+            cc: emailCc.trim() || null,
+            subject: emailSubject.trim(),
+            body: emailBody.trim(),
+            team_leader: plan.team_leader,
+            related_plan_id: planId,
+            template_id: emailTemplateId === "none" ? null : emailTemplateId,
+            tutor_external_id: plan.tutor_external_id,
+            tutor_name: plan.tutor_name,
+          },
+        },
+      );
+      if (sendErr || !sendRes?.success) {
+        const msg = sendRes?.error || sendErr?.message || "Failed to send email";
+        toast.error("Email not sent", { description: msg });
+        setPosting(false);
+        return;
+      }
+      toast.success("Email sent", {
+        description: tlEmail?.email
+          ? `Reply-To: ${tlEmail.email}`
+          : "Reply-To not set (no Team Leader email mapped)",
+      });
+    }
 
     const composedNote = await buildNote(session.user.id);
     if (!composedNote) { setPosting(false); return; }
@@ -238,7 +324,6 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
         <MessageSquarePlus className="w-4 h-4" /> Add Update
       </Label>
 
-      {/* Suggested-step hint */}
       {!firstStepDone && firstStepSpec && (
         <div className="flex items-start gap-2 text-xs rounded-md border border-orange-500/30 bg-orange-500/5 p-2">
           <Sparkles className="w-3.5 h-3.5 text-orange-600 mt-0.5 shrink-0" />
@@ -249,7 +334,6 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
         </div>
       )}
 
-      {/* Template picker */}
       <div>
         <Label className="text-xs">Template</Label>
         <Select value={template} onValueChange={(v) => setTemplate(v as TemplateKey)}>
@@ -276,7 +360,6 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
         </Select>
       </div>
 
-      {/* Template-specific fields */}
       {template === "free" && (
         <Textarea
           placeholder="What happened? What's next?"
@@ -287,35 +370,85 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
       )}
 
       {template === "warning_email" && (
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-md border bg-background p-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-primary">
+            <Mail className="w-3.5 h-3.5" /> Compose &amp; send warning email
+          </div>
+
+          {!tutorEmail && (
+            <Alert variant="destructive" className="py-2">
+              <AlertTriangle className="w-4 h-4" />
+              <AlertDescription className="text-xs">
+                No email saved for this tutor. Add one in the <strong>Tutor Emails</strong> tab,
+                or enter the recipient manually.
+              </AlertDescription>
+            </Alert>
+          )}
+          {tutorEmail?.status === "inactive" && (
+            <Alert className="py-2 border-yellow-500/40 bg-yellow-500/10">
+              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+              <AlertDescription className="text-xs">
+                Tutor's email is marked <strong>Inactive</strong>.
+              </AlertDescription>
+            </Alert>
+          )}
+          {!tlEmail?.email && (
+            <Alert className="py-2 border-yellow-500/40 bg-yellow-500/10">
+              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+              <AlertDescription className="text-xs">
+                No email mapped for Team Leader <strong>{plan.team_leader}</strong> — replies will
+                not route to them. Admin can add it in <strong>Team Leader Emails</strong>.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div>
+            <Label className="text-xs">Generate from template</Label>
+            <Select value={emailTemplateId} onValueChange={applyEmailTemplate}>
+              <SelectTrigger><SelectValue placeholder="Pick a template..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No template (write manually)</SelectItem>
+                {categoryTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.template_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Subject *</Label>
-              <Input
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
-                placeholder="Warning - 2nd Emergency Request"
-              />
+              <Label className="text-xs">To *</Label>
+              <Input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="tutor@example.com" />
             </div>
             <div>
-              <Label className="text-xs">Recipient *</Label>
-              <Input
-                value={emailRecipient}
-                onChange={(e) => setEmailRecipient(e.target.value)}
-                placeholder="tutor@example.com"
-              />
+              <Label className="text-xs">CC (comma-separated)</Label>
+              <Input value={emailCc} onChange={(e) => setEmailCc(e.target.value)} placeholder="manager@example.com" />
             </div>
           </div>
+
           <div>
-            <Label className="text-xs">Date sent</Label>
-            <Input
-              type="date"
-              value={emailDate}
-              onChange={(e) => setEmailDate(e.target.value)}
-            />
+            <Label className="text-xs">Subject *</Label>
+            <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} placeholder="Warning - 2nd Emergency Request" />
           </div>
+
           <div>
-            <Label className="text-xs">Screenshot of the sent email</Label>
+            <Label className="text-xs">Body *</Label>
+            <Textarea rows={6} value={emailBody} onChange={(e) => setEmailBody(e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Date</Label>
+              <Input type="date" value={emailDate} onChange={(e) => setEmailDate(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Reply-To</Label>
+              <Input value={tlEmail?.email ?? ""} readOnly className="bg-muted/50 text-muted-foreground" placeholder="(no TL email mapped)" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Optional screenshot of the sent email</Label>
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -324,40 +457,25 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
                 className="hidden"
                 onChange={(e) => onPickScreenshot(e.target.files?.[0] ?? null)}
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                 <ImagePlus className="w-4 h-4 mr-1" />
                 {screenshotFile ? "Change image" : "Attach screenshot"}
               </Button>
               {screenshotFile && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onPickScreenshot(null)}
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={() => onPickScreenshot(null)}>
                   <X className="w-4 h-4 mr-1" /> Remove
                 </Button>
               )}
             </div>
             {screenshotPreview && (
-              <img
-                src={screenshotPreview}
-                alt="Screenshot preview"
-                className="mt-2 max-h-48 rounded border"
-              />
+              <img src={screenshotPreview} alt="Screenshot preview" className="mt-2 max-h-48 rounded border" />
             )}
           </div>
-          <Textarea
-            placeholder="Additional details (optional)"
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
+
+          <p className="text-[11px] text-muted-foreground">
+            Sent from the system's verified domain with <strong>Reply-To = Team Leader</strong>,
+            so tutor replies go straight to {tlEmail?.email || plan.team_leader}.
+          </p>
         </div>
       )}
 
@@ -375,18 +493,9 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
           </div>
           <div>
             <Label className="text-xs">Topic / agenda</Label>
-            <Input
-              value={meetingTopic}
-              onChange={(e) => setMeetingTopic(e.target.value)}
-              placeholder="Quality evaluation meeting"
-            />
+            <Input value={meetingTopic} onChange={(e) => setMeetingTopic(e.target.value)} placeholder="Quality evaluation meeting" />
           </div>
-          <Textarea
-            placeholder="Additional details (optional)"
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
+          <Textarea placeholder="Additional details (optional)" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
       )}
 
@@ -394,26 +503,15 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
         <div className="space-y-2">
           <div>
             <Label className="text-xs">Meeting notes *</Label>
-            <Textarea
-              rows={4}
-              value={meetingNotes}
-              onChange={(e) => setMeetingNotes(e.target.value)}
-              placeholder="Key points discussed, agreements, action items..."
-            />
+            <Textarea rows={4} value={meetingNotes} onChange={(e) => setMeetingNotes(e.target.value)} placeholder="Key points discussed, agreements, action items..." />
           </div>
           <div>
             <Label className="text-xs">Recording link</Label>
-            <Input
-              type="url"
-              value={recordingLink}
-              onChange={(e) => setRecordingLink(e.target.value)}
-              placeholder="https://drive.google.com/..."
-            />
+            <Input type="url" value={recordingLink} onChange={(e) => setRecordingLink(e.target.value)} placeholder="https://drive.google.com/..." />
           </div>
         </div>
       )}
 
-      {/* Status change (shared) */}
       <div>
         <Label className="text-xs">Change status (optional)</Label>
         <Select value={statusChange} onValueChange={(v) => setStatusChange(v as ActionPlanStatus | "none")}>
@@ -432,7 +530,7 @@ export function AddUpdateForm({ planId, category, currentStatus, currentProgress
 
       <Button onClick={post} disabled={posting} size="sm">
         {posting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        Post Update
+        {template === "warning_email" ? <><Send className="w-4 h-4 mr-2" /> Send email &amp; post update</> : "Post Update"}
       </Button>
     </div>
   );

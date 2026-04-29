@@ -34,6 +34,7 @@ import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell, QualityScoreCell, QUALITY_SCORE_HEADERS } from "@/components/action-plans/categoryColumns";
 import { TutorEmailsTab } from "@/components/tutor-emails/TutorEmailsTab";
+import { TeamLeaderEmailsTab } from "@/components/tutor-emails/TeamLeaderEmailsTab";
 import { EmailTemplatesDialog } from "@/components/tutor-emails/EmailTemplatesDialog";
 
 const ActionPlans = () => {
@@ -259,6 +260,11 @@ const ActionPlans = () => {
             <TabsTrigger value="emails" className="flex items-center gap-2">
               <Mail className="w-4 h-4" /> Tutor Emails
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="tl_emails" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" /> Team Leader Emails
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="plans" className="space-y-4">
@@ -427,6 +433,12 @@ const ActionPlans = () => {
           <TabsContent value="emails">
             <TutorEmailsTab />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="tl_emails">
+              <TeamLeaderEmailsTab />
+            </TabsContent>
+          )}
         </Tabs>
 
       </div>
