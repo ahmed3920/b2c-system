@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTutorEmailFor } from "@/hooks/useTutorEmails";
 import { useEmailTemplates, fillTemplate } from "@/hooks/useEmailTemplates";
+import { useDefaultEmailCc, mergeCcList } from "@/hooks/useDefaultEmailCc";
+import { DefaultCcManager } from "@/components/tutor-emails/DefaultCcManager";
 import { CATEGORY_LABELS, type ActionPlan } from "@/hooks/useActionPlans";
 
 interface Props {
@@ -23,6 +25,7 @@ interface Props {
 export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
   const { record: tutorEmail, isLoading: emailLoading } = useTutorEmailFor(plan.tutor_external_id);
   const { templates } = useEmailTemplates();
+  const { list: defaultCcList } = useDefaultEmailCc();
   const [templateId, setTemplateId] = useState<string>("none");
   const [recipient, setRecipient] = useState("");
   const [cc, setCc] = useState("");
@@ -78,8 +81,9 @@ export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
 
     // Build mailto URL — opens in user's default email client (Gmail/Outlook/etc)
     // so it sends FROM the team leader's own email address.
+    const finalCc = mergeCcList(defaultCcList, cc);
     const params = new URLSearchParams();
-    if (cc.trim()) params.set("cc", cc.trim());
+    if (finalCc) params.set("cc", finalCc);
     params.set("subject", subject);
     params.set("body", body);
     const mailto = `mailto:${encodeURIComponent(recipient.trim())}?${params.toString().replace(/\+/g, "%20")}`;
@@ -94,7 +98,7 @@ export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
       tutor_external_id: plan.tutor_external_id,
       tutor_name: plan.tutor_name,
       recipient_email: recipient.trim(),
-      cc_emails: cc.trim() || null,
+      cc_emails: finalCc || null,
       subject,
       body,
       status: "sent",
@@ -155,10 +159,7 @@ export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
             <Label>To *</Label>
             <Input type="email" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
           </div>
-          <div>
-            <Label>CC (comma-separated)</Label>
-            <Input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="manager@example.com, hr@example.com" />
-          </div>
+          <DefaultCcManager extraCc={cc} onExtraCcChange={setCc} />
           <div>
             <Label>Subject *</Label>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} />

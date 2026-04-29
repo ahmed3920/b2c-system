@@ -19,6 +19,8 @@ import { CATEGORY_FIRST_STEP, type FirstStepKind } from "./categoryFirstStep";
 import { useTutorEmailFor } from "@/hooks/useTutorEmails";
 import { useTeamLeaderEmailFor } from "@/hooks/useTeamLeaderEmails";
 import { useEmailTemplates, fillTemplate } from "@/hooks/useEmailTemplates";
+import { useDefaultEmailCc, mergeCcList } from "@/hooks/useDefaultEmailCc";
+import { DefaultCcManager } from "@/components/tutor-emails/DefaultCcManager";
 
 type TemplateKey = "free" | "warning_email" | "schedule_meeting" | "meeting_followup";
 
@@ -77,6 +79,7 @@ export function AddUpdateForm({
   const tutorEmail = useTutorEmailFor(plan.tutor_external_id).record;
   const tlEmail = useTeamLeaderEmailFor(plan.team_leader);
   const { templates } = useEmailTemplates();
+  const { list: defaultCcList } = useDefaultEmailCc();
   const [emailTemplateId, setEmailTemplateId] = useState<string>("none");
   const [emailTo, setEmailTo] = useState("");
   const [emailCc, setEmailCc] = useState("");
@@ -194,7 +197,8 @@ export function AddUpdateForm({
         `**Subject:** ${emailSubject.trim()}`,
         `**To:** ${emailTo.trim()}`,
       ];
-      if (emailCc.trim()) lines.push(`**CC:** ${emailCc.trim()}`);
+      const noteCc = mergeCcList(defaultCcList, emailCc);
+      if (noteCc) lines.push(`**CC:** ${noteCc}`);
       lines.push(`**Date:** ${emailDate}`);
       if (tlEmail?.email) lines.push(`**Reply-To:** ${tlEmail.email}`);
       if (emailBody.trim()) lines.push("", emailBody.trim());
@@ -244,8 +248,9 @@ export function AddUpdateForm({
         setPosting(false);
         return;
       }
+      const finalCc = mergeCcList(defaultCcList, emailCc);
       const params = new URLSearchParams();
-      if (emailCc.trim()) params.set("cc", emailCc.trim());
+      if (finalCc) params.set("cc", finalCc);
       params.set("subject", emailSubject.trim());
       params.set("body", emailBody.trim());
       const mailto = `mailto:${encodeURIComponent(emailTo.trim())}?${params.toString().replace(/\+/g, "%20")}`;
@@ -260,7 +265,7 @@ export function AddUpdateForm({
         tutor_external_id: plan.tutor_external_id,
         tutor_name: plan.tutor_name,
         recipient_email: emailTo.trim(),
-        cc_emails: emailCc.trim() || null,
+        cc_emails: finalCc || null,
         subject: emailSubject.trim(),
         body: emailBody.trim(),
         status: "sent",
@@ -425,16 +430,12 @@ export function AddUpdateForm({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">To *</Label>
-              <Input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="tutor@example.com" />
-            </div>
-            <div>
-              <Label className="text-xs">CC (comma-separated)</Label>
-              <Input value={emailCc} onChange={(e) => setEmailCc(e.target.value)} placeholder="manager@example.com" />
-            </div>
+          <div>
+            <Label className="text-xs">To *</Label>
+            <Input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="tutor@example.com" />
           </div>
+
+          <DefaultCcManager extraCc={emailCc} onExtraCcChange={setEmailCc} />
 
           <div>
             <Label className="text-xs">Subject *</Label>
