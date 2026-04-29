@@ -27,25 +27,39 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
+import { useTutorStatus, type TutorStatusValue } from "@/hooks/useTutorStatus";
+import { TutorStatusDialog } from "@/components/tutors/TutorStatusDialog";
+import { format } from "date-fns";
 
 const PAGE_SIZE = 25;
 
+const statusBadgeClass: Record<TutorStatusValue, string> = {
+  active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  resigned: "bg-amber-100 text-amber-700 border-amber-200",
+  terminated: "bg-red-100 text-red-700 border-red-200",
+};
+
 export default function Tutors() {
-  const { isTeamLeader, isAdmin } = useUserRole();
+  const { isTeamLeader, isAdmin, isSuperTeamLeader } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const { byTutorId, upsertStatus } = useTutorStatus();
+
+  const canEditStatus = isAdmin || isTeamLeader || isSuperTeamLeader;
 
   const [query, setQuery] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [langFilter, setLangFilter] = useState<string>("all");
   const [empFilter, setEmpFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [statusTarget, setStatusTarget] = useState<typeof tutorRoster[number] | null>(null);
 
   // Restrict roster to TL's own team when not admin
   const scopedRoster = useMemo(() => {
@@ -67,6 +81,10 @@ export default function Tutors() {
       if (roleFilter !== "all" && t.role !== roleFilter) return false;
       if (langFilter !== "all" && t.language !== langFilter) return false;
       if (empFilter !== "all" && t.employment_type !== empFilter) return false;
+      if (statusFilter !== "all") {
+        const s = byTutorId.get(t.id)?.status ?? "active";
+        if (s !== statusFilter) return false;
+      }
       if (!q) return true;
       return (
         t.name.toLowerCase().includes(q) ||
@@ -75,7 +93,7 @@ export default function Tutors() {
         t.team_leader.toLowerCase().includes(q)
       );
     });
-  }, [query, tlFilter, roleFilter, langFilter, empFilter, scopedRoster]);
+  }, [query, tlFilter, roleFilter, langFilter, empFilter, statusFilter, scopedRoster, byTutorId]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -97,7 +115,7 @@ export default function Tutors() {
   const resetPage = () => setPage(1);
 
   return (
-    <AppLayout title="Tutors" allowedRoles={["admin", "team_leader"]}>
+    <AppLayout title="Tutors" allowedRoles={["admin", "team_leader", "super_team_leader"]}>
       <div className="p-6 space-y-4 max-w-7xl mx-auto">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
@@ -205,6 +223,23 @@ export default function Tutors() {
                   <SelectItem value="Part-time">Part-time</SelectItem>
                 </SelectContent>
               </Select>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  resetPage();
+                }}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="resigned">Resigned</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
           <CardContent>
@@ -220,19 +255,24 @@ export default function Tutors() {
                     <TableHead>Language</TableHead>
                     <TableHead>Ranking</TableHead>
                     <TableHead>Employment</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                         No tutors match the current filters.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    pageItems.map((t) => (
-                      <TableRow key={t.id}>
+                    pageItems.map((t) => {
+                      const statusRec = byTutorId.get(t.id);
+                      const status = statusRec?.status ?? "active";
+                      const isMentor = t.role === "Mentor";
+                      return (
+                      <TableRow key={t.id} className={status !== "active" ? "bg-muted/30" : undefined}>
                         <TableCell className="font-mono text-xs">{t.id}</TableCell>
                         <TableCell className="font-medium">{t.name}</TableCell>
                         <TableCell className="text-sm">{t.team_leader}</TableCell>
@@ -265,15 +305,42 @@ export default function Tutors() {
                             <span className="text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span
+                              className={`inline-flex items-center w-fit rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusBadgeClass[status]}`}
+                            >
+                              {status}
+                            </span>
+                            {status !== "active" && statusRec?.effective_date && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {format(new Date(statusRec.effective_date), "MMM d, yyyy")}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link to={`/tutors/${t.id}`}>
-                              <Eye className="h-4 w-4 mr-1" /> View
-                            </Link>
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            {canEditStatus && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setStatusTarget(t)}
+                                title="Set status"
+                              >
+                                <UserX className="h-4 w-4 mr-1" /> Status
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" asChild>
+                              <Link to={`/tutors/${t.id}`}>
+                                <Eye className="h-4 w-4 mr-1" /> View
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -313,6 +380,23 @@ export default function Tutors() {
           </CardContent>
         </Card>
       </div>
+
+      <TutorStatusDialog
+        open={!!statusTarget}
+        onOpenChange={(o) => !o && setStatusTarget(null)}
+        tutor={
+          statusTarget
+            ? {
+                id: statusTarget.id,
+                name: statusTarget.name,
+                team_leader: statusTarget.team_leader,
+                is_mentor: statusTarget.role === "Mentor",
+              }
+            : null
+        }
+        current={statusTarget ? byTutorId.get(statusTarget.id) ?? null : null}
+        onSubmit={upsertStatus}
+      />
     </AppLayout>
   );
 }
