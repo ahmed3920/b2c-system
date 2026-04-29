@@ -292,6 +292,46 @@ export function LiveIssuesTracking() {
       }));
   }, [allRows, month, months, tlFilter]);
 
+  // Single No-Show this month: tutors with exactly 1 "No show" issue.
+  // Per policy, the very first no-show triggers a warning + 2x deduction notice,
+  // so they should be visible (separately from repeaters).
+  const singleNoShow = useMemo(() => {
+    const target = month !== ALL ? month : (months[0] ?? null);
+    if (!target) return [];
+    const monthRows = allRows.filter((r) => {
+      if (monthKey(r.session_date) !== target) return false;
+      if (tlFilter !== ALL && r.team_leader !== tlFilter) return false;
+      const reason = (r.issue_reason ?? "").toLowerCase().trim();
+      return reason === "no show" || reason === "no-show" || reason === "noshow";
+    });
+    const map = new Map<string, {
+      tutor_id: string;
+      tutor_name: string;
+      team_leader: string;
+      count: number;
+      dates: string[];
+    }>();
+    for (const r of monthRows) {
+      const tid = r.from_tutor_id || "—";
+      let item = map.get(tid);
+      if (!item) {
+        item = {
+          tutor_id: tid,
+          tutor_name: r.from_tutor_name || "—",
+          team_leader: r.team_leader || "—",
+          count: 0,
+          dates: [],
+        };
+        map.set(tid, item);
+      }
+      item.count += 1;
+      if (r.session_date) item.dates.push(r.session_date);
+    }
+    return Array.from(map.values())
+      .filter((x) => x.count === 1)
+      .sort((a, b) => a.tutor_name.localeCompare(b.tutor_name));
+  }, [allRows, month, months, tlFilter]);
+
   // Distribution chart data
   const distData = useMemo(() => [
     { name: "Deduct", value: kpis.deduct, color: COLORS.deduct },
