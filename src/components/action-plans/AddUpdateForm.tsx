@@ -19,6 +19,8 @@ import { CATEGORY_FIRST_STEP, type FirstStepKind } from "./categoryFirstStep";
 import { useTutorEmailFor } from "@/hooks/useTutorEmails";
 import { useTeamLeaderEmailFor } from "@/hooks/useTeamLeaderEmails";
 import { useEmailTemplates, fillTemplate } from "@/hooks/useEmailTemplates";
+import { useDefaultEmailCc, mergeCcList } from "@/hooks/useDefaultEmailCc";
+import { DefaultCcManager } from "@/components/tutor-emails/DefaultCcManager";
 
 type TemplateKey = "free" | "warning_email" | "schedule_meeting" | "meeting_followup";
 
