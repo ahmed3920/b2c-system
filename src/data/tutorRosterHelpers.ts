@@ -22,10 +22,11 @@ export interface TeamSummary {
   members: TutorRecord[];
 }
 
-export function getTeamSummaries(): TeamSummary[] {
+export function getTeamSummaries(excludeIds?: Set<string>): TeamSummary[] {
   const map = new Map<string, TutorRecord[]>();
   for (const t of tutorRoster) {
     if (!t.team_leader) continue;
+    if (excludeIds && excludeIds.has(t.id)) continue;
     const arr = map.get(t.team_leader) ?? [];
     arr.push(t);
     map.set(t.team_leader, arr);
@@ -46,8 +47,8 @@ export function getTeamSummaries(): TeamSummary[] {
     .sort((a, b) => b.total - a.total);
 }
 
-export function getTeamBySlug(slug: string): TeamSummary | undefined {
-  return getTeamSummaries().find((t) => t.slug === slug);
+export function getTeamBySlug(slug: string, excludeIds?: Set<string>): TeamSummary | undefined {
+  return getTeamSummaries(excludeIds).find((t) => t.slug === slug);
 }
 
 export function getTutorById(id: string): TutorRecord | undefined {
