@@ -235,6 +235,8 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
             />
           )}
 
+          <PlanCommunicationSection plan={currentPlan} />
+
           <Separator />
 
           {/* Timeline */}
