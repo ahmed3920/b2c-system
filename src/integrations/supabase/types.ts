@@ -1430,6 +1430,51 @@ export type Database = {
           },
         ]
       }
+      tutor_status: {
+        Row: {
+          created_at: string
+          effective_date: string | null
+          id: string
+          is_mentor: boolean
+          notes: string | null
+          set_by: string | null
+          set_by_name: string | null
+          status: Database["public"]["Enums"]["tutor_status_value"]
+          team_leader: string | null
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          is_mentor?: boolean
+          notes?: string | null
+          set_by?: string | null
+          set_by_name?: string | null
+          status?: Database["public"]["Enums"]["tutor_status_value"]
+          team_leader?: string | null
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          is_mentor?: boolean
+          notes?: string | null
+          set_by?: string | null
+          set_by_name?: string | null
+          status?: Database["public"]["Enums"]["tutor_status_value"]
+          team_leader?: string | null
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_weekend_days: {
         Row: {
           created_at: string
@@ -1871,6 +1916,7 @@ export type Database = {
       feature_plan_status: "planned" | "in_progress" | "completed" | "blocked"
       feature_plan_visibility: "team_leaders" | "mentors" | "both" | "hidden"
       task_status: "todo" | "in_progress" | "done" | "archived"
+      tutor_status_value: "active" | "resigned" | "terminated"
       vision_plan_status: "not_started" | "in_progress" | "completed"
       vision_plan_urgency: "critical" | "high" | "medium" | "low"
     }
@@ -2051,6 +2097,7 @@ export const Constants = {
       feature_plan_status: ["planned", "in_progress", "completed", "blocked"],
       feature_plan_visibility: ["team_leaders", "mentors", "both", "hidden"],
       task_status: ["todo", "in_progress", "done", "archived"],
+      tutor_status_value: ["active", "resigned", "terminated"],
       vision_plan_status: ["not_started", "in_progress", "completed"],
       vision_plan_urgency: ["critical", "high", "medium", "low"],
     },
