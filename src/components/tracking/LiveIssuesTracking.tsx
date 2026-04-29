@@ -1047,6 +1047,26 @@ export function LiveIssuesTracking() {
           </div>
         </CardContent>
       </Card>
+      <CreateActionPlanDialog
+        open={createPlanOpen}
+        onOpenChange={(v) => {
+          setCreatePlanOpen(v);
+          if (!v) setCreatePlanForTutorId(null);
+        }}
+        onCreated={() => setPlanRefreshTick((t) => t + 1)}
+        isAdmin={isAdmin}
+        currentTeamLeader={myTeamLeader ?? null}
+        preselectTutorExternalId={createPlanForTutorId}
+        preselectCategory={createPlanCategory}
+        lockCategory
+      />
+
+      <ActionPlanDetailDialog
+        plan={viewPlan}
+        open={!!viewPlan}
+        onOpenChange={(v) => { if (!v) setViewPlan(null); }}
+        onChanged={() => setPlanRefreshTick((t) => t + 1)}
+      />
     </div>
   );
 }
