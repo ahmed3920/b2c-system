@@ -433,6 +433,12 @@ const ActionPlans = () => {
           <TabsContent value="emails">
             <TutorEmailsTab />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="tl_emails">
+              <TeamLeaderEmailsTab />
+            </TabsContent>
+          )}
         </Tabs>
 
       </div>
