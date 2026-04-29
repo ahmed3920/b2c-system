@@ -374,6 +374,7 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
               currentProgress={currentPlan.progress}
               firstStepDone={isFirstStepDone(currentPlan.category, steps.map((s) => s.note))}
               onPosted={handlePosted}
+              plan={currentPlan}
             />
           )}
 
