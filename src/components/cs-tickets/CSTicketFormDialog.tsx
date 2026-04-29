@@ -161,7 +161,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                       <CommandList>
                         <CommandEmpty>No tutor found.</CommandEmpty>
                         <CommandGroup>
-                          {tutorRoster.map((t) => (
+                          {activeTutors.map((t) => (
                             <CommandItem
                               key={t.id}
                               value={`${t.name} ${t.id}`}
