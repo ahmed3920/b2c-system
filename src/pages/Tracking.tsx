@@ -42,14 +42,15 @@ const tabs = [
 export default function Tracking() {
   const { isTeamLeader, isAdmin } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const { inactiveIds } = useInactiveTutorIds();
   const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
 
   // Admin: one row per team leader. TL: one row per mentor inside their team.
   const teams = useMemo(() => {
-    if (!isTLView) return getTeamSummaries();
+    if (!isTLView) return getTeamSummaries(inactiveIds);
 
     const myMembers = tutorRoster.filter((t) =>
-      teamLeaderMatches(t.team_leader, myTeamLeader),
+      teamLeaderMatches(t.team_leader, myTeamLeader) && !inactiveIds.has(t.id),
     );
     const byMentor = new Map<string, typeof myMembers>();
     for (const m of myMembers) {
