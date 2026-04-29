@@ -38,6 +38,47 @@ export type Database = {
         }
         Relationships: []
       }
+      action_plan_step_edits: {
+        Row: {
+          edited_at: string
+          editor_id: string
+          editor_name: string | null
+          id: string
+          new_note: string
+          plan_id: string
+          previous_note: string
+          step_id: string
+        }
+        Insert: {
+          edited_at?: string
+          editor_id: string
+          editor_name?: string | null
+          id?: string
+          new_note: string
+          plan_id: string
+          previous_note: string
+          step_id: string
+        }
+        Update: {
+          edited_at?: string
+          editor_id?: string
+          editor_name?: string | null
+          id?: string
+          new_note?: string
+          plan_id?: string
+          previous_note?: string
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_step_edits_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "action_plan_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_plan_steps: {
         Row: {
           author_id: string

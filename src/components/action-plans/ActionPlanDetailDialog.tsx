@@ -22,6 +22,7 @@ import { PlanProgressTracker } from "./PlanProgressTracker";
 import { PlanRoadmap } from "./PlanRoadmap";
 import { QualityScoresEditor } from "./QualityScoresEditor";
 import { isFirstStepDone } from "./categoryFirstStep";
+import { StepEditHistory } from "./StepEditHistory";
 
 import {
   useActionPlanSteps,
@@ -110,16 +111,48 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
       toast.error("Note cannot be empty");
       return;
     }
+    const original = steps.find((s) => s.id === stepId);
+    if (!original) {
+      toast.error("Step not found");
+      return;
+    }
+    if (original.note === trimmed) {
+      // No change → just close editor without writing history
+      setEditingStepId(null);
+      setEditText("");
+      return;
+    }
     setSavingEdit(true);
     const { error } = await supabase
       .from("action_plan_steps")
       .update({ note: trimmed })
       .eq("id", stepId);
-    setSavingEdit(false);
     if (error) {
+      setSavingEdit(false);
       toast.error("Failed to update step", { description: error.message });
       return;
     }
+    // Record edit history (best-effort — do not block on failure)
+    const { data: { session } } = await supabase.auth.getSession();
+    const editorId = session?.user.id;
+    let editorName: string | null = null;
+    if (editorId) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", editorId)
+        .maybeSingle();
+      editorName = prof?.full_name ?? session?.user.email ?? null;
+      await supabase.from("action_plan_step_edits").insert({
+        step_id: stepId,
+        plan_id: original.plan_id,
+        editor_id: editorId,
+        editor_name: editorName,
+        previous_note: original.note,
+        new_note: trimmed,
+      });
+    }
+    setSavingEdit(false);
     toast.success("Update edited");
     setEditingStepId(null);
     setEditText("");
@@ -350,12 +383,13 @@ export function ActionPlanDetailDialog({ plan, open, onOpenChange, onChanged, on
                       ) : (
                         <StepNoteRenderer text={s.note} />
                       )}
-                      {!isEditing && (s.status_change || s.progress_change !== null) && (
-                        <div className="flex gap-2 mt-2 text-xs">
+                      {!isEditing && (
+                        <div className="flex gap-2 mt-2 text-xs items-center flex-wrap">
                           {s.status_change && <StatusBadge status={s.status_change} />}
                           {s.progress_change !== null && (
                             <span className="px-2 py-0.5 rounded bg-muted">Progress → {s.progress_change}%</span>
                           )}
+                          <StepEditHistory stepId={s.id} />
                         </div>
                       )}
                     </div>
