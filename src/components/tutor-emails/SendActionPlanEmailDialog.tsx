@@ -159,10 +159,7 @@ export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
             <Label>To *</Label>
             <Input type="email" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
           </div>
-          <div>
-            <Label>CC (comma-separated)</Label>
-            <Input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="manager@example.com, hr@example.com" />
-          </div>
+          <DefaultCcManager extraCc={cc} onExtraCcChange={setCc} />
           <div>
             <Label>Subject *</Label>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
