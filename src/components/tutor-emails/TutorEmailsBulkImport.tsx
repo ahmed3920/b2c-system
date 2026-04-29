@@ -84,8 +84,8 @@ export function TutorEmailsBulkImport({ open, onOpenChange, onImported }: Props)
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Upload a CSV with headers: <code>tutor_id,tutor_name,email,status,team_leader,notes</code>.
-            Existing rows (matched by tutor_id) will be updated.
+            Upload a CSV with headers: <code>id,name,email</code>.
+            Existing rows (matched by id) will be updated. All imported tutors are set to <strong>active</strong>.
           </p>
           <div className="flex gap-2">
             <input
@@ -105,7 +105,7 @@ export function TutorEmailsBulkImport({ open, onOpenChange, onImported }: Props)
               value={csv}
               onChange={(e) => setCsv(e.target.value)}
               rows={10}
-              placeholder="tutor_id,tutor_name,email,status,team_leader,notes&#10;T123,John Doe,john@example.com,active,Jane TL,"
+              placeholder="id,name,email&#10;T123,John Doe,john@example.com"
               className="font-mono text-xs"
             />
           </div>
