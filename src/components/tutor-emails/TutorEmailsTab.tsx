@@ -109,7 +109,7 @@ export function TutorEmailsTab() {
                     <TableCell className="font-mono text-xs">{e.tutor_external_id}</TableCell>
                     <TableCell className="font-medium">{e.tutor_name}</TableCell>
                     <TableCell><a href={`mailto:${e.email}`} className="text-primary hover:underline">{e.email}</a></TableCell>
-                    <TableCell className="text-sm">{e.team_leader || "—"}</TableCell>
+                    <TableCell className="text-sm">{tlByExternalId.get(e.tutor_external_id) || e.team_leader || "—"}</TableCell>
                     <TableCell>
                       {e.status === "active" ? (
                         <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/20 border-green-500/30">Active</Badge>
