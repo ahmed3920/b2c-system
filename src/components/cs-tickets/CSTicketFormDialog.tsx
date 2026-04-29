@@ -16,6 +16,7 @@ import { tutorRoster } from "@/data/tutorRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCSTicketCategories } from "./useCSTicketCategories";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
 interface Props {
   open: boolean;
@@ -38,6 +39,11 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
   const [submitting, setSubmitting] = useState(false);
 
+  const { inactiveIds } = useInactiveTutorIds();
+  const activeTutors = useMemo(
+    () => tutorRoster.filter((t) => !inactiveIds.has(t.id)),
+    [inactiveIds],
+  );
   const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId]);
 
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
@@ -155,7 +161,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                       <CommandList>
                         <CommandEmpty>No tutor found.</CommandEmpty>
                         <CommandGroup>
-                          {tutorRoster.map((t) => (
+                          {activeTutors.map((t) => (
                             <CommandItem
                               key={t.id}
                               value={`${t.name} ${t.id}`}

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
 export type ActionPlanCategory = Database["public"]["Enums"]["action_plan_category"];
 export type ActionPlanStatus = Database["public"]["Enums"]["action_plan_status"];
@@ -99,8 +100,9 @@ export function useActionPlans() {
 }
 
 export function useActionPlanTutors() {
-  const [tutors, setTutors] = useState<ActionPlanTutor[]>([]);
+  const [allTutors, setAllTutors] = useState<ActionPlanTutor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { inactiveIds } = useInactiveTutorIds();
 
   useEffect(() => {
     (async () => {
@@ -108,10 +110,16 @@ export function useActionPlanTutors() {
         .from("action_plan_tutors")
         .select("*")
         .order("tutor_name");
-      if (data) setTutors(data as ActionPlanTutor[]);
+      if (data) setAllTutors(data as ActionPlanTutor[]);
       setIsLoading(false);
     })();
   }, []);
+
+  // Hide resigned/terminated tutors from the picker
+  const tutors = useMemo(
+    () => allTutors.filter((t) => !t.tutor_external_id || !inactiveIds.has(t.tutor_external_id)),
+    [allTutors, inactiveIds],
+  );
 
   return { tutors, isLoading };
 }
