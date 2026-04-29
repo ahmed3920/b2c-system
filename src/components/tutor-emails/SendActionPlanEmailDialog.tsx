@@ -25,6 +25,7 @@ interface Props {
 export function SendActionPlanEmailDialog({ open, onOpenChange, plan }: Props) {
   const { record: tutorEmail, isLoading: emailLoading } = useTutorEmailFor(plan.tutor_external_id);
   const { templates } = useEmailTemplates();
+  const { list: defaultCcList } = useDefaultEmailCc();
   const [templateId, setTemplateId] = useState<string>("none");
   const [recipient, setRecipient] = useState("");
   const [cc, setCc] = useState("");
