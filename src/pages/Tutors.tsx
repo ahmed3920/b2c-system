@@ -27,25 +27,39 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX } from "lucide-react";
 import { Link } from "react-router-dom";
 import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
+import { useTutorStatus, type TutorStatusValue } from "@/hooks/useTutorStatus";
+import { TutorStatusDialog } from "@/components/tutors/TutorStatusDialog";
+import { format } from "date-fns";
 
 const PAGE_SIZE = 25;
 
+const statusBadgeClass: Record<TutorStatusValue, string> = {
+  active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  resigned: "bg-amber-100 text-amber-700 border-amber-200",
+  terminated: "bg-red-100 text-red-700 border-red-200",
+};
+
 export default function Tutors() {
-  const { isTeamLeader, isAdmin } = useUserRole();
+  const { isTeamLeader, isAdmin, isSuperTeamLeader } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const { byTutorId, upsertStatus } = useTutorStatus();
+
+  const canEditStatus = isAdmin || isTeamLeader || isSuperTeamLeader;
 
   const [query, setQuery] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [langFilter, setLangFilter] = useState<string>("all");
   const [empFilter, setEmpFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [statusTarget, setStatusTarget] = useState<typeof tutorRoster[number] | null>(null);
 
   // Restrict roster to TL's own team when not admin
   const scopedRoster = useMemo(() => {
