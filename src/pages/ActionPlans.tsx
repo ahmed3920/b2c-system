@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Loader2, Plus, Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, PauseCircle, Flame, TrendingUp, ThumbsUp, ThumbsDown, Users, ChevronRight, Trash2,
+  ArrowLeft, Loader2, Plus, Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, PauseCircle, Flame, TrendingUp, ThumbsUp, ThumbsDown, Users, ChevronRight, Trash2, Mail, FileText,
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { motion } from "framer-motion";
@@ -33,6 +33,8 @@ import { FirstStepBadge } from "@/components/action-plans/FirstStepBadge";
 import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell, QualityScoreCell, QUALITY_SCORE_HEADERS } from "@/components/action-plans/categoryColumns";
+import { TutorEmailsTab } from "@/components/tutor-emails/TutorEmailsTab";
+import { EmailTemplatesDialog } from "@/components/tutor-emails/EmailTemplatesDialog";
 
 const ActionPlans = () => {
   const navigate = useNavigate();
@@ -50,6 +52,7 @@ const ActionPlans = () => {
   const [currentTL, setCurrentTL] = useState<string | null>(null);
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const handleDelete = async () => {
     if (!planToDelete) return;
@@ -180,7 +183,12 @@ const ActionPlans = () => {
   return (
     <AppLayout title="Action Plans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {isAdmin && (
+            <Button variant="outline" onClick={() => setTemplatesOpen(true)}>
+              <FileText className="w-4 h-4 mr-2" /> Email Templates
+            </Button>
+          )}
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> New Plan
           </Button>
@@ -247,6 +255,9 @@ const ActionPlans = () => {
             </TabsTrigger>
             <TabsTrigger value="tutors" className="flex items-center gap-2">
               <Users className="w-4 h-4" /> Tutors
+            </TabsTrigger>
+            <TabsTrigger value="emails" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" /> Tutor Emails
             </TabsTrigger>
           </TabsList>
 
@@ -411,6 +422,10 @@ const ActionPlans = () => {
 
           <TabsContent value="tutors">
             <TutorsTab plans={plans} isAdmin={isAdmin} onSelectPlan={setSelected} stepSummaries={stepSummaries} teamLeaders={teamLeaders} />
+          </TabsContent>
+
+          <TabsContent value="emails">
+            <TutorEmailsTab />
           </TabsContent>
         </Tabs>
 
