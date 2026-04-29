@@ -81,6 +81,10 @@ export default function Tutors() {
       if (roleFilter !== "all" && t.role !== roleFilter) return false;
       if (langFilter !== "all" && t.language !== langFilter) return false;
       if (empFilter !== "all" && t.employment_type !== empFilter) return false;
+      if (statusFilter !== "all") {
+        const s = byTutorId.get(t.id)?.status ?? "active";
+        if (s !== statusFilter) return false;
+      }
       if (!q) return true;
       return (
         t.name.toLowerCase().includes(q) ||
@@ -89,7 +93,7 @@ export default function Tutors() {
         t.team_leader.toLowerCase().includes(q)
       );
     });
-  }, [query, tlFilter, roleFilter, langFilter, empFilter, scopedRoster]);
+  }, [query, tlFilter, roleFilter, langFilter, empFilter, statusFilter, scopedRoster, byTutorId]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
