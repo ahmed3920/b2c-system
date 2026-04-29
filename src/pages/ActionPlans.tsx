@@ -34,6 +34,7 @@ import { isFirstStepDone } from "@/components/action-plans/categoryFirstStep";
 import { usePlanStepSummaries, type PlanStepSummary } from "@/hooks/usePlanStepSummaries";
 import { CATEGORY_COLUMNS, MilestoneCell, EvaluationCell, QualityScoreCell, QUALITY_SCORE_HEADERS } from "@/components/action-plans/categoryColumns";
 import { TutorEmailsTab } from "@/components/tutor-emails/TutorEmailsTab";
+import { TeamLeaderEmailsTab } from "@/components/tutor-emails/TeamLeaderEmailsTab";
 import { EmailTemplatesDialog } from "@/components/tutor-emails/EmailTemplatesDialog";
 
 const ActionPlans = () => {
