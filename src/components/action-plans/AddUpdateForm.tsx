@@ -247,8 +247,9 @@ export function AddUpdateForm({
         setPosting(false);
         return;
       }
+      const finalCc = mergeCcList(defaultCcList, emailCc);
       const params = new URLSearchParams();
-      if (emailCc.trim()) params.set("cc", emailCc.trim());
+      if (finalCc) params.set("cc", finalCc);
       params.set("subject", emailSubject.trim());
       params.set("body", emailBody.trim());
       const mailto = `mailto:${encodeURIComponent(emailTo.trim())}?${params.toString().replace(/\+/g, "%20")}`;
@@ -263,7 +264,7 @@ export function AddUpdateForm({
         tutor_external_id: plan.tutor_external_id,
         tutor_name: plan.tutor_name,
         recipient_email: emailTo.trim(),
-        cc_emails: emailCc.trim() || null,
+        cc_emails: finalCc || null,
         subject: emailSubject.trim(),
         body: emailBody.trim(),
         status: "sent",
