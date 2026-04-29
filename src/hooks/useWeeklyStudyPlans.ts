@@ -30,8 +30,9 @@ export interface WeeklyPlan {
 }
 
 export const useWeeklyStudyPlans = (weekStart: string | null) => {
+  const { inactiveIds } = useInactiveTutorIds();
   return useQuery({
-    queryKey: ["weekly-study-plans", weekStart],
+    queryKey: ["weekly-study-plans", weekStart, Array.from(inactiveIds).sort().join(",")],
     enabled: !!weekStart,
     queryFn: async (): Promise<WeeklyPlan[]> => {
       const { data: plans, error } = await supabase
