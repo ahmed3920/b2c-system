@@ -255,19 +255,24 @@ export default function Tutors() {
                     <TableHead>Language</TableHead>
                     <TableHead>Ranking</TableHead>
                     <TableHead>Employment</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pageItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                         No tutors match the current filters.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    pageItems.map((t) => (
-                      <TableRow key={t.id}>
+                    pageItems.map((t) => {
+                      const statusRec = byTutorId.get(t.id);
+                      const status = statusRec?.status ?? "active";
+                      const isMentor = t.role === "Mentor";
+                      return (
+                      <TableRow key={t.id} className={status !== "active" ? "bg-muted/30" : undefined}>
                         <TableCell className="font-mono text-xs">{t.id}</TableCell>
                         <TableCell className="font-medium">{t.name}</TableCell>
                         <TableCell className="text-sm">{t.team_leader}</TableCell>
@@ -300,15 +305,42 @@ export default function Tutors() {
                             <span className="text-muted-foreground text-sm">—</span>
                           )}
                         </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span
+                              className={`inline-flex items-center w-fit rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusBadgeClass[status]}`}
+                            >
+                              {status}
+                            </span>
+                            {status !== "active" && statusRec?.effective_date && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {format(new Date(statusRec.effective_date), "MMM d, yyyy")}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" asChild>
-                            <Link to={`/tutors/${t.id}`}>
-                              <Eye className="h-4 w-4 mr-1" /> View
-                            </Link>
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            {canEditStatus && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setStatusTarget(t)}
+                                title="Set status"
+                              >
+                                <UserX className="h-4 w-4 mr-1" /> Status
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" asChild>
+                              <Link to={`/tutors/${t.id}`}>
+                                <Eye className="h-4 w-4 mr-1" /> View
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
