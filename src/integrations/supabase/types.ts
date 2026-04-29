@@ -425,9 +425,12 @@ export type Database = {
         Row: {
           body: string
           cc_emails: string | null
+          error_message: string | null
+          from_email: string | null
           id: string
           recipient_email: string
           related_plan_id: string | null
+          reply_to: string | null
           sent_at: string
           sent_by: string | null
           sent_by_name: string | null
@@ -440,9 +443,12 @@ export type Database = {
         Insert: {
           body: string
           cc_emails?: string | null
+          error_message?: string | null
+          from_email?: string | null
           id?: string
           recipient_email: string
           related_plan_id?: string | null
+          reply_to?: string | null
           sent_at?: string
           sent_by?: string | null
           sent_by_name?: string | null
@@ -455,9 +461,12 @@ export type Database = {
         Update: {
           body?: string
           cc_emails?: string | null
+          error_message?: string | null
+          from_email?: string | null
           id?: string
           recipient_email?: string
           related_plan_id?: string | null
+          reply_to?: string | null
           sent_at?: string
           sent_by?: string | null
           sent_by_name?: string | null
@@ -1368,6 +1377,39 @@ export type Database = {
           status?: Database["public"]["Enums"]["attendance_status"]
           team_leader_id?: string
           team_leader_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_leader_emails: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          team_leader_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          team_leader_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          team_leader_name?: string
           updated_at?: string
         }
         Relationships: []
