@@ -22,6 +22,7 @@ import { PlanProgressTracker } from "./PlanProgressTracker";
 import { PlanRoadmap } from "./PlanRoadmap";
 import { QualityScoresEditor } from "./QualityScoresEditor";
 import { isFirstStepDone } from "./categoryFirstStep";
+import { PlanCommunicationSection } from "@/components/tutor-emails/PlanCommunicationSection";
 import {
   useActionPlanSteps,
   type ActionPlan,
