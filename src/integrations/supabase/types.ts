@@ -421,6 +421,96 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          body: string
+          cc_emails: string | null
+          id: string
+          recipient_email: string
+          related_plan_id: string | null
+          sent_at: string
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string
+          template_id: string | null
+          tutor_external_id: string | null
+          tutor_name: string | null
+        }
+        Insert: {
+          body: string
+          cc_emails?: string | null
+          id?: string
+          recipient_email: string
+          related_plan_id?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject: string
+          template_id?: string | null
+          tutor_external_id?: string | null
+          tutor_name?: string | null
+        }
+        Update: {
+          body?: string
+          cc_emails?: string | null
+          id?: string
+          recipient_email?: string
+          related_plan_id?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string
+          template_id?: string | null
+          tutor_external_id?: string | null
+          tutor_name?: string | null
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          action_plan_category:
+            | Database["public"]["Enums"]["action_plan_category"]
+            | null
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          subject: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          action_plan_category?:
+            | Database["public"]["Enums"]["action_plan_category"]
+            | null
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          subject: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          action_plan_category?:
+            | Database["public"]["Enums"]["action_plan_category"]
+            | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          subject?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       engagement_uploads: {
         Row: {
           availability_type: string | null
@@ -1325,6 +1415,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tutor_emails: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          notes: string | null
+          status: string
+          team_leader: string | null
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          notes?: string | null
+          status?: string
+          team_leader?: string | null
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          team_leader?: string | null
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tutor_leaves: {
         Row: {
