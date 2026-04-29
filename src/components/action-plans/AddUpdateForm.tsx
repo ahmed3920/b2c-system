@@ -237,34 +237,44 @@ export function AddUpdateForm({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setPosting(false); return; }
 
-    // For warning_email, send the email FIRST
+    // For warning_email, open the user's mail client (sends from THEIR address) and log it
     if (template === "warning_email") {
-      const { data: sendRes, error: sendErr } = await supabase.functions.invoke(
-        "send-action-plan-email",
-        {
-          body: {
-            to: emailTo.trim(),
-            cc: emailCc.trim() || null,
-            subject: emailSubject.trim(),
-            body: emailBody.trim(),
-            team_leader: plan.team_leader,
-            related_plan_id: planId,
-            template_id: emailTemplateId === "none" ? null : emailTemplateId,
-            tutor_external_id: plan.tutor_external_id,
-            tutor_name: plan.tutor_name,
-          },
-        },
-      );
-      if (sendErr || !sendRes?.success) {
-        const msg = sendRes?.error || sendErr?.message || "Failed to send email";
-        toast.error("Email not sent", { description: msg });
+      if (!emailTo.trim() || !emailSubject.trim() || !emailBody.trim()) {
+        toast.error("Recipient, subject and body are required");
         setPosting(false);
         return;
       }
-      toast.success("Email sent", {
-        description: tlEmail?.email
-          ? `Reply-To: ${tlEmail.email}`
-          : "Reply-To not set (no Team Leader email mapped)",
+      const params = new URLSearchParams();
+      if (emailCc.trim()) params.set("cc", emailCc.trim());
+      params.set("subject", emailSubject.trim());
+      params.set("body", emailBody.trim());
+      const mailto = `mailto:${encodeURIComponent(emailTo.trim())}?${params.toString().replace(/\+/g, "%20")}`;
+
+      const { data: profileForLog } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      await supabase.from("email_logs").insert({
+        tutor_external_id: plan.tutor_external_id,
+        tutor_name: plan.tutor_name,
+        recipient_email: emailTo.trim(),
+        cc_emails: emailCc.trim() || null,
+        subject: emailSubject.trim(),
+        body: emailBody.trim(),
+        status: "sent",
+        related_plan_id: planId,
+        template_id: emailTemplateId === "none" ? null : emailTemplateId,
+        sent_by: session.user.id,
+        sent_by_name: profileForLog?.full_name ?? null,
+        reply_to: tlEmail?.email ?? null,
+        from_email: null,
+      });
+
+      window.open(mailto, "_self");
+      toast.success("Email opened in your mail client", {
+        description: "Send it from there — it will come from your own address. The communication has been logged.",
       });
     }
 
