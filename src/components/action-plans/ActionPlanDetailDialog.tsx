@@ -22,6 +22,7 @@ import { PlanProgressTracker } from "./PlanProgressTracker";
 import { PlanRoadmap } from "./PlanRoadmap";
 import { QualityScoresEditor } from "./QualityScoresEditor";
 import { isFirstStepDone } from "./categoryFirstStep";
+import { StepEditHistory } from "./StepEditHistory";
 
 import {
   useActionPlanSteps,
