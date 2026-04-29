@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
 export type ActionPlanCategory = Database["public"]["Enums"]["action_plan_category"];
 export type ActionPlanStatus = Database["public"]["Enums"]["action_plan_status"];
