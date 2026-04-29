@@ -1035,6 +1035,7 @@ export function LeavesVerificationTab() {
                             : g.count === 3
                               ? "Warning Email + Meeting + 2x or 3x deduction"
                               : "HR Investigation / Action Plan";
+                        const existingPlan = emergencyPlansByTutor.get(g.tutor_external_id) ?? null;
                         return (
                           <TableRow
                             key={`${g.tutor_external_id}-${g.monthKey}`}
