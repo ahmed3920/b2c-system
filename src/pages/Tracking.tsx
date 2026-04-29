@@ -21,6 +21,7 @@ import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationT
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
 const tabs = [
   { v: "teams-composition", l: "Teams Composition" },
