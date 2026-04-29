@@ -17,9 +17,7 @@ interface ParsedRow {
   tutor_external_id: string;
   tutor_name: string;
   email: string;
-  status: "active" | "inactive";
-  team_leader: string | null;
-  notes: string | null;
+  status: "active";
 }
 
 function parseCsv(text: string): ParsedRow[] {
@@ -31,21 +29,18 @@ function parseCsv(text: string): ParsedRow[] {
   for (let i = 1; i < lines.length; i++) {
     const cells = lines[i].split(",").map((c) => c.trim());
     if (cells.every((c) => !c)) continue;
-    const tutor_external_id = cells[idx("tutor_id")] || cells[idx("tutor_external_id")] || "";
-    const tutor_name = cells[idx("tutor_name")] || "";
-    const email = cells[idx("email")] || "";
-    const status = (cells[idx("status")] || "active").toLowerCase();
-    const team_leader = idx("team_leader") >= 0 ? cells[idx("team_leader")] || null : null;
-    const notes = idx("notes") >= 0 ? cells[idx("notes")] || null : null;
+    const tutor_external_id =
+      (idx("tutor_id") >= 0 ? cells[idx("tutor_id")] : "") ||
+      (idx("id") >= 0 ? cells[idx("id")] : "") ||
+      (idx("tutor_external_id") >= 0 ? cells[idx("tutor_external_id")] : "") ||
+      "";
+    const tutor_name =
+      (idx("tutor_name") >= 0 ? cells[idx("tutor_name")] : "") ||
+      (idx("name") >= 0 ? cells[idx("name")] : "") ||
+      "";
+    const email = idx("email") >= 0 ? cells[idx("email")] || "" : "";
     if (!tutor_external_id || !email) continue;
-    rows.push({
-      tutor_external_id,
-      tutor_name,
-      email,
-      status: status === "inactive" ? "inactive" : "active",
-      team_leader,
-      notes,
-    });
+    rows.push({ tutor_external_id, tutor_name, email, status: "active" });
   }
   return rows;
 }
