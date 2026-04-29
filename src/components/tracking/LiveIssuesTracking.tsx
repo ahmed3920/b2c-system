@@ -89,6 +89,8 @@ export function LiveIssuesTracking() {
     () => Object.fromEntries(descriptions.map((d) => [d.id, d])),
     [descriptions],
   );
+  const { isAdmin } = useUserRole();
+  const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
 
   const [allRows, setAllRows] = useState<IssueRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +109,40 @@ export function LiveIssuesTracking() {
   // Sorting for TL breakdown
   const [tlSort, setTlSort] = useState<"pending_desc" | "progress_asc" | "total_desc">("pending_desc");
   const [page, setPage] = useState(0);
+
+  // Action plans (for tutors flagged in repeaters / single no-show)
+  const [plansByTutor, setPlansByTutor] = useState<Map<string, ActionPlan>>(new Map());
+  const [planRefreshTick, setPlanRefreshTick] = useState(0);
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [createPlanForTutorId, setCreatePlanForTutorId] = useState<string | null>(null);
+  const [createPlanCategory, setCreatePlanCategory] = useState<ActionPlanCategory>("no_show_abuse");
+  const [viewPlan, setViewPlan] = useState<ActionPlan | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("action_plans")
+        .select("*")
+        .in("category", ["no_show_abuse", "quality", "communication", "cs_complaints"])
+        .in("status", ["active", "on_hold", "escalated"])
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load action plans for live issues", error);
+        return;
+      }
+      const map = new Map<string, ActionPlan>();
+      for (const p of (data ?? []) as ActionPlan[]) {
+        const id = p.tutor_external_id;
+        if (!id) continue;
+        if (!map.has(id)) map.set(id, p);
+      }
+      setPlansByTutor(map);
+    })();
+    return () => { cancelled = true; };
+  }, [planRefreshTick]);
+
 
   const load = useCallback(async () => {
     setLoading(true);
