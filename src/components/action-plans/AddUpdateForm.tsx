@@ -197,7 +197,8 @@ export function AddUpdateForm({
         `**Subject:** ${emailSubject.trim()}`,
         `**To:** ${emailTo.trim()}`,
       ];
-      if (emailCc.trim()) lines.push(`**CC:** ${emailCc.trim()}`);
+      const noteCc = mergeCcList(defaultCcList, emailCc);
+      if (noteCc) lines.push(`**CC:** ${noteCc}`);
       lines.push(`**Date:** ${emailDate}`);
       if (tlEmail?.email) lines.push(`**Reply-To:** ${tlEmail.email}`);
       if (emailBody.trim()) lines.push("", emailBody.trim());
