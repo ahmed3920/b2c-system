@@ -176,6 +176,41 @@ export function LeavesVerificationTab() {
   const [roleFilter, setRoleFilter] = useState<string>("all"); // all | tutor | mentor
   const [monthFilter, setMonthFilter] = useState<string>("all"); // policy month key
 
+  /* ---------- Emergency-abuse action plans (existing) ---------- */
+  // Map of tutor_external_id → most-recent active emergency_abuse plan.
+  const [emergencyPlansByTutor, setEmergencyPlansByTutor] = useState<Map<string, ActionPlan>>(new Map());
+  const [planRefreshTick, setPlanRefreshTick] = useState(0);
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [createPlanForTutorId, setCreatePlanForTutorId] = useState<string | null>(null);
+  const [viewPlan, setViewPlan] = useState<ActionPlan | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("action_plans")
+        .select("*")
+        .eq("category", "emergency_abuse")
+        .in("status", ["active", "on_hold", "escalated"])
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) {
+        console.error("Failed to load emergency action plans", error);
+        return;
+      }
+      const map = new Map<string, ActionPlan>();
+      for (const p of (data ?? []) as ActionPlan[]) {
+        const id = p.tutor_external_id;
+        if (!id) continue;
+        if (!map.has(id)) map.set(id, p); // keep most recent (already sorted)
+      }
+      setEmergencyPlansByTutor(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [planRefreshTick]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
