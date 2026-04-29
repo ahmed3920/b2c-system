@@ -1059,6 +1059,12 @@ export function LeavesVerificationTab() {
                                     {g.status}
                                   </Badge>
                                 )}
+                                {existingPlan && (
+                                  <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20" variant="outline">
+                                    <Target className="h-3 w-3 mr-1" />
+                                    On Action Plan
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
@@ -1083,6 +1089,44 @@ export function LeavesVerificationTab() {
                                 .sort()
                                 .map((d) => formatDateShort(d))
                                 .join(", ")}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1 flex-wrap">
+                                {existingPlan ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setViewPlan(existingPlan)}
+                                    >
+                                      <Eye className="h-3.5 w-3.5 mr-1" />
+                                      View Plan
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        setCreatePlanForTutorId(g.tutor_external_id);
+                                        setCreatePlanOpen(true);
+                                      }}
+                                    >
+                                      <Plus className="h-3.5 w-3.5 mr-1" />
+                                      New Action Plan
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setCreatePlanForTutorId(g.tutor_external_id);
+                                      setCreatePlanOpen(true);
+                                    }}
+                                  >
+                                    <Target className="h-3.5 w-3.5 mr-1" />
+                                    Create Action Plan
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
