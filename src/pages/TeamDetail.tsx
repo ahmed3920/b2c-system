@@ -15,10 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Target, Search, Eye, Users, GraduationCap } from "lucide-react";
 import { getTeamBySlug } from "@/data/tutorRosterHelpers";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
 export default function TeamDetail() {
   const { id } = useParams();
-  const team = useMemo(() => (id ? getTeamBySlug(id) : undefined), [id]);
+  const { inactiveIds } = useInactiveTutorIds();
+  const team = useMemo(() => (id ? getTeamBySlug(id, inactiveIds) : undefined), [id, inactiveIds]);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "Tutor" | "Mentor">("all");
 
