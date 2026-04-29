@@ -260,6 +260,11 @@ const ActionPlans = () => {
             <TabsTrigger value="emails" className="flex items-center gap-2">
               <Mail className="w-4 h-4" /> Tutor Emails
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="tl_emails" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" /> Team Leader Emails
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="plans" className="space-y-4">
