@@ -10,18 +10,20 @@ import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
 export default function Teams() {
   const { isTeamLeader, isAdmin } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
+  const { inactiveIds } = useInactiveTutorIds();
   const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
 
   // Admin: one card per team leader. TL: one card per mentor sub-team.
   const teams = useMemo(() => {
-    if (!isTLView) return getTeamSummaries();
+    if (!isTLView) return getTeamSummaries(inactiveIds);
 
     const myMembers = tutorRoster.filter((t) =>
-      teamLeaderMatches(t.team_leader, myTeamLeader),
+      teamLeaderMatches(t.team_leader, myTeamLeader) && !inactiveIds.has(t.id),
     );
     const byMentor = new Map<string, typeof myMembers>();
     for (const m of myMembers) {
