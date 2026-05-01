@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     // Load occupation (pre)
     let occQ = admin
       .from("tutor_weekly_occupation")
-      .select("tutor_external_id, tutor_name, team_leader, free_hours")
+      .select("tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions")
       .eq("week_start", weekStart)
       .eq("phase", "pre");
     if (tlFilter) occQ = occQ.eq("team_leader", tlFilter);
