@@ -395,6 +395,7 @@ Deno.serve(async (req) => {
               const parts: string[] = [];
               if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
               if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
+              if (weekendDaysInWindow > 0) parts.push(`${weekendDaysInWindow} weekend day${weekendDaysInWindow > 1 ? "s" : ""}`);
               return parts.length > 0
                 ? `Adjusted: original ${rawFree}h − (${parts.join(" + ")}) × 5h`
                 : null;
