@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     // Load occupation (pre)
     let occQ = admin
       .from("tutor_weekly_occupation")
-      .select("tutor_external_id, tutor_name, team_leader, free_hours")
+      .select("tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions")
       .eq("week_start", weekStart)
       .eq("phase", "pre");
     if (tlFilter) occQ = occQ.eq("team_leader", tlFilter);
@@ -317,25 +317,22 @@ Deno.serve(async (req) => {
       const leaveDays = tutorLeaveDates.filter(isWorkingDay).length;
       const holidayDays = holidayDates.filter(isWorkingDay).length;
 
-      // Source sheet's free_hours covers Sat→Thu (6 days, excludes Friday only).
-      // For tutors whose weekend includes any of those 6 days (e.g. Wed/Thu or Thu/Fri),
-      // deduct each such weekend day at HOURS_PER_LEAVE_DAY (5h).
-      // Build the Sat→Thu date range (week_start+1 .. week_start+6).
-      let weekendDaysInWindow = 0;
-      for (let offset = 1; offset <= 6; offset++) {
-        const d = new Date(weekStartDate);
-        d.setUTCDate(d.getUTCDate() + offset);
-        const iso = d.toISOString().slice(0, 10);
-        if (weekend.has(dayNameOf(iso))) weekendDaysInWindow++;
-      }
+      const totalDeductionDays = leaveDays + holidayDays;
 
-      const totalDeductionDays = leaveDays + holidayDays + weekendDaysInWindow;
-
-      const rawFree = Number(tutor.free_hours);
+      // Free hours = 25 − scheduled_sessions (per business rule), then deduct
+      // leave/holiday days at 5h each. The session count from the upcoming-sessions
+      // sheet already reflects the tutor's actual working days, so no extra
+      // weekend-day deduction is needed.
+      const sessionCount = Number((tutor as any).scheduled_sessions);
+      const baseFree = Math.max(
+        0,
+        25 - (Number.isFinite(sessionCount) ? sessionCount : 0),
+      );
       const adjustedFree = Math.max(
         0,
-        (Number.isFinite(rawFree) ? rawFree : 0) - totalDeductionDays * HOURS_PER_LEAVE_DAY,
+        baseFree - totalDeductionDays * HOURS_PER_LEAVE_DAY,
       );
+      const rawFree = baseFree;
       let remaining = adjustedFree;
       if (!Number.isFinite(remaining) || remaining <= 0) {
         skippedNoHours++;
@@ -392,13 +389,13 @@ Deno.serve(async (req) => {
             week_start: weekStart,
             free_hours: adjustedFree,
             notes: (() => {
+              const base = `Free = 25 − ${sessionCount} sessions = ${baseFree}h`;
               const parts: string[] = [];
               if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
               if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
-              if (weekendDaysInWindow > 0) parts.push(`${weekendDaysInWindow} weekend day${weekendDaysInWindow > 1 ? "s" : ""}`);
               return parts.length > 0
-                ? `Adjusted: original ${rawFree}h − (${parts.join(" + ")}) × 5h`
-                : null;
+                ? `${base} − (${parts.join(" + ")}) × 5h = ${adjustedFree}h`
+                : base;
             })(),
             planned_hours: planned,
             status: "draft",
