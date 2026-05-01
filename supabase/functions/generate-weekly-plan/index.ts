@@ -389,13 +389,13 @@ Deno.serve(async (req) => {
             week_start: weekStart,
             free_hours: adjustedFree,
             notes: (() => {
+              const base = `Free = 25 − ${sessionCount} sessions = ${baseFree}h`;
               const parts: string[] = [];
               if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
               if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
-              if (weekendDaysInWindow > 0) parts.push(`${weekendDaysInWindow} weekend day${weekendDaysInWindow > 1 ? "s" : ""}`);
               return parts.length > 0
-                ? `Adjusted: original ${rawFree}h − (${parts.join(" + ")}) × 5h`
-                : null;
+                ? `${base} − (${parts.join(" + ")}) × 5h = ${adjustedFree}h`
+                : base;
             })(),
             planned_hours: planned,
             status: "draft",
