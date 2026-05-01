@@ -317,25 +317,22 @@ Deno.serve(async (req) => {
       const leaveDays = tutorLeaveDates.filter(isWorkingDay).length;
       const holidayDays = holidayDates.filter(isWorkingDay).length;
 
-      // Source sheet's free_hours covers Sat→Thu (6 days, excludes Friday only).
-      // For tutors whose weekend includes any of those 6 days (e.g. Wed/Thu or Thu/Fri),
-      // deduct each such weekend day at HOURS_PER_LEAVE_DAY (5h).
-      // Build the Sat→Thu date range (week_start+1 .. week_start+6).
-      let weekendDaysInWindow = 0;
-      for (let offset = 1; offset <= 6; offset++) {
-        const d = new Date(weekStartDate);
-        d.setUTCDate(d.getUTCDate() + offset);
-        const iso = d.toISOString().slice(0, 10);
-        if (weekend.has(dayNameOf(iso))) weekendDaysInWindow++;
-      }
+      const totalDeductionDays = leaveDays + holidayDays;
 
-      const totalDeductionDays = leaveDays + holidayDays + weekendDaysInWindow;
-
-      const rawFree = Number(tutor.free_hours);
+      // Free hours = 25 − scheduled_sessions (per business rule), then deduct
+      // leave/holiday days at 5h each. The session count from the upcoming-sessions
+      // sheet already reflects the tutor's actual working days, so no extra
+      // weekend-day deduction is needed.
+      const sessionCount = Number((tutor as any).scheduled_sessions);
+      const baseFree = Math.max(
+        0,
+        25 - (Number.isFinite(sessionCount) ? sessionCount : 0),
+      );
       const adjustedFree = Math.max(
         0,
-        (Number.isFinite(rawFree) ? rawFree : 0) - totalDeductionDays * HOURS_PER_LEAVE_DAY,
+        baseFree - totalDeductionDays * HOURS_PER_LEAVE_DAY,
       );
+      const rawFree = baseFree;
       let remaining = adjustedFree;
       if (!Number.isFinite(remaining) || remaining <= 0) {
         skippedNoHours++;
