@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { clearStaleAuth } from "@/integrations/supabase/authRecovery";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,12 +31,22 @@ const Auth = () => {
   const pageTitle = isMentorAudience ? "Mentor Task Tracker" : "B2C Management System";
   const { toast } = useToast();
 
-  // Handle login token from URL
+  // Handle login token from URL, or pre-clear stale auth state for normal logins
   useEffect(() => {
     const loginToken = searchParams.get("login_token");
     if (loginToken) {
       handleTokenLogin(loginToken);
+      return;
     }
+    // No token: make sure no poisoned refresh token survives in storage,
+    // otherwise the SDK will keep retrying /token and eventually hit 429.
+    (async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        clearStaleAuth();
+        try { await supabase.auth.signOut({ scope: "local" }); } catch { /* noop */ }
+      }
+    })();
   }, [searchParams]);
 
   const handleTokenLogin = async (token: string) => {
@@ -127,7 +138,17 @@ const Auth = () => {
 
       if (error) {
         setLoginAttempts(prev => prev + 1);
-        if (error.message.includes("Invalid login credentials")) {
+        const status = (error as any).status;
+        const lower = (error.message || "").toLowerCase();
+        if (status === 429 || lower.includes("rate limit") || lower.includes("too many")) {
+          clearStaleAuth();
+          toast({
+            title: "Too Many Requests",
+            description:
+              "Your browser was rate-limited by the auth server. Please wait ~1 minute, then try again. If it persists, clear your browser site data for this site and retry.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("Invalid login credentials")) {
           toast({
             title: "Login Failed",
             description: `Invalid email or password. ${5 - loginAttempts - 1} attempts remaining.`,

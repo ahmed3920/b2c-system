@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearStaleAuth } from "@/integrations/supabase/authRecovery";
 import { useUserRole } from "@/hooks/useUserRole";
 import { RoleBadge } from "@/components/RoleBadge";
 import { useToast } from "@/hooks/use-toast";
@@ -29,8 +30,9 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
 
   useEffect(() => {
     const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        if (error) clearStaleAuth();
         navigate("/auth");
         return;
       }
