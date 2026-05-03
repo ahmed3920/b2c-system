@@ -5,6 +5,7 @@ import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 
 const sections = [
   { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
@@ -15,7 +16,8 @@ const sections = [
 
 export default function Performance() {
   const { isMentor, isAdmin, isTeamLeader } = useUserRole();
-  const mentorOnly = isMentor && !isAdmin && !isTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const mentorOnly = isMentor && !isAdmin && !isTeamLeader && !csFullAccess;
 
   if (mentorOnly) {
     return (
@@ -28,7 +30,7 @@ export default function Performance() {
   }
 
   return (
-    <AppLayout title="Performance" allowedRoles={["admin", "team_leader"]}>
+    <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
       <div className="p-6 max-w-[1600px] mx-auto">
         <Tabs defaultValue="live-issues">
           <TabsList className="flex-wrap h-auto">

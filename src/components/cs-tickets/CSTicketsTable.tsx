@@ -13,6 +13,7 @@ import { CSTicketDetailDialog } from "./CSTicketDetailDialog";
 import { useCSTickets, type CSTicket, type CSTicketScope } from "./useCSTickets";
 import type { CSTicketStatus } from "./csTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { UserCheck } from "lucide-react";
 
@@ -27,7 +28,8 @@ const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructi
 
 export function CSTicketsTable() {
   const { isAdmin, isSuperTeamLeader } = useUserRole();
-  const canCreate = isAdmin || isSuperTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const canCreate = isAdmin || isSuperTeamLeader || csFullAccess;
 
   // Scope is the source of truth — passed to the hook so the database
   // performs all team-leader matching. No client-side name matching.
