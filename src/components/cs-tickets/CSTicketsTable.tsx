@@ -149,6 +149,18 @@ export function CSTicketsTable() {
               <SelectItem value="Not a Complain">Not a Complain</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={teamLeaderFilter} onValueChange={setTeamLeaderFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Team Leader" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Team Leaders</SelectItem>
+              {teamLeaders.map((tl) => (
+                <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
