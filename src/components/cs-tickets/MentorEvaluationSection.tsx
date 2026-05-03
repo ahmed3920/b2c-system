@@ -39,8 +39,13 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const [evalNotes, setEvalNotes] = useState(ticket.mentor_evaluation_notes ?? "");
   const [recommendation, setRecommendation] = useState(ticket.mentor_recommendation ?? "");
   const [validation, setValidation] = useState<string>(ticket.mentor_validation ?? "");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mentorFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
+  }, []);
 
   // Suggested mentor = the tutor's assigned mentor in roster
   const suggestedMentorName = useMemo(
