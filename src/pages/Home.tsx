@@ -20,8 +20,10 @@ import {
   BarChart3,
   Target,
   Star,
+  Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
 import { ProductUpdatesSection } from "@/components/feature-plans/ProductUpdatesSection";
 
