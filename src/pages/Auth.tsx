@@ -138,7 +138,17 @@ const Auth = () => {
 
       if (error) {
         setLoginAttempts(prev => prev + 1);
-        if (error.message.includes("Invalid login credentials")) {
+        const status = (error as any).status;
+        const lower = (error.message || "").toLowerCase();
+        if (status === 429 || lower.includes("rate limit") || lower.includes("too many")) {
+          clearStaleAuth();
+          toast({
+            title: "Too Many Requests",
+            description:
+              "Your browser was rate-limited by the auth server. Please wait ~1 minute, then try again. If it persists, clear your browser site data for this site and retry.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("Invalid login credentials")) {
           toast({
             title: "Login Failed",
             description: `Invalid email or password. ${5 - loginAttempts - 1} attempts remaining.`,
