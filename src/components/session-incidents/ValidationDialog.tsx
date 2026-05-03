@@ -6,11 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, Send, CheckCircle2 } from "lucide-react";
+import { ExternalLink, Send, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCsFullAccess } from "@/hooks/useCsFullAccess";
+import { IncidentFormDialog } from "./IncidentFormDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { SessionIncident } from "@/hooks/useSessionIncidents";
 
 interface Props {
@@ -26,9 +31,28 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
   const [ticketNumber, setTicketNumber] = useState(incident.cs_ticket_number ?? "");
   const [csResponse, setCsResponse] = useState(incident.cs_response ?? "");
   const [busy, setBusy] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { role } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const canManageCs = role === "admin" || csFullAccess;
+  const isAdmin = role === "admin";
+
+  const handleDelete = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("session_incidents").delete().eq("id", incident.id);
+      if (error) throw error;
+      toast({ title: "Incident deleted" });
+      setConfirmDelete(false);
+      onOpenChange(false);
+      onChanged();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const updateStatus = async (status: "approved" | "rejected") => {
     setBusy(true);
@@ -205,6 +229,16 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
         )}
 
         <DialogFooter className="gap-2 flex-wrap">
+          {isAdmin && (
+            <>
+              <Button variant="outline" onClick={() => setEditOpen(true)} disabled={busy}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+              <Button variant="destructive" onClick={() => setConfirmDelete(true)} disabled={busy}>
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
+              </Button>
+            </>
+          )}
           {canValidate && incident.validation_status === "pending" && (
             <>
               <Button variant="destructive" onClick={() => updateStatus("rejected")} disabled={busy}>Reject</Button>
@@ -214,6 +248,32 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      {isAdmin && editOpen && (
+        <IncidentFormDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          incident={incident}
+          onCreated={() => { onChanged(); onOpenChange(false); }}
+        />
+      )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this incident?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the session incident. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
