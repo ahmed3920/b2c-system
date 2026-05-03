@@ -338,7 +338,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               onChange={(e) => setLinkInput(e.target.value)}
               className="flex-1 min-w-[200px]"
             />
-            <Button type="button" variant="outline" onClick={handleAddLink}>
+            <Button type="button" variant="outline" onClick={() => handleAddLink()}>
               <Plus className="mr-2 h-4 w-4" /> Add Link
             </Button>
             <input
@@ -474,7 +474,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
             onChange={(e) => setLinkInput(e.target.value)}
             className="flex-1 min-w-[200px]"
           />
-          <Button type="button" variant="outline" onClick={handleAddLink}>
+          <Button type="button" variant="outline" onClick={() => handleAddLink()}>
             <Plus className="mr-2 h-4 w-4" /> Add Link
           </Button>
           <input
