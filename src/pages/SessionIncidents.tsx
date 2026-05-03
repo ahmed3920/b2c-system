@@ -14,6 +14,7 @@ import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 export default function SessionIncidents() {
   const { role } = useUserRole();
   const { items, loading, refresh } = useSessionIncidents();
+  const { hasAccess: csFullAccess } = useCsFullAccess();
   const [createOpen, setCreateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
 
@@ -22,8 +23,10 @@ export default function SessionIncidents() {
   const isMentor = role === "mentor" || role === "community_moderator";
   const canCreate = isAdmin || isTL || isMentor;
   const canValidate = isAdmin || isTL || isMentor;
+  const canSeeCsTab = isAdmin || csFullAccess;
 
   const myPending = useMemo(() => items.filter((i) => i.validation_status === "pending"), [items]);
+  const csCount = useMemo(() => items.filter((i) => i.sent_to_cs).length, [items]);
 
   return (
     <AppLayout title="Session Incidents" allowedRoles={["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"]}>
