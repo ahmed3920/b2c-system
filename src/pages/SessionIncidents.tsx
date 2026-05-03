@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Link as LinkIcon } from "lucide-react";
 import { useSessionIncidents } from "@/hooks/useSessionIncidents";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { IncidentFormDialog } from "@/components/session-incidents/IncidentFormDialog";
 import { GenerateTutorLinkDialog } from "@/components/session-incidents/GenerateTutorLinkDialog";
 import { IncidentsTable } from "@/components/session-incidents/IncidentsTable";
@@ -13,7 +12,6 @@ import { IncidentsTable } from "@/components/session-incidents/IncidentsTable";
 export default function SessionIncidents() {
   const { role } = useUserRole();
   const { items, loading, refresh } = useSessionIncidents();
-  const { mentorName } = useCurrentTeamLeader();
   const [createOpen, setCreateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
 
