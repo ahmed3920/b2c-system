@@ -286,7 +286,8 @@ const Home = () => {
           })}
         </div>
       </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
