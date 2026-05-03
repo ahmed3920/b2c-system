@@ -30,7 +30,7 @@ export default function Performance() {
   }
 
   return (
-    <AppLayout title="Performance" allowedRoles={["admin", "team_leader"]}>
+    <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
       <div className="p-6 max-w-[1600px] mx-auto">
         <Tabs defaultValue="live-issues">
           <TabsList className="flex-wrap h-auto">
