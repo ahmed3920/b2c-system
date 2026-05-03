@@ -67,10 +67,6 @@ export default function SessionIncidents() {
               <CsTicketsView items={items} loading={loading} onChanged={refresh} />
             </TabsContent>
           )}
-          </TabsContent>
-          <TabsContent value="pending" className="mt-4">
-            <IncidentsTable items={items} loading={loading} onChanged={refresh} canValidate={canValidate} pendingOnly title="Pending Validation" />
-          </TabsContent>
         </Tabs>
       </div>
 
