@@ -294,6 +294,37 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           </Badge>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-primary/5 p-3">
+          <span className="text-sm font-medium mr-auto">Add your own evidence (optional)</span>
+          <input
+            ref={mentorFileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => handleUploadFiles(e.target.files)}
+          />
+          <Button
+            type="button"
+            onClick={() => mentorFileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paperclip className="mr-2 h-4 w-4" />}
+            Add Attachment
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              const url = window.prompt("Paste a link (https://...)");
+              if (!url) return;
+              setLinkInput(url);
+              setTimeout(() => handleAddLink(), 0);
+            }}
+          >
+            <Link2 className="mr-2 h-4 w-4" /> Add Link
+          </Button>
+        </div>
+
         <div className="space-y-2">
           <Label>Session Recordings & Attachments</Label>
           <p className="text-xs text-muted-foreground">
