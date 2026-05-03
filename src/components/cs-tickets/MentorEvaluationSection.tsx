@@ -97,7 +97,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
       toast({ title: "Invalid link", description: "Must start with http(s)://", variant: "destructive" });
       return;
     }
-    setRecordings((r) => [...r, { kind: "link", url, added_at: new Date().toISOString() }]);
+    setRecordings((r) => [...r, { kind: "link", url, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined }]);
     setLinkInput("");
   };
 
