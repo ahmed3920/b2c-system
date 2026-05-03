@@ -90,15 +90,15 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     return m;
   }, [teamMentors]);
 
-  const handleAddLink = () => {
-    const url = linkInput.trim();
+  const handleAddLink = (override?: string) => {
+    const url = (override ?? linkInput).trim();
     if (!url) return;
     if (!/^https?:\/\//i.test(url)) {
       toast({ title: "Invalid link", description: "Must start with http(s)://", variant: "destructive" });
       return;
     }
     setRecordings((r) => [...r, { kind: "link", url, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined }]);
-    setLinkInput("");
+    if (!override) setLinkInput("");
   };
 
   const handleUploadFiles = async (files: FileList | null) => {
@@ -294,6 +294,35 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           </Badge>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-primary/5 p-3">
+          <span className="text-sm font-medium mr-auto">Add your own evidence (optional)</span>
+          <input
+            ref={mentorFileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => handleUploadFiles(e.target.files)}
+          />
+          <Button
+            type="button"
+            onClick={() => mentorFileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paperclip className="mr-2 h-4 w-4" />}
+            Add Attachment
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              const url = window.prompt("Paste a link (https://...)");
+              if (url) handleAddLink(url);
+            }}
+          >
+            <Link2 className="mr-2 h-4 w-4" /> Add Link
+          </Button>
+        </div>
+
         <div className="space-y-2">
           <Label>Session Recordings & Attachments</Label>
           <p className="text-xs text-muted-foreground">
@@ -307,7 +336,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               onChange={(e) => setLinkInput(e.target.value)}
               className="flex-1 min-w-[200px]"
             />
-            <Button type="button" variant="outline" onClick={handleAddLink}>
+            <Button type="button" variant="outline" onClick={() => handleAddLink()}>
               <Plus className="mr-2 h-4 w-4" /> Add Link
             </Button>
             <input
@@ -443,7 +472,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
             onChange={(e) => setLinkInput(e.target.value)}
             className="flex-1 min-w-[200px]"
           />
-          <Button type="button" variant="outline" onClick={handleAddLink}>
+          <Button type="button" variant="outline" onClick={() => handleAddLink()}>
             <Plus className="mr-2 h-4 w-4" /> Add Link
           </Button>
           <input
