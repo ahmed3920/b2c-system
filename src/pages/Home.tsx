@@ -107,6 +107,13 @@ const allCards: DashboardCard[] = [
     roles: ["admin", "team_leader", "mentor", "community_moderator"],
   },
   {
+    title: "CS Ticket Evaluations",
+    description: "Review and evaluate CS tickets assigned to you",
+    icon: <Activity className="w-8 h-8" />,
+    href: "/performance",
+    roles: ["mentor", "community_moderator"],
+  },
+  {
     title: "Tracking Numbers",
     description: "Upload sheets and view performance metrics",
     icon: <BarChart3 className="w-8 h-8" />,
