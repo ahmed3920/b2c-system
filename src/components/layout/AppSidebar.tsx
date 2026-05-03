@@ -73,6 +73,7 @@ const growthRisk: NavItem[] = [
   { title: "Growth", url: "/growth", icon: TrendingUp, featureKey: "growth" },
   { title: "Risk Control", url: "/risk-control", icon: ShieldAlert, featureKey: "risk_control" },
   { title: "Action Plans", url: "/action-plans", icon: Target, featureKey: "action_plans" },
+  { title: "Session Incidents", url: "/session-incidents", icon: ShieldAlert, featureKey: "session_incidents", roles: ["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"] },
 ];
 
 const taskTracker: NavItem[] = [
