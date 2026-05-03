@@ -101,12 +101,18 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     if (!override) setLinkInput("");
   };
 
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
+
   const handleUploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    const arr = Array.from(files);
+    setUploadProgress({ current: 0, total: arr.length, name: arr[0]?.name ?? "" });
     try {
       const newRecs: SessionRecording[] = [];
-      for (const file of Array.from(files)) {
+      for (let i = 0; i < arr.length; i++) {
+        const file = arr[i];
+        setUploadProgress({ current: i, total: arr.length, name: file.name });
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const path = `${ticket.id}/${Date.now()}_${safe}`;
         const { error } = await supabase.storage.from("cs-recordings").upload(path, file, {
@@ -115,6 +121,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
         });
         if (error) throw error;
         newRecs.push({ kind: "file", url: path, path, label: file.name, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined });
+        setUploadProgress({ current: i + 1, total: arr.length, name: file.name });
       }
       setRecordings((r) => [...r, ...newRecs]);
       toast({ title: `Uploaded ${newRecs.length} file(s)` });
@@ -122,6 +129,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
       toast({ title: "Upload failed", description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
+      setUploadProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (mentorFileInputRef.current) mentorFileInputRef.current.value = "";
     }
