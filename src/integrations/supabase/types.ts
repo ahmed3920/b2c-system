@@ -1230,6 +1230,200 @@ export type Database = {
         }
         Relationships: []
       }
+      session_incident_categories: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_incident_field_config: {
+        Row: {
+          display_order: number
+          field_label: string
+          field_name: string
+          id: string
+          is_locked: boolean
+          is_required: boolean
+          is_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          display_order?: number
+          field_label: string
+          field_name: string
+          id?: string
+          is_locked?: boolean
+          is_required?: boolean
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Update: {
+          display_order?: number
+          field_label?: string
+          field_name?: string
+          id?: string
+          is_locked?: boolean
+          is_required?: boolean
+          is_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_incident_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          team_leader: string
+          token: string
+          tutor_external_id: string
+          tutor_name: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          team_leader: string
+          token?: string
+          tutor_external_id: string
+          tutor_name: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          team_leader?: string
+          token?: string
+          tutor_external_id?: string
+          tutor_name?: string
+          use_count?: number
+        }
+        Relationships: []
+      }
+      session_incidents: {
+        Row: {
+          assigned_mentor_name: string | null
+          case_category: string
+          case_description: string | null
+          created_at: string
+          id: string
+          rejection_reason: string | null
+          sent_to_cs: boolean
+          session_date: string | null
+          session_number: string | null
+          source: string
+          student_grade: string | null
+          student_id: string | null
+          student_name: string | null
+          submitted_by: string | null
+          submitted_by_name: string | null
+          supporting_link: string | null
+          team_leader: string
+          token_id: string | null
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          validated_by_name: string | null
+          validation_status: string
+        }
+        Insert: {
+          assigned_mentor_name?: string | null
+          case_category: string
+          case_description?: string | null
+          created_at?: string
+          id?: string
+          rejection_reason?: string | null
+          sent_to_cs?: boolean
+          session_date?: string | null
+          session_number?: string | null
+          source?: string
+          student_grade?: string | null
+          student_id?: string | null
+          student_name?: string | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          supporting_link?: string | null
+          team_leader: string
+          token_id?: string | null
+          tutor_external_id: string
+          tutor_name: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validated_by_name?: string | null
+          validation_status?: string
+        }
+        Update: {
+          assigned_mentor_name?: string | null
+          case_category?: string
+          case_description?: string | null
+          created_at?: string
+          id?: string
+          rejection_reason?: string | null
+          sent_to_cs?: boolean
+          session_date?: string | null
+          session_number?: string | null
+          source?: string
+          student_grade?: string | null
+          student_id?: string | null
+          student_name?: string | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          supporting_link?: string | null
+          team_leader?: string
+          token_id?: string | null
+          tutor_external_id?: string
+          tutor_name?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validated_by_name?: string | null
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_incidents_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "session_incident_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_modules: {
         Row: {
           created_at: string
