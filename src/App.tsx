@@ -35,6 +35,9 @@ import FeatureControlAdmin from "./pages/FeatureControlAdmin";
 import Attendance from "./pages/Attendance";
 import FeatureDocumentation from "./pages/FeatureDocumentation";
 import VisionBoardPage from "./pages/VisionBoard";
+import SessionIncidents from "./pages/SessionIncidents";
+import SessionIncidentSettings from "./pages/SessionIncidentSettings";
+import IncidentSubmit from "./pages/IncidentSubmit";
 
 import NotFound from "./pages/NotFound";
 
