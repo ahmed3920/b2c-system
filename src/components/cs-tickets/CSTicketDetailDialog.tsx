@@ -40,8 +40,10 @@ interface Props {
 }
 
 export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: Props) {
-  const { isAdmin, isSuperTeamLeader } = useUserRole();
+  const { isAdmin, isSuperTeamLeader, isTeamLeader, isMentor } = useUserRole();
   const canManage = isAdmin || isSuperTeamLeader;
+  const canValidate = isAdmin || isSuperTeamLeader || isTeamLeader;
+  const isAssignedMentorOnly = !canValidate && isMentor;
   const { byType } = useCSTicketCategories();
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
@@ -273,6 +275,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               </div>
               <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
 
+              {canValidate && (
               <div className="space-y-3 border-t pt-4">
                 <h3 className="text-sm font-semibold">Validation & Follow-up</h3>
                 <div className="space-y-2">
@@ -456,9 +459,11 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                 <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
                   Close
                 </Button>
-                <Button onClick={handleSaveValidation} disabled={saving}>
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
+                {canValidate && (
+                  <Button onClick={handleSaveValidation} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                )}
               </>
             )}
           </DialogFooter>
