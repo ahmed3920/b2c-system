@@ -40,6 +40,7 @@ export function CSTicketsTable() {
   const [selected, setSelected] = useState<CSTicket | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
+  const [teamLeaderFilter, setTeamLeaderFilter] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
   const [search, setSearch] = useState("");
 
@@ -50,10 +51,17 @@ export function CSTicketsTable() {
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
   };
 
+  const teamLeaders = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.team_leader) set.add(t.team_leader); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tickets]);
+
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
+      if (teamLeaderFilter !== "all" && t.team_leader !== teamLeaderFilter) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
       if (search) {
@@ -70,7 +78,8 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, quickFilter, search]);
+  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, quickFilter, search]);
+
 
   const counts = useMemo(() => ({
     total: tickets.length,
@@ -138,6 +147,18 @@ export function CSTicketsTable() {
               <SelectItem value="Valid">Valid</SelectItem>
               <SelectItem value="Not Valid">Not Valid</SelectItem>
               <SelectItem value="Not a Complain">Not a Complain</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={teamLeaderFilter} onValueChange={setTeamLeaderFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Team Leader" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Team Leaders</SelectItem>
+              {teamLeaders.map((tl) => (
+                <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
