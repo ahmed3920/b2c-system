@@ -18,12 +18,23 @@ export default function Performance() {
   const { isMentor, isAdmin, isTeamLeader } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const mentorOnly = isMentor && !isAdmin && !isTeamLeader && !csFullAccess;
+  const csOnly = isMentor && !isAdmin && !isTeamLeader && csFullAccess;
 
   if (mentorOnly) {
     return (
       <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
         <div className="p-6 max-w-[1600px] mx-auto">
           <AssignedCSEvaluations />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (csOnly) {
+    return (
+      <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
+        <div className="p-6 max-w-[1600px] mx-auto">
+          <CSTicketsTable />
         </div>
       </AppLayout>
     );
