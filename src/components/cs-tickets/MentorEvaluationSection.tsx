@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Paperclip, Plus, Trash2, UserCheck, ExternalLink, Link2, Download } from "lucide-react";
+import { Loader2, Paperclip, Plus, Trash2, UserCheck, ExternalLink, Link2, Download, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import type { CSTicket, SessionRecording } from "./useCSTickets";
 
 interface MentorOption {
@@ -26,7 +28,7 @@ interface Props {
 export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const { isAdmin, isTeamLeader, isSuperTeamLeader, isMentor } = useUserRole();
   const canAssign = isAdmin || isTeamLeader || isSuperTeamLeader;
-  const isAssignedMentor = isMentor && !canAssign; // mentor-only view of the section
+  const isAssignedMentor = isMentor && !canAssign;
 
   const [mentors, setMentors] = useState<MentorOption[]>([]);
   const [selectedMentor, setSelectedMentor] = useState<string>(ticket.assigned_mentor_id ?? "");
@@ -36,27 +38,52 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const [saving, setSaving] = useState(false);
   const [evalNotes, setEvalNotes] = useState(ticket.mentor_evaluation_notes ?? "");
   const [recommendation, setRecommendation] = useState(ticket.mentor_recommendation ?? "");
+  const [validation, setValidation] = useState<string>(ticket.mentor_validation ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mentorFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Suggested mentor = the tutor's assigned mentor in roster
+  const suggestedMentorName = useMemo(
+    () => getMentorForTutor(ticket.tutor_external_id),
+    [ticket.tutor_external_id],
+  );
 
   useEffect(() => {
     setSelectedMentor(ticket.assigned_mentor_id ?? "");
     setRecordings(ticket.session_recordings ?? []);
     setEvalNotes(ticket.mentor_evaluation_notes ?? "");
     setRecommendation(ticket.mentor_recommendation ?? "");
+    setValidation(ticket.mentor_validation ?? "");
   }, [ticket.id]);
 
   useEffect(() => {
-    if (!canAssign) return;
     supabase.rpc("list_available_mentors").then(({ data }) => {
       if (data) setMentors(data as MentorOption[]);
     });
-  }, [canAssign]);
+  }, []);
+
+  // Only mentors of this ticket's team leader
+  const teamMentors = useMemo(
+    () => mentors.filter((m) => teamLeaderMatches(m.team_leader, ticket.team_leader)),
+    [mentors, ticket.team_leader],
+  );
+
+  // Auto-suggest tutor's mentor when not yet assigned
+  useEffect(() => {
+    if (!canAssign || ticket.assigned_mentor_id || selectedMentor) return;
+    if (!suggestedMentorName || suggestedMentorName === "—") return;
+    const target = normalizeName(suggestedMentorName);
+    const match = teamMentors.find(
+      (m) => normalizeName(m.full_name ?? "") === target || normalizeName(m.mentor_name ?? "") === target,
+    );
+    if (match) setSelectedMentor(match.user_id);
+  }, [canAssign, suggestedMentorName, teamMentors, ticket.assigned_mentor_id, selectedMentor]);
 
   const mentorMap = useMemo(() => {
     const m = new Map<string, MentorOption>();
-    mentors.forEach((x) => m.set(x.user_id, x));
+    teamMentors.forEach((x) => m.set(x.user_id, x));
     return m;
-  }, [mentors]);
+  }, [teamMentors]);
 
   const handleAddLink = () => {
     const url = linkInput.trim();
@@ -91,6 +118,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (mentorFileInputRef.current) mentorFileInputRef.current.value = "";
     }
   };
 
@@ -99,7 +127,11 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     if (rec.kind === "file" && rec.path) {
       await supabase.storage.from("cs-recordings").remove([rec.path]);
     }
-    setRecordings((r) => r.filter((_, i) => i !== idx));
+    const next = recordings.filter((_, i) => i !== idx);
+    setRecordings(next);
+    // Persist immediately so RLS-allowed roles see the change
+    await supabase.from("cs_tickets").update({ session_recordings: next as any }).eq("id", ticket.id);
+    onChanged?.();
   };
 
   const handleSaveAssignment = async () => {
@@ -155,6 +187,10 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   };
 
   const handleSaveEvaluation = async () => {
+    if (!validation) {
+      toast({ title: "Validation required", description: "Mark the case as Valid or Invalid.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase
@@ -162,6 +198,8 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
         .update({
           mentor_evaluation_notes: evalNotes || null,
           mentor_recommendation: recommendation || null,
+          mentor_validation: validation,
+          session_recordings: recordings as any,
         })
         .eq("id", ticket.id);
       if (error) throw error;
@@ -214,16 +252,14 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               <Button size="icon" variant="ghost" onClick={() => openRecording(rec)} title="Open">
                 {rec.kind === "link" ? <ExternalLink className="h-4 w-4" /> : <Download className="h-4 w-4" />}
               </Button>
-              {(canAssign || isAdmin) && !isAssignedMentor && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => handleRemoveRecording(idx)}
-                  title="Remove"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => handleRemoveRecording(idx)}
+                title="Remove"
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
             </div>
           </div>
         ))
@@ -235,7 +271,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   if (isAssignedMentor) {
     return (
       <div className="space-y-4 border-t pt-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-sm font-semibold">Mentor Evaluation</h3>
           <Badge variant="secondary">
             <UserCheck className="mr-1 h-3 w-3" /> Assigned to you
@@ -243,8 +279,52 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label>Session Recordings</Label>
+          <Label>Session Recordings & Attachments</Label>
           {RecordingsList}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Input
+              placeholder="https://drive.google.com/..."
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              className="flex-1 min-w-[200px]"
+            />
+            <Button type="button" variant="outline" onClick={handleAddLink}>
+              <Plus className="mr-2 h-4 w-4" /> Add Link
+            </Button>
+            <input
+              ref={mentorFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => handleUploadFiles(e.target.files)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => mentorFileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paperclip className="mr-2 h-4 w-4" />}
+              Upload Screenshot/File
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Validation *</Label>
+          <Select value={validation} onValueChange={setValidation}>
+            <SelectTrigger>
+              <SelectValue placeholder="Mark as Valid or Invalid" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="valid">
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-600" /> Valid</span>
+              </SelectItem>
+              <SelectItem value="invalid">
+                <span className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /> Invalid</span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
@@ -277,14 +357,26 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   // ---------- TL / ADMIN VIEW ----------
   if (!canAssign) return null;
 
+  const suggestedHint =
+    suggestedMentorName && suggestedMentorName !== "—"
+      ? `Suggested: ${suggestedMentorName} (tutor's assigned mentor)`
+      : null;
+
   return (
     <div className="space-y-4 border-t pt-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="text-sm font-semibold">Mentor Evaluation</h3>
         {ticket.assigned_mentor_id && (
-          <Badge variant="default">
-            <UserCheck className="mr-1 h-3 w-3" /> {ticket.assigned_mentor_name || "Assigned"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="default">
+              <UserCheck className="mr-1 h-3 w-3" /> {ticket.assigned_mentor_name || "Assigned"}
+            </Badge>
+            {ticket.mentor_validation && (
+              <Badge variant={ticket.mentor_validation === "valid" ? "default" : "destructive"}>
+                {ticket.mentor_validation === "valid" ? "Valid" : "Invalid"}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 
@@ -296,10 +388,12 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               <SelectValue placeholder="Select a mentor" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
-              {mentors.length === 0 ? (
-                <div className="px-2 py-3 text-xs text-muted-foreground">No mentors available.</div>
+              {teamMentors.length === 0 ? (
+                <div className="px-2 py-3 text-xs text-muted-foreground">
+                  No mentors found for team leader "{ticket.team_leader}".
+                </div>
               ) : (
-                mentors.map((m) => (
+                teamMentors.map((m) => (
                   <SelectItem key={m.user_id} value={m.user_id}>
                     <div className="flex flex-col">
                       <span>{m.full_name || m.mentor_name}</span>
@@ -312,6 +406,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               )}
             </SelectContent>
           </Select>
+          {suggestedHint && <p className="text-xs text-muted-foreground">{suggestedHint}</p>}
         </div>
       </div>
 
@@ -362,11 +457,19 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
         </Button>
       </div>
 
-      {(ticket.mentor_evaluation_notes || ticket.mentor_recommendation) && (
+      {(ticket.mentor_evaluation_notes || ticket.mentor_recommendation || ticket.mentor_validation) && (
         <div className="space-y-3 rounded border bg-muted/30 p-3">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Mentor Evaluation
           </h4>
+          {ticket.mentor_validation && (
+            <div>
+              <p className="text-xs font-medium">Validation</p>
+              <Badge variant={ticket.mentor_validation === "valid" ? "default" : "destructive"}>
+                {ticket.mentor_validation === "valid" ? "Valid" : "Invalid"}
+              </Badge>
+            </div>
+          )}
           {ticket.mentor_evaluation_notes && (
             <div>
               <p className="text-xs font-medium">Notes</p>
