@@ -31,12 +31,22 @@ const Auth = () => {
   const pageTitle = isMentorAudience ? "Mentor Task Tracker" : "B2C Management System";
   const { toast } = useToast();
 
-  // Handle login token from URL
+  // Handle login token from URL, or pre-clear stale auth state for normal logins
   useEffect(() => {
     const loginToken = searchParams.get("login_token");
     if (loginToken) {
       handleTokenLogin(loginToken);
+      return;
     }
+    // No token: make sure no poisoned refresh token survives in storage,
+    // otherwise the SDK will keep retrying /token and eventually hit 429.
+    (async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        clearStaleAuth();
+        try { await supabase.auth.signOut({ scope: "local" }); } catch { /* noop */ }
+      }
+    })();
   }, [searchParams]);
 
   const handleTokenLogin = async (token: string) => {
