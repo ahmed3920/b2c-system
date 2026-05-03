@@ -377,6 +377,7 @@ export type Database = {
           mentor_assigned_by: string | null
           mentor_evaluation_notes: string | null
           mentor_recommendation: string | null
+          mentor_validation: string | null
           need_response_deadline: string | null
           session_num_or_date: string | null
           session_recordings: Json
@@ -406,6 +407,7 @@ export type Database = {
           mentor_assigned_by?: string | null
           mentor_evaluation_notes?: string | null
           mentor_recommendation?: string | null
+          mentor_validation?: string | null
           need_response_deadline?: string | null
           session_num_or_date?: string | null
           session_recordings?: Json
@@ -435,6 +437,7 @@ export type Database = {
           mentor_assigned_by?: string | null
           mentor_evaluation_notes?: string | null
           mentor_recommendation?: string | null
+          mentor_validation?: string | null
           need_response_deadline?: string | null
           session_num_or_date?: string | null
           session_recordings?: Json
@@ -2056,6 +2059,7 @@ export type Database = {
           mentor_assigned_by: string | null
           mentor_evaluation_notes: string | null
           mentor_recommendation: string | null
+          mentor_validation: string | null
           need_response_deadline: string | null
           session_num_or_date: string | null
           session_recordings: Json
@@ -2094,6 +2098,7 @@ export type Database = {
           mentor_assigned_by: string | null
           mentor_evaluation_notes: string | null
           mentor_recommendation: string | null
+          mentor_validation: string | null
           need_response_deadline: string | null
           session_num_or_date: string | null
           session_recordings: Json
