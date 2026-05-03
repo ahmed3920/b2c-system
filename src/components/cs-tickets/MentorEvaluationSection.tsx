@@ -114,7 +114,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           contentType: file.type || undefined,
         });
         if (error) throw error;
-        newRecs.push({ kind: "file", url: path, path, label: file.name, added_at: new Date().toISOString() });
+        newRecs.push({ kind: "file", url: path, path, label: file.name, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined });
       }
       setRecordings((r) => [...r, ...newRecs]);
       toast({ title: `Uploaded ${newRecs.length} file(s)` });
@@ -129,6 +129,15 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
 
   const handleRemoveRecording = async (idx: number) => {
     const rec = recordings[idx];
+    // Mentors can only remove their own attachments
+    if (isAssignedMentor && rec.added_by && rec.added_by !== currentUserId) {
+      toast({ title: "Not allowed", description: "You can only remove attachments you added.", variant: "destructive" });
+      return;
+    }
+    if (isAssignedMentor && !rec.added_by) {
+      toast({ title: "Not allowed", description: "Only the team leader can remove this attachment.", variant: "destructive" });
+      return;
+    }
     if (rec.kind === "file" && rec.path) {
       await supabase.storage.from("cs-recordings").remove([rec.path]);
     }
