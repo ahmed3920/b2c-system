@@ -2,6 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { CSTicketCaseType, CSTicketStatus } from "./csTicketCategories";
 
+export interface SessionRecording {
+  kind: "file" | "link";
+  url: string;
+  label?: string;
+  path?: string; // storage path when kind === "file"
+  added_at?: string;
+  added_by?: string;
+}
+
 export interface CSTicket {
   id: string;
   ticket_number: string;
@@ -23,23 +32,24 @@ export interface CSTicket {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  // Mentor evaluation
+  assigned_mentor_id: string | null;
+  assigned_mentor_name: string | null;
+  mentor_assigned_at: string | null;
+  mentor_evaluation_notes: string | null;
+  mentor_recommendation: string | null;
+  session_recordings: SessionRecording[];
 }
 
-export type CSTicketScope = "all" | "mine";
+export type CSTicketScope = "all" | "mine" | "assigned_to_me";
 
 const normalize = (rows: any[]): CSTicket[] =>
   rows.map((r) => ({
     ...r,
     case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
+    session_recordings: Array.isArray(r.session_recordings) ? r.session_recordings : [],
   })) as CSTicket[];
 
-/**
- * Fetches CS tickets. Scope is enforced server-side:
- * - "all": every row the caller is allowed to see (RLS).
- * - "mine": only tickets whose team_leader matches the signed-in user,
- *   filtered by the SQL function `get_my_team_cs_tickets`. No name
- *   matching is done in the browser.
- */
 export function useCSTickets(scope: CSTicketScope = "all") {
   const [tickets, setTickets] = useState<CSTicket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +58,9 @@ export function useCSTickets(scope: CSTicketScope = "all") {
     setLoading(true);
     if (scope === "mine") {
       const { data, error } = await supabase.rpc("get_my_team_cs_tickets");
+      setTickets(!error && data ? normalize(data as any[]) : []);
+    } else if (scope === "assigned_to_me") {
+      const { data, error } = await supabase.rpc("get_my_assigned_cs_tickets");
       setTickets(!error && data ? normalize(data as any[]) : []);
     } else {
       const { data, error } = await supabase
