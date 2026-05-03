@@ -20,8 +20,10 @@ import {
   BarChart3,
   Target,
   Star,
+  Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementsSection } from "@/components/announcements/AnnouncementsSection";
 import { ProductUpdatesSection } from "@/components/feature-plans/ProductUpdatesSection";
 
@@ -103,6 +105,13 @@ const allCards: DashboardCard[] = [
     icon: <FileText className="w-8 h-8" />,
     href: "/reports",
     roles: ["admin", "team_leader", "mentor", "community_moderator"],
+  },
+  {
+    title: "CS Ticket Evaluations",
+    description: "Review and evaluate CS tickets assigned to you",
+    icon: <Activity className="w-8 h-8" />,
+    href: "/performance",
+    roles: ["mentor", "community_moderator"],
   },
   {
     title: "Tracking Numbers",
@@ -191,23 +200,8 @@ const Home = () => {
     : new Date().toLocaleString();
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Logo variant="blue" className="h-10" />
-              <div className="h-6 w-px bg-border" />
-              <span className="font-semibold text-foreground">Dashboard</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </nav>
+    <AppLayout title="Dashboard">
+      <div className="bg-gradient-hero min-h-full">
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Card */}
@@ -292,7 +286,8 @@ const Home = () => {
           })}
         </div>
       </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
