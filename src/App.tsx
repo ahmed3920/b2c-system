@@ -35,6 +35,9 @@ import FeatureControlAdmin from "./pages/FeatureControlAdmin";
 import Attendance from "./pages/Attendance";
 import FeatureDocumentation from "./pages/FeatureDocumentation";
 import VisionBoardPage from "./pages/VisionBoard";
+import SessionIncidents from "./pages/SessionIncidents";
+import SessionIncidentSettings from "./pages/SessionIncidentSettings";
+import IncidentSubmit from "./pages/IncidentSubmit";
 
 import NotFound from "./pages/NotFound";
 
@@ -81,6 +84,9 @@ const App = () => (
           <Route path="/admin/feature-control" element={<FeatureControlAdmin />} />
           <Route path="/admin/feature-documentation" element={<FeatureDocumentation />} />
           <Route path="/admin/vision-board" element={<VisionBoardPage />} />
+          <Route path="/session-incidents" element={<SessionIncidents />} />
+          <Route path="/admin/session-incident-settings" element={<SessionIncidentSettings />} />
+          <Route path="/incident-submit" element={<IncidentSubmit />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

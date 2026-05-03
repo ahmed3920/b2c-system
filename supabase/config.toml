@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-action-plan-email]
 verify_jwt = false
+
+[functions.submit-session-incident]
+verify_jwt = false
