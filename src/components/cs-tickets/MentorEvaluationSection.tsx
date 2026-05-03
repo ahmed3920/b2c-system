@@ -323,6 +323,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           <Button
             type="button"
             variant="secondary"
+            disabled={uploading}
             onClick={() => {
               const url = window.prompt("Paste a link (https://...)");
               if (url) handleAddLink(url);
@@ -331,6 +332,20 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
             <Link2 className="mr-2 h-4 w-4" /> Add Link
           </Button>
         </div>
+
+        {uploadProgress && (
+          <div className="space-y-1 rounded-md border bg-muted/40 p-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="truncate font-medium">
+                Uploading {uploadProgress.current + (uploadProgress.current < uploadProgress.total ? 1 : 0)}/{uploadProgress.total}: {uploadProgress.name}
+              </span>
+              <span className="text-muted-foreground">
+                {Math.round((uploadProgress.current / uploadProgress.total) * 100)}%
+              </span>
+            </div>
+            <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Session Recordings & Attachments</Label>
