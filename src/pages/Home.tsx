@@ -200,23 +200,8 @@ const Home = () => {
     : new Date().toLocaleString();
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation */}
-      <nav className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Logo variant="blue" className="h-10" />
-              <div className="h-6 w-px bg-border" />
-              <span className="font-semibold text-foreground">Dashboard</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </nav>
+    <AppLayout title="Dashboard">
+      <div className="bg-gradient-hero min-h-full">
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Card */}
