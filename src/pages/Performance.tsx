@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
+import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const sections = [
   { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
@@ -12,6 +14,19 @@ const sections = [
 ];
 
 export default function Performance() {
+  const { isMentor, isAdmin, isTeamLeader } = useUserRole();
+  const mentorOnly = isMentor && !isAdmin && !isTeamLeader;
+
+  if (mentorOnly) {
+    return (
+      <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
+        <div className="p-6 max-w-[1600px] mx-auto">
+          <AssignedCSEvaluations />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Performance" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-[1600px] mx-auto">

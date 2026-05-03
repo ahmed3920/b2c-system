@@ -29,6 +29,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import type { CSTicket } from "./useCSTickets";
 import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
 import { logCSTicketChanges } from "./logCSTicketChanges";
+import { MentorEvaluationSection } from "./MentorEvaluationSection";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 
 interface Props {
   ticket: CSTicket | null;
@@ -38,8 +40,10 @@ interface Props {
 }
 
 export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: Props) {
-  const { isAdmin, isSuperTeamLeader } = useUserRole();
+  const { isAdmin, isSuperTeamLeader, isTeamLeader, isMentor } = useUserRole();
   const canManage = isAdmin || isSuperTeamLeader;
+  const canValidate = isAdmin || isSuperTeamLeader || isTeamLeader;
+  const isAssignedMentorOnly = !canValidate && isMentor;
   const { byType } = useCSTicketCategories();
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
@@ -256,6 +260,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                   value={ticket.edu_category || (ticket.case_types.includes("Edu") ? ticket.category : null)}
                 />
                 <Field label="Team Leader" value={ticket.team_leader} />
+                <Field label="Tutor's Mentor" value={getMentorForTutor(ticket.tutor_external_id)} />
                 <Field label="Student ID" value={ticket.student_id} />
                 <Field label="Session Num or Date" value={ticket.session_num_or_date} />
                 <Field
@@ -270,6 +275,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               </div>
               <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
 
+              {canValidate && (
               <div className="space-y-3 border-t pt-4">
                 <h3 className="text-sm font-semibold">Validation & Follow-up</h3>
                 <div className="space-y-2">
@@ -297,6 +303,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                   />
                 </div>
               </div>
+              )}
+
+              <MentorEvaluationSection ticket={ticket} onChanged={() => onUpdated?.()} />
             </div>
           ) : (
             <div className="space-y-6 py-2">
@@ -451,9 +460,11 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                 <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
                   Close
                 </Button>
-                <Button onClick={handleSaveValidation} disabled={saving}>
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
+                {canValidate && (
+                  <Button onClick={handleSaveValidation} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                )}
               </>
             )}
           </DialogFooter>

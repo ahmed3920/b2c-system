@@ -362,6 +362,8 @@ export type Database = {
       }
       cs_tickets: {
         Row: {
+          assigned_mentor_id: string | null
+          assigned_mentor_name: string | null
           case_details: string | null
           case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
           case_types: Database["public"]["Enums"]["cs_ticket_case_type"][]
@@ -371,8 +373,13 @@ export type Database = {
           cs_category: string | null
           edu_category: string | null
           id: string
+          mentor_assigned_at: string | null
+          mentor_assigned_by: string | null
+          mentor_evaluation_notes: string | null
+          mentor_recommendation: string | null
           need_response_deadline: string | null
           session_num_or_date: string | null
+          session_recordings: Json
           status: Database["public"]["Enums"]["cs_ticket_status"]
           student_id: string | null
           team_leader: string
@@ -384,6 +391,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_mentor_id?: string | null
+          assigned_mentor_name?: string | null
           case_details?: string | null
           case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
           case_types?: Database["public"]["Enums"]["cs_ticket_case_type"][]
@@ -393,8 +402,13 @@ export type Database = {
           cs_category?: string | null
           edu_category?: string | null
           id?: string
+          mentor_assigned_at?: string | null
+          mentor_assigned_by?: string | null
+          mentor_evaluation_notes?: string | null
+          mentor_recommendation?: string | null
           need_response_deadline?: string | null
           session_num_or_date?: string | null
+          session_recordings?: Json
           status?: Database["public"]["Enums"]["cs_ticket_status"]
           student_id?: string | null
           team_leader: string
@@ -406,6 +420,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_mentor_id?: string | null
+          assigned_mentor_name?: string | null
           case_details?: string | null
           case_type?: Database["public"]["Enums"]["cs_ticket_case_type"]
           case_types?: Database["public"]["Enums"]["cs_ticket_case_type"][]
@@ -415,8 +431,13 @@ export type Database = {
           cs_category?: string | null
           edu_category?: string | null
           id?: string
+          mentor_assigned_at?: string | null
+          mentor_assigned_by?: string | null
+          mentor_evaluation_notes?: string | null
+          mentor_recommendation?: string | null
           need_response_deadline?: string | null
           session_num_or_date?: string | null
+          session_recordings?: Json
           status?: Database["public"]["Enums"]["cs_ticket_status"]
           student_id?: string | null
           team_leader?: string
@@ -2017,9 +2038,11 @@ export type Database = {
         Returns: string[]
       }
       get_current_user_mentor_name: { Args: never; Returns: string }
-      get_my_team_cs_tickets: {
+      get_my_assigned_cs_tickets: {
         Args: never
         Returns: {
+          assigned_mentor_id: string | null
+          assigned_mentor_name: string | null
           case_details: string | null
           case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
           case_types: Database["public"]["Enums"]["cs_ticket_case_type"][]
@@ -2029,8 +2052,51 @@ export type Database = {
           cs_category: string | null
           edu_category: string | null
           id: string
+          mentor_assigned_at: string | null
+          mentor_assigned_by: string | null
+          mentor_evaluation_notes: string | null
+          mentor_recommendation: string | null
           need_response_deadline: string | null
           session_num_or_date: string | null
+          session_recordings: Json
+          status: Database["public"]["Enums"]["cs_ticket_status"]
+          student_id: string | null
+          team_leader: string
+          team_leader_response: string | null
+          ticket_date: string
+          ticket_number: string
+          tutor_external_id: string
+          tutor_name: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "cs_tickets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_my_team_cs_tickets: {
+        Args: never
+        Returns: {
+          assigned_mentor_id: string | null
+          assigned_mentor_name: string | null
+          case_details: string | null
+          case_type: Database["public"]["Enums"]["cs_ticket_case_type"]
+          case_types: Database["public"]["Enums"]["cs_ticket_case_type"][]
+          category: string
+          created_at: string
+          created_by: string | null
+          cs_category: string | null
+          edu_category: string | null
+          id: string
+          mentor_assigned_at: string | null
+          mentor_assigned_by: string | null
+          mentor_evaluation_notes: string | null
+          mentor_recommendation: string | null
+          need_response_deadline: string | null
+          session_num_or_date: string | null
+          session_recordings: Json
           status: Database["public"]["Enums"]["cs_ticket_status"]
           student_id: string | null
           team_leader: string
@@ -2070,6 +2136,15 @@ export type Database = {
         Returns: boolean
       }
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
+      list_available_mentors: {
+        Args: never
+        Returns: {
+          full_name: string
+          mentor_name: string
+          team_leader: string
+          user_id: string
+        }[]
+      }
       mark_absent_team_leaders: {
         Args: { _target_date?: string }
         Returns: number
