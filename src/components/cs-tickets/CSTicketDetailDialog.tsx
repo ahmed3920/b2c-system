@@ -303,6 +303,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                   />
                 </div>
               </div>
+              )}
 
               <MentorEvaluationSection ticket={ticket} onChanged={() => onUpdated?.()} />
             </div>
