@@ -54,9 +54,19 @@ export default function SessionIncidents() {
           <TabsList>
             <TabsTrigger value="all">All ({items.length})</TabsTrigger>
             <TabsTrigger value="pending">Pending Validation ({myPending.length})</TabsTrigger>
+            {canSeeCsTab && <TabsTrigger value="cs">CS Tickets ({csCount})</TabsTrigger>}
           </TabsList>
           <TabsContent value="all" className="mt-4">
             <IncidentsTable items={items} loading={loading} onChanged={refresh} canValidate={canValidate} />
+          </TabsContent>
+          <TabsContent value="pending" className="mt-4">
+            <IncidentsTable items={items} loading={loading} onChanged={refresh} canValidate={canValidate} pendingOnly title="Pending Validation" />
+          </TabsContent>
+          {canSeeCsTab && (
+            <TabsContent value="cs" className="mt-4">
+              <CsTicketsView items={items} loading={loading} onChanged={refresh} />
+            </TabsContent>
+          )}
           </TabsContent>
           <TabsContent value="pending" className="mt-4">
             <IncidentsTable items={items} loading={loading} onChanged={refresh} canValidate={canValidate} pendingOnly title="Pending Validation" />
