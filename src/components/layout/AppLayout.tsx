@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearStaleAuth } from "@/integrations/supabase/authRecovery";
 import { useUserRole } from "@/hooks/useUserRole";
 import { RoleBadge } from "@/components/RoleBadge";
 import { useToast } from "@/hooks/use-toast";
