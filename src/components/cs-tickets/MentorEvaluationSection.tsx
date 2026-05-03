@@ -39,8 +39,13 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const [evalNotes, setEvalNotes] = useState(ticket.mentor_evaluation_notes ?? "");
   const [recommendation, setRecommendation] = useState(ticket.mentor_recommendation ?? "");
   const [validation, setValidation] = useState<string>(ticket.mentor_validation ?? "");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mentorFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
+  }, []);
 
   // Suggested mentor = the tutor's assigned mentor in roster
   const suggestedMentorName = useMemo(
@@ -92,7 +97,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
       toast({ title: "Invalid link", description: "Must start with http(s)://", variant: "destructive" });
       return;
     }
-    setRecordings((r) => [...r, { kind: "link", url, added_at: new Date().toISOString() }]);
+    setRecordings((r) => [...r, { kind: "link", url, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined }]);
     setLinkInput("");
   };
 
@@ -109,7 +114,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           contentType: file.type || undefined,
         });
         if (error) throw error;
-        newRecs.push({ kind: "file", url: path, path, label: file.name, added_at: new Date().toISOString() });
+        newRecs.push({ kind: "file", url: path, path, label: file.name, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined });
       }
       setRecordings((r) => [...r, ...newRecs]);
       toast({ title: `Uploaded ${newRecs.length} file(s)` });
@@ -124,6 +129,15 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
 
   const handleRemoveRecording = async (idx: number) => {
     const rec = recordings[idx];
+    // Mentors can only remove their own attachments
+    if (isAssignedMentor && rec.added_by && rec.added_by !== currentUserId) {
+      toast({ title: "Not allowed", description: "You can only remove attachments you added.", variant: "destructive" });
+      return;
+    }
+    if (isAssignedMentor && !rec.added_by) {
+      toast({ title: "Not allowed", description: "Only the team leader can remove this attachment.", variant: "destructive" });
+      return;
+    }
     if (rec.kind === "file" && rec.path) {
       await supabase.storage.from("cs-recordings").remove([rec.path]);
     }
@@ -252,14 +266,16 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               <Button size="icon" variant="ghost" onClick={() => openRecording(rec)} title="Open">
                 {rec.kind === "link" ? <ExternalLink className="h-4 w-4" /> : <Download className="h-4 w-4" />}
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleRemoveRecording(idx)}
-                title="Remove"
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              {(!isAssignedMentor || (rec.added_by && rec.added_by === currentUserId)) && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleRemoveRecording(idx)}
+                  title="Remove"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
             </div>
           </div>
         ))
@@ -280,6 +296,9 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
 
         <div className="space-y-2">
           <Label>Session Recordings & Attachments</Label>
+          <p className="text-xs text-muted-foreground">
+            Recordings/attachments added by the team leader are read-only. You can optionally add your own screenshots, files, or links to support your evaluation.
+          </p>
           {RecordingsList}
           <div className="flex flex-wrap gap-2 pt-2">
             <Input
