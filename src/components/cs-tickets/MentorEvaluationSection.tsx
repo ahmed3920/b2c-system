@@ -90,15 +90,15 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     return m;
   }, [teamMentors]);
 
-  const handleAddLink = () => {
-    const url = linkInput.trim();
+  const handleAddLink = (override?: string) => {
+    const url = (override ?? linkInput).trim();
     if (!url) return;
     if (!/^https?:\/\//i.test(url)) {
       toast({ title: "Invalid link", description: "Must start with http(s)://", variant: "destructive" });
       return;
     }
     setRecordings((r) => [...r, { kind: "link", url, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined }]);
-    setLinkInput("");
+    if (!override) setLinkInput("");
   };
 
   const handleUploadFiles = async (files: FileList | null) => {
