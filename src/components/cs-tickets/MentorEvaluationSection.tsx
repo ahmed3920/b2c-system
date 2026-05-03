@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -101,12 +102,18 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     if (!override) setLinkInput("");
   };
 
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
+
   const handleUploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    const arr = Array.from(files);
+    setUploadProgress({ current: 0, total: arr.length, name: arr[0]?.name ?? "" });
     try {
       const newRecs: SessionRecording[] = [];
-      for (const file of Array.from(files)) {
+      for (let i = 0; i < arr.length; i++) {
+        const file = arr[i];
+        setUploadProgress({ current: i, total: arr.length, name: file.name });
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const path = `${ticket.id}/${Date.now()}_${safe}`;
         const { error } = await supabase.storage.from("cs-recordings").upload(path, file, {
@@ -115,6 +122,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
         });
         if (error) throw error;
         newRecs.push({ kind: "file", url: path, path, label: file.name, added_at: new Date().toISOString(), added_by: currentUserId ?? undefined });
+        setUploadProgress({ current: i + 1, total: arr.length, name: file.name });
       }
       setRecordings((r) => [...r, ...newRecs]);
       toast({ title: `Uploaded ${newRecs.length} file(s)` });
@@ -122,6 +130,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
       toast({ title: "Upload failed", description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
+      setUploadProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (mentorFileInputRef.current) mentorFileInputRef.current.value = "";
     }
@@ -314,6 +323,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           <Button
             type="button"
             variant="secondary"
+            disabled={uploading}
             onClick={() => {
               const url = window.prompt("Paste a link (https://...)");
               if (url) handleAddLink(url);
@@ -322,6 +332,20 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
             <Link2 className="mr-2 h-4 w-4" /> Add Link
           </Button>
         </div>
+
+        {uploadProgress && (
+          <div className="space-y-1 rounded-md border bg-muted/40 p-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="truncate font-medium">
+                Uploading {uploadProgress.current + (uploadProgress.current < uploadProgress.total ? 1 : 0)}/{uploadProgress.total}: {uploadProgress.name}
+              </span>
+              <span className="text-muted-foreground">
+                {Math.round((uploadProgress.current / uploadProgress.total) * 100)}%
+              </span>
+            </div>
+            <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Session Recordings & Attachments</Label>
@@ -336,7 +360,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               onChange={(e) => setLinkInput(e.target.value)}
               className="flex-1 min-w-[200px]"
             />
-            <Button type="button" variant="outline" onClick={() => handleAddLink()}>
+            <Button type="button" variant="outline" disabled={uploading} onClick={() => handleAddLink()}>
               <Plus className="mr-2 h-4 w-4" /> Add Link
             </Button>
             <input
@@ -472,7 +496,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
             onChange={(e) => setLinkInput(e.target.value)}
             className="flex-1 min-w-[200px]"
           />
-          <Button type="button" variant="outline" onClick={() => handleAddLink()}>
+          <Button type="button" variant="outline" disabled={uploading} onClick={() => handleAddLink()}>
             <Plus className="mr-2 h-4 w-4" /> Add Link
           </Button>
           <input
