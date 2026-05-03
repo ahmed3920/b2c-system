@@ -316,9 +316,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
             variant="secondary"
             onClick={() => {
               const url = window.prompt("Paste a link (https://...)");
-              if (!url) return;
-              setLinkInput(url);
-              setTimeout(() => handleAddLink(), 0);
+              if (url) handleAddLink(url);
             }}
           >
             <Link2 className="mr-2 h-4 w-4" /> Add Link
