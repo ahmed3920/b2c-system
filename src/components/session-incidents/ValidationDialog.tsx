@@ -31,9 +31,28 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
   const [ticketNumber, setTicketNumber] = useState(incident.cs_ticket_number ?? "");
   const [csResponse, setCsResponse] = useState(incident.cs_response ?? "");
   const [busy, setBusy] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { role } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const canManageCs = role === "admin" || csFullAccess;
+  const isAdmin = role === "admin";
+
+  const handleDelete = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("session_incidents").delete().eq("id", incident.id);
+      if (error) throw error;
+      toast({ title: "Incident deleted" });
+      setConfirmDelete(false);
+      onOpenChange(false);
+      onChanged();
+    } catch (e: any) {
+      toast({ title: "Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const updateStatus = async (status: "approved" | "rejected") => {
     setBusy(true);
