@@ -30,8 +30,9 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
 
   useEffect(() => {
     const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        if (error) clearStaleAuth();
         navigate("/auth");
         return;
       }
