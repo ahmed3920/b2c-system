@@ -38,6 +38,7 @@ export interface CSTicket {
   mentor_assigned_at: string | null;
   mentor_evaluation_notes: string | null;
   mentor_recommendation: string | null;
+  mentor_validation: string | null;
   session_recordings: SessionRecording[];
 }
 

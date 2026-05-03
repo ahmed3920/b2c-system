@@ -61,6 +61,7 @@ const operations: NavItem[] = [
   { title: "Tutors", url: "/tutors", icon: Users, featureKey: "tutors" },
   { title: "Teams", url: "/teams", icon: UsersRound, featureKey: "teams" },
   { title: "Performance", url: "/performance", icon: Activity, featureKey: "performance" },
+  { title: "CS Evaluations", url: "/performance", icon: Activity, roles: ["mentor", "community_moderator"] },
 ];
 
 const tracking: NavItem[] = [
