@@ -13,6 +13,8 @@ import { CSTicketDetailDialog } from "./CSTicketDetailDialog";
 import { useCSTickets, type CSTicket, type CSTicketScope } from "./useCSTickets";
 import type { CSTicketStatus } from "./csTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { UserCheck } from "lucide-react";
 
 const statusVariant: Record<CSTicketStatus, "default" | "secondary" | "destructive" | "outline"> = {
   Pending: "secondary",
@@ -149,15 +151,16 @@ export function CSTicketsTable() {
               <TableHead>Edu Category</TableHead>
               <TableHead>Tutor</TableHead>
               <TableHead>Team Leader</TableHead>
+              <TableHead>Mentor</TableHead>
               <TableHead>Deadline</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No tickets found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No tickets found</TableCell></TableRow>
             ) : (
               filtered.map((t) => (
                 <TableRow key={t.id} onClick={() => setSelected(t)} className="cursor-pointer">
@@ -176,6 +179,16 @@ export function CSTicketsTable() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{t.team_leader}</TableCell>
+                  <TableCell className="text-sm">
+                    <div className="flex flex-col">
+                      <span>{getMentorForTutor(t.tutor_external_id)}</span>
+                      {t.assigned_mentor_id && (
+                        <span className="text-xs text-primary inline-flex items-center gap-1">
+                          <UserCheck className="h-3 w-3" /> Eval: {t.assigned_mentor_name}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-sm">
                     {t.need_response_deadline ? format(new Date(t.need_response_deadline), "PP p") : "—"}
                   </TableCell>
