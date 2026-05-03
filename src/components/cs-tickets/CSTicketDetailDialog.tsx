@@ -29,6 +29,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import type { CSTicket } from "./useCSTickets";
 import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
 import { logCSTicketChanges } from "./logCSTicketChanges";
+import { MentorEvaluationSection } from "./MentorEvaluationSection";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 
 interface Props {
   ticket: CSTicket | null;
@@ -256,6 +258,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                   value={ticket.edu_category || (ticket.case_types.includes("Edu") ? ticket.category : null)}
                 />
                 <Field label="Team Leader" value={ticket.team_leader} />
+                <Field label="Tutor's Mentor" value={getMentorForTutor(ticket.tutor_external_id)} />
                 <Field label="Student ID" value={ticket.student_id} />
                 <Field label="Session Num or Date" value={ticket.session_num_or_date} />
                 <Field
@@ -297,6 +300,8 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                   />
                 </div>
               </div>
+
+              <MentorEvaluationSection ticket={ticket} onChanged={() => onUpdated?.()} />
             </div>
           ) : (
             <div className="space-y-6 py-2">
