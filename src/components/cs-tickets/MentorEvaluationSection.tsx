@@ -296,6 +296,9 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
 
         <div className="space-y-2">
           <Label>Session Recordings & Attachments</Label>
+          <p className="text-xs text-muted-foreground">
+            Recordings/attachments added by the team leader are read-only. You can optionally add your own screenshots, files, or links to support your evaluation.
+          </p>
           {RecordingsList}
           <div className="flex flex-wrap gap-2 pt-2">
             <Input
