@@ -5,6 +5,7 @@ import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 
 const sections = [
   { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
@@ -15,7 +16,8 @@ const sections = [
 
 export default function Performance() {
   const { isMentor, isAdmin, isTeamLeader } = useUserRole();
-  const mentorOnly = isMentor && !isAdmin && !isTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const mentorOnly = isMentor && !isAdmin && !isTeamLeader && !csFullAccess;
 
   if (mentorOnly) {
     return (
