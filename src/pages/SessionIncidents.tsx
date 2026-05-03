@@ -8,6 +8,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { IncidentFormDialog } from "@/components/session-incidents/IncidentFormDialog";
 import { GenerateTutorLinkDialog } from "@/components/session-incidents/GenerateTutorLinkDialog";
 import { IncidentsTable } from "@/components/session-incidents/IncidentsTable";
+import { CsTicketsView } from "@/components/session-incidents/CsTicketsView";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 
 export default function SessionIncidents() {
   const { role } = useUserRole();
