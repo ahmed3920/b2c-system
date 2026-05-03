@@ -266,14 +266,16 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               <Button size="icon" variant="ghost" onClick={() => openRecording(rec)} title="Open">
                 {rec.kind === "link" ? <ExternalLink className="h-4 w-4" /> : <Download className="h-4 w-4" />}
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleRemoveRecording(idx)}
-                title="Remove"
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              {(!isAssignedMentor || (rec.added_by && rec.added_by === currentUserId)) && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleRemoveRecording(idx)}
+                  title="Remove"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
             </div>
           </div>
         ))
