@@ -229,6 +229,16 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
         )}
 
         <DialogFooter className="gap-2 flex-wrap">
+          {isAdmin && (
+            <>
+              <Button variant="outline" onClick={() => setEditOpen(true)} disabled={busy}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+              <Button variant="destructive" onClick={() => setConfirmDelete(true)} disabled={busy}>
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
+              </Button>
+            </>
+          )}
           {canValidate && incident.validation_status === "pending" && (
             <>
               <Button variant="destructive" onClick={() => updateStatus("rejected")} disabled={busy}>Reject</Button>
@@ -238,6 +248,32 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      {isAdmin && editOpen && (
+        <IncidentFormDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          incident={incident}
+          onCreated={() => { onChanged(); onOpenChange(false); }}
+        />
+      )}
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this incident?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the session incident. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
