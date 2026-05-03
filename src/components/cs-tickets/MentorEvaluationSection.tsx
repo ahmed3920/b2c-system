@@ -124,7 +124,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
         assigned_mentor_name: m?.full_name || m?.mentor_name || null,
         mentor_assigned_at: new Date().toISOString(),
         mentor_assigned_by: sess.session?.user.id ?? null,
-        session_recordings: recordings,
+        session_recordings: recordings as any,
       };
       const { error } = await supabase.from("cs_tickets").update(payload).eq("id", ticket.id);
       if (error) throw error;
@@ -142,7 +142,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     try {
       const { error } = await supabase
         .from("cs_tickets")
-        .update({ session_recordings: recordings })
+        .update({ session_recordings: recordings as any })
         .eq("id", ticket.id);
       if (error) throw error;
       toast({ title: "Recordings saved" });
