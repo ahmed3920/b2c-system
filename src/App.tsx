@@ -84,6 +84,9 @@ const App = () => (
           <Route path="/admin/feature-control" element={<FeatureControlAdmin />} />
           <Route path="/admin/feature-documentation" element={<FeatureDocumentation />} />
           <Route path="/admin/vision-board" element={<VisionBoardPage />} />
+          <Route path="/session-incidents" element={<SessionIncidents />} />
+          <Route path="/admin/session-incident-settings" element={<SessionIncidentSettings />} />
+          <Route path="/incident-submit" element={<IncidentSubmit />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
