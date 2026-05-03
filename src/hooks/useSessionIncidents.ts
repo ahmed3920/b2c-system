@@ -24,6 +24,9 @@ export interface SessionIncident {
   validated_at: string | null;
   rejection_reason: string | null;
   sent_to_cs: boolean;
+  cs_ticket_number: string | null;
+  cs_response: string | null;
+  cs_status: "open" | "closed" | null;
   token_id: string | null;
   created_at: string;
   updated_at: string;

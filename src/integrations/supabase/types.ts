@@ -1338,6 +1338,9 @@ export type Database = {
           case_category: string
           case_description: string | null
           created_at: string
+          cs_response: string | null
+          cs_status: string | null
+          cs_ticket_number: string | null
           id: string
           rejection_reason: string | null
           sent_to_cs: boolean
@@ -1365,6 +1368,9 @@ export type Database = {
           case_category: string
           case_description?: string | null
           created_at?: string
+          cs_response?: string | null
+          cs_status?: string | null
+          cs_ticket_number?: string | null
           id?: string
           rejection_reason?: string | null
           sent_to_cs?: boolean
@@ -1392,6 +1398,9 @@ export type Database = {
           case_category?: string
           case_description?: string | null
           created_at?: string
+          cs_response?: string | null
+          cs_status?: string | null
+          cs_ticket_number?: string | null
           id?: string
           rejection_reason?: string | null
           sent_to_cs?: boolean
