@@ -8,10 +8,13 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { IncidentFormDialog } from "@/components/session-incidents/IncidentFormDialog";
 import { GenerateTutorLinkDialog } from "@/components/session-incidents/GenerateTutorLinkDialog";
 import { IncidentsTable } from "@/components/session-incidents/IncidentsTable";
+import { CsTicketsView } from "@/components/session-incidents/CsTicketsView";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 
 export default function SessionIncidents() {
   const { role } = useUserRole();
   const { items, loading, refresh } = useSessionIncidents();
+  const { hasAccess: csFullAccess } = useCsFullAccess();
   const [createOpen, setCreateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
 
@@ -20,8 +23,10 @@ export default function SessionIncidents() {
   const isMentor = role === "mentor" || role === "community_moderator";
   const canCreate = isAdmin || isTL || isMentor;
   const canValidate = isAdmin || isTL || isMentor;
+  const canSeeCsTab = isAdmin || csFullAccess;
 
   const myPending = useMemo(() => items.filter((i) => i.validation_status === "pending"), [items]);
+  const csCount = useMemo(() => items.filter((i) => i.sent_to_cs).length, [items]);
 
   return (
     <AppLayout title="Session Incidents" allowedRoles={["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"]}>
@@ -49,6 +54,7 @@ export default function SessionIncidents() {
           <TabsList>
             <TabsTrigger value="all">All ({items.length})</TabsTrigger>
             <TabsTrigger value="pending">Pending Validation ({myPending.length})</TabsTrigger>
+            {canSeeCsTab && <TabsTrigger value="cs">CS Tickets ({csCount})</TabsTrigger>}
           </TabsList>
           <TabsContent value="all" className="mt-4">
             <IncidentsTable items={items} loading={loading} onChanged={refresh} canValidate={canValidate} />
@@ -56,6 +62,11 @@ export default function SessionIncidents() {
           <TabsContent value="pending" className="mt-4">
             <IncidentsTable items={items} loading={loading} onChanged={refresh} canValidate={canValidate} pendingOnly title="Pending Validation" />
           </TabsContent>
+          {canSeeCsTab && (
+            <TabsContent value="cs" className="mt-4">
+              <CsTicketsView items={items} loading={loading} onChanged={refresh} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
