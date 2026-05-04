@@ -1700,6 +1700,63 @@ export type Database = {
         }
         Relationships: []
       }
+      trainings: {
+        Row: {
+          conducted_by: Json
+          created_at: string
+          created_by: string
+          creator_external_id: string | null
+          creator_name: string
+          creator_type: Database["public"]["Enums"]["training_creator_type"]
+          id: string
+          material_urls: Json
+          notes: string | null
+          record_urls: Json
+          sub_teams: string[]
+          team_leader: string
+          title: string
+          training_date: string
+          training_time: string
+          updated_at: string
+        }
+        Insert: {
+          conducted_by?: Json
+          created_at?: string
+          created_by: string
+          creator_external_id?: string | null
+          creator_name: string
+          creator_type: Database["public"]["Enums"]["training_creator_type"]
+          id?: string
+          material_urls?: Json
+          notes?: string | null
+          record_urls?: Json
+          sub_teams?: string[]
+          team_leader: string
+          title: string
+          training_date: string
+          training_time: string
+          updated_at?: string
+        }
+        Update: {
+          conducted_by?: Json
+          created_at?: string
+          created_by?: string
+          creator_external_id?: string | null
+          creator_name?: string
+          creator_type?: Database["public"]["Enums"]["training_creator_type"]
+          id?: string
+          material_urls?: Json
+          notes?: string | null
+          record_urls?: Json
+          sub_teams?: string[]
+          team_leader?: string
+          title?: string
+          training_date?: string
+          training_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_blocked_modules: {
         Row: {
           blocked_by: string | null
@@ -2430,6 +2487,7 @@ export type Database = {
       feature_plan_status: "planned" | "in_progress" | "completed" | "blocked"
       feature_plan_visibility: "team_leaders" | "mentors" | "both" | "hidden"
       task_status: "todo" | "in_progress" | "done" | "archived"
+      training_creator_type: "team_leader" | "mentor" | "tutor"
       tutor_status_value: "active" | "resigned" | "terminated"
       vision_plan_status: "not_started" | "in_progress" | "completed"
       vision_plan_urgency: "critical" | "high" | "medium" | "low"
@@ -2611,6 +2669,7 @@ export const Constants = {
       feature_plan_status: ["planned", "in_progress", "completed", "blocked"],
       feature_plan_visibility: ["team_leaders", "mentors", "both", "hidden"],
       task_status: ["todo", "in_progress", "done", "archived"],
+      training_creator_type: ["team_leader", "mentor", "tutor"],
       tutor_status_value: ["active", "resigned", "terminated"],
       vision_plan_status: ["not_started", "in_progress", "completed"],
       vision_plan_urgency: ["critical", "high", "medium", "low"],

@@ -1,70 +1,118 @@
-## Session Incident Tickets (Edu → CS)
+# Trainings Management Tab
 
-A new feature so Team Leaders and Mentors can log a "Session Incident Ticket" that captures session-level issues (separate from CS Tickets). Admin controls field requirements and case categories. Tutors can self-submit via a public link; submissions need TL/Mentor validation before being marked sendable to CS.
+Add a fully functional **Trainings** sub-tab inside `/tracking` for **Admins** and **Team Leaders** (and Super Team Leaders). It replaces the current placeholder.
 
-### Form fields
-1. Student ID
-2. Student Name
-3. Student Grade (e.g. Grade 5, M2)
-4. Tutor ID — auto-fills tutor name + team leader from roster
-5. Session Date
-6. Session Number (e.g. "Session 11" or "General")
-7. Case Category (admin-managed dropdown, seeded with the 10 from the screenshot + Other)
-8. Case Description
-9. Supporting Document Link (Drive URL, optional)
+## Scope
 
-### Admin controls
-- New admin page: **Session Incident Settings** (`/admin/incident-settings`)
-  - Tab 1: **Field Requirements** — toggle each field as required/optional/hidden (except Tutor ID + Case Category which stay required)
-  - Tab 2: **Case Categories** — add/edit/reorder/disable categories (mirrors `cs_ticket_categories` admin UI)
+1. **Backend (database + storage)**
+2. **"Add Training" form dialog**
+3. **Trainings list view (cards/table)**
+4. **Insights panel with charts + global filters**
 
-### Tutor self-submission
-- **Generic public link**: `/incident-submit` — anyone (incl. tutors) can fill the form. Tutor ID lookup auto-fills name/TL.
-- **Per-tutor pre-filled link**: TLs/Mentors generate `/incident-submit?token=...` which pre-fills tutor info and locks tutor identity. Token table tracks who generated it.
-- All public submissions land with `source = 'tutor_self'` and `validation_status = 'pending'`.
+---
 
-### Validation flow
-- TL of the tutor's team **and** the assigned mentor see pending submissions in a "Pending Validation" tab.
-- Validators can: **Approve** (mark valid → ready to forward to CS), **Reject** (with reason), or **Edit & Approve**.
-- Approved/rejected stays in the incident table (no auto-conversion to `cs_tickets`).
+## 1. Backend
 
-### Where it lives in the UI
-- New page **Session Incidents** (`/session-incidents`), accessible to TLs, Mentors, Admins. Tabs:
-  - All Incidents (role-scoped)
-  - My Pending Validation (TL/Mentor)
-  - Generate Tutor Link
-- "New Incident" button opens the form dialog.
+### New table: `trainings`
+- `team_leader` (text) — owning team leader's name
+- `creator_type` (enum: `team_leader` / `mentor` / `tutor`) — who *created* the training entry
+- `creator_name` (text) — display label for creator
+- `conducted_by` (jsonb array of `{ id, name, role }`) — multi-select people who delivered it
+- `training_date` (date), `training_time` (time)
+- `title` (text), `notes` (text, nullable)
+- `sub_teams` (text[]) — optional list of sub-team / mentor names
+- `material_urls` (jsonb array of `{ name, url, type: 'file'|'link' }`)
+- `record_urls` (jsonb array, same shape)
+- `created_by` (uuid), standard timestamps
 
-### Technical details
+### RLS
+- Admins: full access.
+- Team leaders / super team leaders: full access **only when `team_leader` matches their `mentor_name`** (via existing `team_leader_name_matches` helper).
 
-**New tables**
-- `session_incidents` — student_id, student_name, student_grade, tutor_external_id, tutor_name, team_leader, session_date, session_number, case_category, case_description, supporting_link, source ('staff' | 'tutor_self'), submitted_by (uuid, nullable), validation_status ('pending' | 'approved' | 'rejected'), validated_by, validated_at, rejection_reason, sent_to_cs (bool), token_id (nullable).
-- `session_incident_categories` — name, display_order, is_active (admin-managed).
-- `session_incident_field_config` — field_name, is_required, is_visible (admin-managed; seeded with the 9 fields).
-- `session_incident_tokens` — token (random hex), tutor_external_id, tutor_name, team_leader, created_by, created_at, last_used_at.
+### Storage
+- Reuse the existing private bucket pattern. Create a new public bucket `training-materials` for uploaded files (publicly readable links, writes restricted to TL/Admin via policy on `storage.objects`).
 
-**RLS**
-- Admin: full access on all four tables.
-- TL: SELECT/UPDATE incidents where `team_leader_name_matches(team_leader, get_current_user_mentor_name())`.
-- Mentor: SELECT/UPDATE incidents where the tutor's mentor (from `tutor_roster` lookup, mirrored via a helper) is the current user — implemented with an `assigned_mentor_name` column populated on insert from the roster.
-- Public submission via dedicated edge function `submit-session-incident` (uses service role, no RLS issues; validates token if present).
-- Categories + field config: SELECT public (active rows), admin manages.
+---
 
-**Edge function**
-- `submit-session-incident`: validates payload with zod, looks up tutor → name/TL/mentor, inserts row.
+## 2. Add Training Form
 
-**Frontend files**
-- `src/pages/SessionIncidents.tsx` (main page, tabs)
-- `src/pages/IncidentSubmit.tsx` (public submit, no auth required, route added in `App.tsx`)
-- `src/pages/SessionIncidentSettings.tsx` (admin config)
-- `src/components/session-incidents/IncidentFormDialog.tsx`
-- `src/components/session-incidents/IncidentForm.tsx` (shared form for staff + public)
-- `src/components/session-incidents/IncidentValidationDialog.tsx`
-- `src/components/session-incidents/GenerateTutorLinkDialog.tsx`
-- `src/components/session-incidents/IncidentsTable.tsx`
-- `src/hooks/useSessionIncidents.ts`, `useSessionIncidentCategories.ts`, `useSessionIncidentFieldConfig.ts`
-- Sidebar entry in `AppSidebar.tsx`; feature toggle in `feature_controls`.
+Dialog opened from a prominent **"Add Training"** button at the top of the Trainings sub-tab.
 
-### Out of scope
-- Auto-creating a `cs_tickets` row from approved incidents (validation answer was "stays separate"). A "Mark sent to CS" toggle is provided for tracking.
-- Email notifications (can be added later).
+Fields (matching the spec):
+- **Training Creator** (required, single select among `Me` / `Mentor` / `Tutor`, then a follow-up select to pick the actual person from the team roster when not "Me").
+- **Conducted By** (required, **multi-select**) — combobox listing: `Me`, all mentors in the team, all tutors in the team.
+- **Training Date** (required) — shadcn datepicker (`pointer-events-auto`).
+- **Training Time** (required) — `<input type="time">`.
+- **Training Title / Topic** (required) — text input.
+- **Sub-Team** (optional, multi-select) — for TLs we use their mentors list as "sub-teams"; for admins, list of team leaders.
+- **Training Material** (optional) — file upload (multi) + URL input → stored as array.
+- **Training Record (if available)** (optional) — same widget as material.
+- **Notes** (optional) — textarea.
+
+Validation via `zod`. On submit: upload files to storage, then insert row.
+
+Roster source: existing `tutorRoster` filtered by `team_leader` (admins pick a team leader first via dropdown).
+
+---
+
+## 3. List View
+
+Table with columns:
+- Title • Date (+ time) • Conducted By (chips) • Creator (type + name) • Sub-Team • Attachments (paperclip icons for material/record counts) • Actions (view / edit / delete for owner+admin).
+
+Click a row → details dialog showing all fields and clickable attachment links.
+
+---
+
+## 4. Insights Panel
+
+Collapsible panel above the list. Uses **native `recharts`** (per project rule — no `@/components/ui/chart`).
+
+KPI cards:
+- Total trainings
+- Trainings this month
+- Unique trainers
+- % with material / % with record
+
+Charts:
+- **Bar chart**: trainings per month (last 12 months)
+- **Bar chart**: trainings per sub-team
+- **Donut**: breakdown by creator type
+- **Horizontal bar**: top 5 most active trainers
+
+### Global Filters (apply to both list + insights)
+- Month / date range (from–to date pickers)
+- Sub-team (multi)
+- Conducted by (multi, from roster)
+- Creator type (`all` / `team_leader` / `mentor` / `tutor`)
+- Has Material (`all` / `yes` / `no`)
+- Has Record (`all` / `yes` / `no`)
+
+Filter state lives in the Trainings component; both the list and the analytics derive from the same filtered array.
+
+---
+
+## Files
+
+**New**
+- `supabase/migrations/...sql` — table, RLS, storage bucket + policies.
+- `src/hooks/useTrainings.ts` — fetch/create/update/delete + filters.
+- `src/components/tracking/trainings/TrainingsTab.tsx` — main container, filters, list, insights.
+- `src/components/tracking/trainings/AddTrainingDialog.tsx` — the form (also handles edit).
+- `src/components/tracking/trainings/TrainingDetailsDialog.tsx` — read-only details.
+- `src/components/tracking/trainings/TrainingsInsights.tsx` — KPI cards + charts.
+
+**Modified**
+- `src/pages/Tracking.tsx` — wire `<TrainingsTab />` into the `trainings` `TabsContent`.
+
+---
+
+## Technical notes
+
+- Roster: derive mentors/tutors per team via `tutorRoster` + `teamLeaderMatches`, excluding `useInactiveTutorIds`.
+- For admins viewing all teams, add a "Team" filter; the form requires picking a team leader before showing roster.
+- File uploads: max 25 MB each, accepted types `pdf, docx, pptx, png, jpg, jpeg, mp4`. URL inputs validated with `z.string().url()`.
+- All access gated client-side via `useUserRole` (`isAdmin || isTeamLeader`) and server-side via RLS.
+- Charts use `ResponsiveContainer` from `recharts` directly.
+
+After approval I'll create the migration first, then build the UI.
