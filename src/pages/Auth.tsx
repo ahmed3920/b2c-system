@@ -143,8 +143,24 @@ const Auth = () => {
         return;
       }
 
-      // Update last login timestamp
+      // Block CMS users from logging in to the B2C workspace.
       if (data.user) {
+        const { data: sysRow } = await supabase
+          .from("user_systems")
+          .select("system")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        if (sysRow?.system === "cms") {
+          await supabase.auth.signOut();
+          toast({
+            title: "Wrong workspace",
+            description: "This account belongs to the Content Management System. Please use the CMS login.",
+            variant: "destructive",
+          });
+          navigate("/cms/login");
+          return;
+        }
+
         await supabase
           .from("profiles")
           .update({ last_login: new Date().toISOString() })

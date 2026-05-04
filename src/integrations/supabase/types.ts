@@ -294,6 +294,138 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_attendance: {
+        Row: {
+          check_in_time: string | null
+          created_at: string
+          date: string
+          id: string
+          late_reason: string | null
+          minutes_late: number
+          status: Database["public"]["Enums"]["cms_attendance_status"]
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          check_in_time?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          late_reason?: string | null
+          minutes_late?: number
+          status?: Database["public"]["Enums"]["cms_attendance_status"]
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          check_in_time?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          late_reason?: string | null
+          minutes_late?: number
+          status?: Database["public"]["Enums"]["cms_attendance_status"]
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
+      cms_profiles: {
+        Row: {
+          active_status: boolean
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_status?: boolean
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_status?: boolean
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cms_tasks: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          created_by: string
+          date_from: string | null
+          date_to: string | null
+          description: string | null
+          id: string
+          priority: Database["public"]["Enums"]["cms_task_priority"]
+          status: Database["public"]["Enums"]["cms_task_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by: string
+          date_from?: string | null
+          date_to?: string | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["cms_task_priority"]
+          status?: Database["public"]["Enums"]["cms_task_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string
+          date_from?: string | null
+          date_to?: string | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["cms_task_priority"]
+          status?: Database["public"]["Enums"]["cms_task_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cms_user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["cms_app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["cms_app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["cms_app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       cs_ticket_audit: {
         Row: {
           changed_by: string | null
@@ -2085,6 +2217,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_systems: {
+        Row: {
+          created_at: string
+          system: Database["public"]["Enums"]["system_kind"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          system?: Database["public"]["Enums"]["system_kind"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          system?: Database["public"]["Enums"]["system_kind"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vision_board_plans: {
         Row: {
           created_at: string
@@ -2318,6 +2468,10 @@ export type Database = {
         Args: { _team_leader_name: string }
         Returns: string[]
       }
+      get_cms_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["cms_app_role"]
+      }
       get_current_user_mentor_name: { Args: never; Returns: string }
       get_my_assigned_cs_tickets: {
         Args: never
@@ -2411,6 +2565,17 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_system: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["system_kind"]
+      }
+      has_cms_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["cms_app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_cs_full_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -2419,6 +2584,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_cms_user: { Args: { _user_id: string }; Returns: boolean }
       is_user_in_my_team: { Args: { _user_id: string }; Returns: boolean }
       list_available_mentors: {
         Args: never
@@ -2460,6 +2626,10 @@ export type Database = {
         | "community_moderator"
         | "super_team_leader"
       attendance_status: "on_time" | "late" | "absent"
+      cms_app_role: "cms_admin" | "cms_supervisor" | "cms_member"
+      cms_attendance_status: "on_time" | "late" | "absent"
+      cms_task_priority: "low" | "medium" | "high"
+      cms_task_status: "todo" | "in_progress" | "done" | "archived"
       cs_ticket_case_type: "CS" | "Edu"
       cs_ticket_status:
         | "Pending"
@@ -2486,6 +2656,7 @@ export type Database = {
         | "Other"
       feature_plan_status: "planned" | "in_progress" | "completed" | "blocked"
       feature_plan_visibility: "team_leaders" | "mentors" | "both" | "hidden"
+      system_kind: "b2c" | "cms"
       task_status: "todo" | "in_progress" | "done" | "archived"
       training_creator_type: "team_leader" | "mentor" | "tutor"
       tutor_status_value: "active" | "resigned" | "terminated"
@@ -2639,6 +2810,10 @@ export const Constants = {
         "super_team_leader",
       ],
       attendance_status: ["on_time", "late", "absent"],
+      cms_app_role: ["cms_admin", "cms_supervisor", "cms_member"],
+      cms_attendance_status: ["on_time", "late", "absent"],
+      cms_task_priority: ["low", "medium", "high"],
+      cms_task_status: ["todo", "in_progress", "done", "archived"],
       cs_ticket_case_type: ["CS", "Edu"],
       cs_ticket_status: [
         "Pending",
@@ -2668,6 +2843,7 @@ export const Constants = {
       ],
       feature_plan_status: ["planned", "in_progress", "completed", "blocked"],
       feature_plan_visibility: ["team_leaders", "mentors", "both", "hidden"],
+      system_kind: ["b2c", "cms"],
       task_status: ["todo", "in_progress", "done", "archived"],
       training_creator_type: ["team_leader", "mentor", "tutor"],
       tutor_status_value: ["active", "resigned", "terminated"],

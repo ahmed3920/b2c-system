@@ -34,6 +34,18 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
         navigate("/auth");
         return;
       }
+      // Block CMS-only users from accessing the B2C workspace.
+      const { data: sysRow } = await supabase
+        .from("user_systems")
+        .select("system")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (sysRow?.system === "cms") {
+        await supabase.auth.signOut();
+        toast({ title: "Wrong workspace", description: "Use the CMS login.", variant: "destructive" });
+        navigate("/cms/login");
+        return;
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, mentor_name")
@@ -43,7 +55,7 @@ export function AppLayout({ children, title, allowedRoles }: AppLayoutProps) {
       setAuthChecked(true);
     };
     check();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   useEffect(() => {
     if (!roleLoading && allowedRoles && role && !allowedRoles.includes(role)) {

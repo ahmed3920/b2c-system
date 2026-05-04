@@ -39,6 +39,13 @@ import SessionIncidents from "./pages/SessionIncidents";
 import SessionIncidentSettings from "./pages/SessionIncidentSettings";
 import IncidentSubmit from "./pages/IncidentSubmit";
 
+// CMS (separate workspace)
+import CmsLogin from "./pages/cms/CmsLogin";
+import CmsDashboard from "./pages/cms/CmsDashboard";
+import CmsTasks from "./pages/cms/CmsTasks";
+import CmsAttendance from "./pages/cms/CmsAttendance";
+import CmsUsers from "./pages/cms/CmsUsers";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -87,6 +94,14 @@ const App = () => (
           <Route path="/session-incidents" element={<SessionIncidents />} />
           <Route path="/admin/session-incident-settings" element={<SessionIncidentSettings />} />
           <Route path="/incident-submit" element={<IncidentSubmit />} />
+
+          {/* CMS workspace (isolated) */}
+          <Route path="/cms/login" element={<CmsLogin />} />
+          <Route path="/cms" element={<CmsDashboard />} />
+          <Route path="/cms/tasks" element={<CmsTasks />} />
+          <Route path="/cms/attendance" element={<CmsAttendance />} />
+          <Route path="/cms/users" element={<CmsUsers />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

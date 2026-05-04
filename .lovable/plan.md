@@ -1,118 +1,77 @@
-# Trainings Management Tab
+## CMS (Content Management System) — Build Plan
 
-Add a fully functional **Trainings** sub-tab inside `/tracking` for **Admins** and **Team Leaders** (and Super Team Leaders). It replaces the current placeholder.
+A second, fully isolated workspace inside the same app, with its own login, users, roles, tasks and attendance — sharing only UI components.
 
-## Scope
+### 1. Architecture & isolation
 
-1. **Backend (database + storage)**
-2. **"Add Training" form dialog**
-3. **Trainings list view (cards/table)**
-4. **Insights panel with charts + global filters**
+- **Single Supabase auth** (one `auth.users` table) — but a `system` flag decides who can log into what. Each user belongs to exactly one system: `b2c` or `cms`. This is the only safe way to keep one Supabase project while preventing cross-login.
+- A new table `user_systems(user_id, system)` controls login eligibility. Existing users are auto-tagged `b2c`.
+- A login-time guard on `/auth/cms` rejects any user not tagged `cms`, and the existing `/auth/admin|tl|mentor` pages reject any user tagged `cms`.
+- A new `useSystem()` hook resolves the current user's system and is checked inside every CMS route + every existing route.
 
----
+### 2. Database (new tables, all RLS-enabled)
 
-## 1. Backend
+- `user_systems` — `user_id`, `system` ('b2c' | 'cms')
+- `cms_app_role` enum — `cms_admin`, `cms_supervisor`, `cms_member`
+- `cms_user_roles` — `user_id`, `role` (mirrors b2c `user_roles` but separate)
+- `cms_profiles` — `user_id`, `full_name`, `email`, `active_status`
+- `cms_tasks` — same shape as `tasks` (title, description, status, priority, dates, assignee_id, created_by)
+- `cms_attendance` — same shape as `team_leader_attendance` (user_id, date, check_in_time, status, minutes_late, late_reason) with the same Africa/Cairo 9:30 / 10:15 rules
+- Security-definer helpers: `is_cms_user(uid)`, `has_cms_role(uid, role)`, `cms_can_view_user(uid, target_uid)` — to avoid RLS recursion
+- Triggers: protect `cms_profiles` self-update (same pattern as b2c), auto-mark absent job for CMS
 
-### New table: `trainings`
-- `team_leader` (text) — owning team leader's name
-- `creator_type` (enum: `team_leader` / `mentor` / `tutor`) — who *created* the training entry
-- `creator_name` (text) — display label for creator
-- `conducted_by` (jsonb array of `{ id, name, role }`) — multi-select people who delivered it
-- `training_date` (date), `training_time` (time)
-- `title` (text), `notes` (text, nullable)
-- `sub_teams` (text[]) — optional list of sub-team / mentor names
-- `material_urls` (jsonb array of `{ name, url, type: 'file'|'link' }`)
-- `record_urls` (jsonb array, same shape)
-- `created_by` (uuid), standard timestamps
+### 3. Auth & routing
 
-### RLS
-- Admins: full access.
-- Team leaders / super team leaders: full access **only when `team_leader` matches their `mentor_name`** (via existing `team_leader_name_matches` helper).
+- New page `/cms/login` titled **Content Management System** (email + password, Google sign-in disabled).
+- New protected layout `CmsLayout` (mirrors `AppLayout`) with its own sidebar.
+- Routes:
+  - `/cms` → dashboard
+  - `/cms/tasks`
+  - `/cms/attendance`
+  - `/cms/users` (cms_admin only)
+- `App.tsx` updated to register the routes.
+- `AppLayout` (b2c) blocks any user whose `system='cms'` and redirects to `/cms/login`. `CmsLayout` does the inverse.
+- Optional: if a user has both flags (admins only), show a system switcher in the header.
 
-### Storage
-- Reuse the existing private bucket pattern. Create a new public bucket `training-materials` for uploaded files (publicly readable links, writes restricted to TL/Admin via policy on `storage.objects`).
+### 4. Reused logic, separate data
 
----
+- `useTasks` → new `useCmsTasks` (same shape, queries `cms_tasks`)
+- `useTodayAttendance` → new `useCmsAttendance` (Cairo time, same windows, queries `cms_attendance`)
+- UI components (Button, Card, Table, Dialog, Kanban) are reused as-is.
 
-## 2. Add Training Form
+### 5. CMS modules
 
-Dialog opened from a prominent **"Add Training"** button at the top of the Trainings sub-tab.
+- **Dashboard**: KPI cards (my open tasks, today's check-in status, team attendance % this month) + quick links.
+- **Tasks**: list + Kanban; Admin/Supervisor can create/assign to any cms user; Members see their own tasks.
+- **Attendance**: today's check-in card (reuses 9:30 / 10:15 logic), monthly history table, monthly insights for Admin/Supervisor (on-time %, late count, absences).
+- **Users (Admin only)**: list `cms_profiles`, create user (email + password + role via edge function `cms-admin-create-user`), toggle active, change role, reset password.
 
-Fields (matching the spec):
-- **Training Creator** (required, single select among `Me` / `Mentor` / `Tutor`, then a follow-up select to pick the actual person from the team roster when not "Me").
-- **Conducted By** (required, **multi-select**) — combobox listing: `Me`, all mentors in the team, all tutors in the team.
-- **Training Date** (required) — shadcn datepicker (`pointer-events-auto`).
-- **Training Time** (required) — `<input type="time">`.
-- **Training Title / Topic** (required) — text input.
-- **Sub-Team** (optional, multi-select) — for TLs we use their mentors list as "sub-teams"; for admins, list of team leaders.
-- **Training Material** (optional) — file upload (multi) + URL input → stored as array.
-- **Training Record (if available)** (optional) — same widget as material.
-- **Notes** (optional) — textarea.
+### 6. Edge functions
 
-Validation via `zod`. On submit: upload files to storage, then insert row.
+- `cms-admin-create-user` — Admin-only; creates auth user, inserts `user_systems(system='cms')`, `cms_profiles`, `cms_user_roles`. Manual JWT verify, role check.
+- `cms-mark-absent-daily` — scheduled equivalent of `mark_absent_team_leaders` for cms members.
 
-Roster source: existing `tutorRoster` filtered by `team_leader` (admins pick a team leader first via dropdown).
-
----
-
-## 3. List View
-
-Table with columns:
-- Title • Date (+ time) • Conducted By (chips) • Creator (type + name) • Sub-Team • Attachments (paperclip icons for material/record counts) • Actions (view / edit / delete for owner+admin).
-
-Click a row → details dialog showing all fields and clickable attachment links.
-
----
-
-## 4. Insights Panel
-
-Collapsible panel above the list. Uses **native `recharts`** (per project rule — no `@/components/ui/chart`).
-
-KPI cards:
-- Total trainings
-- Trainings this month
-- Unique trainers
-- % with material / % with record
-
-Charts:
-- **Bar chart**: trainings per month (last 12 months)
-- **Bar chart**: trainings per sub-team
-- **Donut**: breakdown by creator type
-- **Horizontal bar**: top 5 most active trainers
-
-### Global Filters (apply to both list + insights)
-- Month / date range (from–to date pickers)
-- Sub-team (multi)
-- Conducted by (multi, from roster)
-- Creator type (`all` / `team_leader` / `mentor` / `tutor`)
-- Has Material (`all` / `yes` / `no`)
-- Has Record (`all` / `yes` / `no`)
-
-Filter state lives in the Trainings component; both the list and the analytics derive from the same filtered array.
-
----
-
-## Files
+### 7. Files
 
 **New**
-- `supabase/migrations/...sql` — table, RLS, storage bucket + policies.
-- `src/hooks/useTrainings.ts` — fetch/create/update/delete + filters.
-- `src/components/tracking/trainings/TrainingsTab.tsx` — main container, filters, list, insights.
-- `src/components/tracking/trainings/AddTrainingDialog.tsx` — the form (also handles edit).
-- `src/components/tracking/trainings/TrainingDetailsDialog.tsx` — read-only details.
-- `src/components/tracking/trainings/TrainingsInsights.tsx` — KPI cards + charts.
+- Migration: `..._cms_system.sql` (tables, enums, RLS, helpers, triggers)
+- `src/hooks/useSystem.ts`, `src/hooks/useCmsRole.ts`, `src/hooks/useCmsTasks.ts`, `src/hooks/useCmsAttendance.ts`, `src/hooks/useCmsUsers.ts`
+- `src/components/cms/CmsLayout.tsx`, `src/components/cms/CmsSidebar.tsx`, `src/components/cms/CmsCheckinCard.tsx`, `src/components/cms/CmsTaskDialog.tsx`, `src/components/cms/CmsCreateUserDialog.tsx`
+- `src/pages/cms/CmsLogin.tsx`, `CmsDashboard.tsx`, `CmsTasks.tsx`, `CmsAttendance.tsx`, `CmsUsers.tsx`
+- `supabase/functions/cms-admin-create-user/index.ts`
 
-**Modified**
-- `src/pages/Tracking.tsx` — wire `<TrainingsTab />` into the `trainings` `TabsContent`.
+**Edited**
+- `src/App.tsx` — register `/cms/*` routes
+- `src/components/layout/AppLayout.tsx` — block cms-only users from b2c
+- `src/pages/Auth.tsx` — block cms users on b2c login
 
----
+### 8. Security guarantees
 
-## Technical notes
+- Every `cms_*` table has RLS using `is_cms_user(auth.uid())` + role checks; b2c users get zero rows.
+- Every b2c table policy is unchanged → cms users get zero rows there (they have no `user_roles` entry, no matching `team_leader`, etc.).
+- Login pages enforce system membership both client-side (UX) and server-side (RLS makes any cross-query empty).
 
-- Roster: derive mentors/tutors per team via `tutorRoster` + `teamLeaderMatches`, excluding `useInactiveTutorIds`.
-- For admins viewing all teams, add a "Team" filter; the form requires picking a team leader before showing roster.
-- File uploads: max 25 MB each, accepted types `pdf, docx, pptx, png, jpg, jpeg, mp4`. URL inputs validated with `z.string().url()`.
-- All access gated client-side via `useUserRole` (`isAdmin || isTeamLeader`) and server-side via RLS.
-- Charts use `ResponsiveContainer` from `recharts` directly.
-
-After approval I'll create the migration first, then build the UI.
+### Notes / decisions baked in
+- One Supabase auth project (cannot create a second from inside the platform). Isolation is enforced by `user_systems` + RLS, which is the standard multi-tenant pattern.
+- Sharing UI components but **not** tables — `tasks` and `cms_tasks` are physically separate.
+- Default new login does NOT auto-confirm email (consistent with project memory) and uses email+password only.
