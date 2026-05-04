@@ -131,7 +131,7 @@ export function LiveIssuesTable() {
     let q = supabase
       .from("live_session_issues")
       .select(
-        "id, case_id, session_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
+        "id, case_id, session_id, session_date, time_slot, from_tutor_id, from_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
         { count: "exact" },
       )
       .order("session_date", { ascending: false, nullsFirst: false })
