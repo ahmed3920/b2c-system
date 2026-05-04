@@ -2245,6 +2245,9 @@ export type Database = {
           owner_name: string | null
           owner_user_id: string | null
           position: number
+          previous_urgency:
+            | Database["public"]["Enums"]["vision_plan_urgency"]
+            | null
           status: Database["public"]["Enums"]["vision_plan_status"]
           tags: string[]
           title: string
@@ -2260,6 +2263,9 @@ export type Database = {
           owner_name?: string | null
           owner_user_id?: string | null
           position?: number
+          previous_urgency?:
+            | Database["public"]["Enums"]["vision_plan_urgency"]
+            | null
           status?: Database["public"]["Enums"]["vision_plan_status"]
           tags?: string[]
           title: string
@@ -2275,6 +2281,9 @@ export type Database = {
           owner_name?: string | null
           owner_user_id?: string | null
           position?: number
+          previous_urgency?:
+            | Database["public"]["Enums"]["vision_plan_urgency"]
+            | null
           status?: Database["public"]["Enums"]["vision_plan_status"]
           tags?: string[]
           title?: string
