@@ -171,13 +171,24 @@ export default function CmsTasks() {
                         value={t.status}
                         onValueChange={(v) => update(t.id, { status: v as CmsTaskStatus })}
                       >
-                        <SelectTrigger className="w-[140px] h-8"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className={cn("w-[140px] h-8 border", statusClasses[t.status])}>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell><Badge variant="outline">{t.priority}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn("capitalize", priorityClasses[t.priority])}>
+                        {t.priority}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{t.assignee_id ? userMap.get(t.assignee_id) ?? "—" : <span className="text-muted-foreground">Unassigned</span>}</TableCell>
-                    <TableCell>{t.date_to ?? "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{t.date_to ?? "—"}</span>
+                        <TaskDueDateBadge dateTo={t.date_to} status={t.status} size="sm" showLabel={false} />
+                      </div>
+                    </TableCell>
                     {canManage && (
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => remove(t.id)}>
