@@ -2245,6 +2245,9 @@ export type Database = {
           owner_name: string | null
           owner_user_id: string | null
           position: number
+          previous_urgency:
+            | Database["public"]["Enums"]["vision_plan_urgency"]
+            | null
           status: Database["public"]["Enums"]["vision_plan_status"]
           tags: string[]
           title: string
@@ -2260,6 +2263,9 @@ export type Database = {
           owner_name?: string | null
           owner_user_id?: string | null
           position?: number
+          previous_urgency?:
+            | Database["public"]["Enums"]["vision_plan_urgency"]
+            | null
           status?: Database["public"]["Enums"]["vision_plan_status"]
           tags?: string[]
           title: string
@@ -2275,6 +2281,9 @@ export type Database = {
           owner_name?: string | null
           owner_user_id?: string | null
           position?: number
+          previous_urgency?:
+            | Database["public"]["Enums"]["vision_plan_urgency"]
+            | null
           status?: Database["public"]["Enums"]["vision_plan_status"]
           tags?: string[]
           title?: string
@@ -2661,7 +2670,7 @@ export type Database = {
       training_creator_type: "team_leader" | "mentor" | "tutor"
       tutor_status_value: "active" | "resigned" | "terminated"
       vision_plan_status: "not_started" | "in_progress" | "completed"
-      vision_plan_urgency: "critical" | "high" | "medium" | "low"
+      vision_plan_urgency: "critical" | "high" | "medium" | "low" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2848,7 +2857,7 @@ export const Constants = {
       training_creator_type: ["team_leader", "mentor", "tutor"],
       tutor_status_value: ["active", "resigned", "terminated"],
       vision_plan_status: ["not_started", "in_progress", "completed"],
-      vision_plan_urgency: ["critical", "high", "medium", "low"],
+      vision_plan_urgency: ["critical", "high", "medium", "low", "completed"],
     },
   },
 } as const

@@ -12,6 +12,7 @@ export const URGENCY_COLUMNS: { id: VisionUrgency; title: string; color: string;
   { id: "high", title: "High Priority", color: "orange", description: "Address soon" },
   { id: "medium", title: "Medium Priority", color: "blue", description: "On the roadmap" },
   { id: "low", title: "Low Priority / Future", color: "muted", description: "Future plans" },
+  { id: "completed", title: "Completed", color: "green", description: "Finished plans" },
 ];
 
 export const STATUS_LABELS: Record<VisionStatus, string> = {

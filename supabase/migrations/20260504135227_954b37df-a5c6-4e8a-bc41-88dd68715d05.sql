@@ -1,0 +1,1 @@
+ALTER TYPE public.vision_plan_urgency ADD VALUE IF NOT EXISTS 'completed';

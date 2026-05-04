@@ -36,6 +36,7 @@ const urgencyStyles: Record<VisionUrgency, { header: string; ring: string }> = {
   high: { header: "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30", ring: "ring-orange-500/20" },
   medium: { header: "bg-primary/10 text-primary border-primary/30", ring: "ring-primary/20" },
   low: { header: "bg-muted text-muted-foreground border-border", ring: "ring-border" },
+  completed: { header: "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30", ring: "ring-green-500/20" },
 };
 
 const statusBadgeVariant: Record<VisionStatus, "default" | "secondary" | "outline"> = {
@@ -106,7 +107,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
   }, [plans, search, filterStatus, filterTag, filterOwner, filterDeadline]);
 
   const grouped = useMemo(() => {
-    const g: Record<VisionUrgency, VisionPlan[]> = { critical: [], high: [], medium: [], low: [] };
+    const g: Record<VisionUrgency, VisionPlan[]> = { critical: [], high: [], medium: [], low: [], completed: [] };
     filteredPlans.forEach((p) => g[p.urgency].push(p));
     return g;
   }, [filteredPlans]);
@@ -121,6 +122,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
       high: plans.filter((p) => p.urgency === "high").length,
       medium: plans.filter((p) => p.urgency === "medium").length,
       low: plans.filter((p) => p.urgency === "low").length,
+      completed: plans.filter((p) => p.urgency === "completed").length,
     };
     return { total, completed, inProgress, notStarted, byUrgency };
   }, [plans]);
@@ -153,7 +155,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
         <StatCard icon={<ListTodo className="h-4 w-4" />} label="Total Plans" value={stats.total} />
         <StatCard icon={<CheckCircle2 className="h-4 w-4 text-green-600" />} label="Completed" value={stats.completed} />
         <StatCard icon={<Clock className="h-4 w-4 text-blue-600" />} label="In Progress" value={stats.inProgress} />
@@ -161,7 +163,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
         {URGENCY_COLUMNS.map((c) => (
           <StatCard
             key={c.id}
-            icon={<span className={cn("h-2.5 w-2.5 rounded-full inline-block", c.id === "critical" && "bg-destructive", c.id === "high" && "bg-orange-500", c.id === "medium" && "bg-primary", c.id === "low" && "bg-muted-foreground")} />}
+            icon={<span className={cn("h-2.5 w-2.5 rounded-full inline-block", c.id === "critical" && "bg-destructive", c.id === "high" && "bg-orange-500", c.id === "medium" && "bg-primary", c.id === "low" && "bg-muted-foreground", c.id === "completed" && "bg-green-500")} />}
             label={c.title}
             value={stats.byUrgency[c.id]}
           />
@@ -218,7 +220,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
 
       {/* Board */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           {URGENCY_COLUMNS.map((col) => (
             <Column
               key={col.id}
