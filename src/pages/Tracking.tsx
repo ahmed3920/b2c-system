@@ -236,12 +236,17 @@ export default function Tracking() {
             <LeavesVerificationTab />
           </TabsContent>
 
+          <TabsContent value="trainings" className="mt-4">
+            <TrainingsTab />
+          </TabsContent>
+
           {tabs
             .filter(
               (t) =>
                 t.v !== "teams-composition" &&
                 t.v !== "live-issues" &&
-                t.v !== "leaves",
+                t.v !== "leaves" &&
+                t.v !== "trainings",
             )
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>
