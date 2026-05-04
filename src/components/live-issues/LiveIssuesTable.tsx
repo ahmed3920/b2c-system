@@ -26,6 +26,7 @@ interface IssueRow {
   case_id: string;
   session_id: string | null;
   session_date: string | null;
+  time_slot: string | null;
   from_tutor_id: string | null;
   from_tutor_name: string | null;
   team_leader: string | null;
