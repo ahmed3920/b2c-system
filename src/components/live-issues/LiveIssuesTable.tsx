@@ -422,6 +422,9 @@ export function LiveIssuesTable() {
                       <TableCell className="whitespace-nowrap text-xs">
                         {row.session_date ? format(new Date(row.session_date), "PP") : "—"}
                       </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {row.time_slot || "—"}
+                      </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{row.from_tutor_name || "—"}</div>
                         <div className="text-muted-foreground">{row.from_tutor_id}</div>
