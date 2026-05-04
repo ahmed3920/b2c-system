@@ -24,6 +24,19 @@ import { cn } from "@/lib/utils";
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
 
+const statusClasses: Record<CmsTaskStatus, string> = {
+  todo: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  in_progress: "bg-blue-100 text-blue-700 border-blue-200",
+  done: "bg-green-100 text-green-700 border-green-200",
+  archived: "bg-gray-100 text-gray-700 border-gray-200",
+};
+
+const priorityClasses: Record<CmsTaskPriority, string> = {
+  low: "bg-gray-100 text-gray-700 border-gray-200",
+  medium: "bg-blue-100 text-blue-700 border-blue-200",
+  high: "bg-orange-100 text-orange-700 border-orange-200",
+};
+
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
   const { isCmsAdmin, isCmsSupervisor, role } = useCmsRole();
