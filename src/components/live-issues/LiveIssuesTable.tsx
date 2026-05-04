@@ -391,6 +391,7 @@ export function LiveIssuesTable() {
                 <TableRow>
                   <TableHead>Case ID</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Time Slot</TableHead>
                   <TableHead>Tutor</TableHead>
                   <TableHead>Team Leader</TableHead>
                   <TableHead>Issue</TableHead>
