@@ -2661,7 +2661,7 @@ export type Database = {
       training_creator_type: "team_leader" | "mentor" | "tutor"
       tutor_status_value: "active" | "resigned" | "terminated"
       vision_plan_status: "not_started" | "in_progress" | "completed"
-      vision_plan_urgency: "critical" | "high" | "medium" | "low"
+      vision_plan_urgency: "critical" | "high" | "medium" | "low" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2848,7 +2848,7 @@ export const Constants = {
       training_creator_type: ["team_leader", "mentor", "tutor"],
       tutor_status_value: ["active", "resigned", "terminated"],
       vision_plan_status: ["not_started", "in_progress", "completed"],
-      vision_plan_urgency: ["critical", "high", "medium", "low"],
+      vision_plan_urgency: ["critical", "high", "medium", "low", "completed"],
     },
   },
 } as const
