@@ -26,6 +26,7 @@ interface IssueRow {
   case_id: string;
   session_id: string | null;
   session_date: string | null;
+  time_slot: string | null;
   from_tutor_id: string | null;
   from_tutor_name: string | null;
   team_leader: string | null;
@@ -130,7 +131,7 @@ export function LiveIssuesTable() {
     let q = supabase
       .from("live_session_issues")
       .select(
-        "id, case_id, session_id, session_date, from_tutor_id, from_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
+        "id, case_id, session_id, session_date, time_slot, from_tutor_id, from_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, updated_at",
         { count: "exact" },
       )
       .order("session_date", { ascending: false, nullsFirst: false })
@@ -390,6 +391,7 @@ export function LiveIssuesTable() {
                 <TableRow>
                   <TableHead>Case ID</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Time Slot</TableHead>
                   <TableHead>Tutor</TableHead>
                   <TableHead>Team Leader</TableHead>
                   <TableHead>Issue</TableHead>
@@ -402,11 +404,11 @@ export function LiveIssuesTable() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={10} className="h-24 text-center">
+                  <TableRow><TableCell colSpan={11} className="h-24 text-center">
                     <Loader2 className="h-5 w-5 animate-spin inline" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                  <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                     No cases. Sync the moderation sheet to load data.
                   </TableCell></TableRow>
                 ) : rows.map((row) => {
@@ -419,6 +421,9 @@ export function LiveIssuesTable() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs">
                         {row.session_date ? format(new Date(row.session_date), "PP") : "—"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {row.time_slot || "—"}
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="font-medium">{row.from_tutor_name || "—"}</div>
