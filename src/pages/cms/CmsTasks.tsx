@@ -13,14 +13,29 @@ import {
 } from "@/components/ui/select";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, AlertTriangle } from "lucide-react";
 import { useCmsTasks, type CmsTaskStatus, type CmsTaskPriority } from "@/hooks/useCmsTasks";
 import { useCmsRole } from "@/hooks/useCmsRole";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { useToast } from "@/hooks/use-toast";
+import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
+import { cn } from "@/lib/utils";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
+
+const statusClasses: Record<CmsTaskStatus, string> = {
+  todo: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  in_progress: "bg-blue-100 text-blue-700 border-blue-200",
+  done: "bg-green-100 text-green-700 border-green-200",
+  archived: "bg-gray-100 text-gray-700 border-gray-200",
+};
+
+const priorityClasses: Record<CmsTaskPriority, string> = {
+  low: "bg-gray-100 text-gray-700 border-gray-200",
+  medium: "bg-blue-100 text-blue-700 border-blue-200",
+  high: "bg-orange-100 text-orange-700 border-orange-200",
+};
 
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
@@ -60,10 +75,13 @@ export default function CmsTasks() {
     else { toast({ title: "Task created" }); reset(); setOpen(false); }
   };
 
+  const overdueCount = filtered.filter((t) => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
+  const dueSoonCount = filtered.filter((t) => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
+
   return (
     <CmsLayout title="Tasks">
-      <div className="p-4 md:p-6 space-y-4">
-        <div className="flex flex-wrap gap-3 items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -71,43 +89,56 @@ export default function CmsTasks() {
               {STATUSES.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}
             </SelectContent>
           </Select>
-          {canManage && (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="w-4 h-4 mr-1" />New task</Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[85vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Create task</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-                  <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} /></div>
-                  <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {overdueCount > 0 && (
+              <span className="flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive text-sm rounded-full font-medium">
+                <AlertTriangle className="w-3 h-3" />
+                {overdueCount} Overdue
+              </span>
+            )}
+            {dueSoonCount > 0 && (
+              <span className="px-2 py-1 bg-orange-100 text-orange-700 text-sm rounded-full font-medium">
+                {dueSoonCount} Due Soon
+              </span>
+            )}
+            {canManage && (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="w-4 h-4 mr-1" />New task</Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[85vh] overflow-y-auto">
+                  <DialogHeader><DialogTitle>Create task</DialogTitle></DialogHeader>
+                  <div className="space-y-3">
+                    <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+                    <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Priority</Label>
+                        <Select value={priority} onValueChange={(v) => setPriority(v as CmsTaskPriority)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>Due date</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></div>
+                    </div>
                     <div>
-                      <Label>Priority</Label>
-                      <Select value={priority} onValueChange={(v) => setPriority(v as CmsTaskPriority)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                      <Label>Assignee</Label>
+                      <Select value={assigneeId || "unassigned"} onValueChange={(v) => setAssigneeId(v === "unassigned" ? "" : v)}>
+                        <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {users.filter((u) => u.active_status).map((u) => (
+                            <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     </div>
-                    <div><Label>Due date</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></div>
                   </div>
-                  <div>
-                    <Label>Assignee</Label>
-                    <Select value={assigneeId || "unassigned"} onValueChange={(v) => setAssigneeId(v === "unassigned" ? "" : v)}>
-                      <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {users.filter((u) => u.active_status).map((u) => (
-                          <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter><Button onClick={handleCreate}>Create</Button></DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
+                  <DialogFooter><Button onClick={handleCreate}>Create</Button></DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         <Card>
@@ -140,13 +171,24 @@ export default function CmsTasks() {
                         value={t.status}
                         onValueChange={(v) => update(t.id, { status: v as CmsTaskStatus })}
                       >
-                        <SelectTrigger className="w-[140px] h-8"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className={cn("w-[140px] h-8 border", statusClasses[t.status])}>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell><Badge variant="outline">{t.priority}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn("capitalize", priorityClasses[t.priority])}>
+                        {t.priority}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{t.assignee_id ? userMap.get(t.assignee_id) ?? "—" : <span className="text-muted-foreground">Unassigned</span>}</TableCell>
-                    <TableCell>{t.date_to ?? "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>{t.date_to ?? "—"}</span>
+                        <TaskDueDateBadge dateTo={t.date_to} status={t.status} size="sm" showLabel={false} />
+                      </div>
+                    </TableCell>
                     {canManage && (
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => remove(t.id)}>
