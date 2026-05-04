@@ -43,6 +43,7 @@ import IncidentSubmit from "./pages/IncidentSubmit";
 import CmsLogin from "./pages/cms/CmsLogin";
 import CmsDashboard from "./pages/cms/CmsDashboard";
 import CmsTasks from "./pages/cms/CmsTasks";
+import CmsKanban from "./pages/cms/CmsKanban";
 import CmsAttendance from "./pages/cms/CmsAttendance";
 import CmsUsers from "./pages/cms/CmsUsers";
 
@@ -99,6 +100,7 @@ const App = () => (
           <Route path="/cms/login" element={<CmsLogin />} />
           <Route path="/cms" element={<CmsDashboard />} />
           <Route path="/cms/tasks" element={<CmsTasks />} />
+          <Route path="/cms/kanban" element={<CmsKanban />} />
           <Route path="/cms/attendance" element={<CmsAttendance />} />
           <Route path="/cms/users" element={<CmsUsers />} />
 
