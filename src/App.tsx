@@ -39,6 +39,13 @@ import SessionIncidents from "./pages/SessionIncidents";
 import SessionIncidentSettings from "./pages/SessionIncidentSettings";
 import IncidentSubmit from "./pages/IncidentSubmit";
 
+// CMS (separate workspace)
+import CmsLogin from "./pages/cms/CmsLogin";
+import CmsDashboard from "./pages/cms/CmsDashboard";
+import CmsTasks from "./pages/cms/CmsTasks";
+import CmsAttendance from "./pages/cms/CmsAttendance";
+import CmsUsers from "./pages/cms/CmsUsers";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
