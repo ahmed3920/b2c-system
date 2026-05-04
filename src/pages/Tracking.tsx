@@ -18,6 +18,7 @@ import { getTeamSummaries } from "@/data/tutorRosterHelpers";
 import { tutorRoster } from "@/data/tutorRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
+import { TrainingsTab } from "@/components/tracking/trainings/TrainingsTab";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
@@ -235,12 +236,17 @@ export default function Tracking() {
             <LeavesVerificationTab />
           </TabsContent>
 
+          <TabsContent value="trainings" className="mt-4">
+            <TrainingsTab />
+          </TabsContent>
+
           {tabs
             .filter(
               (t) =>
                 t.v !== "teams-composition" &&
                 t.v !== "live-issues" &&
-                t.v !== "leaves",
+                t.v !== "leaves" &&
+                t.v !== "trainings",
             )
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>
