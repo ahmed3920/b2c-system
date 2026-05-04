@@ -404,11 +404,11 @@ export function LiveIssuesTable() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={10} className="h-24 text-center">
+                  <TableRow><TableCell colSpan={11} className="h-24 text-center">
                     <Loader2 className="h-5 w-5 animate-spin inline" />
                   </TableCell></TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
+                  <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                     No cases. Sync the moderation sheet to load data.
                   </TableCell></TableRow>
                 ) : rows.map((row) => {
