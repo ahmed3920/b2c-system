@@ -36,6 +36,7 @@ const urgencyStyles: Record<VisionUrgency, { header: string; ring: string }> = {
   high: { header: "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30", ring: "ring-orange-500/20" },
   medium: { header: "bg-primary/10 text-primary border-primary/30", ring: "ring-primary/20" },
   low: { header: "bg-muted text-muted-foreground border-border", ring: "ring-border" },
+  completed: { header: "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30", ring: "ring-green-500/20" },
 };
 
 const statusBadgeVariant: Record<VisionStatus, "default" | "secondary" | "outline"> = {
@@ -106,7 +107,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
   }, [plans, search, filterStatus, filterTag, filterOwner, filterDeadline]);
 
   const grouped = useMemo(() => {
-    const g: Record<VisionUrgency, VisionPlan[]> = { critical: [], high: [], medium: [], low: [] };
+    const g: Record<VisionUrgency, VisionPlan[]> = { critical: [], high: [], medium: [], low: [], completed: [] };
     filteredPlans.forEach((p) => g[p.urgency].push(p));
     return g;
   }, [filteredPlans]);
@@ -121,6 +122,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
       high: plans.filter((p) => p.urgency === "high").length,
       medium: plans.filter((p) => p.urgency === "medium").length,
       low: plans.filter((p) => p.urgency === "low").length,
+      completed: plans.filter((p) => p.urgency === "completed").length,
     };
     return { total, completed, inProgress, notStarted, byUrgency };
   }, [plans]);
