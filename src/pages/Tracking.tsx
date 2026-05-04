@@ -18,6 +18,7 @@ import { getTeamSummaries } from "@/data/tutorRosterHelpers";
 import { tutorRoster } from "@/data/tutorRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
+import { TrainingsTab } from "@/components/tracking/trainings/TrainingsTab";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
