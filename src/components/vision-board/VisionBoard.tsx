@@ -155,7 +155,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-3">
         <StatCard icon={<ListTodo className="h-4 w-4" />} label="Total Plans" value={stats.total} />
         <StatCard icon={<CheckCircle2 className="h-4 w-4 text-green-600" />} label="Completed" value={stats.completed} />
         <StatCard icon={<Clock className="h-4 w-4 text-blue-600" />} label="In Progress" value={stats.inProgress} />
@@ -163,7 +163,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
         {URGENCY_COLUMNS.map((c) => (
           <StatCard
             key={c.id}
-            icon={<span className={cn("h-2.5 w-2.5 rounded-full inline-block", c.id === "critical" && "bg-destructive", c.id === "high" && "bg-orange-500", c.id === "medium" && "bg-primary", c.id === "low" && "bg-muted-foreground")} />}
+            icon={<span className={cn("h-2.5 w-2.5 rounded-full inline-block", c.id === "critical" && "bg-destructive", c.id === "high" && "bg-orange-500", c.id === "medium" && "bg-primary", c.id === "low" && "bg-muted-foreground", c.id === "completed" && "bg-green-500")} />}
             label={c.title}
             value={stats.byUrgency[c.id]}
           />
@@ -220,7 +220,7 @@ export function VisionBoard({ compact = false }: VisionBoardProps) {
 
       {/* Board */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
           {URGENCY_COLUMNS.map((col) => (
             <Column
               key={col.id}
