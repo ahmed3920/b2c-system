@@ -76,9 +76,10 @@ interface TaskCardProps {
   canManage: boolean;
   onArchive: () => void;
   onDelete: () => void;
+  onOpen: () => void;
 }
 
-const TaskCard = ({ task, ownerName, showOwner, canManage, onArchive, onDelete }: TaskCardProps) => {
+const TaskCard = ({ task, ownerName, showOwner, canManage, onArchive, onDelete, onOpen }: TaskCardProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
   const [showMenu, setShowMenu] = useState(false);
 
@@ -93,7 +94,14 @@ const TaskCard = ({ task, ownerName, showOwner, canManage, onArchive, onDelete }
   );
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={cardBorderClass}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={cardBorderClass}
+      onClick={(e) => { e.stopPropagation(); onOpen(); }}
+    >
       {showOwner && ownerName && (
         <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
           <User className="w-3 h-3" />
