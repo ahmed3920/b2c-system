@@ -146,7 +146,7 @@ export function CmsTaskDetailDialog({
               role="developer"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("developer")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -155,7 +155,7 @@ export function CmsTaskDetailDialog({
               role="senior_developer"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("senior_developer")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -164,7 +164,7 @@ export function CmsTaskDetailDialog({
               role="reviewer"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("reviewer")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -173,7 +173,7 @@ export function CmsTaskDetailDialog({
               role="team_leader"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("team_leader")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
