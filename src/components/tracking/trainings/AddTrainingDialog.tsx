@@ -199,7 +199,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
     if (!teamLeader) return toast.error("Select a team");
     if (!creatorType) return toast.error("Select training creator type");
     if (!trainingDate) return toast.error("Select a date");
-    if (!trainingTime) return toast.error("Select a time");
+    if (!durationMinutes || durationMinutes <= 0) return toast.error("Enter a valid duration");
     if (!title.trim()) return toast.error("Enter a title");
     if (conductedBy.length === 0) return toast.error("Select at least one person who conducted the training");
 
