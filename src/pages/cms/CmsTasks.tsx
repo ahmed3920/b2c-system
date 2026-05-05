@@ -63,7 +63,14 @@ export default function CmsTasks() {
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.user_id, u.full_name])), [users]);
 
-  const filtered = tasks.filter((t) => statusFilter === "all" || t.status === statusFilter);
+  const [filters, setFilters] = useState<TaskFilterState>(emptyFilters);
+  const { defs } = useCmsPropertyDefs();
+  const filterIndex = useCmsTaskFilterIndex();
+
+  const filtered = useMemo(() => {
+    const byStatus = tasks.filter((t) => statusFilter === "all" || t.status === statusFilter);
+    return applyTaskFilters(byStatus, filters, filterIndex);
+  }, [tasks, statusFilter, filters, filterIndex]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setPriority("medium"); setAssigneeId(""); setDateTo("");
