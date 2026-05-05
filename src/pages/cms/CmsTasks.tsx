@@ -178,16 +178,36 @@ export default function CmsTasks() {
                       <div><Label>Due date</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></div>
                     </div>
                     <div>
-                      <Label>Assignee</Label>
-                      <Select value={assigneeId || "unassigned"} onValueChange={(v) => setAssigneeId(v === "unassigned" ? "" : v)}>
-                        <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                      <Label>Category</Label>
+                      <Select value={categoryId} onValueChange={setCategoryId}>
+                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {users.filter((u) => u.active_status).map((u) => (
-                            <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+                          <SelectItem value="none">No category</SelectItem>
+                          {categories.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              <span className="inline-flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
+                                {c.name}
+                              </span>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label>Assignees</Label>
+                      {(["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[]).map((role) => (
+                        <MultiAssigneeField
+                          key={role}
+                          label={ROLE_LABELS[role]}
+                          role={role}
+                          assignees={pendingAsAssignees}
+                          users={usersByTitle(role)}
+                          canEdit
+                          onAdd={(uid, r) => addPending(uid, r)}
+                          onRemove={(id) => removePending(id)}
+                        />
+                      ))}
                     </div>
                   </div>
                   <DialogFooter><Button onClick={handleCreate}>Create</Button></DialogFooter>
