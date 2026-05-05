@@ -28,6 +28,9 @@ import {
   CmsTaskFilters, applyTaskFilters, useCmsTaskFilterIndex, emptyFilters,
   type TaskFilterState,
 } from "@/components/cms/CmsTaskFilters";
+import { useCmsTaskCategories } from "@/hooks/useCmsTaskCategories";
+import { MultiAssigneeField } from "@/components/cms/MultiAssigneeField";
+import type { CmsAssigneeRole } from "@/hooks/useCmsTaskAssignees";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -45,6 +48,15 @@ const priorityClasses: Record<CmsTaskPriority, string> = {
   high: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
+const ROLE_LABELS: Record<CmsAssigneeRole, string> = {
+  developer: "Developer",
+  senior_developer: "Senior Developer",
+  reviewer: "Reviewer",
+  team_leader: "Team Leader",
+};
+
+interface PendingAssignee { user_id: string; role: CmsAssigneeRole; tmp_id: string }
+
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
   const { isCmsAdmin, isCmsSupervisor } = useCmsRole();
@@ -53,19 +65,22 @@ export default function CmsTasks() {
   const canDelete = can("delete_task");
   const canManage = isCmsAdmin || isCmsSupervisor || can("edit_any_task");
   const { users } = useCmsUsers();
+  const { categories } = useCmsTaskCategories();
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<CmsTaskPriority>("medium");
-  const [assigneeId, setAssigneeId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("none");
   const [dateTo, setDateTo] = useState("");
+  const [pendingAssignees, setPendingAssignees] = useState<PendingAssignee[]>([]);
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [openTask, setOpenTask] = useState<CmsTask | null>(null);
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.user_id, u.full_name])), [users]);
+  const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const [filters, setFilters] = useState<TaskFilterState>(emptyFilters);
   const { defs } = useCmsPropertyDefs();
@@ -77,7 +92,8 @@ export default function CmsTasks() {
   }, [tasks, statusFilter, filters, filterIndex]);
 
   const reset = () => {
-    setTitle(""); setDescription(""); setPriority("medium"); setAssigneeId(""); setDateTo("");
+    setTitle(""); setDescription(""); setPriority("medium");
+    setCategoryId("none"); setDateTo(""); setPendingAssignees([]);
   };
 
   const handleCreate = async () => {
@@ -87,12 +103,33 @@ export default function CmsTasks() {
       description: description.trim() || null,
       priority,
       status: "todo",
-      assignee_id: assigneeId || null,
+      assignee_id: pendingAssignees[0]?.user_id ?? null,
+      category_id: categoryId === "none" ? null : categoryId,
       date_to: dateTo || null,
     });
-    if (!res.ok) toast({ title: "Failed", description: res.error, variant: "destructive" });
-    else { toast({ title: "Task created" }); reset(); setOpen(false); }
+    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
+    if (res.task && pendingAssignees.length > 0) {
+      const rows = pendingAssignees.map((p) => ({
+        task_id: res.task.id, user_id: p.user_id, role: p.role,
+      }));
+      const { error } = await supabase.from("cms_task_assignees").insert(rows);
+      if (error) toast({ title: "Assignees failed", description: error.message, variant: "destructive" });
+    }
+    toast({ title: "Task created" }); reset(); setOpen(false);
   };
+
+  const usersByTitle = (t: CmsAssigneeRole) => users.filter((u) => (u.title ?? null) === t && u.active_status);
+
+  const addPending = (user_id: string, role: CmsAssigneeRole) =>
+    setPendingAssignees((p) => [...p, { user_id, role, tmp_id: crypto.randomUUID() }]);
+  const removePending = (tmp_id: string) =>
+    setPendingAssignees((p) => p.filter((x) => x.tmp_id !== tmp_id));
+
+  // Adapter so MultiAssigneeField works with pending list
+  const pendingAsAssignees = pendingAssignees.map((p) => ({
+    id: p.tmp_id, task_id: "tmp", user_id: p.user_id, role: p.role, created_at: "",
+  }));
+
 
   const overdueCount = filtered.filter((t) => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
   const dueSoonCount = filtered.filter((t) => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
