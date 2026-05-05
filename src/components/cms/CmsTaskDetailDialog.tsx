@@ -142,42 +142,49 @@ export function CmsTaskDetailDialog({
 
           {/* Top: Developers + Reviewers + Due */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-4">
-            <MultiAssigneeField
-              label="Developer"
-              role="developer"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("developer")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
-            <MultiAssigneeField
-              label="Senior Developer"
-              role="senior_developer"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("senior_developer")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
-            <MultiAssigneeField
-              label="Reviewer"
-              role="reviewer"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("reviewer")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
-            <MultiAssigneeField
-              label="Team Leader"
-              role="team_leader"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("team_leader")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
+          {(() => {
+            const usersByTitle = (t: string) => users.filter((u) => (u.title ?? null) === t);
+            return (
+              <>
+                <MultiAssigneeField
+                  label="Developer"
+                  role="developer"
+                  assignees={assignees}
+                  users={usersByTitle("developer")}
+                  canEdit={assignableRoles.includes("developer")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+                <MultiAssigneeField
+                  label="Senior Developer"
+                  role="senior_developer"
+                  assignees={assignees}
+                  users={usersByTitle("senior_developer")}
+                  canEdit={assignableRoles.includes("senior_developer")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+                <MultiAssigneeField
+                  label="Reviewer"
+                  role="reviewer"
+                  assignees={assignees}
+                  users={usersByTitle("reviewer")}
+                  canEdit={assignableRoles.includes("reviewer")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+                <MultiAssigneeField
+                  label="Team Leader"
+                  role="team_leader"
+                  assignees={assignees}
+                  users={usersByTitle("team_leader")}
+                  canEdit={assignableRoles.includes("team_leader")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+              </>
+            );
+          })()}
 
             <PropertyRow icon={<CalendarDays className="w-4 h-4" />} label="Due Date">
               <Input
