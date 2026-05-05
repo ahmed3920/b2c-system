@@ -20,6 +20,8 @@ import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { cn } from "@/lib/utils";
+import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
+import type { CmsTask } from "@/hooks/useCmsTasks";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
