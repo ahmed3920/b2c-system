@@ -25,6 +25,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tutorRoster } from "@/data/tutorRoster";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
@@ -134,15 +136,19 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const teamTutors = useMemo(() => teamRoster.filter((t) => t.role === "Tutor"), [teamRoster]);
 
   const subTeamOptions = useMemo(() => {
-    // Sub-teams = distinct mentor names whose `team_leader` matches exactly the selected TL
-    const mentors = new Set(
-      teamRoster
-        .filter((t) => t.team_leader === teamLeader)
-        .map((t) => t.mentor)
-        .filter((m): m is string => Boolean(m?.trim())),
-    );
-    return Array.from(mentors).sort();
-  }, [teamRoster, teamLeader]);
+    // Sub-teams = each mentor on the selected team leader's team
+    const names = new Set<string>();
+    teamMentors.forEach((m) => {
+      if (m.name?.trim()) names.add(m.name.trim());
+    });
+    // Also include mentor names referenced on tutors (covers mentors not in roster as Mentor role)
+    teamRoster
+      .filter((t) => t.team_leader === teamLeader)
+      .forEach((t) => {
+        if (t.mentor?.trim()) names.add(t.mentor.trim());
+      });
+    return Array.from(names).sort();
+  }, [teamRoster, teamMentors, teamLeader]);
 
   // Conducted-by options depend on creator type
   const conductedOptions: TrainingPerson[] = useMemo(() => {
@@ -311,16 +317,38 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
               {creatorType === "tutor" && (
                 <div>
                   <Label>Tutor *</Label>
-                  <Select value={creatorPersonId || undefined} onValueChange={setCreatorPersonId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select tutor" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {teamTutors.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.id} - {p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between font-normal">
+                        {creatorPersonId
+                          ? (() => {
+                              const t = teamTutors.find((x) => x.id === creatorPersonId);
+                              return t ? `${t.id} - ${t.name}` : "Select tutor";
+                            })()
+                          : "Select tutor"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search tutor by ID or name..." />
+                        <CommandList>
+                          <CommandEmpty>No tutor found.</CommandEmpty>
+                          <CommandGroup>
+                            {teamTutors.map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={`${p.id} ${p.name}`}
+                                onSelect={() => setCreatorPersonId(p.id)}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", creatorPersonId === p.id ? "opacity-100" : "opacity-0")} />
+                                {p.id} - {p.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
               {creatorType === "mentor" && (
