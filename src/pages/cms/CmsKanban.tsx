@@ -36,6 +36,7 @@ import { useCmsTasks, type CmsTask, type CmsTaskStatus } from "@/hooks/useCmsTas
 import { useCmsRole } from "@/hooks/useCmsRole";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { Badge } from "@/components/ui/badge";
+import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
 
 const columns: { id: CmsTaskStatus; title: string; className: string }[] = [
   { id: "todo", title: "To-Do", className: "kanban-todo" },
@@ -75,9 +76,10 @@ interface TaskCardProps {
   canManage: boolean;
   onArchive: () => void;
   onDelete: () => void;
+  onOpen: () => void;
 }
 
-const TaskCard = ({ task, ownerName, showOwner, canManage, onArchive, onDelete }: TaskCardProps) => {
+const TaskCard = ({ task, ownerName, showOwner, canManage, onArchive, onDelete, onOpen }: TaskCardProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
   const [showMenu, setShowMenu] = useState(false);
 
@@ -92,7 +94,14 @@ const TaskCard = ({ task, ownerName, showOwner, canManage, onArchive, onDelete }
   );
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={cardBorderClass}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={cardBorderClass}
+      onClick={(e) => { e.stopPropagation(); onOpen(); }}
+    >
       {showOwner && ownerName && (
         <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
           <User className="w-3 h-3" />
@@ -196,6 +205,7 @@ export default function CmsKanban() {
   const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState("all");
+  const [openTask, setOpenTask] = useState<CmsTask | null>(null);
 
   const canManage = isCmsAdmin || isCmsSupervisor;
   const showOwner = canManage;
@@ -304,6 +314,7 @@ export default function CmsKanban() {
                         canManage={canManage}
                         onArchive={() => handleArchive(task)}
                         onDelete={() => handleDelete(task)}
+                        onOpen={() => setOpenTask(task)}
                       />
                     ))}
                 </Column>
@@ -319,6 +330,22 @@ export default function CmsKanban() {
           </DndContext>
         </div>
       </div>
+
+      <CmsTaskDetailDialog
+        task={openTask}
+        open={!!openTask}
+        onOpenChange={(o) => !o && setOpenTask(null)}
+        users={users}
+        canManage={canManage}
+        onUpdate={async (id, patch) => {
+          const res = await update(id, patch as never);
+          if (res.ok && openTask?.id === id) {
+            setOpenTask({ ...openTask, ...patch } as CmsTask);
+          }
+          return res;
+        }}
+        onDelete={async (id) => { await remove(id); }}
+      />
     </CmsLayout>
   );
 }

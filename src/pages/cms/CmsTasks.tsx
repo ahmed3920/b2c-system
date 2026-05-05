@@ -20,6 +20,8 @@ import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { cn } from "@/lib/utils";
+import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
+import type { CmsTask } from "@/hooks/useCmsTasks";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -52,6 +54,7 @@ export default function CmsTasks() {
   const [dateTo, setDateTo] = useState("");
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [openTask, setOpenTask] = useState<CmsTask | null>(null);
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.user_id, u.full_name])), [users]);
 
@@ -161,12 +164,16 @@ export default function CmsTasks() {
                 ) : filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No tasks</TableCell></TableRow>
                 ) : filtered.map((t) => (
-                  <TableRow key={t.id}>
+                  <TableRow
+                    key={t.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setOpenTask(t)}
+                  >
                     <TableCell>
                       <div className="font-medium">{t.title}</div>
                       {t.description && <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={t.status}
                         onValueChange={(v) => update(t.id, { status: v as CmsTaskStatus })}
@@ -190,7 +197,7 @@ export default function CmsTasks() {
                       </div>
                     </TableCell>
                     {canManage && (
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" onClick={() => remove(t.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -203,6 +210,23 @@ export default function CmsTasks() {
           </CardContent>
         </Card>
       </div>
+
+      <CmsTaskDetailDialog
+        task={openTask}
+        open={!!openTask}
+        onOpenChange={(o) => !o && setOpenTask(null)}
+        users={users}
+        canManage={canManage}
+        onUpdate={async (id, patch) => {
+          const res = await update(id, patch as never);
+          // refresh local openTask snapshot
+          if (res.ok && openTask?.id === id) {
+            setOpenTask({ ...openTask, ...patch } as CmsTask);
+          }
+          return res;
+        }}
+        onDelete={async (id) => { await remove(id); }}
+      />
     </CmsLayout>
   );
 }
