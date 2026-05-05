@@ -17,6 +17,9 @@ import {
   DragOverlay,
   DragStartEvent,
   closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
@@ -206,6 +209,7 @@ export default function CmsKanban() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState("all");
   const [openTask, setOpenTask] = useState<CmsTask | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const canManage = isCmsAdmin || isCmsSupervisor;
   const showOwner = canManage;
@@ -299,7 +303,7 @@ export default function CmsKanban() {
         </div>
 
         <div className="overflow-x-auto -mx-2 px-2">
-          <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex gap-4 min-w-max">
               {columns.map((column) => (
                 <Column key={column.id} column={column} tasks={filteredTasks.filter((t) => t.status === column.id)}>
