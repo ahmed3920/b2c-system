@@ -68,6 +68,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const [teamLeader, setTeamLeader] = useState<string>("");
   const [creatorType, setCreatorType] = useState<TrainingCreatorType | "">("");
   const [creatorPersonId, setCreatorPersonId] = useState<string>("");
+  const [creatorMentorIds, setCreatorMentorIds] = useState<string[]>([]);
   const [conductedBy, setConductedBy] = useState<TrainingPerson[]>([]);
   const [trainingDate, setTrainingDate] = useState<Date | undefined>();
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
