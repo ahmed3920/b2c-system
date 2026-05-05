@@ -37,6 +37,7 @@ import {
 } from "@/components/task/TaskDueDateBadge";
 import { useCmsTasks, type CmsTask, type CmsTaskStatus } from "@/hooks/useCmsTasks";
 import { useCmsRole } from "@/hooks/useCmsRole";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { Badge } from "@/components/ui/badge";
 import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
