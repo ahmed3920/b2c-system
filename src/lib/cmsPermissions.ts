@@ -117,12 +117,16 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
     view_all_attendance: true,
+    check_out: true,
+    view_own_activity: true,
   },
   developer: {
     ...ALL_FALSE,
     edit_own_task: true,
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
+    check_out: true,
+    view_own_activity: true,
   },
   reviewer: {
     ...ALL_FALSE,
@@ -130,6 +134,8 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     change_status_review_done: true,
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
+    check_out: true,
+    view_own_activity: true,
   },
 };
 
