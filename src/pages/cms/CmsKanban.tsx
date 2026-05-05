@@ -37,6 +37,7 @@ import {
 } from "@/components/task/TaskDueDateBadge";
 import { useCmsTasks, type CmsTask, type CmsTaskStatus } from "@/hooks/useCmsTasks";
 import { useCmsRole } from "@/hooks/useCmsRole";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { Badge } from "@/components/ui/badge";
 import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
@@ -204,6 +205,7 @@ const Column = ({
 export default function CmsKanban() {
   const { tasks, loading, update, remove } = useCmsTasks();
   const { isCmsAdmin, isCmsSupervisor } = useCmsRole();
+  const { can } = useCmsPermissions();
   const { users } = useCmsUsers();
   const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -211,8 +213,9 @@ export default function CmsKanban() {
   const [openTask, setOpenTask] = useState<CmsTask | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const canManage = isCmsAdmin || isCmsSupervisor;
-  const showOwner = canManage;
+  // canManage on Kanban governs delete & quick-archive controls on the cards.
+  const canManage = can("delete_task");
+  const showOwner = isCmsAdmin || isCmsSupervisor;
 
   const userMap = useMemo(
     () => new Map(users.map((u) => [u.user_id, u.full_name])),

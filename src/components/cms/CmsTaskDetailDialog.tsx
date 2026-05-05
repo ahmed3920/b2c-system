@@ -25,6 +25,7 @@ import { useCmsPropertyDefs, useCmsTaskPropertyValues } from "@/hooks/useCmsTask
 import { MultiAssigneeField } from "./MultiAssigneeField";
 import { CmsPropertiesPanel } from "./CmsPropertiesPanel";
 import { AttachmentItem, AttachmentPicker } from "./CmsCommentAttachments";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -66,6 +67,7 @@ export function CmsTaskDetailDialog({
     useCmsTaskAssignees(task?.id ?? null);
   const { defs } = useCmsPropertyDefs();
   const { values, setValue } = useCmsTaskPropertyValues(task?.id ?? null);
+  const { can, assignableRoles } = useCmsPermissions();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -88,7 +90,13 @@ export function CmsTaskDetailDialog({
 
   if (!task) return null;
 
-  const canEditTask = canManage || task.assignee_id === undefined;
+  // canManage already accounts for tier (admin/supervisor) OR assignee/owner editing rights at the row level (RLS).
+  // The reviewer-specific status restriction: members can change status only to needs-review/done if they are reviewers.
+  const canEditTask = canManage;
+  const canChangeStatus = canManage || can("change_status_any") || can("change_status_review_done");
+  const statusOptions = can("change_status_any") || canManage
+    ? STATUSES
+    : (can("change_status_review_done") ? (["in_progress", "done"] as CmsTaskStatus[]) : []);
   const filteredComments = filter === "all" ? comments : comments.filter((c) => c.status === filter);
 
   const saveTitle = async () => {
@@ -138,7 +146,7 @@ export function CmsTaskDetailDialog({
               role="developer"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("developer")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -147,7 +155,7 @@ export function CmsTaskDetailDialog({
               role="senior_developer"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("senior_developer")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -156,7 +164,7 @@ export function CmsTaskDetailDialog({
               role="reviewer"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("reviewer")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -165,7 +173,7 @@ export function CmsTaskDetailDialog({
               role="team_leader"
               assignees={assignees}
               users={users}
-              canEdit={canManage}
+              canEdit={assignableRoles.includes("team_leader")}
               onAdd={(uid, role) => addAssignee(uid, role)}
               onRemove={(id) => removeAssignee(id)}
             />
@@ -186,13 +194,13 @@ export function CmsTaskDetailDialog({
               <Select
                 value={task.status}
                 onValueChange={(v) => onUpdate(task.id, { status: v as CmsTaskStatus })}
-                disabled={!canEditTask}
+                disabled={!canChangeStatus}
               >
                 <SelectTrigger className="h-7 w-auto border-0 bg-secondary/50 hover:bg-secondary text-sm px-2 gap-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map((s) => (
+                  {(statusOptions.length > 0 ? statusOptions : STATUSES).map((s) => (
                     <SelectItem key={s} value={s}>
                       <span className="mr-2">{statusEmoji[s]}</span>
                       {s.replace("_", " ")}
