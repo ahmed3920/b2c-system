@@ -314,6 +314,7 @@ export default function CmsKanban() {
                         canManage={canManage}
                         onArchive={() => handleArchive(task)}
                         onDelete={() => handleDelete(task)}
+                        onOpen={() => setOpenTask(task)}
                       />
                     ))}
                 </Column>
@@ -329,6 +330,22 @@ export default function CmsKanban() {
           </DndContext>
         </div>
       </div>
+
+      <CmsTaskDetailDialog
+        task={openTask}
+        open={!!openTask}
+        onOpenChange={(o) => !o && setOpenTask(null)}
+        users={users}
+        canManage={canManage}
+        onUpdate={async (id, patch) => {
+          const res = await update(id, patch as never);
+          if (res.ok && openTask?.id === id) {
+            setOpenTask({ ...openTask, ...patch } as CmsTask);
+          }
+          return res;
+        }}
+        onDelete={async (id) => { await remove(id); }}
+      />
     </CmsLayout>
   );
 }
