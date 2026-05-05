@@ -42,8 +42,14 @@ function statusBadge(status: "on_time" | "late" | "absent") {
   );
 }
 
+function formatHM(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}h ${m.toString().padStart(2, "0")}m`;
+}
+
 export function CmsCheckinCard() {
-  const { row, loading, submitting, checkIn, updateReason } = useCmsAttendance();
+  const { row, loading, submitting, checkIn, checkOut, updateReason } = useCmsAttendance();
   const { toast } = useToast();
   const [, force] = useState(0);
   const [reason, setReason] = useState("");
