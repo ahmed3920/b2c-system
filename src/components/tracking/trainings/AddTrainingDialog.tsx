@@ -68,6 +68,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const [teamLeader, setTeamLeader] = useState<string>("");
   const [creatorType, setCreatorType] = useState<TrainingCreatorType | "">("");
   const [creatorPersonId, setCreatorPersonId] = useState<string>("");
+  const [creatorMentorIds, setCreatorMentorIds] = useState<string[]>([]);
   const [conductedBy, setConductedBy] = useState<TrainingPerson[]>([]);
   const [trainingDate, setTrainingDate] = useState<Date | undefined>();
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
@@ -88,6 +89,11 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setTeamLeader(editing.team_leader);
       setCreatorType(editing.creator_type);
       setCreatorPersonId(editing.creator_external_id ?? "");
+      setCreatorMentorIds(
+        editing.creator_type === "mentor" && editing.creator_external_id
+          ? editing.creator_external_id.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+      );
       setConductedBy(editing.conducted_by ?? []);
       setTrainingDate(new Date(editing.training_date));
       setDurationMinutes(editing.duration_minutes ?? 60);
@@ -100,6 +106,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setTeamLeader(isAdmin ? "" : myTeamLeader ?? "");
       setCreatorType("");
       setCreatorPersonId("");
+      setCreatorMentorIds([]);
       setConductedBy([]);
       setTrainingDate(new Date());
       setDurationMinutes(60);
@@ -213,14 +220,22 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
     if (!durationMinutes || durationMinutes <= 0) return toast.error("Enter a valid duration");
     if (!title.trim()) return toast.error("Enter a title");
     if (conductedBy.length === 0) return toast.error("Select at least one person who conducted the training");
+    if (materials.length === 0) return toast.error("Training Material is required - upload a file or add a link");
 
     let creatorName = "";
     let creatorExternalId: string | null = null;
     if (creatorType === "team_leader") {
       creatorName = teamLeader;
+    } else if (creatorType === "mentor") {
+      if (creatorMentorIds.length === 0) return toast.error("Select at least one mentor");
+      const found = creatorMentorIds
+        .map((id) => teamMentors.find((m) => m.id === id))
+        .filter((x): x is NonNullable<typeof x> => Boolean(x));
+      if (found.length === 0) return toast.error("Select valid mentor(s)");
+      creatorName = found.map((f) => `${f.id} - ${f.name}`).join(", ");
+      creatorExternalId = found.map((f) => f.id).join(",");
     } else {
-      const pool = creatorType === "mentor" ? teamMentors : teamTutors;
-      const found = pool.find((p) => p.id === creatorPersonId);
+      const found = teamTutors.find((p) => p.id === creatorPersonId);
       if (!found) return toast.error("Select the creator from the list");
       creatorName = `${found.id} - ${found.name}`;
       creatorExternalId = found.id;
@@ -281,6 +296,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   onValueChange={(v) => {
                     setCreatorType(v as TrainingCreatorType);
                     setCreatorPersonId("");
+                    setCreatorMentorIds([]);
                     setConductedBy([]);
                   }}
                 >
@@ -292,19 +308,78 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-              {creatorType && creatorType !== "team_leader" && (
+              {creatorType === "tutor" && (
                 <div>
-                  <Label>{creatorType === "mentor" ? "Mentor" : "Tutor"} *</Label>
+                  <Label>Tutor *</Label>
                   <Select value={creatorPersonId || undefined} onValueChange={setCreatorPersonId}>
                     <SelectTrigger>
-                      <SelectValue placeholder={`Select ${creatorType}`} />
+                      <SelectValue placeholder="Select tutor" />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
-                      {(creatorType === "mentor" ? teamMentors : teamTutors).map((p) => (
+                      {teamTutors.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.id} - {p.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+              {creatorType === "mentor" && (
+                <div>
+                  <Label>Mentor(s) * <span className="text-xs text-muted-foreground">(multi-select)</span></Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start font-normal">
+                        {creatorMentorIds.length === 0
+                          ? "Select mentor(s)..."
+                          : `${creatorMentorIds.length} selected`}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="start">
+                      <ScrollArea className="h-60">
+                        <div className="p-2 space-y-1">
+                          {teamMentors.length === 0 && (
+                            <p className="text-sm text-muted-foreground p-2">No mentors available</p>
+                          )}
+                          {teamMentors.map((m) => {
+                            const checked = creatorMentorIds.includes(m.id);
+                            return (
+                              <label key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={() =>
+                                    setCreatorMentorIds((prev) =>
+                                      prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
+                                    )
+                                  }
+                                />
+                                <span className="text-sm">{m.id} - {m.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                  {creatorMentorIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {creatorMentorIds.map((mid) => {
+                        const m = teamMentors.find((x) => x.id === mid);
+                        if (!m) return null;
+                        return (
+                          <Badge key={mid} variant="secondary" className="gap-1">
+                            {m.id} - {m.name}
+                            <button
+                              type="button"
+                              onClick={() => setCreatorMentorIds((prev) => prev.filter((x) => x !== mid))}
+                              className="hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -392,14 +467,20 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                 </Popover>
               </div>
               <div>
-                <Label>Training Duration (minutes) *</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  step={5}
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(Number(e.target.value) || 0)}
-                />
+                <Label>Training Duration *</Label>
+                <Select
+                  value={String(durationMinutes)}
+                  onValueChange={(v) => setDurationMinutes(Number(v))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select duration" /></SelectTrigger>
+                  <SelectContent>
+                    {[15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240].map((m) => (
+                      <SelectItem key={m} value={String(m)}>
+                        {m < 60 ? `${m} mins` : m % 60 === 0 ? `${m / 60} hour${m === 60 ? "" : "s"}` : `${Math.floor(m / 60)}h ${m % 60}m`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -415,60 +496,49 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
 
             {teamLeader && (
               <div className="space-y-2">
-                <Label>Audience</Label>
-                <div className="flex items-center gap-4 text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="audience"
-                      checked={subTeams.length === 0}
-                      onChange={() => setSubTeams([])}
-                    />
-                    Entire Team
-                  </label>
-                  <label className={cn("flex items-center gap-2", subTeamOptions.length === 0 ? "opacity-50" : "cursor-pointer")}>
-                    <input
-                      type="radio"
-                      name="audience"
-                      disabled={subTeamOptions.length === 0}
-                      checked={subTeams.length > 0}
-                      onChange={() => subTeamOptions[0] && setSubTeams([subTeamOptions[0]])}
-                    />
-                    Specific Sub-Teams
-                  </label>
-                </div>
-                {subTeams.length > 0 && subTeamOptions.length > 0 && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start font-normal">
-                        {subTeams.length} sub-team{subTeams.length === 1 ? "" : "s"} selected
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[380px] p-0" align="start">
-                      <ScrollArea className="h-60">
-                        <div className="p-2 space-y-1">
-                          {subTeamOptions.map((m) => (
-                            <label
-                              key={m}
-                              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                            >
-                              <Checkbox
-                                checked={subTeams.includes(m)}
-                                onCheckedChange={() => toggleSubTeam(m)}
-                              />
-                              <span className="text-sm">{m}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </PopoverContent>
-                  </Popover>
-                )}
+                <Label>Audience *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start font-normal">
+                      {subTeams.length === 0
+                        ? "Entire Team"
+                        : `${subTeams.length} sub-team${subTeams.length === 1 ? "" : "s"} selected`}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[380px] p-0" align="start">
+                    <ScrollArea className="h-60">
+                      <div className="p-2 space-y-1">
+                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer border-b">
+                          <Checkbox
+                            checked={subTeams.length === 0}
+                            onCheckedChange={() => setSubTeams([])}
+                          />
+                          <span className="text-sm font-medium">Entire Team</span>
+                        </label>
+                        {subTeamOptions.length === 0 && (
+                          <p className="text-sm text-muted-foreground p-2">No sub-teams available</p>
+                        )}
+                        {subTeamOptions.map((m) => (
+                          <label
+                            key={m}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={subTeams.includes(m)}
+                              onCheckedChange={() => toggleSubTeam(m)}
+                            />
+                            <span className="text-sm">{m}'s Sub-team</span>
+                          </label>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
                 {subTeams.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {subTeams.map((s) => (
                       <Badge key={s} variant="outline" className="gap-1">
-                        {s}
+                        {s}'s Sub-team
                         <button type="button" onClick={() => toggleSubTeam(s)}>
                           <X className="h-3 w-3" />
                         </button>
@@ -480,7 +550,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
             )}
 
             <AttachmentField
-              label="Training Material (optional)"
+              label="Training Material *"
               attachments={materials}
               link={materialLink}
               setLink={setMaterialLink}
