@@ -459,14 +459,20 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                 </Popover>
               </div>
               <div>
-                <Label>Training Duration (minutes) *</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  step={5}
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(Number(e.target.value) || 0)}
-                />
+                <Label>Training Duration *</Label>
+                <Select
+                  value={String(durationMinutes)}
+                  onValueChange={(v) => setDurationMinutes(Number(v))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select duration" /></SelectTrigger>
+                  <SelectContent>
+                    {[15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240].map((m) => (
+                      <SelectItem key={m} value={String(m)}>
+                        {m < 60 ? `${m} mins` : m % 60 === 0 ? `${m / 60} hour${m === 60 ? "" : "s"}` : `${Math.floor(m / 60)}h ${m % 60}m`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
