@@ -1,93 +1,32 @@
-# CMS Check-out + Activity Tracking
+## Problem
 
-Extend the CMS with check-out, real-time activity tracking, and an admin monitoring page.
+`ERROR: function gen_random_bytes(integer) does not exist (SQLSTATE 42883)`
 
-## 1. Database changes
+The `pgcrypto` extension is installed in the `extensions` schema (not `public`), so calls to `gen_random_bytes(...)` without a schema prefix fail. One past migration (`20260313145937_*.sql`, the `login_tokens` table) defines its `token` column default as:
 
-**Extend `cms_attendance`:**
-- `check_out_time timestamptz`
-- `working_minutes integer` (computed on check-out: `(check_out_time - check_in_time)/60`, stored)
-- `active_minutes integer` (rolled up from activity logs at check-out, optional integration)
-- `activity_status text` ('active' | 'idle' | 'inactive', last known)
+```sql
+token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex')
+```
 
-**New table `cms_user_activity_logs`:**
-- `id uuid pk`
-- `user_id uuid`
-- `date date` (Cairo)
-- `bucket_start timestamptz` — minute-bucket
-- `status text` ('active' | 'idle' | 'inactive')
-- `seconds integer` (how many seconds in this state, capped per heartbeat)
-- index on (user_id, date)
+Every `INSERT` into that table that relies on the default triggers this error. The newer `session_incident_tokens` migration already uses the correct `extensions.gen_random_bytes(...)` form.
 
-RLS:
-- Users insert/select their own rows
-- `cms_admin` selects all (`cms_supervisor` selects all read-only too, gated by permission `view_all_activity`)
+This matches the symptom: the error appears when an admin generates a login link (e.g. `generate-login-token` edge function inserts into `login_tokens`).
 
-## 2. Permission matrix additions
-Add capabilities in `cmsPermissions.ts`:
-- `check_out` (all roles, requires prior check-in — enforced in UI/DB)
-- `view_all_activity` (Admin, TL)
-- `view_own_activity` (all)
+## Fix
 
-## 3. Check-out flow
-- Extend `useCmsAttendance` with `checkOut()`:
-  - Guard: must have `check_in_time` and no `check_out_time`
-  - Update row → set `check_out_time = now()`, `working_minutes = diff`
-- Update `CmsCheckinCard` → after check-in show:
-  - Check-in time
-  - "Check Out" button
-  - After check-out: check-out time + total working hours (HH:MM)
-- Dashboard already renders this card; no layout change needed.
+Write a small migration that updates the default on `public.login_tokens.token` to use the schema-qualified function:
 
-## 4. Activity tracking (client)
-New hook `useCmsActivityTracker` mounted inside `CmsLayout` (only when authenticated CMS user):
-- Listen to `mousemove`, `mousedown`, `keydown`, `scroll`, `touchstart`, `visibilitychange`
-- Maintain `lastActivityAt`
-- Compute current status every 30s:
-  - `< 5 min` since activity → `active`
-  - `5–15 min` → `idle`
-  - `> 15 min` or tab hidden long → `inactive`
-- Heartbeat every 60s: insert/upsert a `cms_user_activity_logs` row with `seconds=60` for the current bucket+status
-- On `beforeunload` / tab hidden: flush pending seconds
-- Privacy notice: small one-time toast / footer line in `CmsLayout`: "Your activity is tracked while using the CMS"
+```sql
+ALTER TABLE public.login_tokens
+  ALTER COLUMN token SET DEFAULT encode(extensions.gen_random_bytes(32), 'hex');
+```
 
-## 5. Today's Attendance card
-Augment `CmsCheckinCard` (or new `CmsTodayAttendanceCard`) showing:
-- Check-in time, Check-out time
-- Current activity status badge (color: green/yellow/red)
-- Working hours so far (live tick) and active time today
+No data is touched and no other code changes are needed. Existing rows keep their tokens; new inserts will work.
 
-## 6. Admin Activity Monitoring page
-New page `src/pages/cms/CmsActivityMonitoring.tsx` at `/cms/activity` (gated by `view_all_activity`):
-- Table of CMS users with today's data:
-  - Name | Current Status (colored dot) | Active | Idle | Inactive | Check-in | Check-out | Working hours
-- Auto-refresh every 30s
-- Filter by status
-- Sidebar entry in `CmsSidebar` (only shown when capability granted)
+## Verification
 
-## 7. Edge cases
-- Closing browser → no heartbeat → admin view computes "inactive" if last log > 15 min ago
-- Multiple tabs → each tab heartbeats independently; daily totals sum but are capped per minute via upsert (`(user_id,date,bucket_start)` unique → `seconds = greatest(existing, new)`)
-- Past dates locked (no edits)
+- After the migration, generate a login link from the admin UI (or call `generate-login-token`) and confirm a row is inserted with a fresh token and no SQL error.
 
-## 8. Files
+## Notes
 
-**New**
-- `supabase/migrations/<ts>_cms_checkout_activity.sql`
-- `src/hooks/useCmsActivityTracker.ts`
-- `src/hooks/useCmsActivitySummary.ts`
-- `src/pages/cms/CmsActivityMonitoring.tsx`
-
-**Edited**
-- `src/hooks/useCmsAttendance.ts` (+ checkOut, working_minutes)
-- `src/components/cms/CmsCheckinCard.tsx` (check-out UI, working hours, status)
-- `src/components/cms/CmsLayout.tsx` (mount tracker, privacy notice)
-- `src/components/cms/CmsSidebar.tsx` (add Activity link)
-- `src/lib/cmsPermissions.ts` + `useCmsPermissions.ts` (new capabilities)
-- `src/App.tsx` (route)
-
-## Open questions before building
-
-1. **Idle/Inactive thresholds** — use 5 min idle / 15 min inactive (per spec) or make admin-configurable?
-2. **Working hours definition** — total elapsed time (check-in → check-out) OR active-only time (excluding inactive)?
-3. **Who can see Activity Monitoring** — Admin only, or also Team Leader (matches spec "Admin")?
+If you actually hit this error from a different action (not login-link generation), let me know which screen/action triggered it so I can check whether another object also has a bare `gen_random_bytes` reference.
