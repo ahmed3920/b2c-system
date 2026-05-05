@@ -613,7 +613,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
               />
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
