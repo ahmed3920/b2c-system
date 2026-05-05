@@ -108,6 +108,7 @@ const App = () => (
           <Route path="/cms/users" element={<CmsUsers />} />
           <Route path="/cms/task-properties" element={<CmsTaskProperties />} />
           <Route path="/cms/permissions" element={<CmsPermissions />} />
+          <Route path="/cms/activity" element={<CmsActivityMonitoring />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
