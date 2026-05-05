@@ -89,6 +89,11 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setTeamLeader(editing.team_leader);
       setCreatorType(editing.creator_type);
       setCreatorPersonId(editing.creator_external_id ?? "");
+      setCreatorMentorIds(
+        editing.creator_type === "mentor" && editing.creator_external_id
+          ? editing.creator_external_id.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+      );
       setConductedBy(editing.conducted_by ?? []);
       setTrainingDate(new Date(editing.training_date));
       setDurationMinutes(editing.duration_minutes ?? 60);
@@ -101,6 +106,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setTeamLeader(isAdmin ? "" : myTeamLeader ?? "");
       setCreatorType("");
       setCreatorPersonId("");
+      setCreatorMentorIds([]);
       setConductedBy([]);
       setTrainingDate(new Date());
       setDurationMinutes(60);
