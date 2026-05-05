@@ -109,9 +109,9 @@ export default function CmsUsers() {
                     <TableCell className="font-medium">{u.full_name}</TableCell>
                     <TableCell>{u.email ?? "—"}</TableCell>
                     <TableCell>
-                      <Select value={u.role ?? "cms_member"} onValueChange={(v) => setRole(u.user_id, v as CmsRole)}>
+                      <Select value={u.title ?? "developer"} onValueChange={(v) => setTitle(u.user_id, v as CmsJobTitle)}>
                         <SelectTrigger className="w-[180px] h-8"><SelectValue /></SelectTrigger>
-                        <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+                        <SelectContent>{JOB_TITLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
