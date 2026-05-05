@@ -94,7 +94,7 @@ export default function CmsUsers() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Job title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Active</TableHead>
                 </TableRow>
