@@ -210,6 +210,23 @@ export default function CmsTasks() {
           </CardContent>
         </Card>
       </div>
+
+      <CmsTaskDetailDialog
+        task={openTask}
+        open={!!openTask}
+        onOpenChange={(o) => !o && setOpenTask(null)}
+        users={users}
+        canManage={canManage}
+        onUpdate={async (id, patch) => {
+          const res = await update(id, patch as never);
+          // refresh local openTask snapshot
+          if (res.ok && openTask?.id === id) {
+            setOpenTask({ ...openTask, ...patch } as CmsTask);
+          }
+          return res;
+        }}
+        onDelete={async (id) => { await remove(id); }}
+      />
     </CmsLayout>
   );
 }
