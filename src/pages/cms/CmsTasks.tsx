@@ -156,6 +156,8 @@ export default function CmsTasks() {
           </div>
         </div>
 
+        <CmsTaskFilters users={users} defs={defs} filters={filters} onChange={setFilters} />
+
         <Card>
           <CardHeader><CardTitle>Tasks ({filtered.length})</CardTitle></CardHeader>
           <CardContent className="overflow-x-auto">
