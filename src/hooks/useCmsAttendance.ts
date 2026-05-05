@@ -15,6 +15,10 @@ export interface CmsAttendanceRow {
   user_name: string | null;
   date: string;
   check_in_time: string | null;
+  check_out_time: string | null;
+  working_minutes: number | null;
+  active_minutes: number | null;
+  activity_status: string | null;
   status: AttendanceStatus;
   minutes_late: number;
   late_reason: string | null;
