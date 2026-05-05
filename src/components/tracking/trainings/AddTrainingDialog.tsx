@@ -378,11 +378,13 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                 </Popover>
               </div>
               <div>
-                <Label>Training Time *</Label>
+                <Label>Training Duration (minutes) *</Label>
                 <Input
-                  type="time"
-                  value={trainingTime}
-                  onChange={(e) => setTrainingTime(e.target.value)}
+                  type="number"
+                  min={1}
+                  step={5}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(Number(e.target.value) || 0)}
                 />
               </div>
             </div>
