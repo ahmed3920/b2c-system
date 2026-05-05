@@ -33,7 +33,11 @@ export type CmsCapability =
   | "edit_property_values_on_accessible_task"
   // Attendance
   | "view_all_attendance"
-  | "manage_attendance";
+  | "manage_attendance"
+  | "check_out"
+  // Activity
+  | "view_all_activity"
+  | "view_own_activity";
 
 export type CmsCapabilityMap = Record<CmsCapability, boolean>;
 
