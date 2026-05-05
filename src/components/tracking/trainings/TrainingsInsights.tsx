@@ -18,7 +18,7 @@ import type { Training } from "@/hooks/useTrainings";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "#fe7f1b", "#10b981"];
 
-export function TrainingsInsights({ items }: { items: Training[] }) {
+export function TrainingsInsights({ items, groupBy = "team" }: { items: Training[]; groupBy?: "team" | "subTeam" }) {
   const stats = useMemo(() => {
     const total = items.length;
     const now = new Date();
@@ -55,17 +55,24 @@ export function TrainingsInsights({ items }: { items: Training[] }) {
     }));
   }, [items]);
 
-  const perTeam = useMemo(() => {
+  const perGroup = useMemo(() => {
     const map = new Map<string, number>();
-    items.forEach((t) => {
-      const k = t.team_leader || "Unassigned";
-      map.set(k, (map.get(k) ?? 0) + 1);
-    });
+    if (groupBy === "subTeam") {
+      items.forEach((t) => {
+        const groups = t.sub_teams?.length ? t.sub_teams : ["Whole Team"];
+        groups.forEach((g) => map.set(g, (map.get(g) ?? 0) + 1));
+      });
+    } else {
+      items.forEach((t) => {
+        const k = t.team_leader || "Unassigned";
+        map.set(k, (map.get(k) ?? 0) + 1);
+      });
+    }
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
-  }, [items]);
+  }, [items, groupBy]);
 
   const byCreatorType = useMemo(() => {
     const map = new Map<string, number>();
@@ -114,10 +121,10 @@ export function TrainingsInsights({ items }: { items: Training[] }) {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Trainings per Team</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">{groupBy === "subTeam" ? "Trainings per Sub-Team" : "Trainings per Team"}</CardTitle></CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={perTeam} layout="vertical">
+              <BarChart data={perGroup} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
