@@ -32,11 +32,13 @@ type NavItem = {
   url: string;
   icon: any;
   adminOnly?: boolean;
+  capability?: string;
 };
 
 const overview: NavItem[] = [
   { title: "Dashboard", url: "/cms", icon: LayoutDashboard },
   { title: "Attendance", url: "/cms/attendance", icon: CalendarCheck },
+  { title: "Activity", url: "/cms/activity", icon: Activity, capability: "view_all_activity" },
 ];
 
 const taskTracker: NavItem[] = [
@@ -55,6 +57,7 @@ export function CmsSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { isCmsAdmin } = useCmsRole();
+  const { can } = useCmsPermissions();
 
   const isActive = (path: string) =>
     path === "/cms"
