@@ -70,10 +70,10 @@ export default function CmsUsers() {
                 <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
                 <div><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
                 <div>
-                  <Label>Role</Label>
-                  <Select value={role} onValueChange={(v) => setRoleVal(v as CmsRole)}>
+                  <Label>Job title</Label>
+                  <Select value={title} onValueChange={(v) => setTitleVal(v as CmsJobTitle)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+                    <SelectContent>{JOB_TITLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
