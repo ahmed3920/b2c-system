@@ -164,12 +164,16 @@ export default function CmsTasks() {
                 ) : filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No tasks</TableCell></TableRow>
                 ) : filtered.map((t) => (
-                  <TableRow key={t.id}>
+                  <TableRow
+                    key={t.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setOpenTask(t)}
+                  >
                     <TableCell>
                       <div className="font-medium">{t.title}</div>
                       {t.description && <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={t.status}
                         onValueChange={(v) => update(t.id, { status: v as CmsTaskStatus })}
@@ -193,7 +197,7 @@ export default function CmsTasks() {
                       </div>
                     </TableCell>
                     {canManage && (
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" onClick={() => remove(t.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
