@@ -65,7 +65,11 @@ export function CmsSidebar() {
       : location.pathname === path || location.pathname.startsWith(path + "/");
 
   const renderGroup = (label: string, items: NavItem[]) => {
-    const visible = items.filter((it) => !it.adminOnly || isCmsAdmin);
+    const visible = items.filter((it) => {
+      if (it.adminOnly && !isCmsAdmin) return false;
+      if (it.capability && !can(it.capability as any)) return false;
+      return true;
+    });
     if (visible.length === 0) return null;
     return (
       <SidebarGroup>
