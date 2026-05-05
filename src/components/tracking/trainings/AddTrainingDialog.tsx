@@ -313,16 +313,38 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
               {creatorType === "tutor" && (
                 <div>
                   <Label>Tutor *</Label>
-                  <Select value={creatorPersonId || undefined} onValueChange={setCreatorPersonId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select tutor" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {teamTutors.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.id} - {p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between font-normal">
+                        {creatorPersonId
+                          ? (() => {
+                              const t = teamTutors.find((x) => x.id === creatorPersonId);
+                              return t ? `${t.id} - ${t.name}` : "Select tutor";
+                            })()
+                          : "Select tutor"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search tutor by ID or name..." />
+                        <CommandList>
+                          <CommandEmpty>No tutor found.</CommandEmpty>
+                          <CommandGroup>
+                            {teamTutors.map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={`${p.id} ${p.name}`}
+                                onSelect={() => setCreatorPersonId(p.id)}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", creatorPersonId === p.id ? "opacity-100" : "opacity-0")} />
+                                {p.id} - {p.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
               {creatorType === "mentor" && (
