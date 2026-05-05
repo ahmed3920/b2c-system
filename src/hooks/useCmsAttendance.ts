@@ -140,5 +140,28 @@ export function useCmsAttendance() {
     [userId, row, today],
   );
 
-  return { row, loading, submitting, checkIn, updateReason, refresh: load };
+  const checkOut = useCallback(async () => {
+    if (!userId || !row) return { ok: false as const, error: "No check-in found" };
+    if (!row.check_in_time) return { ok: false as const, error: "Check in first" };
+    if (row.check_out_time) return { ok: false as const, error: "Already checked out today" };
+    setSubmitting(true);
+    const checkOutTs = new Date();
+    const inTs = new Date(row.check_in_time).getTime();
+    const minutes = Math.max(0, Math.round((checkOutTs.getTime() - inTs) / 60000));
+    const { data, error } = await supabase
+      .from("cms_attendance")
+      .update({
+        check_out_time: checkOutTs.toISOString(),
+        working_minutes: minutes,
+      })
+      .eq("id", row.id)
+      .select("*")
+      .maybeSingle();
+    setSubmitting(false);
+    if (error) return { ok: false as const, error: error.message };
+    setRow((data as CmsAttendanceRow | null) ?? row);
+    return { ok: true as const };
+  }, [userId, row]);
+
+  return { row, loading, submitting, checkIn, checkOut, updateReason, refresh: load };
 }
