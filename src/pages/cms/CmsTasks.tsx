@@ -22,6 +22,11 @@ import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDat
 import { cn } from "@/lib/utils";
 import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
 import type { CmsTask } from "@/hooks/useCmsTasks";
+import { useCmsPropertyDefs } from "@/hooks/useCmsTaskProperties";
+import {
+  CmsTaskFilters, applyTaskFilters, useCmsTaskFilterIndex, emptyFilters,
+  type TaskFilterState,
+} from "@/components/cms/CmsTaskFilters";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -58,7 +63,14 @@ export default function CmsTasks() {
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.user_id, u.full_name])), [users]);
 
-  const filtered = tasks.filter((t) => statusFilter === "all" || t.status === statusFilter);
+  const [filters, setFilters] = useState<TaskFilterState>(emptyFilters);
+  const { defs } = useCmsPropertyDefs();
+  const filterIndex = useCmsTaskFilterIndex();
+
+  const filtered = useMemo(() => {
+    const byStatus = tasks.filter((t) => statusFilter === "all" || t.status === statusFilter);
+    return applyTaskFilters(byStatus, filters, filterIndex);
+  }, [tasks, statusFilter, filters, filterIndex]);
 
   const reset = () => {
     setTitle(""); setDescription(""); setPriority("medium"); setAssigneeId(""); setDateTo("");
@@ -143,6 +155,8 @@ export default function CmsTasks() {
             )}
           </div>
         </div>
+
+        <CmsTaskFilters users={users} defs={defs} filters={filters} onChange={setFilters} />
 
         <Card>
           <CardHeader><CardTitle>Tasks ({filtered.length})</CardTitle></CardHeader>
