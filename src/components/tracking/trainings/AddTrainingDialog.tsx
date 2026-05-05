@@ -323,7 +323,9 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   <ScrollArea className="h-72">
                     <div className="p-2 space-y-1">
                       {conductedOptions.length === 0 && (
-                        <p className="text-sm text-muted-foreground p-2">Select a team first</p>
+                        <p className="text-sm text-muted-foreground p-2">
+                          {!teamLeader ? "Select a team first" : !creatorType ? "Select training creator first" : "No people available"}
+                        </p>
                       )}
                       {conductedOptions.map((p) => {
                         const checked = !!conductedBy.find((x) => x.id === p.id);
