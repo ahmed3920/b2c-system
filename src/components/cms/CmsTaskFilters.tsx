@@ -98,13 +98,15 @@ export function CmsTaskFilters({ users, defs, filters, onChange }: Props) {
           value={filters.assigneeRole}
           onValueChange={(v) => onChange({ ...filters, assigneeRole: v as TaskFilterState["assigneeRole"] })}
         >
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-[170px] h-9">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any role</SelectItem>
             <SelectItem value="developer">Developer</SelectItem>
+            <SelectItem value="senior_developer">Senior Developer</SelectItem>
             <SelectItem value="reviewer">Reviewer</SelectItem>
+            <SelectItem value="team_leader">Team Leader</SelectItem>
           </SelectContent>
         </Select>
 
