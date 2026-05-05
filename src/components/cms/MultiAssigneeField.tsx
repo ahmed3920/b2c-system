@@ -24,6 +24,8 @@ interface Props {
 const colorByRole: Record<CmsAssigneeRole, string> = {
   developer: "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300",
   reviewer: "bg-purple-500/10 text-purple-700 border-purple-500/20 dark:text-purple-300",
+  senior_developer: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300",
+  team_leader: "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300",
 };
 
 export function MultiAssigneeField({
