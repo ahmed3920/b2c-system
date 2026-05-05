@@ -363,6 +363,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_task_comments: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          created_by_name: string | null
+          id: string
+          status: Database["public"]["Enums"]["cms_task_comment_status"]
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          created_by_name?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["cms_task_comment_status"]
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          created_by_name?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["cms_task_comment_status"]
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cms_tasks: {
         Row: {
           assignee_id: string | null
@@ -2637,6 +2670,7 @@ export type Database = {
       attendance_status: "on_time" | "late" | "absent"
       cms_app_role: "cms_admin" | "cms_supervisor" | "cms_member"
       cms_attendance_status: "on_time" | "late" | "absent"
+      cms_task_comment_status: "open" | "resolved" | "needs_review"
       cms_task_priority: "low" | "medium" | "high"
       cms_task_status: "todo" | "in_progress" | "done" | "archived"
       cs_ticket_case_type: "CS" | "Edu"
@@ -2821,6 +2855,7 @@ export const Constants = {
       attendance_status: ["on_time", "late", "absent"],
       cms_app_role: ["cms_admin", "cms_supervisor", "cms_member"],
       cms_attendance_status: ["on_time", "late", "absent"],
+      cms_task_comment_status: ["open", "resolved", "needs_review"],
       cms_task_priority: ["low", "medium", "high"],
       cms_task_status: ["todo", "in_progress", "done", "archived"],
       cs_ticket_case_type: ["CS", "Edu"],
