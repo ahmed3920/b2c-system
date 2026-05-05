@@ -391,6 +391,12 @@ export function CmsTaskDetailDialog({
               </div>
             </div>
           </section>
+
+          {/* Review Tabs (under comments) */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Review</h3>
+            <CmsTaskReviewTabs taskId={task.id} canEdit={canEditTask} />
+          </section>
         </div>
 
         {canManage && onDelete && (
