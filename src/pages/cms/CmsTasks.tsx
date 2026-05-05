@@ -173,7 +173,7 @@ export default function CmsTasks() {
                   <TableHead>Priority</TableHead>
                   <TableHead>Assignee</TableHead>
                   <TableHead>Due</TableHead>
-                  {canManage && <TableHead className="w-12"></TableHead>}
+                  {canDelete && <TableHead className="w-12"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
