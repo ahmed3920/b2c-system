@@ -59,6 +59,9 @@ const ALL_FALSE: CmsCapabilityMap = {
   edit_property_values_on_accessible_task: false,
   view_all_attendance: false,
   manage_attendance: false,
+  check_out: false,
+  view_all_activity: false,
+  view_own_activity: false,
 };
 
 export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
