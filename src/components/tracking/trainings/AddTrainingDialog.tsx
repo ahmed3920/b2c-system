@@ -222,7 +222,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       const pool = creatorType === "mentor" ? teamMentors : teamTutors;
       const found = pool.find((p) => p.id === creatorPersonId);
       if (!found) return toast.error("Select the creator from the list");
-      creatorName = found.name;
+      creatorName = `${found.id} - ${found.name}`;
       creatorExternalId = found.id;
     }
 
