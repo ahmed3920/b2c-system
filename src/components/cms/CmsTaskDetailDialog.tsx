@@ -52,7 +52,7 @@ interface Props {
   task: CmsTask | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  users: { user_id: string; full_name: string; active_status: boolean }[];
+  users: { user_id: string; full_name: string; active_status: boolean; title?: string | null }[];
   canManage: boolean;
   onUpdate: (id: string, patch: Partial<CmsTask>) => Promise<{ ok: boolean; error?: string }>;
   onDelete?: (id: string) => Promise<void>;
@@ -142,42 +142,49 @@ export function CmsTaskDetailDialog({
 
           {/* Top: Developers + Reviewers + Due */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-4">
-            <MultiAssigneeField
-              label="Developer"
-              role="developer"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("developer")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
-            <MultiAssigneeField
-              label="Senior Developer"
-              role="senior_developer"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("senior_developer")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
-            <MultiAssigneeField
-              label="Reviewer"
-              role="reviewer"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("reviewer")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
-            <MultiAssigneeField
-              label="Team Leader"
-              role="team_leader"
-              assignees={assignees}
-              users={users}
-              canEdit={assignableRoles.includes("team_leader")}
-              onAdd={(uid, role) => addAssignee(uid, role)}
-              onRemove={(id) => removeAssignee(id)}
-            />
+          {(() => {
+            const usersByTitle = (t: string) => users.filter((u) => (u.title ?? null) === t);
+            return (
+              <>
+                <MultiAssigneeField
+                  label="Developer"
+                  role="developer"
+                  assignees={assignees}
+                  users={usersByTitle("developer")}
+                  canEdit={assignableRoles.includes("developer")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+                <MultiAssigneeField
+                  label="Senior Developer"
+                  role="senior_developer"
+                  assignees={assignees}
+                  users={usersByTitle("senior_developer")}
+                  canEdit={assignableRoles.includes("senior_developer")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+                <MultiAssigneeField
+                  label="Reviewer"
+                  role="reviewer"
+                  assignees={assignees}
+                  users={usersByTitle("reviewer")}
+                  canEdit={assignableRoles.includes("reviewer")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+                <MultiAssigneeField
+                  label="Team Leader"
+                  role="team_leader"
+                  assignees={assignees}
+                  users={usersByTitle("team_leader")}
+                  canEdit={assignableRoles.includes("team_leader")}
+                  onAdd={(uid, role) => addAssignee(uid, role)}
+                  onRemove={(id) => removeAssignee(id)}
+                />
+              </>
+            );
+          })()}
 
             <PropertyRow icon={<CalendarDays className="w-4 h-4" />} label="Due Date">
               <Input
@@ -244,11 +251,7 @@ export function CmsTaskDetailDialog({
             />
           </section>
 
-          {/* Review Tabs */}
-          <section>
-            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Review</h3>
-            <CmsTaskReviewTabs taskId={task.id} canEdit={canEditTask} />
-          </section>
+          {/* Review Tabs moved below comments */}
 
           {/* Description */}
           <section>
@@ -387,6 +390,12 @@ export function CmsTaskDetailDialog({
                 </Button>
               </div>
             </div>
+          </section>
+
+          {/* Review Tabs (under comments) */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Review</h3>
+            <CmsTaskReviewTabs taskId={task.id} canEdit={canEditTask} />
           </section>
         </div>
 
