@@ -32,8 +32,8 @@ export function TrainingDetailsDialog({
               <Info icon={<Calendar className="h-4 w-4" />} label="Date">
                 {format(parseISO(training.training_date), "PPP")}
               </Info>
-              <Info icon={<Clock className="h-4 w-4" />} label="Time">
-                {training.training_time?.slice(0, 5)}
+              <Info icon={<Clock className="h-4 w-4" />} label="Duration">
+                {training.duration_minutes ?? 0} min
               </Info>
               <Info icon={<User className="h-4 w-4" />} label="Creator">
                 <span className="capitalize">{training.creator_type.replace("_", " ")}</span> ·{" "}

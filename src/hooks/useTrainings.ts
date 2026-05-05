@@ -24,7 +24,8 @@ export interface Training {
   creator_external_id: string | null;
   conducted_by: TrainingPerson[];
   training_date: string;
-  training_time: string;
+  training_time: string | null;
+  duration_minutes: number;
   title: string;
   notes: string | null;
   sub_teams: string[];
@@ -42,7 +43,8 @@ export interface TrainingInput {
   creator_external_id?: string | null;
   conducted_by: TrainingPerson[];
   training_date: string;
-  training_time: string;
+  training_time?: string | null;
+  duration_minutes: number;
   title: string;
   notes?: string | null;
   sub_teams: string[];

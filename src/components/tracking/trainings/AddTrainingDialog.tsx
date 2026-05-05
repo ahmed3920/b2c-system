@@ -70,7 +70,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const [creatorPersonId, setCreatorPersonId] = useState<string>("");
   const [conductedBy, setConductedBy] = useState<TrainingPerson[]>([]);
   const [trainingDate, setTrainingDate] = useState<Date | undefined>();
-  const [trainingTime, setTrainingTime] = useState<string>("");
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
   const [title, setTitle] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [subTeams, setSubTeams] = useState<string[]>([]);
@@ -90,7 +90,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setCreatorPersonId(editing.creator_external_id ?? "");
       setConductedBy(editing.conducted_by ?? []);
       setTrainingDate(new Date(editing.training_date));
-      setTrainingTime(editing.training_time?.slice(0, 5) ?? "");
+      setDurationMinutes(editing.duration_minutes ?? 60);
       setTitle(editing.title);
       setNotes(editing.notes ?? "");
       setSubTeams(editing.sub_teams ?? []);
@@ -102,7 +102,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setCreatorPersonId("");
       setConductedBy([]);
       setTrainingDate(new Date());
-      setTrainingTime("");
+      setDurationMinutes(60);
       setTitle("");
       setNotes("");
       setSubTeams([]);
@@ -127,19 +127,30 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const teamTutors = useMemo(() => teamRoster.filter((t) => t.role === "Tutor"), [teamRoster]);
 
   const subTeamOptions = useMemo(() => {
-    // sub-teams = distinct mentor names (each mentor groups a set of tutors)
-    const mentors = new Set(teamRoster.map((t) => t.mentor).filter((m): m is string => Boolean(m?.trim())));
+    // Sub-teams = distinct mentor names whose `team_leader` matches exactly the selected TL
+    const mentors = new Set(
+      teamRoster
+        .filter((t) => t.team_leader === teamLeader)
+        .map((t) => t.mentor)
+        .filter((m): m is string => Boolean(m?.trim())),
+    );
     return Array.from(mentors).sort();
-  }, [teamRoster]);
+  }, [teamRoster, teamLeader]);
 
-  // Conducted-by options
+  // Conducted-by options depend on creator type
   const conductedOptions: TrainingPerson[] = useMemo(() => {
     const opts: TrainingPerson[] = [];
-    if (teamLeader) opts.push({ id: `tl:${teamLeader}`, name: `${teamLeader} (Team Leader)`, role: "team_leader" });
-    teamMentors.forEach((m) => opts.push({ id: m.id, name: m.name, role: "mentor" }));
-    teamTutors.forEach((t) => opts.push({ id: t.id, name: t.name, role: "tutor" }));
+    const labelOf = (p: { id: string; name: string }) => `${p.id} - ${p.name}`;
+    if (creatorType === "team_leader") {
+      if (teamLeader) opts.push({ id: `tl:${teamLeader}`, name: `${teamLeader} (Team Leader)`, role: "team_leader" });
+      teamMentors.forEach((m) => opts.push({ id: m.id, name: labelOf(m), role: "mentor" }));
+    } else if (creatorType === "mentor") {
+      teamMentors.forEach((m) => opts.push({ id: m.id, name: labelOf(m), role: "mentor" }));
+    } else if (creatorType === "tutor") {
+      teamTutors.forEach((t) => opts.push({ id: t.id, name: labelOf(t), role: "tutor" }));
+    }
     return opts;
-  }, [teamLeader, teamMentors, teamTutors]);
+  }, [creatorType, teamLeader, teamMentors, teamTutors]);
 
   function toggleConducted(p: TrainingPerson) {
     setConductedBy((prev) =>
@@ -199,7 +210,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
     if (!teamLeader) return toast.error("Select a team");
     if (!creatorType) return toast.error("Select training creator type");
     if (!trainingDate) return toast.error("Select a date");
-    if (!trainingTime) return toast.error("Select a time");
+    if (!durationMinutes || durationMinutes <= 0) return toast.error("Enter a valid duration");
     if (!title.trim()) return toast.error("Enter a title");
     if (conductedBy.length === 0) return toast.error("Select at least one person who conducted the training");
 
@@ -211,7 +222,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       const pool = creatorType === "mentor" ? teamMentors : teamTutors;
       const found = pool.find((p) => p.id === creatorPersonId);
       if (!found) return toast.error("Select the creator from the list");
-      creatorName = found.name;
+      creatorName = `${found.id} - ${found.name}`;
       creatorExternalId = found.id;
     }
 
@@ -223,7 +234,8 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       creator_external_id: creatorExternalId,
       conducted_by: conductedBy,
       training_date: format(trainingDate, "yyyy-MM-dd"),
-      training_time: trainingTime.length === 5 ? `${trainingTime}:00` : trainingTime,
+      training_time: null,
+      duration_minutes: durationMinutes,
       title: title.trim(),
       notes: notes.trim() || null,
       sub_teams: subTeams,
@@ -269,11 +281,12 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   onValueChange={(v) => {
                     setCreatorType(v as TrainingCreatorType);
                     setCreatorPersonId("");
+                    setConductedBy([]);
                   }}
                 >
                   <SelectTrigger><SelectValue placeholder="Who created it?" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="team_leader">Me (Team Leader)</SelectItem>
+                    <SelectItem value="team_leader">Team Leader</SelectItem>
                     <SelectItem value="mentor">Mentor</SelectItem>
                     <SelectItem value="tutor">Tutor</SelectItem>
                   </SelectContent>
@@ -288,7 +301,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {(creatorType === "mentor" ? teamMentors : teamTutors).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        <SelectItem key={p.id} value={p.id}>{p.id} - {p.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -310,7 +323,9 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   <ScrollArea className="h-72">
                     <div className="p-2 space-y-1">
                       {conductedOptions.length === 0 && (
-                        <p className="text-sm text-muted-foreground p-2">Select a team first</p>
+                        <p className="text-sm text-muted-foreground p-2">
+                          {!teamLeader ? "Select a team first" : !creatorType ? "Select training creator first" : "No people available"}
+                        </p>
                       )}
                       {conductedOptions.map((p) => {
                         const checked = !!conductedBy.find((x) => x.id === p.id);
@@ -377,11 +392,13 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                 </Popover>
               </div>
               <div>
-                <Label>Training Time *</Label>
+                <Label>Training Duration (minutes) *</Label>
                 <Input
-                  type="time"
-                  value={trainingTime}
-                  onChange={(e) => setTrainingTime(e.target.value)}
+                  type="number"
+                  min={1}
+                  step={5}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(Number(e.target.value) || 0)}
                 />
               </div>
             </div>
@@ -396,36 +413,59 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
               />
             </div>
 
-            {subTeamOptions.length > 0 && (
-              <div>
-                <Label>Sub-Team <span className="text-xs text-muted-foreground">(optional, multi-select)</span></Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start font-normal">
-                      {subTeams.length === 0 ? "Whole team" : `${subTeams.length} selected`}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[380px] p-0" align="start">
-                    <ScrollArea className="h-60">
-                      <div className="p-2 space-y-1">
-                        {subTeamOptions.map((m) => (
-                          <label
-                            key={m}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                          >
-                            <Checkbox
-                              checked={subTeams.includes(m)}
-                              onCheckedChange={() => toggleSubTeam(m)}
-                            />
-                            <span className="text-sm">{m}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </PopoverContent>
-                </Popover>
+            {teamLeader && (
+              <div className="space-y-2">
+                <Label>Audience</Label>
+                <div className="flex items-center gap-4 text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="audience"
+                      checked={subTeams.length === 0}
+                      onChange={() => setSubTeams([])}
+                    />
+                    Entire Team
+                  </label>
+                  <label className={cn("flex items-center gap-2", subTeamOptions.length === 0 ? "opacity-50" : "cursor-pointer")}>
+                    <input
+                      type="radio"
+                      name="audience"
+                      disabled={subTeamOptions.length === 0}
+                      checked={subTeams.length > 0}
+                      onChange={() => subTeamOptions[0] && setSubTeams([subTeamOptions[0]])}
+                    />
+                    Specific Sub-Teams
+                  </label>
+                </div>
+                {subTeams.length > 0 && subTeamOptions.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start font-normal">
+                        {subTeams.length} sub-team{subTeams.length === 1 ? "" : "s"} selected
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="start">
+                      <ScrollArea className="h-60">
+                        <div className="p-2 space-y-1">
+                          {subTeamOptions.map((m) => (
+                            <label
+                              key={m}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={subTeams.includes(m)}
+                                onCheckedChange={() => toggleSubTeam(m)}
+                              />
+                              <span className="text-sm">{m}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                )}
                 {subTeams.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {subTeams.map((s) => (
                       <Badge key={s} variant="outline" className="gap-1">
                         {s}

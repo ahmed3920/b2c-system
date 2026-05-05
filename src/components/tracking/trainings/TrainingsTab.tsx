@@ -265,7 +265,7 @@ export function TrainingsTab() {
                       <TableCell className="whitespace-nowrap">
                         {format(parseISO(t.training_date), "MMM d, yyyy")}
                         <span className="text-xs text-muted-foreground ml-1">
-                          {t.training_time?.slice(0, 5)}
+                          {t.duration_minutes ?? 0} min
                         </span>
                       </TableCell>
                       <TableCell>
