@@ -550,7 +550,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
             )}
 
             <AttachmentField
-              label="Training Material (optional)"
+              label="Training Material *"
               attachments={materials}
               link={materialLink}
               setLink={setMaterialLink}
