@@ -4,6 +4,7 @@ import {
   assignableRolesFor,
   type CmsCapability,
 } from "@/lib/cmsPermissions";
+import type { CmsAssigneeRole } from "@/hooks/useCmsTaskAssignees";
 import {
   getEffectiveCapabilities,
   subscribePermissionOverrides,
@@ -26,13 +27,13 @@ export function useCmsPermissions() {
       loading,
       capabilities,
       can: (c: CmsCapability) => (capabilities ? !!capabilities[c] : false),
-      assignableRoles: title
-        ? (capabilities?.assign_any_role
-            ? (["developer", "senior_developer", "reviewer", "team_leader"] as const)
-            : capabilities?.assign_dev_reviewer_only
-              ? (["developer", "reviewer"] as const)
-              : assignableRolesFor(title))
-        : [],
+      assignableRoles: (title
+        ? capabilities?.assign_any_role
+          ? (["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[])
+          : capabilities?.assign_dev_reviewer_only
+            ? (["developer", "reviewer"] as CmsAssigneeRole[])
+            : assignableRolesFor(title)
+        : []) as CmsAssigneeRole[],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, loading, version]);
