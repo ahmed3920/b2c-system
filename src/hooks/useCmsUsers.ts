@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { CmsRole } from "@/hooks/useCmsRole";
+import { tierForTitle, type CmsJobTitle } from "@/lib/cmsJobTitles";
 
 export interface CmsUser {
   user_id: string;
@@ -8,6 +9,7 @@ export interface CmsUser {
   email: string | null;
   active_status: boolean;
   role: CmsRole | null;
+  title: CmsJobTitle | null;
   created_at: string;
 }
 
@@ -22,23 +24,32 @@ export function useCmsUsers() {
       .select("user_id, full_name, email, active_status, created_at")
       .order("created_at", { ascending: false });
     const ids = (profiles ?? []).map((p) => p.user_id);
-    let rolesByUser = new Map<string, CmsRole>();
+    let rolesByUser = new Map<string, { role: CmsRole; title: CmsJobTitle | null }>();
     if (ids.length) {
       const { data: roles } = await supabase
         .from("cms_user_roles")
-        .select("user_id, role")
+        .select("user_id, role, title")
         .in("user_id", ids);
-      rolesByUser = new Map((roles ?? []).map((r) => [r.user_id, r.role as CmsRole]));
+      rolesByUser = new Map(
+        (roles ?? []).map((r) => [
+          r.user_id,
+          { role: r.role as CmsRole, title: ((r as { title?: string | null }).title ?? null) as CmsJobTitle | null },
+        ]),
+      );
     }
     setUsers(
-      (profiles ?? []).map((p) => ({
-        user_id: p.user_id,
-        full_name: p.full_name,
-        email: p.email,
-        active_status: p.active_status,
-        role: rolesByUser.get(p.user_id) ?? null,
-        created_at: p.created_at,
-      })),
+      (profiles ?? []).map((p) => {
+        const entry = rolesByUser.get(p.user_id);
+        return {
+          user_id: p.user_id,
+          full_name: p.full_name,
+          email: p.email,
+          active_status: p.active_status,
+          role: entry?.role ?? null,
+          title: entry?.title ?? null,
+          created_at: p.created_at,
+        };
+      }),
     );
     setLoading(false);
   }, []);
@@ -55,6 +66,19 @@ export function useCmsUsers() {
     return { ok: true as const };
   }, [load]);
 
+  // Set the user's job title; tier (cms_admin/supervisor/member) is derived from the title.
+  const setTitle = useCallback(async (user_id: string, title: CmsJobTitle) => {
+    const tier = tierForTitle(title);
+    await supabase.from("cms_user_roles").delete().eq("user_id", user_id);
+    const { error } = await supabase
+      .from("cms_user_roles")
+      .insert({ user_id, role: tier, title } as never);
+    if (error) return { ok: false as const, error: error.message };
+    await load();
+    return { ok: true as const };
+  }, [load]);
+
+  // Back-compat alias
   const setRole = useCallback(async (user_id: string, role: CmsRole) => {
     await supabase.from("cms_user_roles").delete().eq("user_id", user_id);
     const { error } = await supabase.from("cms_user_roles").insert({ user_id, role });
@@ -63,5 +87,6 @@ export function useCmsUsers() {
     return { ok: true as const };
   }, [load]);
 
-  return { users, loading, refresh: load, setActive, setRole };
+  return { users, loading, refresh: load, setActive, setRole, setTitle };
 }
+

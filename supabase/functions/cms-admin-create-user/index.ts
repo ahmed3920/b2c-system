@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
     const password = String(body.password ?? "");
     const fullName = String(body.fullName ?? "").trim();
     const role: CmsRole = (body.role ?? "cms_member") as CmsRole;
+    const title = body.title ? String(body.title) : null;
 
     if (!email || !password || !fullName) return json({ error: "Missing required fields" }, 400);
     if (!["cms_admin", "cms_supervisor", "cms_member"].includes(role)) {
@@ -81,16 +82,16 @@ Deno.serve(async (req) => {
       return json({ error: profileError.message }, 400);
     }
 
-    // Assign CMS role
+    // Assign CMS role + title
     const { error: roleError } = await supabaseAdmin
       .from("cms_user_roles")
-      .insert({ user_id: userId, role });
+      .insert({ user_id: userId, role, title });
     if (roleError) {
       await supabaseAdmin.auth.admin.deleteUser(userId);
       return json({ error: roleError.message }, 400);
     }
 
-    return json({ success: true, user: { id: userId, email } }, 200);
+    return json({ success: true, userId, user: { id: userId, email } }, 200);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return json({ error: message }, 500);
