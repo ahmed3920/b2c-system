@@ -278,7 +278,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
           <div className="space-y-5 py-2">
             {isAdmin && (
               <div>
