@@ -127,19 +127,30 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const teamTutors = useMemo(() => teamRoster.filter((t) => t.role === "Tutor"), [teamRoster]);
 
   const subTeamOptions = useMemo(() => {
-    // sub-teams = distinct mentor names (each mentor groups a set of tutors)
-    const mentors = new Set(teamRoster.map((t) => t.mentor).filter((m): m is string => Boolean(m?.trim())));
+    // Sub-teams = distinct mentor names whose `team_leader` matches exactly the selected TL
+    const mentors = new Set(
+      teamRoster
+        .filter((t) => t.team_leader === teamLeader)
+        .map((t) => t.mentor)
+        .filter((m): m is string => Boolean(m?.trim())),
+    );
     return Array.from(mentors).sort();
-  }, [teamRoster]);
+  }, [teamRoster, teamLeader]);
 
-  // Conducted-by options
+  // Conducted-by options depend on creator type
   const conductedOptions: TrainingPerson[] = useMemo(() => {
     const opts: TrainingPerson[] = [];
-    if (teamLeader) opts.push({ id: `tl:${teamLeader}`, name: `${teamLeader} (Team Leader)`, role: "team_leader" });
-    teamMentors.forEach((m) => opts.push({ id: m.id, name: m.name, role: "mentor" }));
-    teamTutors.forEach((t) => opts.push({ id: t.id, name: t.name, role: "tutor" }));
+    const labelOf = (p: { id: string; name: string }) => `${p.id} - ${p.name}`;
+    if (creatorType === "team_leader") {
+      if (teamLeader) opts.push({ id: `tl:${teamLeader}`, name: `${teamLeader} (Team Leader)`, role: "team_leader" });
+      teamMentors.forEach((m) => opts.push({ id: m.id, name: labelOf(m), role: "mentor" }));
+    } else if (creatorType === "mentor") {
+      teamMentors.forEach((m) => opts.push({ id: m.id, name: labelOf(m), role: "mentor" }));
+    } else if (creatorType === "tutor") {
+      teamTutors.forEach((t) => opts.push({ id: t.id, name: labelOf(t), role: "tutor" }));
+    }
     return opts;
-  }, [teamLeader, teamMentors, teamTutors]);
+  }, [creatorType, teamLeader, teamMentors, teamTutors]);
 
   function toggleConducted(p: TrainingPerson) {
     setConductedBy((prev) =>
