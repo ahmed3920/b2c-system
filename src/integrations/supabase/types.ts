@@ -541,18 +541,21 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["cms_app_role"]
+          title: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["cms_app_role"]
+          title?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["cms_app_role"]
+          title?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2768,7 +2771,11 @@ export type Database = {
       attendance_status: "on_time" | "late" | "absent"
       cms_app_role: "cms_admin" | "cms_supervisor" | "cms_member"
       cms_attendance_status: "on_time" | "late" | "absent"
-      cms_task_assignee_role: "developer" | "reviewer"
+      cms_task_assignee_role:
+        | "developer"
+        | "reviewer"
+        | "senior_developer"
+        | "team_leader"
       cms_task_comment_status: "open" | "resolved" | "needs_review"
       cms_task_priority: "low" | "medium" | "high"
       cms_task_property_type:
@@ -2964,7 +2971,12 @@ export const Constants = {
       attendance_status: ["on_time", "late", "absent"],
       cms_app_role: ["cms_admin", "cms_supervisor", "cms_member"],
       cms_attendance_status: ["on_time", "late", "absent"],
-      cms_task_assignee_role: ["developer", "reviewer"],
+      cms_task_assignee_role: [
+        "developer",
+        "reviewer",
+        "senior_developer",
+        "team_leader",
+      ],
       cms_task_comment_status: ["open", "resolved", "needs_review"],
       cms_task_priority: ["low", "medium", "high"],
       cms_task_property_type: [
