@@ -2122,6 +2122,7 @@ export type Database = {
           creator_external_id: string | null
           creator_name: string
           creator_type: Database["public"]["Enums"]["training_creator_type"]
+          duration_minutes: number
           id: string
           material_urls: Json
           notes: string | null
@@ -2130,7 +2131,7 @@ export type Database = {
           team_leader: string
           title: string
           training_date: string
-          training_time: string
+          training_time: string | null
           updated_at: string
         }
         Insert: {
@@ -2140,6 +2141,7 @@ export type Database = {
           creator_external_id?: string | null
           creator_name: string
           creator_type: Database["public"]["Enums"]["training_creator_type"]
+          duration_minutes?: number
           id?: string
           material_urls?: Json
           notes?: string | null
@@ -2148,7 +2150,7 @@ export type Database = {
           team_leader: string
           title: string
           training_date: string
-          training_time: string
+          training_time?: string | null
           updated_at?: string
         }
         Update: {
@@ -2158,6 +2160,7 @@ export type Database = {
           creator_external_id?: string | null
           creator_name?: string
           creator_type?: Database["public"]["Enums"]["training_creator_type"]
+          duration_minutes?: number
           id?: string
           material_urls?: Json
           notes?: string | null
@@ -2166,7 +2169,7 @@ export type Database = {
           team_leader?: string
           title?: string
           training_date?: string
-          training_time?: string
+          training_time?: string | null
           updated_at?: string
         }
         Relationships: []
