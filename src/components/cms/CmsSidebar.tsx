@@ -9,6 +9,7 @@ import {
   Shield,
   Activity,
   ListChecks,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const overview: NavItem[] = [
   { title: "Dashboard", url: "/cms", icon: LayoutDashboard },
   { title: "Attendance", url: "/cms/attendance", icon: CalendarCheck },
   { title: "Activity", url: "/cms/activity", icon: Activity, capability: "view_all_activity" },
+  { title: "Analytics", url: "/cms/analytics", icon: BarChart3, capability: "view_all_activity" },
 ];
 
 const taskTracker: NavItem[] = [
