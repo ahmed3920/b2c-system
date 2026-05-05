@@ -220,14 +220,22 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
     if (!durationMinutes || durationMinutes <= 0) return toast.error("Enter a valid duration");
     if (!title.trim()) return toast.error("Enter a title");
     if (conductedBy.length === 0) return toast.error("Select at least one person who conducted the training");
+    if (materials.length === 0) return toast.error("Training Material is required - upload a file or add a link");
 
     let creatorName = "";
     let creatorExternalId: string | null = null;
     if (creatorType === "team_leader") {
       creatorName = teamLeader;
+    } else if (creatorType === "mentor") {
+      if (creatorMentorIds.length === 0) return toast.error("Select at least one mentor");
+      const found = creatorMentorIds
+        .map((id) => teamMentors.find((m) => m.id === id))
+        .filter((x): x is NonNullable<typeof x> => Boolean(x));
+      if (found.length === 0) return toast.error("Select valid mentor(s)");
+      creatorName = found.map((f) => `${f.id} - ${f.name}`).join(", ");
+      creatorExternalId = found.map((f) => f.id).join(",");
     } else {
-      const pool = creatorType === "mentor" ? teamMentors : teamTutors;
-      const found = pool.find((p) => p.id === creatorPersonId);
+      const found = teamTutors.find((p) => p.id === creatorPersonId);
       if (!found) return toast.error("Select the creator from the list");
       creatorName = `${found.id} - ${found.name}`;
       creatorExternalId = found.id;
