@@ -205,6 +205,7 @@ export default function CmsKanban() {
   const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState("all");
+  const [openTask, setOpenTask] = useState<CmsTask | null>(null);
 
   const canManage = isCmsAdmin || isCmsSupervisor;
   const showOwner = canManage;
