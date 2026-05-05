@@ -54,6 +54,7 @@ export default function CmsTasks() {
   const [dateTo, setDateTo] = useState("");
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [openTask, setOpenTask] = useState<CmsTask | null>(null);
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.user_id, u.full_name])), [users]);
 
