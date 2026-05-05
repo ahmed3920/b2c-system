@@ -15,6 +15,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, AlertTriangle } from "lucide-react";
 import { useCmsTasks, type CmsTaskStatus, type CmsTaskPriority } from "@/hooks/useCmsTasks";
+import { supabase } from "@/integrations/supabase/client";
 import { useCmsRole } from "@/hooks/useCmsRole";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { useCmsPermissions } from "@/hooks/useCmsPermissions";
