@@ -17,13 +17,7 @@ import { Plus, Loader2 } from "lucide-react";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { CmsRole } from "@/hooks/useCmsRole";
-
-const ROLES: { value: CmsRole; label: string }[] = [
-  { value: "cms_admin", label: "Admin" },
-  { value: "cms_supervisor", label: "Supervisor" },
-  { value: "cms_member", label: "Content Team Member" },
-];
+import { JOB_TITLES, jobTitleLabel, tierForTitle, type CmsJobTitle } from "@/lib/cmsJobTitles";
 
 export default function CmsUsers() {
   const { users, loading, refresh, setActive, setRole } = useCmsUsers();
