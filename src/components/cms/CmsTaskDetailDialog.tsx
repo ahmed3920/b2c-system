@@ -26,6 +26,7 @@ import { MultiAssigneeField } from "./MultiAssigneeField";
 import { CmsPropertiesPanel } from "./CmsPropertiesPanel";
 import { AttachmentItem, AttachmentPicker } from "./CmsCommentAttachments";
 import { useCmsPermissions } from "@/hooks/useCmsPermissions";
+import { CmsTaskReviewTabs } from "./CmsTaskReviewTabs";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -241,6 +242,12 @@ export function CmsTaskDetailDialog({
               canEdit={canEditTask}
               onSetValue={(propId, v) => setValue(propId, v)}
             />
+          </section>
+
+          {/* Review Tabs */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Review</h3>
+            <CmsTaskReviewTabs taskId={task.id} canEdit={canEditTask} />
           </section>
 
           {/* Description */}
