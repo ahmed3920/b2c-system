@@ -214,7 +214,7 @@ export default function CmsTasks() {
                         <TaskDueDateBadge dateTo={t.date_to} status={t.status} size="sm" showLabel={false} />
                       </div>
                     </TableCell>
-                    {canManage && (
+                    {canDelete && (
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" onClick={() => remove(t.id)}>
                           <Trash2 className="w-4 h-4" />
