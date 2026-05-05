@@ -62,23 +62,17 @@ export function CmsLayout({ children, title, allowedRoles }: CmsLayoutProps) {
     }
   }, [role, roleLoading, allowedRoles, navigate]);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error("CMS signOut error", e);
-    }
-    try {
-      // Defensive cleanup: clear any leftover Supabase session in localStorage
       Object.keys(localStorage)
         .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
         .forEach((k) => localStorage.removeItem(k));
     } catch {
       // ignore
     }
+    // Fire-and-forget: don't await — signOut can hang on stale sessions
+    supabase.auth.signOut().catch((e) => console.error("CMS signOut error", e));
     toast({ title: "Logged out" });
-    // Hard redirect to guarantee a clean slate (avoids stale auth listeners
-    // re-fetching role/system after a soft client-side navigation).
     window.location.href = "/cms/login";
   };
 

@@ -31,7 +31,15 @@ export function useCmsRole() {
       setLoading(false);
     };
     load();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load());
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+      // Defer to avoid deadlocking the Supabase auth client
+      setTimeout(() => { if (!cancelled) load(); }, 0);
+    });
     return () => {
       cancelled = true;
       subscription.unsubscribe();
