@@ -281,11 +281,12 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   onValueChange={(v) => {
                     setCreatorType(v as TrainingCreatorType);
                     setCreatorPersonId("");
+                    setConductedBy([]);
                   }}
                 >
                   <SelectTrigger><SelectValue placeholder="Who created it?" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="team_leader">Me (Team Leader)</SelectItem>
+                    <SelectItem value="team_leader">Team Leader</SelectItem>
                     <SelectItem value="mentor">Mentor</SelectItem>
                     <SelectItem value="tutor">Tutor</SelectItem>
                   </SelectContent>
@@ -300,7 +301,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {(creatorType === "mentor" ? teamMentors : teamTutors).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        <SelectItem key={p.id} value={p.id}>{p.id} - {p.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
