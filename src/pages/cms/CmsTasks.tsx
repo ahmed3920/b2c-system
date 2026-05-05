@@ -22,6 +22,11 @@ import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDat
 import { cn } from "@/lib/utils";
 import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
 import type { CmsTask } from "@/hooks/useCmsTasks";
+import { useCmsPropertyDefs } from "@/hooks/useCmsTaskProperties";
+import {
+  CmsTaskFilters, applyTaskFilters, useCmsTaskFilterIndex, emptyFilters,
+  type TaskFilterState,
+} from "@/components/cms/CmsTaskFilters";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
