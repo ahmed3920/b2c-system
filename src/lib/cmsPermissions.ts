@@ -33,7 +33,11 @@ export type CmsCapability =
   | "edit_property_values_on_accessible_task"
   // Attendance
   | "view_all_attendance"
-  | "manage_attendance";
+  | "manage_attendance"
+  | "check_out"
+  // Activity
+  | "view_all_activity"
+  | "view_own_activity";
 
 export type CmsCapabilityMap = Record<CmsCapability, boolean>;
 
@@ -55,6 +59,9 @@ const ALL_FALSE: CmsCapabilityMap = {
   edit_property_values_on_accessible_task: false,
   view_all_attendance: false,
   manage_attendance: false,
+  check_out: false,
+  view_all_activity: false,
+  view_own_activity: false,
 };
 
 export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
@@ -76,6 +83,9 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     edit_property_values_on_accessible_task: true,
     view_all_attendance: true,
     manage_attendance: true,
+    check_out: true,
+    view_all_activity: true,
+    view_own_activity: true,
   },
   team_leader: {
     ...ALL_FALSE,
@@ -90,6 +100,9 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
     view_all_attendance: true,
+    check_out: true,
+    view_all_activity: true,
+    view_own_activity: true,
   },
   senior_developer: {
     ...ALL_FALSE,
@@ -104,12 +117,16 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
     view_all_attendance: true,
+    check_out: true,
+    view_own_activity: true,
   },
   developer: {
     ...ALL_FALSE,
     edit_own_task: true,
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
+    check_out: true,
+    view_own_activity: true,
   },
   reviewer: {
     ...ALL_FALSE,
@@ -117,6 +134,8 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     change_status_review_done: true,
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
+    check_out: true,
+    view_own_activity: true,
   },
 };
 
@@ -161,4 +180,7 @@ export const CAPABILITY_LABELS: Record<CmsCapability, string> = {
   edit_property_values_on_accessible_task: "Edit custom property values",
   view_all_attendance: "View everyone's attendance",
   manage_attendance: "Edit / manage attendance records",
+  check_out: "Check out for the day",
+  view_all_activity: "View everyone's activity (Activity Monitoring)",
+  view_own_activity: "View own activity stats",
 };

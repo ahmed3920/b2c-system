@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertTriangle, Loader2, Pencil, X, Save } from "lucide-react";
+import { Clock, CheckCircle2, AlertTriangle, Loader2, Pencil, X, Save, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCmsAttendance } from "@/hooks/useCmsAttendance";
 import {
@@ -42,8 +42,14 @@ function statusBadge(status: "on_time" | "late" | "absent") {
   );
 }
 
+function formatHM(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}h ${m.toString().padStart(2, "0")}m`;
+}
+
 export function CmsCheckinCard() {
-  const { row, loading, submitting, checkIn, updateReason } = useCmsAttendance();
+  const { row, loading, submitting, checkIn, checkOut, updateReason } = useCmsAttendance();
   const { toast } = useToast();
   const [, force] = useState(0);
   const [reason, setReason] = useState("");
@@ -156,6 +162,51 @@ export function CmsCheckinCard() {
               </p>
             </div>
           )}
+
+          {/* Check-out section */}
+          {(() => {
+            const handleCheckOut = async () => {
+              const res = await checkOut();
+              if (!res.ok) {
+                toast({ title: "Check-out failed", description: res.error, variant: "destructive" });
+                return;
+              }
+              toast({ title: "Checked out", description: "Have a good rest!" });
+            };
+
+            if (row.check_out_time) {
+              const outLocal = new Date(row.check_out_time);
+              const mins = row.working_minutes ?? Math.max(0, Math.round((outLocal.getTime() - checkInLocal.getTime()) / 60000));
+              return (
+                <div className="rounded-md border bg-muted/30 p-2 space-y-1">
+                  <p className="text-sm">
+                    Checked out at <span className="font-medium">{formatTime(outLocal)}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total working time: <span className="font-medium text-foreground">{formatHM(mins)}</span>
+                  </p>
+                </div>
+              );
+            }
+
+            const liveMins = Math.max(0, Math.round((Date.now() - checkInLocal.getTime()) / 60000));
+            return (
+              <div className="space-y-2 pt-1">
+                <p className="text-xs text-muted-foreground">
+                  Working time so far: <span className="font-medium text-foreground">{formatHM(liveMins)}</span>
+                </p>
+                <Button onClick={handleCheckOut} disabled={submitting} variant="secondary" className="w-full">
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <LogOut className="h-4 w-4 mr-1" /> Check Out
+                    </>
+                  )}
+                </Button>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
     );

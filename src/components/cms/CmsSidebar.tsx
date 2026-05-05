@@ -7,6 +7,7 @@ import {
   Kanban as KanbanIcon,
   Settings2,
   Shield,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,17 +25,20 @@ import { NavLink } from "@/components/NavLink";
 import { Logo } from "@/components/Logo";
 import ischoolIcon from "@/assets/ischool-icon.png";
 import { useCmsRole } from "@/hooks/useCmsRole";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 
 type NavItem = {
   title: string;
   url: string;
   icon: any;
   adminOnly?: boolean;
+  capability?: string;
 };
 
 const overview: NavItem[] = [
   { title: "Dashboard", url: "/cms", icon: LayoutDashboard },
   { title: "Attendance", url: "/cms/attendance", icon: CalendarCheck },
+  { title: "Activity", url: "/cms/activity", icon: Activity, capability: "view_all_activity" },
 ];
 
 const taskTracker: NavItem[] = [
@@ -53,6 +57,7 @@ export function CmsSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { isCmsAdmin } = useCmsRole();
+  const { can } = useCmsPermissions();
 
   const isActive = (path: string) =>
     path === "/cms"
@@ -60,7 +65,11 @@ export function CmsSidebar() {
       : location.pathname === path || location.pathname.startsWith(path + "/");
 
   const renderGroup = (label: string, items: NavItem[]) => {
-    const visible = items.filter((it) => !it.adminOnly || isCmsAdmin);
+    const visible = items.filter((it) => {
+      if (it.adminOnly && !isCmsAdmin) return false;
+      if (it.capability && !can(it.capability as any)) return false;
+      return true;
+    });
     if (visible.length === 0) return null;
     return (
       <SidebarGroup>

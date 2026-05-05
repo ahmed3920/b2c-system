@@ -296,7 +296,10 @@ export type Database = {
       }
       cms_attendance: {
         Row: {
+          active_minutes: number | null
+          activity_status: string | null
           check_in_time: string | null
+          check_out_time: string | null
           created_at: string
           date: string
           id: string
@@ -306,9 +309,13 @@ export type Database = {
           updated_at: string
           user_id: string
           user_name: string | null
+          working_minutes: number | null
         }
         Insert: {
+          active_minutes?: number | null
+          activity_status?: string | null
           check_in_time?: string | null
+          check_out_time?: string | null
           created_at?: string
           date: string
           id?: string
@@ -318,9 +325,13 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_name?: string | null
+          working_minutes?: number | null
         }
         Update: {
+          active_minutes?: number | null
+          activity_status?: string | null
           check_in_time?: string | null
+          check_out_time?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -330,6 +341,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_name?: string | null
+          working_minutes?: number | null
         }
         Relationships: []
       }
@@ -533,6 +545,36 @@ export type Database = {
           status?: Database["public"]["Enums"]["cms_task_status"]
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cms_user_activity_logs: {
+        Row: {
+          bucket_start: string
+          date: string
+          id: string
+          seconds: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket_start: string
+          date: string
+          id?: string
+          seconds?: number
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket_start?: string
+          date?: string
+          id?: string
+          seconds?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

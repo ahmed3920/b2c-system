@@ -48,6 +48,7 @@ import CmsAttendance from "./pages/cms/CmsAttendance";
 import CmsUsers from "./pages/cms/CmsUsers";
 import CmsTaskProperties from "./pages/cms/CmsTaskProperties";
 import CmsPermissions from "./pages/cms/CmsPermissions";
+import CmsActivityMonitoring from "./pages/cms/CmsActivityMonitoring";
 
 import NotFound from "./pages/NotFound";
 
@@ -107,6 +108,7 @@ const App = () => (
           <Route path="/cms/users" element={<CmsUsers />} />
           <Route path="/cms/task-properties" element={<CmsTaskProperties />} />
           <Route path="/cms/permissions" element={<CmsPermissions />} />
+          <Route path="/cms/activity" element={<CmsActivityMonitoring />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

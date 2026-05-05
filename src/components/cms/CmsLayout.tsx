@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSystem } from "@/hooks/useSystem";
 import { useCmsRole, type CmsRole } from "@/hooks/useCmsRole";
+import { useCmsActivityTracker } from "@/hooks/useCmsActivityTracker";
 
 interface CmsLayoutProps {
   children: ReactNode;
@@ -29,6 +30,7 @@ export function CmsLayout({ children, title, allowedRoles }: CmsLayoutProps) {
   const { role, loading: roleLoading } = useCmsRole();
   const [authChecked, setAuthChecked] = useState(false);
   const [displayName, setDisplayName] = useState("User");
+  useCmsActivityTracker(authChecked);
 
   useEffect(() => {
     (async () => {
@@ -106,6 +108,9 @@ export function CmsLayout({ children, title, allowedRoles }: CmsLayoutProps) {
             </div>
           </header>
           <main className="flex-1 overflow-x-hidden">{children}</main>
+          <footer className="border-t bg-card/40 px-4 py-2 text-[11px] text-muted-foreground">
+            Your activity is tracked while using the CMS to compute work and idle time.
+          </footer>
         </div>
       </div>
     </SidebarProvider>
