@@ -90,7 +90,13 @@ export function CmsTaskDetailDialog({
 
   if (!task) return null;
 
-  const canEditTask = canManage || task.assignee_id === undefined;
+  // canManage already accounts for tier (admin/supervisor) OR assignee/owner editing rights at the row level (RLS).
+  // The reviewer-specific status restriction: members can change status only to needs-review/done if they are reviewers.
+  const canEditTask = canManage;
+  const canChangeStatus = canManage || can("change_status_any") || can("change_status_review_done");
+  const statusOptions = can("change_status_any") || canManage
+    ? STATUSES
+    : (can("change_status_review_done") ? (["in_progress", "done"] as CmsTaskStatus[]) : []);
   const filteredComments = filter === "all" ? comments : comments.filter((c) => c.status === filter);
 
   const saveTitle = async () => {
