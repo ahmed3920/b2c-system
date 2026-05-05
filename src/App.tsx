@@ -114,6 +114,7 @@ const App = () => (
           <Route path="/cms/activity" element={<CmsActivityMonitoring />} />
           <Route path="/cms/review-options" element={<CmsReviewOptions />} />
           <Route path="/cms/analytics" element={<CmsAnalytics />} />
+          <Route path="/cms/task-categories" element={<CmsTaskCategoriesAdmin />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
