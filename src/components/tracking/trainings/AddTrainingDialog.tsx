@@ -363,7 +363,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[380px] p-0" align="start">
-                      <ScrollArea className="h-60">
+                      <div className="h-60 overflow-y-auto">
                         <div className="p-2 space-y-1">
                           {teamMentors.length === 0 && (
                             <p className="text-sm text-muted-foreground p-2">No mentors available</p>
@@ -385,7 +385,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                             );
                           })}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </PopoverContent>
                   </Popover>
                   {creatorMentorIds.length > 0 && (
