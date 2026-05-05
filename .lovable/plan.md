@@ -1,32 +1,16 @@
-## Problem
+## Plan
 
-`ERROR: function gen_random_bytes(integer) does not exist (SQLSTATE 42883)`
+1. Add a database migration that recreates `public.team_leader_name_matches(text, text)`.
+2. Implement the same name-normalization behavior used in the frontend: lowercase, trim, collapse whitespace, remove punctuation, and allow shorter-name tokens to match within the longer name.
+3. Mark the function as `stable`, `security definer`, and set `search_path = public` so RLS policies can call it safely.
+4. Grant execute access to authenticated users, then verify the function exists and can be called.
 
-The `pgcrypto` extension is installed in the `extensions` schema (not `public`), so calls to `gen_random_bytes(...)` without a schema prefix fail. One past migration (`20260313145937_*.sql`, the `login_tokens` table) defines its `token` column default as:
+## Technical details
 
-```sql
-token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex')
-```
+The error happens because existing RLS policies and helper functions call `team_leader_name_matches(text, text)`, but the database function is missing. The migration will restore this function without changing app UI or business logic.
 
-Every `INSERT` into that table that relies on the default triggers this error. The newer `session_incident_tokens` migration already uses the correct `extensions.gen_random_bytes(...)` form.
+&nbsp;
 
-This matches the symptom: the error appears when an admin generates a login link (e.g. `generate-login-token` edge function inserts into `login_tokens`).
+also solve all errors on all migration because I want to dp push all migrations to supabase and each time it gives me an error on different function
 
-## Fix
-
-Write a small migration that updates the default on `public.login_tokens.token` to use the schema-qualified function:
-
-```sql
-ALTER TABLE public.login_tokens
-  ALTER COLUMN token SET DEFAULT encode(extensions.gen_random_bytes(32), 'hex');
-```
-
-No data is touched and no other code changes are needed. Existing rows keep their tokens; new inserts will work.
-
-## Verification
-
-- After the migration, generate a login link from the admin UI (or call `generate-login-token`) and confirm a row is inserted with a fresh token and no SQL error.
-
-## Notes
-
-If you actually hit this error from a different action (not login-link generation), let me know which screen/action triggered it so I can check whether another object also has a bare `gen_random_bytes` reference.
+&nbsp;
