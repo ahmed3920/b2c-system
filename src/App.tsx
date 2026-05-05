@@ -48,6 +48,7 @@ import CmsAttendance from "./pages/cms/CmsAttendance";
 import CmsUsers from "./pages/cms/CmsUsers";
 import CmsTaskProperties from "./pages/cms/CmsTaskProperties";
 import CmsPermissions from "./pages/cms/CmsPermissions";
+import CmsActivityMonitoring from "./pages/cms/CmsActivityMonitoring";
 
 import NotFound from "./pages/NotFound";
 
