@@ -363,8 +363,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_task_assignees: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["cms_task_assignee_role"]
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["cms_task_assignee_role"]
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["cms_task_assignee_role"]
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cms_task_comments: {
         Row: {
+          attachments: Json
           body: string
           created_at: string
           created_by: string
@@ -375,6 +400,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachments?: Json
           body: string
           created_at?: string
           created_by: string
@@ -385,6 +411,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachments?: Json
           body?: string
           created_at?: string
           created_by?: string
@@ -395,6 +422,77 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      cms_task_property_defs: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          options: Json
+          type: Database["public"]["Enums"]["cms_task_property_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          options?: Json
+          type: Database["public"]["Enums"]["cms_task_property_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          options?: Json
+          type?: Database["public"]["Enums"]["cms_task_property_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cms_task_property_values: {
+        Row: {
+          id: string
+          prop_id: string
+          task_id: string
+          updated_at: string
+          updated_by: string | null
+          value: Json | null
+        }
+        Insert: {
+          id?: string
+          prop_id: string
+          task_id: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json | null
+        }
+        Update: {
+          id?: string
+          prop_id?: string
+          task_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cms_task_property_values_prop_id_fkey"
+            columns: ["prop_id"]
+            isOneToOne: false
+            referencedRelation: "cms_task_property_defs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cms_tasks: {
         Row: {
@@ -2670,8 +2768,19 @@ export type Database = {
       attendance_status: "on_time" | "late" | "absent"
       cms_app_role: "cms_admin" | "cms_supervisor" | "cms_member"
       cms_attendance_status: "on_time" | "late" | "absent"
+      cms_task_assignee_role: "developer" | "reviewer"
       cms_task_comment_status: "open" | "resolved" | "needs_review"
       cms_task_priority: "low" | "medium" | "high"
+      cms_task_property_type:
+        | "text"
+        | "number"
+        | "select"
+        | "multi_select"
+        | "date"
+        | "url"
+        | "person"
+        | "checkbox"
+        | "percent"
       cms_task_status: "todo" | "in_progress" | "done" | "archived"
       cs_ticket_case_type: "CS" | "Edu"
       cs_ticket_status:
@@ -2855,8 +2964,20 @@ export const Constants = {
       attendance_status: ["on_time", "late", "absent"],
       cms_app_role: ["cms_admin", "cms_supervisor", "cms_member"],
       cms_attendance_status: ["on_time", "late", "absent"],
+      cms_task_assignee_role: ["developer", "reviewer"],
       cms_task_comment_status: ["open", "resolved", "needs_review"],
       cms_task_priority: ["low", "medium", "high"],
+      cms_task_property_type: [
+        "text",
+        "number",
+        "select",
+        "multi_select",
+        "date",
+        "url",
+        "person",
+        "checkbox",
+        "percent",
+      ],
       cms_task_status: ["todo", "in_progress", "done", "archived"],
       cs_ticket_case_type: ["CS", "Edu"],
       cs_ticket_status: [
