@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/select";
 import {
   CalendarDays, Flag, CircleDot, MessageSquare,
-  Trash2, Send, CheckCircle2, Eye, FileText,
+  Trash2, Send, CheckCircle2, Eye, FileText, Tag,
 } from "lucide-react";
+import { useCmsTaskCategories } from "@/hooks/useCmsTaskCategories";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
