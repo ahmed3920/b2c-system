@@ -200,6 +200,29 @@ export function CmsTaskDetailDialog({
               />
             </PropertyRow>
 
+            <PropertyRow icon={<Tag className="w-4 h-4" />} label="Category">
+              <Select
+                value={task.category_id ?? "none"}
+                onValueChange={(v) => onUpdate(task.id, { category_id: v === "none" ? null : v } as Partial<CmsTask>)}
+                disabled={!canEditTask}
+              >
+                <SelectTrigger className="h-7 w-auto border-0 bg-secondary/50 hover:bg-secondary text-sm px-2 gap-1">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No category</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
+                        {c.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </PropertyRow>
+
             <PropertyRow icon={<CircleDot className="w-4 h-4" />} label="Status">
               <Select
                 value={task.status}
