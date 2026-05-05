@@ -25,6 +25,7 @@ import { NavLink } from "@/components/NavLink";
 import { Logo } from "@/components/Logo";
 import ischoolIcon from "@/assets/ischool-icon.png";
 import { useCmsRole } from "@/hooks/useCmsRole";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 
 type NavItem = {
   title: string;
