@@ -55,16 +55,16 @@ export function TrainingsInsights({ items }: { items: Training[] }) {
     }));
   }, [items]);
 
-  const perSubTeam = useMemo(() => {
+  const perTeam = useMemo(() => {
     const map = new Map<string, number>();
     items.forEach((t) => {
-      const groups = t.sub_teams?.length ? t.sub_teams : ["Whole Team"];
-      groups.forEach((g) => map.set(g, (map.get(g) ?? 0) + 1));
+      const k = t.team_leader || "Unassigned";
+      map.set(k, (map.get(k) ?? 0) + 1);
     });
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+      .slice(0, 10);
   }, [items]);
 
   const byCreatorType = useMemo(() => {
@@ -114,10 +114,10 @@ export function TrainingsInsights({ items }: { items: Training[] }) {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Trainings per Sub-Team</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Trainings per Team</CardTitle></CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={perSubTeam} layout="vertical">
+              <BarChart data={perTeam} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
