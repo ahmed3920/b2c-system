@@ -209,6 +209,7 @@ export default function CmsKanban() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState("all");
   const [openTask, setOpenTask] = useState<CmsTask | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const canManage = isCmsAdmin || isCmsSupervisor;
   const showOwner = canManage;
