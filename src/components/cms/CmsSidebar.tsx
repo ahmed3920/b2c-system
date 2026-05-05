@@ -10,6 +10,7 @@ import {
   Activity,
   ListChecks,
   BarChart3,
+  Tag,
 } from "lucide-react";
 import {
   Sidebar,
