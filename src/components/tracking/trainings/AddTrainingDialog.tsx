@@ -278,7 +278,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
           <div className="space-y-5 py-2">
             {isAdmin && (
               <div>
@@ -363,7 +363,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[380px] p-0" align="start">
-                      <ScrollArea className="h-60">
+                      <div className="h-60 overflow-y-auto">
                         <div className="p-2 space-y-1">
                           {teamMentors.length === 0 && (
                             <p className="text-sm text-muted-foreground p-2">No mentors available</p>
@@ -385,7 +385,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                             );
                           })}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </PopoverContent>
                   </Popover>
                   {creatorMentorIds.length > 0 && (
@@ -537,7 +537,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[380px] p-0" align="start">
-                    <ScrollArea className="h-60">
+                    <div className="h-60 overflow-y-auto">
                       <div className="p-2 space-y-1">
                         <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer border-b">
                           <Checkbox
@@ -562,7 +562,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                           </label>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </PopoverContent>
                 </Popover>
                 {subTeams.length > 0 && (
@@ -613,7 +613,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
               />
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
