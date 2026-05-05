@@ -7,6 +7,7 @@ import {
   Kanban as KanbanIcon,
   Settings2,
   Shield,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
