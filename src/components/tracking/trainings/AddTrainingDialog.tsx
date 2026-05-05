@@ -288,6 +288,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   onValueChange={(v) => {
                     setCreatorType(v as TrainingCreatorType);
                     setCreatorPersonId("");
+                    setCreatorMentorIds([]);
                     setConductedBy([]);
                   }}
                 >
@@ -299,19 +300,78 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-              {creatorType && creatorType !== "team_leader" && (
+              {creatorType === "tutor" && (
                 <div>
-                  <Label>{creatorType === "mentor" ? "Mentor" : "Tutor"} *</Label>
+                  <Label>Tutor *</Label>
                   <Select value={creatorPersonId || undefined} onValueChange={setCreatorPersonId}>
                     <SelectTrigger>
-                      <SelectValue placeholder={`Select ${creatorType}`} />
+                      <SelectValue placeholder="Select tutor" />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
-                      {(creatorType === "mentor" ? teamMentors : teamTutors).map((p) => (
+                      {teamTutors.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.id} - {p.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+              {creatorType === "mentor" && (
+                <div>
+                  <Label>Mentor(s) * <span className="text-xs text-muted-foreground">(multi-select)</span></Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start font-normal">
+                        {creatorMentorIds.length === 0
+                          ? "Select mentor(s)..."
+                          : `${creatorMentorIds.length} selected`}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="start">
+                      <ScrollArea className="h-60">
+                        <div className="p-2 space-y-1">
+                          {teamMentors.length === 0 && (
+                            <p className="text-sm text-muted-foreground p-2">No mentors available</p>
+                          )}
+                          {teamMentors.map((m) => {
+                            const checked = creatorMentorIds.includes(m.id);
+                            return (
+                              <label key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={() =>
+                                    setCreatorMentorIds((prev) =>
+                                      prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
+                                    )
+                                  }
+                                />
+                                <span className="text-sm">{m.id} - {m.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                  {creatorMentorIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {creatorMentorIds.map((mid) => {
+                        const m = teamMentors.find((x) => x.id === mid);
+                        if (!m) return null;
+                        return (
+                          <Badge key={mid} variant="secondary" className="gap-1">
+                            {m.id} - {m.name}
+                            <button
+                              type="button"
+                              onClick={() => setCreatorMentorIds((prev) => prev.filter((x) => x !== mid))}
+                              className="hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
