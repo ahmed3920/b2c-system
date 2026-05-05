@@ -488,60 +488,49 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
 
             {teamLeader && (
               <div className="space-y-2">
-                <Label>Audience</Label>
-                <div className="flex items-center gap-4 text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="audience"
-                      checked={subTeams.length === 0}
-                      onChange={() => setSubTeams([])}
-                    />
-                    Entire Team
-                  </label>
-                  <label className={cn("flex items-center gap-2", subTeamOptions.length === 0 ? "opacity-50" : "cursor-pointer")}>
-                    <input
-                      type="radio"
-                      name="audience"
-                      disabled={subTeamOptions.length === 0}
-                      checked={subTeams.length > 0}
-                      onChange={() => subTeamOptions[0] && setSubTeams([subTeamOptions[0]])}
-                    />
-                    Specific Sub-Teams
-                  </label>
-                </div>
-                {subTeams.length > 0 && subTeamOptions.length > 0 && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start font-normal">
-                        {subTeams.length} sub-team{subTeams.length === 1 ? "" : "s"} selected
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[380px] p-0" align="start">
-                      <ScrollArea className="h-60">
-                        <div className="p-2 space-y-1">
-                          {subTeamOptions.map((m) => (
-                            <label
-                              key={m}
-                              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                            >
-                              <Checkbox
-                                checked={subTeams.includes(m)}
-                                onCheckedChange={() => toggleSubTeam(m)}
-                              />
-                              <span className="text-sm">{m}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </PopoverContent>
-                  </Popover>
-                )}
+                <Label>Audience *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start font-normal">
+                      {subTeams.length === 0
+                        ? "Entire Team"
+                        : `${subTeams.length} sub-team${subTeams.length === 1 ? "" : "s"} selected`}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[380px] p-0" align="start">
+                    <ScrollArea className="h-60">
+                      <div className="p-2 space-y-1">
+                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer border-b">
+                          <Checkbox
+                            checked={subTeams.length === 0}
+                            onCheckedChange={() => setSubTeams([])}
+                          />
+                          <span className="text-sm font-medium">Entire Team</span>
+                        </label>
+                        {subTeamOptions.length === 0 && (
+                          <p className="text-sm text-muted-foreground p-2">No sub-teams available</p>
+                        )}
+                        {subTeamOptions.map((m) => (
+                          <label
+                            key={m}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={subTeams.includes(m)}
+                              onCheckedChange={() => toggleSubTeam(m)}
+                            />
+                            <span className="text-sm">{m}'s Sub-team</span>
+                          </label>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
                 {subTeams.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {subTeams.map((s) => (
                       <Badge key={s} variant="outline" className="gap-1">
-                        {s}
+                        {s}'s Sub-team
                         <button type="button" onClick={() => toggleSubTeam(s)}>
                           <X className="h-3 w-3" />
                         </button>
