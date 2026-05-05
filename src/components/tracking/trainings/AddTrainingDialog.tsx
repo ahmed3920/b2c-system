@@ -423,30 +423,33 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[380px] p-0" align="start">
-                  <ScrollArea className="h-72">
-                    <div className="p-2 space-y-1">
-                      {conductedOptions.length === 0 && (
-                        <p className="text-sm text-muted-foreground p-2">
-                          {!teamLeader ? "Select a team first" : !creatorType ? "Select training creator first" : "No people available"}
-                        </p>
-                      )}
-                      {conductedOptions.map((p) => {
-                        const checked = !!conductedBy.find((x) => x.id === p.id);
-                        return (
-                          <label
-                            key={p.id}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                          >
-                            <Checkbox checked={checked} onCheckedChange={() => toggleConducted(p)} />
-                            <span className="text-sm flex-1">{p.name}</span>
-                            <Badge variant="outline" className="text-[10px] capitalize">
-                              {p.role.replace("_", " ")}
-                            </Badge>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
+                  <Command>
+                    <CommandInput placeholder="Search by ID or name..." />
+                    <CommandList className="max-h-72">
+                      <CommandEmpty>
+                        {!teamLeader ? "Select a team first" : !creatorType ? "Select training creator first" : "No people found"}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {conductedOptions.map((p) => {
+                          const checked = !!conductedBy.find((x) => x.id === p.id);
+                          return (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.id} ${p.name}`}
+                              onSelect={() => toggleConducted(p)}
+                              className="flex items-center gap-2"
+                            >
+                              <Checkbox checked={checked} className="pointer-events-none" />
+                              <span className="text-sm flex-1">{p.name}</span>
+                              <Badge variant="outline" className="text-[10px] capitalize">
+                                {p.role.replace("_", " ")}
+                              </Badge>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
                 </PopoverContent>
               </Popover>
               {conductedBy.length > 0 && (
