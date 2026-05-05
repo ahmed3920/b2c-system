@@ -100,6 +100,9 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
     view_all_attendance: true,
+    check_out: true,
+    view_all_activity: true,
+    view_own_activity: true,
   },
   senior_developer: {
     ...ALL_FALSE,
