@@ -180,4 +180,7 @@ export const CAPABILITY_LABELS: Record<CmsCapability, string> = {
   edit_property_values_on_accessible_task: "Edit custom property values",
   view_all_attendance: "View everyone's attendance",
   manage_attendance: "Edit / manage attendance records",
+  check_out: "Check out for the day",
+  view_all_activity: "View everyone's activity (Activity Monitoring)",
+  view_own_activity: "View own activity stats",
 };
