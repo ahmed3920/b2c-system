@@ -36,6 +36,7 @@ import { useCmsTasks, type CmsTask, type CmsTaskStatus } from "@/hooks/useCmsTas
 import { useCmsRole } from "@/hooks/useCmsRole";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { Badge } from "@/components/ui/badge";
+import { CmsTaskDetailDialog } from "@/components/cms/CmsTaskDetailDialog";
 
 const columns: { id: CmsTaskStatus; title: string; className: string }[] = [
   { id: "todo", title: "To-Do", className: "kanban-todo" },
