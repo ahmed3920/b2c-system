@@ -136,15 +136,19 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const teamTutors = useMemo(() => teamRoster.filter((t) => t.role === "Tutor"), [teamRoster]);
 
   const subTeamOptions = useMemo(() => {
-    // Sub-teams = distinct mentor names whose `team_leader` matches exactly the selected TL
-    const mentors = new Set(
-      teamRoster
-        .filter((t) => t.team_leader === teamLeader)
-        .map((t) => t.mentor)
-        .filter((m): m is string => Boolean(m?.trim())),
-    );
-    return Array.from(mentors).sort();
-  }, [teamRoster, teamLeader]);
+    // Sub-teams = each mentor on the selected team leader's team
+    const names = new Set<string>();
+    teamMentors.forEach((m) => {
+      if (m.name?.trim()) names.add(m.name.trim());
+    });
+    // Also include mentor names referenced on tutors (covers mentors not in roster as Mentor role)
+    teamRoster
+      .filter((t) => t.team_leader === teamLeader)
+      .forEach((t) => {
+        if (t.mentor?.trim()) names.add(t.mentor.trim());
+      });
+    return Array.from(names).sort();
+  }, [teamRoster, teamMentors, teamLeader]);
 
   // Conducted-by options depend on creator type
   const conductedOptions: TrainingPerson[] = useMemo(() => {
