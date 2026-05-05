@@ -6,6 +6,7 @@ import {
   Users,
   Kanban as KanbanIcon,
   Settings2,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
