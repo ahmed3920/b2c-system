@@ -537,7 +537,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[380px] p-0" align="start">
-                    <ScrollArea className="h-60">
+                    <div className="h-60 overflow-y-auto">
                       <div className="p-2 space-y-1">
                         <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer border-b">
                           <Checkbox
@@ -562,7 +562,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
                           </label>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                   </PopoverContent>
                 </Popover>
                 {subTeams.length > 0 && (
