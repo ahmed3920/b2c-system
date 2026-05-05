@@ -20,14 +20,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { JOB_TITLES, jobTitleLabel, tierForTitle, type CmsJobTitle } from "@/lib/cmsJobTitles";
 
 export default function CmsUsers() {
-  const { users, loading, refresh, setActive, setRole } = useCmsUsers();
+  const { users, loading, refresh, setActive, setTitle } = useCmsUsers();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRoleVal] = useState<CmsRole>("cms_member");
+  const [title, setTitleVal] = useState<CmsJobTitle>("developer");
 
   const handleCreate = async () => {
     if (!fullName.trim() || !email.trim() || password.length < 8) {
@@ -35,17 +35,23 @@ export default function CmsUsers() {
       return;
     }
     setSubmitting(true);
+    const tier = tierForTitle(title);
     const { data, error } = await supabase.functions.invoke("cms-admin-create-user", {
-      body: { fullName: fullName.trim(), email: email.trim(), password, role },
+      body: { fullName: fullName.trim(), email: email.trim(), password, role: tier, title },
     });
     setSubmitting(false);
     if (error || (data as any)?.error) {
       toast({ title: "Failed", description: (data as any)?.error ?? error?.message, variant: "destructive" });
       return;
     }
+    // Ensure title is stored even if the edge function ignores it.
+    if (data && typeof data === "object" && "userId" in (data as Record<string, unknown>)) {
+      const userId = (data as { userId?: string }).userId;
+      if (userId) await setTitle(userId, title);
+    }
     toast({ title: "User created" });
     setOpen(false);
-    setFullName(""); setEmail(""); setPassword(""); setRoleVal("cms_member");
+    setFullName(""); setEmail(""); setPassword(""); setTitleVal("developer");
     refresh();
   };
 
