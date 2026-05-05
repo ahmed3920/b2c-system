@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   Users,
   Kanban as KanbanIcon,
+  Settings2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const taskTracker: NavItem[] = [
 
 const admin: NavItem[] = [
   { title: "Users", url: "/cms/users", icon: Users, adminOnly: true },
+  { title: "Task Properties", url: "/cms/task-properties", icon: Settings2, adminOnly: true },
 ];
 
 export function CmsSidebar() {
