@@ -148,7 +148,7 @@ export function TrainingsTab() {
         )}
       </div>
 
-      {showInsights && <TrainingsInsights items={filtered} />}
+      {showInsights && <TrainingsInsights items={filtered} groupBy={isTeamLeader && !isAdmin ? "subTeam" : "team"} />}
 
       {showFilters && (
         <Card>
