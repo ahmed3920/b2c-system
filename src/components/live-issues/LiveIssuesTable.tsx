@@ -431,10 +431,31 @@ export function LiveIssuesTable() {
                       </TableCell>
                       <TableCell className="text-xs whitespace-nowrap">{row.team_leader || "—"}</TableCell>
                       <TableCell className="text-xs">{row.issue_reason || "—"}</TableCell>
-                      <TableCell className="text-xs max-w-[280px]">
-                        <div className="line-clamp-3 whitespace-pre-wrap" title={row.issue_details ?? ""}>
-                          {row.issue_details || "—"}
-                        </div>
+                      <TableCell className="text-xs max-w-[280px] align-top">
+                        {row.issue_details ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-left w-full hover:bg-muted/50 rounded p-1 -m-1"
+                                title="Click to view full details"
+                              >
+                                <div className="line-clamp-3 whitespace-pre-wrap">
+                                  {row.issue_details}
+                                </div>
+                                <span className="text-[10px] text-primary underline">View full</span>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[480px] max-h-[400px] overflow-auto" align="start">
+                              <div className="text-xs font-semibold mb-2">Issue Details</div>
+                              <div className="text-sm whitespace-pre-wrap break-words">
+                                {row.issue_details}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          <span>—</span>
+                        )}
                       </TableCell>
                       <TableCell className="bg-amber-50/50 dark:bg-amber-950/10">
                         {canEdit ? (
