@@ -237,9 +237,9 @@ export default function CmsTasks() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={6}>Loading…</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7}>Loading…</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No tasks</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No tasks</TableCell></TableRow>
                 ) : filtered.map((t) => (
                   <TableRow
                     key={t.id}
