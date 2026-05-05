@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertTriangle, Loader2, Pencil, X, Save } from "lucide-react";
+import { Clock, CheckCircle2, AlertTriangle, Loader2, Pencil, X, Save, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCmsAttendance } from "@/hooks/useCmsAttendance";
 import {
