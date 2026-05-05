@@ -120,7 +120,7 @@ export default function CmsTasks() {
                 {dueSoonCount} Due Soon
               </span>
             )}
-            {canManage && (
+            {canCreate && (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button><Plus className="w-4 h-4 mr-1" />New task</Button>
