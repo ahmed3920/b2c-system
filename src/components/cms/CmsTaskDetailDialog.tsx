@@ -69,6 +69,7 @@ export function CmsTaskDetailDialog({
     useCmsTaskAssignees(task?.id ?? null);
   const { defs } = useCmsPropertyDefs();
   const { values, setValue } = useCmsTaskPropertyValues(task?.id ?? null);
+  const { categories } = useCmsTaskCategories();
   const { can, assignableRoles } = useCmsPermissions();
 
   const [title, setTitle] = useState("");
