@@ -303,7 +303,7 @@ export default function CmsKanban() {
         </div>
 
         <div className="overflow-x-auto -mx-2 px-2">
-          <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex gap-4 min-w-max">
               {columns.map((column) => (
                 <Column key={column.id} column={column} tasks={filteredTasks.filter((t) => t.status === column.id)}>
