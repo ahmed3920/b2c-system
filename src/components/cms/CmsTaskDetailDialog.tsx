@@ -52,7 +52,7 @@ interface Props {
   task: CmsTask | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  users: { user_id: string; full_name: string; active_status: boolean }[];
+  users: { user_id: string; full_name: string; active_status: boolean; title?: string | null }[];
   canManage: boolean;
   onUpdate: (id: string, patch: Partial<CmsTask>) => Promise<{ ok: boolean; error?: string }>;
   onDelete?: (id: string) => Promise<void>;
