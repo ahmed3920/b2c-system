@@ -29,7 +29,14 @@ export function useSystem() {
       }
     };
     load();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load());
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setSystem(null);
+        setLoading(false);
+        return;
+      }
+      setTimeout(() => { if (!cancelled) load(); }, 0);
+    });
     return () => {
       cancelled = true;
       subscription.unsubscribe();
