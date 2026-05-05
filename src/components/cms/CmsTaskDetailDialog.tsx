@@ -25,6 +25,7 @@ import { useCmsPropertyDefs, useCmsTaskPropertyValues } from "@/hooks/useCmsTask
 import { MultiAssigneeField } from "./MultiAssigneeField";
 import { CmsPropertiesPanel } from "./CmsPropertiesPanel";
 import { AttachmentItem, AttachmentPicker } from "./CmsCommentAttachments";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
