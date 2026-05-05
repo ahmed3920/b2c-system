@@ -194,13 +194,13 @@ export function CmsTaskDetailDialog({
               <Select
                 value={task.status}
                 onValueChange={(v) => onUpdate(task.id, { status: v as CmsTaskStatus })}
-                disabled={!canEditTask}
+                disabled={!canChangeStatus}
               >
                 <SelectTrigger className="h-7 w-auto border-0 bg-secondary/50 hover:bg-secondary text-sm px-2 gap-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map((s) => (
+                  {(statusOptions.length > 0 ? statusOptions : STATUSES).map((s) => (
                     <SelectItem key={s} value={s}>
                       <span className="mr-2">{statusEmoji[s]}</span>
                       {s.replace("_", " ")}
