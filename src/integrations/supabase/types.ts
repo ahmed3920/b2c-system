@@ -375,6 +375,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_review_options: {
+        Row: {
+          color: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["cms_review_option_kind"]
+          label: string
+          tab: Database["public"]["Enums"]["cms_review_tab"]
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["cms_review_option_kind"]
+          label: string
+          tab: Database["public"]["Enums"]["cms_review_tab"]
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["cms_review_option_kind"]
+          label?: string
+          tab?: Database["public"]["Enums"]["cms_review_tab"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cms_task_assignees: {
         Row: {
           created_at: string
@@ -502,6 +538,76 @@ export type Database = {
             columns: ["prop_id"]
             isOneToOne: false
             referencedRelation: "cms_task_property_defs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cms_task_review_rows: {
+        Row: {
+          attempt: number
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          deliverable_url: string | null
+          display_order: number
+          id: string
+          impact_id: string | null
+          note: string
+          status_id: string | null
+          tab: Database["public"]["Enums"]["cms_review_tab"]
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deliverable_url?: string | null
+          display_order?: number
+          id?: string
+          impact_id?: string | null
+          note?: string
+          status_id?: string | null
+          tab: Database["public"]["Enums"]["cms_review_tab"]
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deliverable_url?: string | null
+          display_order?: number
+          id?: string
+          impact_id?: string | null
+          note?: string
+          status_id?: string | null
+          tab?: Database["public"]["Enums"]["cms_review_tab"]
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cms_task_review_rows_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cms_review_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cms_task_review_rows_impact_id_fkey"
+            columns: ["impact_id"]
+            isOneToOne: false
+            referencedRelation: "cms_review_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cms_task_review_rows_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "cms_review_options"
             referencedColumns: ["id"]
           },
         ]
@@ -2813,6 +2919,8 @@ export type Database = {
       attendance_status: "on_time" | "late" | "absent"
       cms_app_role: "cms_admin" | "cms_supervisor" | "cms_member"
       cms_attendance_status: "on_time" | "late" | "absent"
+      cms_review_option_kind: "category" | "status" | "impact"
+      cms_review_tab: "need_to_improve" | "positive_comments" | "design"
       cms_task_assignee_role:
         | "developer"
         | "reviewer"
@@ -3013,6 +3121,8 @@ export const Constants = {
       attendance_status: ["on_time", "late", "absent"],
       cms_app_role: ["cms_admin", "cms_supervisor", "cms_member"],
       cms_attendance_status: ["on_time", "late", "absent"],
+      cms_review_option_kind: ["category", "status", "impact"],
+      cms_review_tab: ["need_to_improve", "positive_comments", "design"],
       cms_task_assignee_role: [
         "developer",
         "reviewer",
