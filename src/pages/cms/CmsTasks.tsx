@@ -15,6 +15,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, AlertTriangle } from "lucide-react";
 import { useCmsTasks, type CmsTaskStatus, type CmsTaskPriority } from "@/hooks/useCmsTasks";
+import { supabase } from "@/integrations/supabase/client";
 import { useCmsRole } from "@/hooks/useCmsRole";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
 import { useCmsPermissions } from "@/hooks/useCmsPermissions";
@@ -28,6 +29,9 @@ import {
   CmsTaskFilters, applyTaskFilters, useCmsTaskFilterIndex, emptyFilters,
   type TaskFilterState,
 } from "@/components/cms/CmsTaskFilters";
+import { useCmsTaskCategories } from "@/hooks/useCmsTaskCategories";
+import { MultiAssigneeField } from "@/components/cms/MultiAssigneeField";
+import type { CmsAssigneeRole } from "@/hooks/useCmsTaskAssignees";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -45,6 +49,15 @@ const priorityClasses: Record<CmsTaskPriority, string> = {
   high: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
+const ROLE_LABELS: Record<CmsAssigneeRole, string> = {
+  developer: "Developer",
+  senior_developer: "Senior Developer",
+  reviewer: "Reviewer",
+  team_leader: "Team Leader",
+};
+
+interface PendingAssignee { user_id: string; role: CmsAssigneeRole; tmp_id: string }
+
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
   const { isCmsAdmin, isCmsSupervisor } = useCmsRole();
@@ -53,19 +66,22 @@ export default function CmsTasks() {
   const canDelete = can("delete_task");
   const canManage = isCmsAdmin || isCmsSupervisor || can("edit_any_task");
   const { users } = useCmsUsers();
+  const { categories } = useCmsTaskCategories();
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<CmsTaskPriority>("medium");
-  const [assigneeId, setAssigneeId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("none");
   const [dateTo, setDateTo] = useState("");
+  const [pendingAssignees, setPendingAssignees] = useState<PendingAssignee[]>([]);
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [openTask, setOpenTask] = useState<CmsTask | null>(null);
 
   const userMap = useMemo(() => new Map(users.map((u) => [u.user_id, u.full_name])), [users]);
+  const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const [filters, setFilters] = useState<TaskFilterState>(emptyFilters);
   const { defs } = useCmsPropertyDefs();
@@ -77,7 +93,8 @@ export default function CmsTasks() {
   }, [tasks, statusFilter, filters, filterIndex]);
 
   const reset = () => {
-    setTitle(""); setDescription(""); setPriority("medium"); setAssigneeId(""); setDateTo("");
+    setTitle(""); setDescription(""); setPriority("medium");
+    setCategoryId("none"); setDateTo(""); setPendingAssignees([]);
   };
 
   const handleCreate = async () => {
@@ -87,12 +104,33 @@ export default function CmsTasks() {
       description: description.trim() || null,
       priority,
       status: "todo",
-      assignee_id: assigneeId || null,
+      assignee_id: pendingAssignees[0]?.user_id ?? null,
+      category_id: categoryId === "none" ? null : categoryId,
       date_to: dateTo || null,
     });
-    if (!res.ok) toast({ title: "Failed", description: res.error, variant: "destructive" });
-    else { toast({ title: "Task created" }); reset(); setOpen(false); }
+    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
+    if (res.task && pendingAssignees.length > 0) {
+      const rows = pendingAssignees.map((p) => ({
+        task_id: res.task.id, user_id: p.user_id, role: p.role,
+      }));
+      const { error } = await supabase.from("cms_task_assignees").insert(rows);
+      if (error) toast({ title: "Assignees failed", description: error.message, variant: "destructive" });
+    }
+    toast({ title: "Task created" }); reset(); setOpen(false);
   };
+
+  const usersByTitle = (t: CmsAssigneeRole) => users.filter((u) => (u.title ?? null) === t && u.active_status);
+
+  const addPending = (user_id: string, role: CmsAssigneeRole) =>
+    setPendingAssignees((p) => [...p, { user_id, role, tmp_id: crypto.randomUUID() }]);
+  const removePending = (tmp_id: string) =>
+    setPendingAssignees((p) => p.filter((x) => x.tmp_id !== tmp_id));
+
+  // Adapter so MultiAssigneeField works with pending list
+  const pendingAsAssignees = pendingAssignees.map((p) => ({
+    id: p.tmp_id, task_id: "tmp", user_id: p.user_id, role: p.role, created_at: "",
+  }));
+
 
   const overdueCount = filtered.filter((t) => getTaskDueStatus(t.date_to, t.status) === "overdue").length;
   const dueSoonCount = filtered.filter((t) => getTaskDueStatus(t.date_to, t.status) === "due-soon").length;
@@ -141,16 +179,36 @@ export default function CmsTasks() {
                       <div><Label>Due date</Label><Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></div>
                     </div>
                     <div>
-                      <Label>Assignee</Label>
-                      <Select value={assigneeId || "unassigned"} onValueChange={(v) => setAssigneeId(v === "unassigned" ? "" : v)}>
-                        <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                      <Label>Category</Label>
+                      <Select value={categoryId} onValueChange={setCategoryId}>
+                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                          {users.filter((u) => u.active_status).map((u) => (
-                            <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+                          <SelectItem value="none">No category</SelectItem>
+                          {categories.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              <span className="inline-flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
+                                {c.name}
+                              </span>
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label>Assignees</Label>
+                      {(["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[]).map((role) => (
+                        <MultiAssigneeField
+                          key={role}
+                          label={ROLE_LABELS[role]}
+                          role={role}
+                          assignees={pendingAsAssignees}
+                          users={usersByTitle(role)}
+                          canEdit
+                          onAdd={(uid, r) => addPending(uid, r)}
+                          onRemove={(id) => removePending(id)}
+                        />
+                      ))}
                     </div>
                   </div>
                   <DialogFooter><Button onClick={handleCreate}>Create</Button></DialogFooter>
@@ -169,6 +227,7 @@ export default function CmsTasks() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Assignee</TableHead>
@@ -178,9 +237,9 @@ export default function CmsTasks() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={6}>Loading…</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7}>Loading…</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No tasks</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No tasks</TableCell></TableRow>
                 ) : filtered.map((t) => (
                   <TableRow
                     key={t.id}
@@ -190,6 +249,19 @@ export default function CmsTasks() {
                     <TableCell>
                       <div className="font-medium">{t.title}</div>
                       {t.description && <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const c = t.category_id ? categoryMap.get(t.category_id) : null;
+                        return c ? (
+                          <Badge variant="outline" className="text-xs gap-1.5" style={{ borderColor: c.color, color: c.color }}>
+                            <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                            {c.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Select

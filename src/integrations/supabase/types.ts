@@ -435,6 +435,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_task_categories: {
+        Row: {
+          color: string
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cms_task_comments: {
         Row: {
           attachments: Json
@@ -615,6 +645,7 @@ export type Database = {
       cms_tasks: {
         Row: {
           assignee_id: string | null
+          category_id: string | null
           created_at: string
           created_by: string
           date_from: string | null
@@ -628,6 +659,7 @@ export type Database = {
         }
         Insert: {
           assignee_id?: string | null
+          category_id?: string | null
           created_at?: string
           created_by: string
           date_from?: string | null
@@ -641,6 +673,7 @@ export type Database = {
         }
         Update: {
           assignee_id?: string | null
+          category_id?: string | null
           created_at?: string
           created_by?: string
           date_from?: string | null
@@ -652,7 +685,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cms_tasks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cms_task_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cms_user_activity_logs: {
         Row: {

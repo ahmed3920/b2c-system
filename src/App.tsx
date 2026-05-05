@@ -51,6 +51,7 @@ import CmsPermissions from "./pages/cms/CmsPermissions";
 import CmsActivityMonitoring from "./pages/cms/CmsActivityMonitoring";
 import CmsReviewOptions from "./pages/cms/CmsReviewOptions";
 import CmsAnalytics from "./pages/cms/CmsAnalytics";
+import CmsTaskCategoriesAdmin from "./pages/cms/CmsTaskCategoriesAdmin";
 
 import NotFound from "./pages/NotFound";
 
@@ -113,6 +114,7 @@ const App = () => (
           <Route path="/cms/activity" element={<CmsActivityMonitoring />} />
           <Route path="/cms/review-options" element={<CmsReviewOptions />} />
           <Route path="/cms/analytics" element={<CmsAnalytics />} />
+          <Route path="/cms/task-categories" element={<CmsTaskCategoriesAdmin />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

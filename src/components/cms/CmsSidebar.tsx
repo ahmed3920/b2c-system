@@ -10,6 +10,7 @@ import {
   Activity,
   ListChecks,
   BarChart3,
+  Tag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -52,6 +53,7 @@ const taskTracker: NavItem[] = [
 const admin: NavItem[] = [
   { title: "Users", url: "/cms/users", icon: Users, adminOnly: true },
   { title: "Task Properties", url: "/cms/task-properties", icon: Settings2, adminOnly: true },
+  { title: "Task Categories", url: "/cms/task-categories", icon: Tag, adminOnly: true },
   { title: "Review Options", url: "/cms/review-options", icon: ListChecks, adminOnly: true },
   { title: "Permissions", url: "/cms/permissions", icon: Shield, adminOnly: true },
 ];
