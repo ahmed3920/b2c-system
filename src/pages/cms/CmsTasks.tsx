@@ -250,6 +250,19 @@ export default function CmsTasks() {
                       <div className="font-medium">{t.title}</div>
                       {t.description && <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>}
                     </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const c = t.category_id ? categoryMap.get(t.category_id) : null;
+                        return c ? (
+                          <Badge variant="outline" className="text-xs gap-1.5" style={{ borderColor: c.color, color: c.color }}>
+                            <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                            {c.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={t.status}
