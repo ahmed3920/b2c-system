@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type CmsAssigneeRole = "developer" | "reviewer";
+export type CmsAssigneeRole = "developer" | "reviewer" | "senior_developer" | "team_leader";
 
 export interface CmsTaskAssignee {
   id: string;
