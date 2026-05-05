@@ -13,6 +13,7 @@ export interface CmsTask {
   date_from: string | null;
   date_to: string | null;
   assignee_id: string | null;
+  category_id: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -26,6 +27,7 @@ export interface CmsTaskInput {
   date_from?: string | null;
   date_to?: string | null;
   assignee_id?: string | null;
+  category_id?: string | null;
 }
 
 export function useCmsTasks() {
