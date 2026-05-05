@@ -90,7 +90,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
       setCreatorPersonId(editing.creator_external_id ?? "");
       setConductedBy(editing.conducted_by ?? []);
       setTrainingDate(new Date(editing.training_date));
-      setTrainingTime(editing.training_time?.slice(0, 5) ?? "");
+      setDurationMinutes(editing.duration_minutes ?? 60);
       setTitle(editing.title);
       setNotes(editing.notes ?? "");
       setSubTeams(editing.sub_teams ?? []);
