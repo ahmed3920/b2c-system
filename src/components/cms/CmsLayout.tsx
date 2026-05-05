@@ -30,6 +30,7 @@ export function CmsLayout({ children, title, allowedRoles }: CmsLayoutProps) {
   const { role, loading: roleLoading } = useCmsRole();
   const [authChecked, setAuthChecked] = useState(false);
   const [displayName, setDisplayName] = useState("User");
+  useCmsActivityTracker(authChecked);
 
   useEffect(() => {
     (async () => {
