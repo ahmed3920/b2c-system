@@ -17,6 +17,7 @@ import { Trash2, Plus, AlertTriangle } from "lucide-react";
 import { useCmsTasks, type CmsTaskStatus, type CmsTaskPriority } from "@/hooks/useCmsTasks";
 import { useCmsRole } from "@/hooks/useCmsRole";
 import { useCmsUsers } from "@/hooks/useCmsUsers";
+import { useCmsPermissions } from "@/hooks/useCmsPermissions";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDueDateBadge, getTaskDueStatus } from "@/components/task/TaskDueDateBadge";
 import { cn } from "@/lib/utils";
@@ -46,8 +47,11 @@ const priorityClasses: Record<CmsTaskPriority, string> = {
 
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
-  const { isCmsAdmin, isCmsSupervisor, role } = useCmsRole();
-  const canManage = isCmsAdmin || isCmsSupervisor;
+  const { isCmsAdmin, isCmsSupervisor } = useCmsRole();
+  const { can } = useCmsPermissions();
+  const canCreate = can("create_task");
+  const canDelete = can("delete_task");
+  const canManage = isCmsAdmin || isCmsSupervisor || can("edit_any_task");
   const { users } = useCmsUsers();
   const { toast } = useToast();
 
