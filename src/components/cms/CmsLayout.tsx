@@ -108,6 +108,9 @@ export function CmsLayout({ children, title, allowedRoles }: CmsLayoutProps) {
             </div>
           </header>
           <main className="flex-1 overflow-x-hidden">{children}</main>
+          <footer className="border-t bg-card/40 px-4 py-2 text-[11px] text-muted-foreground">
+            Your activity is tracked while using the CMS to compute work and idle time.
+          </footer>
         </div>
       </div>
     </SidebarProvider>
