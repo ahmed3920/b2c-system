@@ -46,6 +46,7 @@ import CmsTasks from "./pages/cms/CmsTasks";
 import CmsKanban from "./pages/cms/CmsKanban";
 import CmsAttendance from "./pages/cms/CmsAttendance";
 import CmsUsers from "./pages/cms/CmsUsers";
+import CmsTaskProperties from "./pages/cms/CmsTaskProperties";
 
 import NotFound from "./pages/NotFound";
 
@@ -103,6 +104,7 @@ const App = () => (
           <Route path="/cms/kanban" element={<CmsKanban />} />
           <Route path="/cms/attendance" element={<CmsAttendance />} />
           <Route path="/cms/users" element={<CmsUsers />} />
+          <Route path="/cms/task-properties" element={<CmsTaskProperties />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

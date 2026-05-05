@@ -8,8 +8,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  CalendarDays, User as UserIcon, Flag, CircleDot, MessageSquare,
-  Trash2, Send, CheckCircle2, AlertCircle, Eye,
+  CalendarDays, Flag, CircleDot, MessageSquare,
+  Trash2, Send, CheckCircle2, Eye, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,11 @@ import {
 import type {
   CmsTask, CmsTaskPriority, CmsTaskStatus,
 } from "@/hooks/useCmsTasks";
+import { useCmsTaskAssignees } from "@/hooks/useCmsTaskAssignees";
+import { useCmsPropertyDefs, useCmsTaskPropertyValues } from "@/hooks/useCmsTaskProperties";
+import { MultiAssigneeField } from "./MultiAssigneeField";
+import { CmsPropertiesPanel } from "./CmsPropertiesPanel";
+import { AttachmentItem, AttachmentPicker } from "./CmsCommentAttachments";
 
 const STATUSES: CmsTaskStatus[] = ["todo", "in_progress", "done", "archived"];
 const PRIORITIES: CmsTaskPriority[] = ["low", "medium", "high"];
@@ -57,16 +62,22 @@ export function CmsTaskDetailDialog({
   const { toast } = useToast();
   const { comments, add, setStatus: setCommentStatus, remove: removeComment } =
     useCmsTaskComments(task?.id ?? null);
+  const { assignees, add: addAssignee, remove: removeAssignee } =
+    useCmsTaskAssignees(task?.id ?? null);
+  const { defs } = useCmsPropertyDefs();
+  const { values, setValue } = useCmsTaskPropertyValues(task?.id ?? null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [newComment, setNewComment] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [filter, setFilter] = useState<"all" | CmsTaskCommentStatus>("all");
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description ?? "");
+      setPendingFiles([]);
     }
   }, [task]);
 
@@ -77,7 +88,7 @@ export function CmsTaskDetailDialog({
 
   if (!task) return null;
 
-  const canEditTask = canManage || task.assignee_id === undefined; // assignees can edit own row anyway via RLS
+  const canEditTask = canManage || task.assignee_id === undefined;
   const filteredComments = filter === "all" ? comments : comments.filter((c) => c.status === filter);
 
   const saveTitle = async () => {
@@ -94,10 +105,10 @@ export function CmsTaskDetailDialog({
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-    const res = await add(newComment);
+    if (!newComment.trim() && pendingFiles.length === 0) return;
+    const res = await add(newComment, pendingFiles);
     if (!res.ok) toast({ title: "Failed", description: res.error, variant: "destructive" });
-    else setNewComment("");
+    else { setNewComment(""); setPendingFiles([]); }
   };
 
   const counts = {
@@ -108,7 +119,7 @@ export function CmsTaskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Notion-style header */}
         <div className="px-8 pt-8 pb-4 border-b">
           <Input
@@ -120,8 +131,39 @@ export function CmsTaskDetailDialog({
             placeholder="Untitled"
           />
 
-          {/* Properties grid (Notion-style) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mt-4">
+          {/* Top: Developers + Reviewers + Due */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-4">
+            <MultiAssigneeField
+              label="Developer"
+              role="developer"
+              assignees={assignees}
+              users={users}
+              canEdit={canManage}
+              onAdd={(uid, role) => addAssignee(uid, role)}
+              onRemove={(id) => removeAssignee(id)}
+            />
+            <MultiAssigneeField
+              label="Reviewer"
+              role="reviewer"
+              assignees={assignees}
+              users={users}
+              canEdit={canManage}
+              onAdd={(uid, role) => addAssignee(uid, role)}
+              onRemove={(id) => removeAssignee(id)}
+            />
+
+            <PropertyRow icon={<CalendarDays className="w-4 h-4" />} label="Due Date">
+              <Input
+                type="date"
+                value={task.date_to ?? ""}
+                onChange={(e) =>
+                  onUpdate(task.id, { date_to: e.target.value || null } as Partial<CmsTask>)
+                }
+                disabled={!canEditTask}
+                className="h-7 w-auto border-0 bg-secondary/50 hover:bg-secondary text-sm px-2"
+              />
+            </PropertyRow>
+
             <PropertyRow icon={<CircleDot className="w-4 h-4" />} label="Status">
               <Select
                 value={task.status}
@@ -158,48 +200,23 @@ export function CmsTaskDetailDialog({
                 </SelectContent>
               </Select>
             </PropertyRow>
-
-            <PropertyRow icon={<UserIcon className="w-4 h-4" />} label="Assignee">
-              {canManage ? (
-                <Select
-                  value={task.assignee_id ?? "unassigned"}
-                  onValueChange={(v) =>
-                    onUpdate(task.id, { assignee_id: v === "unassigned" ? null : v } as Partial<CmsTask>)
-                  }
-                >
-                  <SelectTrigger className="h-7 w-auto border-0 bg-secondary/50 hover:bg-secondary text-sm px-2 gap-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {users.filter((u) => u.active_status).map((u) => (
-                      <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <span className="text-sm">
-                  {task.assignee_id ? userMap.get(task.assignee_id) ?? "—" : <span className="text-muted-foreground">Unassigned</span>}
-                </span>
-              )}
-            </PropertyRow>
-
-            <PropertyRow icon={<CalendarDays className="w-4 h-4" />} label="Due Date">
-              <Input
-                type="date"
-                value={task.date_to ?? ""}
-                onChange={(e) =>
-                  onUpdate(task.id, { date_to: e.target.value || null } as Partial<CmsTask>)
-                }
-                disabled={!canEditTask}
-                className="h-7 w-auto border-0 bg-secondary/50 hover:bg-secondary text-sm px-2"
-              />
-            </PropertyRow>
           </div>
         </div>
 
-        {/* Body — description + comments */}
+        {/* Body — properties, description, comments */}
         <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+          {/* Custom Properties */}
+          <section>
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-3">Properties</h3>
+            <CmsPropertiesPanel
+              defs={defs}
+              values={values}
+              users={users}
+              canEdit={canEditTask}
+              onSetValue={(propId, v) => setValue(propId, v)}
+            />
+          </section>
+
           {/* Description */}
           <section>
             <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Description</h3>
@@ -299,19 +316,26 @@ export function CmsTaskDetailDialog({
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap pl-9">{c.body}</p>
+                    {c.body && <p className="text-sm whitespace-pre-wrap pl-9">{c.body}</p>}
+                    {c.attachments && c.attachments.length > 0 && (
+                      <div className="pl-9 mt-2 flex flex-wrap gap-2">
+                        {c.attachments.map((a, i) => (
+                          <AttachmentItem key={i} att={a} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
             </div>
 
             {/* New comment composer */}
-            <div className="flex gap-2 items-start">
+            <div className="space-y-2 border rounded-lg p-3 bg-card">
               <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Add a comment or feedback…"
-                className="min-h-[60px] resize-none"
+                className="min-h-[60px] resize-none border-0 px-0 focus-visible:ring-0 shadow-none"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                     e.preventDefault();
@@ -319,9 +343,16 @@ export function CmsTaskDetailDialog({
                   }
                 }}
               />
-              <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                <Send className="w-4 h-4 mr-1" />Post
-              </Button>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <AttachmentPicker files={pendingFiles} onChange={setPendingFiles} />
+                <Button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim() && pendingFiles.length === 0}
+                  size="sm"
+                >
+                  <Send className="w-4 h-4 mr-1" />Post
+                </Button>
+              </div>
             </div>
           </section>
         </div>
