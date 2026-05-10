@@ -164,14 +164,6 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
       toast({ title: "Select a mentor", variant: "destructive" });
       return;
     }
-    if (recordings.length === 0) {
-      toast({
-        title: "Recording required",
-        description: "Upload at least one recording or add a link before assigning a mentor.",
-        variant: "destructive",
-      });
-      return;
-    }
     setSaving(true);
     try {
       const m = mentorMap.get(selectedMentor);
