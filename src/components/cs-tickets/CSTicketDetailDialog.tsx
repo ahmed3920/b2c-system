@@ -42,9 +42,11 @@ interface Props {
 
 export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: Props) {
   const { isAdmin, isSuperTeamLeader, isTeamLeader, isMentor } = useUserRole();
-  const canManage = isAdmin || isSuperTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const canManage = isAdmin || isSuperTeamLeader || csFullAccess;
+  const canDelete = isAdmin || isSuperTeamLeader;
   const canValidate = isAdmin || isSuperTeamLeader || isTeamLeader;
-  const isAssignedMentorOnly = !canValidate && isMentor;
+  const isAssignedMentorOnly = !canValidate && !csFullAccess && isMentor;
   const { byType } = useCSTicketCategories();
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
