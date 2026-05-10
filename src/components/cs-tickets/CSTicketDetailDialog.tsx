@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { STATUS_OPTIONS, type CSTicketStatus } from "./csTicketCategories";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 import type { CSTicket } from "./useCSTickets";
 import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
 import { logCSTicketChanges } from "./logCSTicketChanges";
