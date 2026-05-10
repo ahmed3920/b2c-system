@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { STATUS_OPTIONS, type CSTicketStatus } from "./csTicketCategories";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 import type { CSTicket } from "./useCSTickets";
 import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
 import { logCSTicketChanges } from "./logCSTicketChanges";
@@ -41,9 +42,11 @@ interface Props {
 
 export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: Props) {
   const { isAdmin, isSuperTeamLeader, isTeamLeader, isMentor } = useUserRole();
-  const canManage = isAdmin || isSuperTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const canManage = isAdmin || isSuperTeamLeader || csFullAccess;
+  const canDelete = isAdmin || isSuperTeamLeader;
   const canValidate = isAdmin || isSuperTeamLeader || isTeamLeader;
-  const isAssignedMentorOnly = !canValidate && isMentor;
+  const isAssignedMentorOnly = !canValidate && !csFullAccess && isMentor;
   const { byType } = useCSTicketCategories();
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
@@ -232,14 +235,14 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     <History className="mr-2 h-3 w-3" /> History
                   </Button>
                   {canManage && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                        <Pencil className="mr-2 h-3 w-3" /> Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
-                        <Trash2 className="mr-2 h-3 w-3" /> Delete
-                      </Button>
-                    </>
+                    <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                      <Pencil className="mr-2 h-3 w-3" /> Edit
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                      <Trash2 className="mr-2 h-3 w-3" /> Delete
+                    </Button>
                   )}
                 </div>
               )}

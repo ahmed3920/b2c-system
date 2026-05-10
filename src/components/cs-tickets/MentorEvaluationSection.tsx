@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import type { CSTicket, SessionRecording } from "./useCSTickets";
@@ -28,7 +29,8 @@ interface Props {
 
 export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const { isAdmin, isTeamLeader, isSuperTeamLeader, isMentor } = useUserRole();
-  const canAssign = isAdmin || isTeamLeader || isSuperTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const canAssign = isAdmin || isTeamLeader || isSuperTeamLeader || csFullAccess;
   const isAssignedMentor = isMentor && !canAssign;
 
   const [mentors, setMentors] = useState<MentorOption[]>([]);
@@ -160,14 +162,6 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const handleSaveAssignment = async () => {
     if (!selectedMentor) {
       toast({ title: "Select a mentor", variant: "destructive" });
-      return;
-    }
-    if (recordings.length === 0) {
-      toast({
-        title: "Recording required",
-        description: "Upload at least one recording or add a link before assigning a mentor.",
-        variant: "destructive",
-      });
       return;
     }
     setSaving(true);
