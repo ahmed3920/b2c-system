@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import type { CSTicket, SessionRecording } from "./useCSTickets";
