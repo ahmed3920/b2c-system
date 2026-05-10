@@ -29,7 +29,8 @@ interface Props {
 
 export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const { isAdmin, isTeamLeader, isSuperTeamLeader, isMentor } = useUserRole();
-  const canAssign = isAdmin || isTeamLeader || isSuperTeamLeader;
+  const { hasAccess: csFullAccess } = useCsFullAccess();
+  const canAssign = isAdmin || isTeamLeader || isSuperTeamLeader || csFullAccess;
   const isAssignedMentor = isMentor && !canAssign;
 
   const [mentors, setMentors] = useState<MentorOption[]>([]);
