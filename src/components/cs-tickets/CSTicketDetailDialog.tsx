@@ -235,14 +235,14 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     <History className="mr-2 h-3 w-3" /> History
                   </Button>
                   {canManage && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
-                        <Pencil className="mr-2 h-3 w-3" /> Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
-                        <Trash2 className="mr-2 h-3 w-3" /> Delete
-                      </Button>
-                    </>
+                    <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                      <Pencil className="mr-2 h-3 w-3" /> Edit
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                      <Trash2 className="mr-2 h-3 w-3" /> Delete
+                    </Button>
                   )}
                 </div>
               )}
