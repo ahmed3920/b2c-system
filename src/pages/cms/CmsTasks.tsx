@@ -104,17 +104,20 @@ export default function CmsTasks() {
 
   const handleCreate = async () => {
     if (!title.trim()) { toast({ title: "Title required", variant: "destructive" }); return; }
+    const assigneeId = canAssignOthers
+      ? (pendingAssignees[0]?.user_id ?? null)
+      : currentUserId;
     const res = await create({
       title: title.trim(),
       description: description.trim() || null,
       priority,
       status: "todo",
-      assignee_id: pendingAssignees[0]?.user_id ?? null,
+      assignee_id: assigneeId,
       category_id: categoryId === "none" ? null : categoryId,
       date_to: dateTo || null,
     });
     if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
-    if (res.task && pendingAssignees.length > 0) {
+    if (res.task && canAssignOthers && pendingAssignees.length > 0) {
       const rows = pendingAssignees.map((p) => ({
         task_id: res.task.id, user_id: p.user_id, role: p.role,
       }));
