@@ -122,6 +122,7 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
   },
   developer: {
     ...ALL_FALSE,
+    create_task: true,
     edit_own_task: true,
     comment_on_accessible_task: true,
     edit_property_values_on_accessible_task: true,
@@ -130,6 +131,7 @@ export const PERMISSION_MATRIX: Record<CmsJobTitle, CmsCapabilityMap> = {
   },
   reviewer: {
     ...ALL_FALSE,
+    create_task: true,
     edit_own_task: true,
     change_status_review_done: true,
     comment_on_accessible_task: true,
