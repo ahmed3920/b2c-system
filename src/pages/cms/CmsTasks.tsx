@@ -203,21 +203,27 @@ export default function CmsTasks() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2 pt-2 border-t">
-                      <Label>Assignees</Label>
-                      {(["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[]).map((role) => (
-                        <MultiAssigneeField
-                          key={role}
-                          label={ROLE_LABELS[role]}
-                          role={role}
-                          assignees={pendingAsAssignees}
-                          users={usersByTitle(role)}
-                          canEdit
-                          onAdd={(uid, r) => addPending(uid, r)}
-                          onRemove={(id) => removePending(id)}
-                        />
-                      ))}
-                    </div>
+                    {canAssignOthers ? (
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label>Assignees</Label>
+                        {(["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[]).map((role) => (
+                          <MultiAssigneeField
+                            key={role}
+                            label={ROLE_LABELS[role]}
+                            role={role}
+                            assignees={pendingAsAssignees}
+                            users={usersByTitle(role)}
+                            canEdit
+                            onAdd={(uid, r) => addPending(uid, r)}
+                            onRemove={(id) => removePending(id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground pt-2 border-t">
+                        This task will be assigned to you.
+                      </p>
+                    )}
                   </div>
                   <DialogFooter><Button onClick={handleCreate}>Create</Button></DialogFooter>
                 </DialogContent>
