@@ -61,13 +61,18 @@ interface PendingAssignee { user_id: string; role: CmsAssigneeRole; tmp_id: stri
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
   const { isCmsAdmin, isCmsSupervisor } = useCmsRole();
-  const { can } = useCmsPermissions();
+  const { can, assignableRoles } = useCmsPermissions();
   const canCreate = can("create_task");
   const canDelete = can("delete_task");
   const canManage = isCmsAdmin || isCmsSupervisor || can("edit_any_task");
+  const canAssignOthers = assignableRoles.length > 0;
   const { users } = useCmsUsers();
   const { categories } = useCmsTaskCategories();
   const { toast } = useToast();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
+  }, []);
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
