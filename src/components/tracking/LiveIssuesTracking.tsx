@@ -357,11 +357,11 @@ export function LiveIssuesTracking() {
         text: `Top performer: ${bestTl.tl} at ${bestTl.progress}% validation progress.`,
       });
     }
-    if (repeaters.length > 0) {
-      const top = repeaters.slice(0, 3).map((r) => `${r.tutor_name || r.tutor_id} (${r.cases})`).join(", ");
+    if (deductedTutors.length > 0) {
+      const top = deductedTutors.slice(0, 3).map((r) => `${r.tutor_name || r.tutor_id} (${r.cases})`).join(", ");
       out.push({
-        tone: "info",
-        text: `Top repeated tutors this month: ${top}.`,
+        tone: "warn",
+        text: `Top tutors with deducted cases this month: ${top}.`,
       });
     }
     if (reasonData[0]) {
@@ -372,7 +372,7 @@ export function LiveIssuesTracking() {
       });
     }
     return out;
-  }, [kpis, tlBreakdown, repeaters, reasonData]);
+  }, [kpis, tlBreakdown, deductedTutors, reasonData]);
 
   // Alerts
   const alerts = useMemo(() => {
@@ -384,16 +384,16 @@ export function LiveIssuesTracking() {
         desc: `${kpis.pending} of ${kpis.total} cases still need validation (${Math.round((kpis.pending / kpis.total) * 100)}%).`,
       });
     }
-    const highRisk = repeaters.filter((r) => r.cases >= REPEATER_THRESHOLD).length;
-    if (highRisk > 0) {
+    const highRiskDeduct = deductedTutors.filter((r) => r.cases >= REPEATER_THRESHOLD).length;
+    if (highRiskDeduct > 0) {
       out.push({
         tone: "warn",
-        title: "Increase in repeated issues this month",
-        desc: `${highRisk} tutor(s) have ${REPEATER_THRESHOLD}+ cases in the selected month.`,
+        title: "Tutors with multiple deducted cases",
+        desc: `${highRiskDeduct} tutor(s) have ${REPEATER_THRESHOLD}+ deducted cases in the selected month.`,
       });
     }
     return out;
-  }, [kpis, repeaters]);
+  }, [kpis, deductedTutors]);
 
   // Detailed table rows (after filter, paginated)
   const sortedDetail = useMemo(
