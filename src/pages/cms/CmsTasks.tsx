@@ -61,13 +61,18 @@ interface PendingAssignee { user_id: string; role: CmsAssigneeRole; tmp_id: stri
 export default function CmsTasks() {
   const { tasks, loading, create, update, remove } = useCmsTasks();
   const { isCmsAdmin, isCmsSupervisor } = useCmsRole();
-  const { can } = useCmsPermissions();
+  const { can, assignableRoles } = useCmsPermissions();
   const canCreate = can("create_task");
   const canDelete = can("delete_task");
   const canManage = isCmsAdmin || isCmsSupervisor || can("edit_any_task");
+  const canAssignOthers = assignableRoles.length > 0;
   const { users } = useCmsUsers();
   const { categories } = useCmsTaskCategories();
   const { toast } = useToast();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
+  }, []);
 
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -99,17 +104,20 @@ export default function CmsTasks() {
 
   const handleCreate = async () => {
     if (!title.trim()) { toast({ title: "Title required", variant: "destructive" }); return; }
+    const assigneeId = canAssignOthers
+      ? (pendingAssignees[0]?.user_id ?? null)
+      : currentUserId;
     const res = await create({
       title: title.trim(),
       description: description.trim() || null,
       priority,
       status: "todo",
-      assignee_id: pendingAssignees[0]?.user_id ?? null,
+      assignee_id: assigneeId,
       category_id: categoryId === "none" ? null : categoryId,
       date_to: dateTo || null,
     });
     if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
-    if (res.task && pendingAssignees.length > 0) {
+    if (res.task && canAssignOthers && pendingAssignees.length > 0) {
       const rows = pendingAssignees.map((p) => ({
         task_id: res.task.id, user_id: p.user_id, role: p.role,
       }));
@@ -195,21 +203,27 @@ export default function CmsTasks() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2 pt-2 border-t">
-                      <Label>Assignees</Label>
-                      {(["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[]).map((role) => (
-                        <MultiAssigneeField
-                          key={role}
-                          label={ROLE_LABELS[role]}
-                          role={role}
-                          assignees={pendingAsAssignees}
-                          users={usersByTitle(role)}
-                          canEdit
-                          onAdd={(uid, r) => addPending(uid, r)}
-                          onRemove={(id) => removePending(id)}
-                        />
-                      ))}
-                    </div>
+                    {canAssignOthers ? (
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label>Assignees</Label>
+                        {(["developer", "senior_developer", "reviewer", "team_leader"] as CmsAssigneeRole[]).map((role) => (
+                          <MultiAssigneeField
+                            key={role}
+                            label={ROLE_LABELS[role]}
+                            role={role}
+                            assignees={pendingAsAssignees}
+                            users={usersByTitle(role)}
+                            canEdit
+                            onAdd={(uid, r) => addPending(uid, r)}
+                            onRemove={(id) => removePending(id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground pt-2 border-t">
+                        This task will be assigned to you.
+                      </p>
+                    )}
                   </div>
                   <DialogFooter><Button onClick={handleCreate}>Create</Button></DialogFooter>
                 </DialogContent>
