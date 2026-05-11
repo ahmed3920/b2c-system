@@ -537,28 +537,28 @@ export function LiveIssuesTracking() {
           icon={<Users className="h-4 w-4" />}
         />
         <KpiCard
-          label="Validated"
-          value={kpis.validated}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          tone="success"
+          label="Deducted Cases"
+          value={kpis.deduct}
+          icon={<Flame className="h-4 w-4" />}
+          tone="danger"
         />
         <KpiCard
-          label="Pending"
-          value={kpis.pending}
-          icon={<Clock className="h-4 w-4" />}
-          tone={kpis.total > 0 && kpis.pending / kpis.total > PENDING_BACKLOG_THRESHOLD ? "danger" : "warn"}
+          label="Not Deducted"
+          value={kpis.no_deduction}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          tone="success"
         />
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-4 w-4" /> Validation Progress
+                <Clock className="h-4 w-4" /> Pending Validation
               </span>
               <span className={`text-xs font-semibold ${
                 kpis.progress >= 70 ? "text-emerald-600" : kpis.progress >= 40 ? "text-amber-600" : "text-red-600"
               }`}>{kpis.progress}%</span>
             </div>
-            <div className="text-2xl font-bold mt-1">{kpis.validated} / {kpis.total}</div>
+            <div className="text-2xl font-bold mt-1">{kpis.pending} / {kpis.total}</div>
             <Progress value={kpis.progress} className="h-2 mt-2" />
           </CardContent>
         </Card>
