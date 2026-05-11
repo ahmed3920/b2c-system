@@ -256,14 +256,14 @@ export function LiveIssuesTracking() {
     return arr;
   }, [filtered, tlSort]);
 
-  // Repeaters this month (use selected month, or current month as fallback)
-  const repeaters = useMemo(() => {
+  // Tutors with deducted cases this month — these are the candidates for action plans.
+  const deductedTutors = useMemo(() => {
     const target = month !== ALL ? month : (months[0] ?? null);
     if (!target) return [];
     const monthRows = allRows.filter((r) => {
       if (monthKey(r.session_date) !== target) return false;
       if (tlFilter !== ALL && r.team_leader !== tlFilter) return false;
-      return true;
+      return r.edu_validation === "deduct";
     });
     const map = new Map<string, { tutor_id: string; tutor_name: string; team_leader: string; cases: number; reasons: Map<string, number> }>();
     monthRows.forEach((r) => {
@@ -283,53 +283,11 @@ export function LiveIssuesTracking() {
       item.reasons.set(reason, (item.reasons.get(reason) ?? 0) + 1);
     });
     return Array.from(map.values())
-      .filter((x) => x.cases >= 2)
       .sort((a, b) => b.cases - a.cases)
-      .slice(0, 25)
       .map((x) => ({
         ...x,
         topReason: Array.from(x.reasons.entries()).sort((a, b) => b[1] - a[1])[0],
       }));
-  }, [allRows, month, months, tlFilter]);
-
-  // Single No-Show this month: tutors with exactly 1 "No show" issue.
-  // Per policy, the very first no-show triggers a warning + 2x deduction notice,
-  // so they should be visible (separately from repeaters).
-  const singleNoShow = useMemo(() => {
-    const target = month !== ALL ? month : (months[0] ?? null);
-    if (!target) return [];
-    const monthRows = allRows.filter((r) => {
-      if (monthKey(r.session_date) !== target) return false;
-      if (tlFilter !== ALL && r.team_leader !== tlFilter) return false;
-      const reason = (r.issue_reason ?? "").toLowerCase().trim();
-      return reason === "no show" || reason === "no-show" || reason === "noshow";
-    });
-    const map = new Map<string, {
-      tutor_id: string;
-      tutor_name: string;
-      team_leader: string;
-      count: number;
-      dates: string[];
-    }>();
-    for (const r of monthRows) {
-      const tid = r.from_tutor_id || "—";
-      let item = map.get(tid);
-      if (!item) {
-        item = {
-          tutor_id: tid,
-          tutor_name: r.from_tutor_name || "—",
-          team_leader: r.team_leader || "—",
-          count: 0,
-          dates: [],
-        };
-        map.set(tid, item);
-      }
-      item.count += 1;
-      if (r.session_date) item.dates.push(r.session_date);
-    }
-    return Array.from(map.values())
-      .filter((x) => x.count === 1)
-      .sort((a, b) => a.tutor_name.localeCompare(b.tutor_name));
   }, [allRows, month, months, tlFilter]);
 
   // Distribution chart data
@@ -399,11 +357,11 @@ export function LiveIssuesTracking() {
         text: `Top performer: ${bestTl.tl} at ${bestTl.progress}% validation progress.`,
       });
     }
-    if (repeaters.length > 0) {
-      const top = repeaters.slice(0, 3).map((r) => `${r.tutor_name || r.tutor_id} (${r.cases})`).join(", ");
+    if (deductedTutors.length > 0) {
+      const top = deductedTutors.slice(0, 3).map((r) => `${r.tutor_name || r.tutor_id} (${r.cases})`).join(", ");
       out.push({
-        tone: "info",
-        text: `Top repeated tutors this month: ${top}.`,
+        tone: "warn",
+        text: `Top tutors with deducted cases this month: ${top}.`,
       });
     }
     if (reasonData[0]) {
@@ -414,7 +372,7 @@ export function LiveIssuesTracking() {
       });
     }
     return out;
-  }, [kpis, tlBreakdown, repeaters, reasonData]);
+  }, [kpis, tlBreakdown, deductedTutors, reasonData]);
 
   // Alerts
   const alerts = useMemo(() => {
@@ -426,16 +384,16 @@ export function LiveIssuesTracking() {
         desc: `${kpis.pending} of ${kpis.total} cases still need validation (${Math.round((kpis.pending / kpis.total) * 100)}%).`,
       });
     }
-    const highRisk = repeaters.filter((r) => r.cases >= REPEATER_THRESHOLD).length;
-    if (highRisk > 0) {
+    const highRiskDeduct = deductedTutors.filter((r) => r.cases >= REPEATER_THRESHOLD).length;
+    if (highRiskDeduct > 0) {
       out.push({
         tone: "warn",
-        title: "Increase in repeated issues this month",
-        desc: `${highRisk} tutor(s) have ${REPEATER_THRESHOLD}+ cases in the selected month.`,
+        title: "Tutors with multiple deducted cases",
+        desc: `${highRiskDeduct} tutor(s) have ${REPEATER_THRESHOLD}+ deducted cases in the selected month.`,
       });
     }
     return out;
-  }, [kpis, repeaters]);
+  }, [kpis, deductedTutors]);
 
   // Detailed table rows (after filter, paginated)
   const sortedDetail = useMemo(
@@ -579,28 +537,28 @@ export function LiveIssuesTracking() {
           icon={<Users className="h-4 w-4" />}
         />
         <KpiCard
-          label="Validated"
-          value={kpis.validated}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          tone="success"
+          label="Deducted Cases"
+          value={kpis.deduct}
+          icon={<Flame className="h-4 w-4" />}
+          tone="danger"
         />
         <KpiCard
-          label="Pending"
-          value={kpis.pending}
-          icon={<Clock className="h-4 w-4" />}
-          tone={kpis.total > 0 && kpis.pending / kpis.total > PENDING_BACKLOG_THRESHOLD ? "danger" : "warn"}
+          label="Not Deducted"
+          value={kpis.no_deduction}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          tone="success"
         />
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-4 w-4" /> Validation Progress
+                <Clock className="h-4 w-4" /> Pending Validation
               </span>
               <span className={`text-xs font-semibold ${
                 kpis.progress >= 70 ? "text-emerald-600" : kpis.progress >= 40 ? "text-amber-600" : "text-red-600"
               }`}>{kpis.progress}%</span>
             </div>
-            <div className="text-2xl font-bold mt-1">{kpis.validated} / {kpis.total}</div>
+            <div className="text-2xl font-bold mt-1">{kpis.pending} / {kpis.total}</div>
             <Progress value={kpis.progress} className="h-2 mt-2" />
           </CardContent>
         </Card>
@@ -774,20 +732,23 @@ export function LiveIssuesTracking() {
         </CardContent>
       </Card>
 
-      {/* Repeaters */}
+      {/* Tutors with deducted cases — these are action-plan candidates */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Flame className="h-4 w-4 text-orange-500" />
-            Repeaters This Month
+            <Flame className="h-4 w-4 text-red-500" />
+            Tutors with Deducted Cases
             <Badge variant="outline" className="text-[10px]">
               {month !== ALL ? format(parseISO(month + "-01"), "MMM yyyy") : (months[0] ? format(parseISO(months[0] + "-01"), "MMM yyyy") : "—")}
             </Badge>
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Only deducted cases are shown. Repeaters and single no-shows are excluded — these tutors are the candidates for action plans.
+          </p>
         </CardHeader>
         <CardContent>
-          {repeaters.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No repeaters detected for this month.</p>
+          {deductedTutors.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No deducted cases for this month.</p>
           ) : (
             <div className="border rounded-md overflow-x-auto">
               <Table>
@@ -796,7 +757,7 @@ export function LiveIssuesTracking() {
                     <TableHead>Tutor</TableHead>
                     <TableHead>Tutor ID</TableHead>
                     <TableHead>Team Leader</TableHead>
-                    <TableHead className="text-right">Cases</TableHead>
+                    <TableHead className="text-right">Deducted Cases</TableHead>
                     <TableHead>Top Issue</TableHead>
                     <TableHead>Risk</TableHead>
                     <TableHead className="text-right">Action Plan</TableHead>
@@ -804,7 +765,7 @@ export function LiveIssuesTracking() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {repeaters.map((r) => {
+                  {deductedTutors.map((r) => {
                     const highRisk = r.cases >= REPEATER_THRESHOLD;
                     const existingPlan = plansByTutor.get(r.tutor_id) ?? null;
                     const isNoShowTop = (r.topReason?.[0] ?? "").toLowerCase().includes("no show");
@@ -824,7 +785,7 @@ export function LiveIssuesTracking() {
                         </TableCell>
                         <TableCell className="font-mono text-xs">{r.tutor_id}</TableCell>
                         <TableCell className="text-xs">{r.team_leader}</TableCell>
-                        <TableCell className="text-right font-semibold">{r.cases}</TableCell>
+                        <TableCell className="text-right font-semibold text-red-600">{r.cases}</TableCell>
                         <TableCell className="text-xs">
                           {r.topReason ? `${r.topReason[0]} (×${r.topReason[1]})` : "—"}
                         </TableCell>
@@ -880,105 +841,6 @@ export function LiveIssuesTracking() {
                           >
                             View cases
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Single No-Show this month — first no-show requires a warning email + 2x deduction */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Single No-Show This Month
-            <Badge variant="outline" className="text-[10px]">
-              {month !== ALL ? format(parseISO(month + "-01"), "MMM yyyy") : (months[0] ? format(parseISO(months[0] + "-01"), "MMM yyyy") : "—")}
-            </Badge>
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Per No-Show Policy, the first no-show in a month requires a warning email + 2x deduction notice.
-            These tutors have exactly 1 no-show and should receive that warning.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {singleNoShow.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No single no-show cases for this month.</p>
-          ) : (
-            <div className="border rounded-md overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tutor</TableHead>
-                    <TableHead>Tutor ID</TableHead>
-                    <TableHead>Team Leader</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Suggested action</TableHead>
-                    <TableHead className="text-right">Action Plan</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {singleNoShow.map((r) => {
-                    const existingPlan = plansByTutor.get(r.tutor_id) ?? null;
-                    return (
-                      <TableRow key={r.tutor_id} className="bg-amber-500/5 border-l-4 border-l-amber-500">
-                        <TableCell className="font-medium text-sm">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span>{r.tutor_name}</span>
-                            {existingPlan && (
-                              <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20" variant="outline">
-                                <Target className="h-3 w-3 mr-1" />
-                                On Action Plan
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{r.tutor_id}</TableCell>
-                        <TableCell className="text-xs">{r.team_leader}</TableCell>
-                        <TableCell className="text-xs font-mono">
-                          {r.dates.map((d) => format(new Date(d), "PP")).join(", ") || "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">Warning Email + 2x deduction notice</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1 flex-wrap">
-                            {existingPlan ? (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => setViewPlan(existingPlan)}>
-                                  <Eye className="h-3.5 w-3.5 mr-1" />
-                                  View Plan
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => {
-                                    setCreatePlanForTutorId(r.tutor_id);
-                                    setCreatePlanCategory("no_show_abuse");
-                                    setCreatePlanOpen(true);
-                                  }}
-                                >
-                                  <Plus className="h-3.5 w-3.5 mr-1" />
-                                  New Action Plan
-                                </Button>
-                              </>
-                            ) : (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setCreatePlanForTutorId(r.tutor_id);
-                                  setCreatePlanCategory("no_show_abuse");
-                                  setCreatePlanOpen(true);
-                                }}
-                              >
-                                <Target className="h-3.5 w-3.5 mr-1" />
-                                Create Action Plan
-                              </Button>
-                            )}
-                          </div>
                         </TableCell>
                       </TableRow>
                     );
