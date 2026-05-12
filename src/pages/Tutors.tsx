@@ -422,6 +422,33 @@ export default function Tutors() {
         current={statusTarget ? byTutorId.get(statusTarget.id) ?? null : null}
         onSubmit={upsertStatus}
       />
+
+      <TutorAssignmentDialog
+        open={!!assignTarget}
+        onOpenChange={(o) => !o && setAssignTarget(null)}
+        tutor={assignTarget}
+        onSubmit={async ({ team_leader, mentor }) => {
+          if (!assignTarget) return { success: false };
+          return upsertOverride({
+            tutor_external_id: assignTarget.id,
+            name: assignTarget.name,
+            team_leader,
+            mentor,
+            ranking: assignTarget.ranking,
+            phone: assignTarget.phone,
+            role: assignTarget.role,
+            language: assignTarget.language,
+            employment_type: assignTarget.employment_type,
+            is_new: assignTarget._isNew ?? false,
+          });
+        }}
+      />
+
+      <UploadRosterDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onDone={() => {}}
+      />
     </AppLayout>
   );
 }
