@@ -51,8 +51,11 @@ export default function Tutors() {
   const { isTeamLeader, isAdmin, isSuperTeamLeader } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { byTutorId, upsertStatus } = useTutorStatus();
+  const { merged: roster, upsertOverride } = useTutorRoster();
 
   const canEditStatus = isAdmin || isTeamLeader || isSuperTeamLeader;
+  const canEditAssign = isAdmin || isTeamLeader || isSuperTeamLeader;
+  const canUpload = isAdmin;
 
   const [query, setQuery] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
@@ -61,18 +64,20 @@ export default function Tutors() {
   const [empFilter, setEmpFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [statusTarget, setStatusTarget] = useState<typeof tutorRoster[number] | null>(null);
+  const [statusTarget, setStatusTarget] = useState<MergedTutor | null>(null);
+  const [assignTarget, setAssignTarget] = useState<MergedTutor | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   // Restrict roster to TL's own team when not admin
   const scopedRoster = useMemo(() => {
     if (isTeamLeader && !isAdmin && myTeamLeader) {
-      return tutorRoster.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
+      return roster.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
     }
-    return tutorRoster;
-  }, [isTeamLeader, isAdmin, myTeamLeader]);
+    return roster;
+  }, [isTeamLeader, isAdmin, myTeamLeader, roster]);
 
   const teamLeaders = useMemo(
-    () => Array.from(new Set(scopedRoster.map((t) => t.team_leader))).sort(),
+    () => Array.from(new Set(scopedRoster.map((t) => t.team_leader).filter(Boolean))).sort() as string[],
     [scopedRoster],
   );
 
