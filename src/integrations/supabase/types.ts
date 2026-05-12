@@ -2402,6 +2402,57 @@ export type Database = {
           },
         ]
       }
+      tutor_roster_overrides: {
+        Row: {
+          created_at: string
+          employment_type: string | null
+          is_new: boolean
+          language: string | null
+          mentor: string | null
+          name: string
+          phone: string | null
+          ranking: string | null
+          role: string | null
+          team_leader: string | null
+          tutor_external_id: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          employment_type?: string | null
+          is_new?: boolean
+          language?: string | null
+          mentor?: string | null
+          name: string
+          phone?: string | null
+          ranking?: string | null
+          role?: string | null
+          team_leader?: string | null
+          tutor_external_id: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          employment_type?: string | null
+          is_new?: boolean
+          language?: string | null
+          mentor?: string | null
+          name?: string
+          phone?: string | null
+          ranking?: string | null
+          role?: string | null
+          team_leader?: string | null
+          tutor_external_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: []
+      }
       tutor_status: {
         Row: {
           created_at: string
