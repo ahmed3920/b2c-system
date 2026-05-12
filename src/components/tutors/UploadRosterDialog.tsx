@@ -189,7 +189,7 @@ export function UploadRosterDialog({ open, onOpenChange, onDone }: Props) {
           .filter((m) => !skip.has(m.id))
           .map((m) => ({
             tutor_external_id: m.id, tutor_name: m.name, team_leader: m.team_leader, is_mentor: m.is_mentor,
-            status: "resigned", effective_date: today,
+            status: "resigned" as const, effective_date: today,
             notes: "Auto-marked from roster sheet upload (not present in latest sheet).",
             set_by: userId, set_by_name: userName,
           }));
@@ -211,7 +211,7 @@ export function UploadRosterDialog({ open, onOpenChange, onDone }: Props) {
               const r = preview.rows.find((x) => x.id === c.tutor_external_id)!;
               return {
                 tutor_external_id: r.id, tutor_name: r.name, team_leader: r.team_leader,
-                is_mentor: r.role === "Mentor", status: "active", effective_date: null,
+                is_mentor: r.role === "Mentor", status: "active" as const, effective_date: null,
                 notes: "Reactivated from roster sheet upload.", set_by: userId, set_by_name: userName,
               };
             });
