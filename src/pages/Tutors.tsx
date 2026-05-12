@@ -27,14 +27,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX, Pencil, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
-import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 import { useTutorStatus, type TutorStatusValue } from "@/hooks/useTutorStatus";
 import { TutorStatusDialog } from "@/components/tutors/TutorStatusDialog";
+import { useTutorRoster, type MergedTutor } from "@/hooks/useTutorRoster";
+import { TutorAssignmentDialog } from "@/components/tutors/TutorAssignmentDialog";
+import { UploadRosterDialog } from "@/components/tutors/UploadRosterDialog";
 import { format } from "date-fns";
 
 const PAGE_SIZE = 25;
@@ -49,8 +51,11 @@ export default function Tutors() {
   const { isTeamLeader, isAdmin, isSuperTeamLeader } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { byTutorId, upsertStatus } = useTutorStatus();
+  const { merged: roster, upsertOverride } = useTutorRoster();
 
   const canEditStatus = isAdmin || isTeamLeader || isSuperTeamLeader;
+  const canEditAssign = isAdmin || isTeamLeader || isSuperTeamLeader;
+  const canUpload = isAdmin;
 
   const [query, setQuery] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
@@ -59,18 +64,20 @@ export default function Tutors() {
   const [empFilter, setEmpFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [statusTarget, setStatusTarget] = useState<typeof tutorRoster[number] | null>(null);
+  const [statusTarget, setStatusTarget] = useState<MergedTutor | null>(null);
+  const [assignTarget, setAssignTarget] = useState<MergedTutor | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   // Restrict roster to TL's own team when not admin
   const scopedRoster = useMemo(() => {
     if (isTeamLeader && !isAdmin && myTeamLeader) {
-      return tutorRoster.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
+      return roster.filter((t) => teamLeaderMatches(t.team_leader, myTeamLeader));
     }
-    return tutorRoster;
-  }, [isTeamLeader, isAdmin, myTeamLeader]);
+    return roster;
+  }, [isTeamLeader, isAdmin, myTeamLeader, roster]);
 
   const teamLeaders = useMemo(
-    () => Array.from(new Set(scopedRoster.map((t) => t.team_leader))).sort(),
+    () => Array.from(new Set(scopedRoster.map((t) => t.team_leader).filter(Boolean))).sort() as string[],
     [scopedRoster],
   );
 
@@ -139,6 +146,14 @@ export default function Tutors() {
             value={stats.partTime}
           />
         </div>
+
+        {canUpload && (
+          <div className="flex justify-end">
+            <Button onClick={() => setUploadOpen(true)} variant="outline">
+              <Upload className="h-4 w-4 mr-2" /> Upload Roster Sheet
+            </Button>
+          </div>
+        )}
 
         <Card>
           <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -321,6 +336,16 @@ export default function Tutors() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            {canEditAssign && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setAssignTarget(t)}
+                                title="Edit assignment"
+                              >
+                                <Pencil className="h-4 w-4 mr-1" /> Edit
+                              </Button>
+                            )}
                             {canEditStatus && (
                               <Button
                                 size="sm"
@@ -396,6 +421,33 @@ export default function Tutors() {
         }
         current={statusTarget ? byTutorId.get(statusTarget.id) ?? null : null}
         onSubmit={upsertStatus}
+      />
+
+      <TutorAssignmentDialog
+        open={!!assignTarget}
+        onOpenChange={(o) => !o && setAssignTarget(null)}
+        tutor={assignTarget}
+        onSubmit={async ({ team_leader, mentor }) => {
+          if (!assignTarget) return { success: false };
+          return upsertOverride({
+            tutor_external_id: assignTarget.id,
+            name: assignTarget.name,
+            team_leader,
+            mentor,
+            ranking: assignTarget.ranking,
+            phone: assignTarget.phone,
+            role: assignTarget.role,
+            language: assignTarget.language,
+            employment_type: assignTarget.employment_type,
+            is_new: assignTarget._isNew ?? false,
+          });
+        }}
+      />
+
+      <UploadRosterDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onDone={() => {}}
       />
     </AppLayout>
   );
