@@ -27,14 +27,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX, Pencil, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
-import { tutorRoster } from "@/data/tutorRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 import { useTutorStatus, type TutorStatusValue } from "@/hooks/useTutorStatus";
 import { TutorStatusDialog } from "@/components/tutors/TutorStatusDialog";
+import { useTutorRoster, type MergedTutor } from "@/hooks/useTutorRoster";
+import { TutorAssignmentDialog } from "@/components/tutors/TutorAssignmentDialog";
+import { UploadRosterDialog } from "@/components/tutors/UploadRosterDialog";
 import { format } from "date-fns";
 
 const PAGE_SIZE = 25;
