@@ -147,6 +147,14 @@ export default function Tutors() {
           />
         </div>
 
+        {canUpload && (
+          <div className="flex justify-end">
+            <Button onClick={() => setUploadOpen(true)} variant="outline">
+              <Upload className="h-4 w-4 mr-2" /> Upload Roster Sheet
+            </Button>
+          </div>
+        )}
+
         <Card>
           <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle>All Tutors & Mentors</CardTitle>
