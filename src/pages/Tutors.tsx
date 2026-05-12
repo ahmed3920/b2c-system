@@ -336,6 +336,16 @@ export default function Tutors() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            {canEditAssign && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setAssignTarget(t)}
+                                title="Edit assignment"
+                              >
+                                <Pencil className="h-4 w-4 mr-1" /> Edit
+                              </Button>
+                            )}
                             {canEditStatus && (
                               <Button
                                 size="sm"
