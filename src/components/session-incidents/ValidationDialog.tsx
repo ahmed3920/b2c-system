@@ -251,7 +251,7 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
         </DialogFooter>
       </DialogContent>
 
-      {isAdmin && editOpen && (
+      {canEditIncident && editOpen && (
         <IncidentFormDialog
           open={editOpen}
           onOpenChange={setEditOpen}
