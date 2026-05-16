@@ -53,6 +53,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { inactiveIds } = useInactiveTutorIds();
   const { create, update, uploadFile } = useTrainings();
+  const tutorRoster = useMergedRoster();
 
   const allTeamLeaders = useMemo(
     () =>
