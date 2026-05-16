@@ -28,7 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import { useUserRole } from "@/hooks/useUserRole";
