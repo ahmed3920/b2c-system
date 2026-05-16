@@ -1,12 +1,9 @@
-import { tutorRoster } from "@/data/tutorRoster";
+import { getMergedMentorForTutor } from "@/data/rosterCache";
 
-// Build a one-time lookup of tutor external id -> assigned mentor name.
-const mentorById = new Map<string, string>();
-for (const t of tutorRoster) {
-  if (t.id && t.mentor) mentorById.set(t.id.trim().toUpperCase(), t.mentor);
-}
-
+/**
+ * Returns the assigned mentor for a tutor external id, consulting the merged
+ * roster (static data + admin/TL overrides) so changes propagate app-wide.
+ */
 export function getMentorForTutor(tutorExternalId: string | null | undefined): string {
-  if (!tutorExternalId) return "—";
-  return mentorById.get(tutorExternalId.trim().toUpperCase()) ?? "—";
+  return getMergedMentorForTutor(tutorExternalId);
 }
