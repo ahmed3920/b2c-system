@@ -48,6 +48,7 @@ export function IncidentForm({ initial, lockTutor, onSubmit, submitting, submitL
   const { items: fields, byName } = useIncidentFieldConfig();
   const [values, setValues] = useState<IncidentFormValues>({ ...empty, ...initial });
   const [error, setError] = useState<string | null>(null);
+  const tutorRoster = useMergedRoster();
 
   // Auto-fill tutor info from roster when tutor_external_id changes
   useEffect(() => {
