@@ -44,6 +44,7 @@ export default function Tracking() {
   const { isTeamLeader, isAdmin } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { inactiveIds } = useInactiveTutorIds();
+  const tutorRoster = useMergedRoster();
   const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
 
   // Admin: one row per team leader. TL: one row per mentor inside their team.
