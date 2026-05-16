@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
 import { TrainingsTab } from "@/components/tracking/trainings/TrainingsTab";
