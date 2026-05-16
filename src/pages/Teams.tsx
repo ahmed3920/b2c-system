@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
@@ -16,6 +16,7 @@ export default function Teams() {
   const { isTeamLeader, isAdmin } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { inactiveIds } = useInactiveTutorIds();
+  const tutorRoster = useMergedRoster();
   const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
 
   // Admin: one card per team leader. TL: one card per mentor sub-team.
