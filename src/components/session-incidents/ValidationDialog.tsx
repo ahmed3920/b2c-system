@@ -37,6 +37,8 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const canManageCs = role === "admin" || csFullAccess;
   const isAdmin = role === "admin";
+  // Ghada / Kareem / mentors granted CS full access can also edit & delete incidents
+  const canEditIncident = isAdmin || csFullAccess;
 
   const handleDelete = async () => {
     setBusy(true);
