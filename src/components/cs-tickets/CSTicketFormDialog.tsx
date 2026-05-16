@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCSTicketCategories } from "./useCSTicketCategories";
@@ -40,11 +40,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const { inactiveIds } = useInactiveTutorIds();
+  const tutorRoster = useMergedRoster();
   const activeTutors = useMemo(
     () => tutorRoster.filter((t) => !inactiveIds.has(t.id)),
-    [inactiveIds],
+    [inactiveIds, tutorRoster],
   );
-  const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId]);
+  const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId, tutorRoster]);
 
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);

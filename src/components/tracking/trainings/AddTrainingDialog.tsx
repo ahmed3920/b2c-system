@@ -28,7 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -53,6 +53,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { inactiveIds } = useInactiveTutorIds();
   const { create, update, uploadFile } = useTrainings();
+  const tutorRoster = useMergedRoster();
 
   const allTeamLeaders = useMemo(
     () =>
@@ -63,7 +64,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
             .filter((x): x is string => Boolean(x?.trim())),
         ),
       ).sort(),
-    [],
+    [tutorRoster],
   );
 
   // Form state
@@ -130,7 +131,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
             (t) => teamLeaderMatches(t.team_leader, teamLeader) && !inactiveIds.has(t.id),
           )
         : [],
-    [teamLeader, inactiveIds],
+    [teamLeader, inactiveIds, tutorRoster],
   );
   const teamMentors = useMemo(() => teamRoster.filter((t) => t.role === "Mentor"), [teamRoster]);
   const teamTutors = useMemo(() => teamRoster.filter((t) => t.role === "Tutor"), [teamRoster]);

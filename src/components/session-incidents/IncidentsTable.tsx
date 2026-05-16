@@ -89,15 +89,16 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 <TableHead>Category</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Sent to CS</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="h-20 text-center">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="h-20 text-center">Loading…</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="h-20 text-center text-muted-foreground">No incidents.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="h-20 text-center text-muted-foreground">No incidents.</TableCell></TableRow>
               ) : filtered.map((r) => (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => setActive(r)}>
                   <TableCell>
@@ -123,6 +124,21 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                     </Badge>
                   </TableCell>
                   <TableCell>{statusBadge(r.validation_status)}</TableCell>
+                  <TableCell>
+                    {r.sent_to_cs ? (
+                      r.cs_status === "closed" ? (
+                        <Badge className="bg-gray-500/15 text-gray-700 hover:bg-gray-500/20">
+                          Closed{r.cs_ticket_number ? ` · #${r.cs_ticket_number}` : ""}
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-500/15 text-blue-700 hover:bg-blue-500/20">
+                          Sent{r.cs_ticket_number ? ` · #${r.cs_ticket_number}` : ""}
+                        </Badge>
+                      )
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">Not sent</Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{format(new Date(r.created_at), "PP")}</TableCell>
                   <TableCell>
                     {r.supporting_link && (

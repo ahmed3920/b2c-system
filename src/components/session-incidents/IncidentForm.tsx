@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { useSessionIncidentCategories, useIncidentFieldConfig } from "@/hooks/useSessionIncidentConfig";
 
 export interface IncidentFormValues {
@@ -48,6 +48,7 @@ export function IncidentForm({ initial, lockTutor, onSubmit, submitting, submitL
   const { items: fields, byName } = useIncidentFieldConfig();
   const [values, setValues] = useState<IncidentFormValues>({ ...empty, ...initial });
   const [error, setError] = useState<string | null>(null);
+  const tutorRoster = useMergedRoster();
 
   // Auto-fill tutor info from roster when tutor_external_id changes
   useEffect(() => {

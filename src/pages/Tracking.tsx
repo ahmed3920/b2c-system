@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Users, GraduationCap, Globe2, Briefcase } from "lucide-react";
 import { getTeamSummaries } from "@/data/tutorRosterHelpers";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
 import { TrainingsTab } from "@/components/tracking/trainings/TrainingsTab";
@@ -44,6 +44,7 @@ export default function Tracking() {
   const { isTeamLeader, isAdmin } = useUserRole();
   const { teamLeader: myTeamLeader } = useCurrentTeamLeader();
   const { inactiveIds } = useInactiveTutorIds();
+  const tutorRoster = useMergedRoster();
   const isTLView = isTeamLeader && !isAdmin && !!myTeamLeader;
 
   // Admin: one row per team leader. TL: one row per mentor inside their team.
@@ -79,7 +80,7 @@ export default function Tracking() {
         members,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [isTLView, myTeamLeader, inactiveIds]);
+  }, [isTLView, myTeamLeader, inactiveIds, tutorRoster]);
 
   const totals = useMemo(
     () =>

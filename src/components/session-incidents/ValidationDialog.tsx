@@ -37,6 +37,8 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const canManageCs = role === "admin" || csFullAccess;
   const isAdmin = role === "admin";
+  // Ghada / Kareem / mentors granted CS full access can also edit & delete incidents
+  const canEditIncident = isAdmin || csFullAccess;
 
   const handleDelete = async () => {
     setBusy(true);
@@ -229,7 +231,7 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
         )}
 
         <DialogFooter className="gap-2 flex-wrap">
-          {isAdmin && (
+          {canEditIncident && (
             <>
               <Button variant="outline" onClick={() => setEditOpen(true)} disabled={busy}>
                 <Pencil className="h-4 w-4 mr-1" /> Edit
@@ -249,7 +251,7 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
         </DialogFooter>
       </DialogContent>
 
-      {isAdmin && editOpen && (
+      {canEditIncident && editOpen && (
         <IncidentFormDialog
           open={editOpen}
           onOpenChange={setEditOpen}

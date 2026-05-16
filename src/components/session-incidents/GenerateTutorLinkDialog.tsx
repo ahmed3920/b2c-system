@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -21,8 +21,9 @@ export function GenerateTutorLinkDialog({ open, onOpenChange }: Props) {
   const [tutorId, setTutorId] = useState("");
   const [generating, setGenerating] = useState(false);
   const [link, setLink] = useState("");
+  const tutorRoster = useMergedRoster();
 
-  const tutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId]);
+  const tutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId, tutorRoster]);
 
   useEffect(() => {
     if (!open) { setTutorId(""); setLink(""); }
