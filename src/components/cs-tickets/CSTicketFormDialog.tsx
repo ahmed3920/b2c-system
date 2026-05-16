@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCSTicketCategories } from "./useCSTicketCategories";
