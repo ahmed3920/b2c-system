@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { tutorRoster } from "@/data/tutorRoster";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
