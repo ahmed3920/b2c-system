@@ -89,15 +89,16 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 <TableHead>Category</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Sent to CS</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="h-20 text-center">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="h-20 text-center">Loading…</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="h-20 text-center text-muted-foreground">No incidents.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="h-20 text-center text-muted-foreground">No incidents.</TableCell></TableRow>
               ) : filtered.map((r) => (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => setActive(r)}>
                   <TableCell>
