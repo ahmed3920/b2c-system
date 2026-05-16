@@ -1,4 +1,5 @@
-import { tutorRoster, type TutorRecord } from "./tutorRoster";
+import { type TutorRecord } from "./tutorRoster";
+import { getMergedRoster, getMergedTutorById } from "./rosterCache";
 
 export function teamSlug(name: string): string {
   return name
@@ -24,7 +25,7 @@ export interface TeamSummary {
 
 export function getTeamSummaries(excludeIds?: Set<string>): TeamSummary[] {
   const map = new Map<string, TutorRecord[]>();
-  for (const t of tutorRoster) {
+  for (const t of getMergedRoster()) {
     if (!t.team_leader) continue;
     if (excludeIds && excludeIds.has(t.id)) continue;
     const arr = map.get(t.team_leader) ?? [];
@@ -52,5 +53,5 @@ export function getTeamBySlug(slug: string, excludeIds?: Set<string>): TeamSumma
 }
 
 export function getTutorById(id: string): TutorRecord | undefined {
-  return tutorRoster.find((t) => t.id === id);
+  return getMergedTutorById(id);
 }
