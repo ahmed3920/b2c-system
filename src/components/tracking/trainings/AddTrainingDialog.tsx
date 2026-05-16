@@ -64,7 +64,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
             .filter((x): x is string => Boolean(x?.trim())),
         ),
       ).sort(),
-    [],
+    [tutorRoster],
   );
 
   // Form state
