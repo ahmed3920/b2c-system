@@ -231,7 +231,7 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
         )}
 
         <DialogFooter className="gap-2 flex-wrap">
-          {isAdmin && (
+          {canEditIncident && (
             <>
               <Button variant="outline" onClick={() => setEditOpen(true)} disabled={busy}>
                 <Pencil className="h-4 w-4 mr-1" /> Edit
