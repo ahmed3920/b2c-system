@@ -80,7 +80,7 @@ export default function Tracking() {
         members,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [isTLView, myTeamLeader, inactiveIds]);
+  }, [isTLView, myTeamLeader, inactiveIds, tutorRoster]);
 
   const totals = useMemo(
     () =>
