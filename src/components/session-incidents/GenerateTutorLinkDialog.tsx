@@ -21,8 +21,9 @@ export function GenerateTutorLinkDialog({ open, onOpenChange }: Props) {
   const [tutorId, setTutorId] = useState("");
   const [generating, setGenerating] = useState(false);
   const [link, setLink] = useState("");
+  const tutorRoster = useMergedRoster();
 
-  const tutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId]);
+  const tutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId, tutorRoster]);
 
   useEffect(() => {
     if (!open) { setTutorId(""); setLink(""); }
