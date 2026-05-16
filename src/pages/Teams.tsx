@@ -54,7 +54,7 @@ export default function Teams() {
         members,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [isTLView, myTeamLeader, inactiveIds]);
+  }, [isTLView, myTeamLeader, inactiveIds, tutorRoster]);
   const totals = useMemo(
     () =>
       teams.reduce(
