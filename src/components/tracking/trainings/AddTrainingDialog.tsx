@@ -131,7 +131,7 @@ export function AddTrainingDialog({ open, onOpenChange, editing }: Props) {
             (t) => teamLeaderMatches(t.team_leader, teamLeader) && !inactiveIds.has(t.id),
           )
         : [],
-    [teamLeader, inactiveIds],
+    [teamLeader, inactiveIds, tutorRoster],
   );
   const teamMentors = useMemo(() => teamRoster.filter((t) => t.role === "Mentor"), [teamRoster]);
   const teamTutors = useMemo(() => teamRoster.filter((t) => t.role === "Tutor"), [teamRoster]);
