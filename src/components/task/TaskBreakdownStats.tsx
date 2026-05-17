@@ -451,7 +451,7 @@ export const TaskBreakdownStats = ({
                           </td>
                         </tr>
                       )}
-                    </>
+                    </FragmentWithKey>
                   );
                 })}
               </tbody>
