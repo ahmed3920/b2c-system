@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { motion } from "framer-motion";
@@ -379,7 +380,7 @@ export const TaskBreakdownStats = ({
                   const canExpand = groupBy === "team_leader";
                   const children = isExpanded && canExpand ? computeMentorChildren(g.name) : [];
                   return (
-                    <Fragment key={g.name}>
+                    <React.Fragment key={g.name}>
                       <tr
                         className={cn(
                           "border-t border-border hover:bg-muted/30 transition-colors",
@@ -451,7 +452,7 @@ export const TaskBreakdownStats = ({
                           </td>
                         </tr>
                       )}
-                    </Fragment>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
