@@ -84,6 +84,24 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 </SelectContent>
               </Select>
             )}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={csFilter} onValueChange={setCsFilter}>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Sent to CS" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All CS</SelectItem>
+                <SelectItem value="not_sent">Not sent</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
