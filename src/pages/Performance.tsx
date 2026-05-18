@@ -56,7 +56,18 @@ export default function Performance() {
           </TabsContent>
 
           <TabsContent value="cs-tickets" className="mt-4">
-            <CSTicketsTable />
+            <Tabs defaultValue="tickets">
+              <TabsList>
+                <TabsTrigger value="tickets">Tickets</TabsTrigger>
+                <TabsTrigger value="analysis">Analysis</TabsTrigger>
+              </TabsList>
+              <TabsContent value="tickets" className="mt-4">
+                <CSTicketsTable />
+              </TabsContent>
+              <TabsContent value="analysis" className="mt-4">
+                <CSTicketsAnalysis />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {sections.filter((s) => s.v !== "live-issues" && s.v !== "cs-tickets").map((s) => (
