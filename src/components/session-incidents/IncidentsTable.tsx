@@ -23,13 +23,30 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [csFilter, setCsFilter] = useState<string>("all");
   const [active, setActive] = useState<SessionIncident | null>(null);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((r) => r.case_category && set.add(r.case_category));
+    return Array.from(set).sort();
+  }, [items]);
 
   const filtered = useMemo(() => {
     let rows = items;
     if (pendingOnly) rows = rows.filter((r) => r.validation_status === "pending");
     if (statusFilter !== "all") rows = rows.filter((r) => r.validation_status === statusFilter);
     if (sourceFilter !== "all") rows = rows.filter((r) => r.source === sourceFilter);
+    if (categoryFilter !== "all") rows = rows.filter((r) => r.case_category === categoryFilter);
+    if (csFilter !== "all") {
+      rows = rows.filter((r) => {
+        if (csFilter === "not_sent") return !r.sent_to_cs;
+        if (csFilter === "sent") return r.sent_to_cs && r.cs_status !== "closed";
+        if (csFilter === "closed") return r.sent_to_cs && r.cs_status === "closed";
+        return true;
+      });
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter((r) =>
@@ -38,7 +55,7 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
       );
     }
     return rows;
-  }, [items, search, statusFilter, sourceFilter, pendingOnly]);
+  }, [items, search, statusFilter, sourceFilter, categoryFilter, csFilter, pendingOnly]);
 
   const statusBadge = (s: string) => {
     if (s === "approved") return <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/20">Approved</Badge>;
