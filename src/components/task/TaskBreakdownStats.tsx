@@ -380,7 +380,7 @@ export const TaskBreakdownStats = ({
                   const canExpand = groupBy === "team_leader";
                   const children = isExpanded && canExpand ? computeMentorChildren(g.name) : [];
                   return (
-                    <Fragment key={g.name}>
+                    <React.Fragment key={g.name}>
                       <tr
                         className={cn(
                           "border-t border-border hover:bg-muted/30 transition-colors",
@@ -452,7 +452,7 @@ export const TaskBreakdownStats = ({
                           </td>
                         </tr>
                       )}
-                    </Fragment>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
