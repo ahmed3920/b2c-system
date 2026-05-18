@@ -33,12 +33,13 @@ export function ValidationDialog({ incident, open, onOpenChange, canValidate, on
   const [busy, setBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const { role } = useUserRole();
+  const { role, isSuperTeamLeader } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
-  const canManageCs = role === "admin" || csFullAccess;
   const isAdmin = role === "admin";
-  // Ghada / Kareem / mentors granted CS full access can also edit & delete incidents
-  const canEditIncident = isAdmin || csFullAccess;
+  // Admin, super team leaders, and CS-full-access users (Ghada/Kareem/granted mentors)
+  // can manage CS tracking (mark sent, close tickets) and edit/delete incidents.
+  const canManageCs = isAdmin || isSuperTeamLeader || csFullAccess;
+  const canEditIncident = isAdmin || isSuperTeamLeader || csFullAccess;
 
   const handleDelete = async () => {
     setBusy(true);
