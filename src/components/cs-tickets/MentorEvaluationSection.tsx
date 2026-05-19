@@ -380,7 +380,7 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           <Label>Validation *</Label>
           <Select value={validation} onValueChange={setValidation}>
             <SelectTrigger>
-              <SelectValue placeholder="Mark as Valid or Invalid" />
+              <SelectValue placeholder="Mark as Valid, Invalid, or Not a Complain" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="valid">
@@ -388,6 +388,9 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               </SelectItem>
               <SelectItem value="invalid">
                 <span className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /> Invalid</span>
+              </SelectItem>
+              <SelectItem value="not_a_complain">
+                <span className="flex items-center gap-2"><XCircle className="h-4 w-4 text-muted-foreground" /> Not a Complain</span>
               </SelectItem>
             </SelectContent>
           </Select>
