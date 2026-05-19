@@ -242,13 +242,18 @@ export default function Tracking() {
             <TrainingsTab />
           </TabsContent>
 
+          <TabsContent value="cs-tickets" className="mt-4">
+            <CSTicketsAnalysis />
+          </TabsContent>
+
           {tabs
             .filter(
               (t) =>
                 t.v !== "teams-composition" &&
                 t.v !== "live-issues" &&
                 t.v !== "leaves" &&
-                t.v !== "trainings",
+                t.v !== "trainings" &&
+                t.v !== "cs-tickets",
             )
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>
