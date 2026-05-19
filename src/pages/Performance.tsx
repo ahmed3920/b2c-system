@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
-import { CSTicketsAnalysis } from "@/components/cs-tickets/CSTicketsAnalysis";
+
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCsFullAccess } from "@/hooks/useCsFullAccess";
