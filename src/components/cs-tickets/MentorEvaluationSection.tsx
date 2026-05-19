@@ -546,8 +546,20 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           {ticket.mentor_validation && (
             <div>
               <p className="text-xs font-medium">Validation</p>
-              <Badge variant={ticket.mentor_validation === "valid" ? "default" : "destructive"}>
-                {ticket.mentor_validation === "valid" ? "Valid" : "Invalid"}
+              <Badge
+                variant={
+                  ticket.mentor_validation === "valid"
+                    ? "default"
+                    : ticket.mentor_validation === "not_a_complain"
+                      ? "outline"
+                      : "destructive"
+                }
+              >
+                {ticket.mentor_validation === "valid"
+                  ? "Valid"
+                  : ticket.mentor_validation === "not_a_complain"
+                    ? "Not a Complain"
+                    : "Invalid"}
               </Badge>
             </div>
           )}
