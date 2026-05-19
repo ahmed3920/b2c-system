@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
-import { CSTicketsAnalysis } from "@/components/cs-tickets/CSTicketsAnalysis";
+
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCsFullAccess } from "@/hooks/useCsFullAccess";
@@ -56,18 +56,7 @@ export default function Performance() {
           </TabsContent>
 
           <TabsContent value="cs-tickets" className="mt-4">
-            <Tabs defaultValue="tickets">
-              <TabsList>
-                <TabsTrigger value="tickets">Tickets</TabsTrigger>
-                <TabsTrigger value="analysis">Analysis</TabsTrigger>
-              </TabsList>
-              <TabsContent value="tickets" className="mt-4">
-                <CSTicketsTable />
-              </TabsContent>
-              <TabsContent value="analysis" className="mt-4">
-                <CSTicketsAnalysis />
-              </TabsContent>
-            </Tabs>
+            <CSTicketsTable />
           </TabsContent>
 
           {sections.filter((s) => s.v !== "live-issues" && s.v !== "cs-tickets").map((s) => (

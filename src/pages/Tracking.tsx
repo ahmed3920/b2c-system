@@ -19,6 +19,7 @@ import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
 import { TrainingsTab } from "@/components/tracking/trainings/TrainingsTab";
+import { CSTicketsAnalysis } from "@/components/cs-tickets/CSTicketsAnalysis";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
@@ -241,13 +242,18 @@ export default function Tracking() {
             <TrainingsTab />
           </TabsContent>
 
+          <TabsContent value="cs-tickets" className="mt-4">
+            <CSTicketsAnalysis />
+          </TabsContent>
+
           {tabs
             .filter(
               (t) =>
                 t.v !== "teams-composition" &&
                 t.v !== "live-issues" &&
                 t.v !== "leaves" &&
-                t.v !== "trainings",
+                t.v !== "trainings" &&
+                t.v !== "cs-tickets",
             )
             .map((t) => (
               <TabsContent key={t.v} value={t.v}>

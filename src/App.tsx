@@ -38,6 +38,7 @@ import VisionBoardPage from "./pages/VisionBoard";
 import SessionIncidents from "./pages/SessionIncidents";
 import SessionIncidentSettings from "./pages/SessionIncidentSettings";
 import IncidentSubmit from "./pages/IncidentSubmit";
+import ExportCenter from "./pages/ExportCenter";
 
 // CMS (separate workspace)
 import CmsLogin from "./pages/cms/CmsLogin";
@@ -101,6 +102,7 @@ const App = () => (
           <Route path="/session-incidents" element={<SessionIncidents />} />
           <Route path="/admin/session-incident-settings" element={<SessionIncidentSettings />} />
           <Route path="/incident-submit" element={<IncidentSubmit />} />
+          <Route path="/admin/export-center" element={<ExportCenter />} />
 
           {/* CMS workspace (isolated) */}
           <Route path="/cms/login" element={<CmsLogin />} />
