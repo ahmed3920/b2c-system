@@ -17,6 +17,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
+
+interface MentorOption {
+  user_id: string;
+  full_name: string | null;
+  mentor_name: string | null;
+  team_leader: string | null;
+}
 
 interface Props {
   open: boolean;
