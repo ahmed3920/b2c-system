@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   ToggleLeft,
   CalendarCheck,
+  Download,
   BookOpen as BookOpenIcon,
 } from "lucide-react";
 import {
