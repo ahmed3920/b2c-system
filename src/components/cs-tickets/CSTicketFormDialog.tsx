@@ -17,6 +17,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
+import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
+
+interface MentorOption {
+  user_id: string;
+  full_name: string | null;
+  mentor_name: string | null;
+  team_leader: string | null;
+}
 
 interface Props {
   open: boolean;
@@ -38,6 +47,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
   const [submitting, setSubmitting] = useState(false);
+  const [mentors, setMentors] = useState<MentorOption[]>([]);
 
   const { inactiveIds } = useInactiveTutorIds();
   const tutorRoster = useMergedRoster();
@@ -46,6 +56,27 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     [inactiveIds, tutorRoster],
   );
   const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId, tutorRoster]);
+
+  useEffect(() => {
+    if (!open) return;
+    supabase.rpc("list_available_mentors").then(({ data }) => {
+      if (data) setMentors(data as MentorOption[]);
+    });
+  }, [open]);
+
+  const recommendedMentor = useMemo(() => {
+    if (!selectedTutor) return null;
+    const name = getMentorForTutor(selectedTutor.id);
+    if (!name || name === "—") return null;
+    const target = normalizeName(name);
+    return (
+      mentors.find(
+        (m) =>
+          teamLeaderMatches(m.team_leader, selectedTutor.team_leader) &&
+          (normalizeName(m.full_name ?? "") === target || normalizeName(m.mentor_name ?? "") === target),
+      ) ?? null
+    );
+  }, [selectedTutor, mentors]);
 
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
@@ -117,6 +148,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         session_num_or_date: sessionNumOrDate || null,
         need_response_deadline: buildDeadline(),
         created_by: userId,
+        assigned_mentor_id: recommendedMentor?.user_id ?? null,
+        assigned_mentor_name: recommendedMentor
+          ? recommendedMentor.full_name || recommendedMentor.mentor_name || null
+          : null,
+        mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
+        mentor_assigned_by: recommendedMentor ? userId : null,
       });
       if (error) {
         if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
@@ -193,6 +230,20 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 <Input value={selectedTutor?.team_leader ?? ""} readOnly className="bg-muted" placeholder="Auto-filled" />
               </div>
             </div>
+            {selectedTutor && (
+              <p className="text-xs text-muted-foreground">
+                Recommended mentor:{" "}
+                {recommendedMentor ? (
+                  <span className="font-medium text-foreground">
+                    {recommendedMentor.full_name || recommendedMentor.mentor_name} — will be auto-assigned
+                  </span>
+                ) : (
+                  <span>
+                    {getMentorForTutor(selectedTutor.id) || "—"} (no matching mentor account; assign manually after creation)
+                  </span>
+                )}
+              </p>
+            )}
           </section>
 
           {/* Case Info */}
