@@ -19,6 +19,7 @@ import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { LiveIssuesTracking } from "@/components/tracking/LiveIssuesTracking";
 import { LeavesVerificationTab } from "@/components/tracking/LeavesVerificationTab";
 import { TrainingsTab } from "@/components/tracking/trainings/TrainingsTab";
+import { CSTicketsAnalysis } from "@/components/cs-tickets/CSTicketsAnalysis";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
