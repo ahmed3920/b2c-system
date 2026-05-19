@@ -94,6 +94,7 @@ const admin: NavItem[] = [
   { title: "CS Ticket Categories", url: "/admin/cs-ticket-categories", icon: Hash, roles: ["admin"], featureKey: "admin_cs_ticket_categories" },
   { title: "Feature Documentation", url: "/admin/feature-documentation", icon: BookOpenIcon, roles: ["admin"] },
   { title: "Incident Settings", url: "/admin/session-incident-settings", icon: Settings, roles: ["admin"] },
+  { title: "Export Center", url: "/admin/export-center", icon: Download, roles: ["admin"] },
   { title: "Team Overview", url: "/team/dashboard", icon: UsersRound, roles: ["team_leader"], featureKey: "team_dashboard" },
 ];
 
