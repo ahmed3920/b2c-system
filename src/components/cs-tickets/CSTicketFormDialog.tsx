@@ -148,6 +148,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         session_num_or_date: sessionNumOrDate || null,
         need_response_deadline: buildDeadline(),
         created_by: userId,
+        assigned_mentor_id: recommendedMentor?.user_id ?? null,
+        assigned_mentor_name: recommendedMentor
+          ? recommendedMentor.full_name || recommendedMentor.mentor_name || null
+          : null,
+        mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
+        mentor_assigned_by: recommendedMentor ? userId : null,
       });
       if (error) {
         if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
