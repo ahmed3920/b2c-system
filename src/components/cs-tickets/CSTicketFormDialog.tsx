@@ -230,6 +230,20 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 <Input value={selectedTutor?.team_leader ?? ""} readOnly className="bg-muted" placeholder="Auto-filled" />
               </div>
             </div>
+            {selectedTutor && (
+              <p className="text-xs text-muted-foreground">
+                Recommended mentor:{" "}
+                {recommendedMentor ? (
+                  <span className="font-medium text-foreground">
+                    {recommendedMentor.full_name || recommendedMentor.mentor_name} — will be auto-assigned
+                  </span>
+                ) : (
+                  <span>
+                    {getMentorForTutor(selectedTutor.id) || "—"} (no matching mentor account; assign manually after creation)
+                  </span>
+                )}
+              </p>
+            )}
           </section>
 
           {/* Case Info */}
