@@ -38,6 +38,7 @@ import VisionBoardPage from "./pages/VisionBoard";
 import SessionIncidents from "./pages/SessionIncidents";
 import SessionIncidentSettings from "./pages/SessionIncidentSettings";
 import IncidentSubmit from "./pages/IncidentSubmit";
+import ExportCenter from "./pages/ExportCenter";
 
 // CMS (separate workspace)
 import CmsLogin from "./pages/cms/CmsLogin";
