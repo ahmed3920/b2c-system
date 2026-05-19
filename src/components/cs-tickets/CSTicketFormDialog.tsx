@@ -47,6 +47,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
   const [submitting, setSubmitting] = useState(false);
+  const [mentors, setMentors] = useState<MentorOption[]>([]);
 
   const { inactiveIds } = useInactiveTutorIds();
   const tutorRoster = useMergedRoster();
@@ -55,6 +56,27 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     [inactiveIds, tutorRoster],
   );
   const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId, tutorRoster]);
+
+  useEffect(() => {
+    if (!open) return;
+    supabase.rpc("list_available_mentors").then(({ data }) => {
+      if (data) setMentors(data as MentorOption[]);
+    });
+  }, [open]);
+
+  const recommendedMentor = useMemo(() => {
+    if (!selectedTutor) return null;
+    const name = getMentorForTutor(selectedTutor.id);
+    if (!name || name === "—") return null;
+    const target = normalizeName(name);
+    return (
+      mentors.find(
+        (m) =>
+          teamLeaderMatches(m.team_leader, selectedTutor.team_leader) &&
+          (normalizeName(m.full_name ?? "") === target || normalizeName(m.mentor_name ?? "") === target),
+      ) ?? null
+    );
+  }, [selectedTutor, mentors]);
 
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
