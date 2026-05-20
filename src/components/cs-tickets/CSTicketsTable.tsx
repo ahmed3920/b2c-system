@@ -154,9 +154,21 @@ export function CSTicketsTable() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-[150px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {monthOptions.map((m) => (
+                <SelectItem key={m} value={m}>{formatMonthLabel(m)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={caseTypeFilter} onValueChange={setCaseTypeFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[120px]">
               <Filter className="mr-2 h-3 w-3" />
               <SelectValue placeholder="Case Type" />
             </SelectTrigger>
@@ -166,8 +178,32 @@ export function CSTicketsTable() {
               <SelectItem value="Edu">Edu</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={csCategoryFilter} onValueChange={setCsCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="CS Category" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All CS Categories</SelectItem>
+              {csCategoryOptions.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={eduCategoryFilter} onValueChange={setEduCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Edu Category" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Edu Categories</SelectItem>
+              {eduCategoryOptions.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[140px]">
               <Filter className="mr-2 h-3 w-3" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
