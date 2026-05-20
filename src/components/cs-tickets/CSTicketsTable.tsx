@@ -41,6 +41,9 @@ export function CSTicketsTable() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
   const [teamLeaderFilter, setTeamLeaderFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>("all");
+  const [csCategoryFilter, setCsCategoryFilter] = useState<string>("all");
+  const [eduCategoryFilter, setEduCategoryFilter] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
   const [search, setSearch] = useState("");
 
