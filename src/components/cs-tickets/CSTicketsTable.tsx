@@ -41,6 +41,9 @@ export function CSTicketsTable() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
   const [teamLeaderFilter, setTeamLeaderFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>("all");
+  const [csCategoryFilter, setCsCategoryFilter] = useState<string>("all");
+  const [eduCategoryFilter, setEduCategoryFilter] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
   const [search, setSearch] = useState("");
 
@@ -57,11 +60,38 @@ export function CSTicketsTable() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [tickets]);
 
+  const monthOptions = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.ticket_date) set.add(t.ticket_date.slice(0, 7)); });
+    return Array.from(set).sort().reverse();
+  }, [tickets]);
+
+  const csCategoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.cs_category) set.add(t.cs_category); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tickets]);
+
+  const eduCategoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.edu_category) set.add(t.edu_category); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tickets]);
+
+  const formatMonthLabel = (ym: string) => {
+    const [y, m] = ym.split("-");
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  };
+
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
       if (teamLeaderFilter !== "all" && t.team_leader !== teamLeaderFilter) return false;
+      if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
+      if (csCategoryFilter !== "all" && t.cs_category !== csCategoryFilter) return false;
+      if (eduCategoryFilter !== "all" && t.edu_category !== eduCategoryFilter) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
       if (search) {
@@ -78,7 +108,7 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, quickFilter, search]);
+  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search]);
 
 
   const counts = useMemo(() => ({
@@ -124,9 +154,21 @@ export function CSTicketsTable() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="w-[150px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {monthOptions.map((m) => (
+                <SelectItem key={m} value={m}>{formatMonthLabel(m)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={caseTypeFilter} onValueChange={setCaseTypeFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[120px]">
               <Filter className="mr-2 h-3 w-3" />
               <SelectValue placeholder="Case Type" />
             </SelectTrigger>
@@ -136,8 +178,32 @@ export function CSTicketsTable() {
               <SelectItem value="Edu">Edu</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={csCategoryFilter} onValueChange={setCsCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="CS Category" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All CS Categories</SelectItem>
+              {csCategoryOptions.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={eduCategoryFilter} onValueChange={setEduCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="mr-2 h-3 w-3" />
+              <SelectValue placeholder="Edu Category" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Edu Categories</SelectItem>
+              {eduCategoryOptions.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[140px]">
               <Filter className="mr-2 h-3 w-3" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
