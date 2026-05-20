@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { teamLeaderMatches } from "@/lib/teamLeaderMatch";
 import type { Database } from "@/integrations/supabase/types";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -58,15 +59,17 @@ export function useTeamLeaderView(): TeamLeaderViewState {
 
       if (!myProfile) return;
 
-      // Get all profiles in my team (excluding myself)
+      // Get visible team profiles and match names flexibly so Super TLs still
+      // see mentors when roster/profile names have minor formatting differences.
       const { data: mentors } = await supabase
         .from("profiles")
         .select("user_id, mentor_name, full_name, team_leader, email, active_status")
-        .eq("team_leader", myProfile.mentor_name)
         .neq("user_id", session.user.id)
         .order("mentor_name");
 
-      setTeamMentors(mentors || []);
+      setTeamMentors((mentors || []).filter((mentor) =>
+        teamLeaderMatches(mentor.team_leader, myProfile.mentor_name)
+      ));
     };
     fetch();
   }, [enabled]);
@@ -127,7 +130,6 @@ export function useTeamLeaderView(): TeamLeaderViewState {
 
   useEffect(() => {
     if (!enabled || !currentUserId) return;
-    fetchTasks();
     fetchTasks();
   }, [viewMode, selectedUserId, currentUserId, enabled, teamMentors.length]);
 
