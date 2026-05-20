@@ -60,11 +60,38 @@ export function CSTicketsTable() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [tickets]);
 
+  const monthOptions = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.ticket_date) set.add(t.ticket_date.slice(0, 7)); });
+    return Array.from(set).sort().reverse();
+  }, [tickets]);
+
+  const csCategoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.cs_category) set.add(t.cs_category); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tickets]);
+
+  const eduCategoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => { if (t.edu_category) set.add(t.edu_category); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tickets]);
+
+  const formatMonthLabel = (ym: string) => {
+    const [y, m] = ym.split("-");
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  };
+
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
       if (teamLeaderFilter !== "all" && t.team_leader !== teamLeaderFilter) return false;
+      if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
+      if (csCategoryFilter !== "all" && t.cs_category !== csCategoryFilter) return false;
+      if (eduCategoryFilter !== "all" && t.edu_category !== eduCategoryFilter) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
       if (search) {
@@ -81,7 +108,7 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, quickFilter, search]);
+  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search]);
 
 
   const counts = useMemo(() => ({
