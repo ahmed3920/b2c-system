@@ -185,6 +185,7 @@ Deno.serve(async (req) => {
       const iId = idx("tutor_external_id");
       const iName = idx("tutor_name");
       const iTl = idx("team_leader");
+      const iEmploy = idx("employ_type"); // optional: 0=full-time, 1=part-time (skipped)
       if (iId < 0 || iName < 0 || iTl < 0) {
         const missing = [
           ["tutor_external_id", iId],
@@ -201,6 +202,11 @@ Deno.serve(async (req) => {
         );
       }
 
+      const isPartTime = (v: string) => {
+        const s = v.trim().toLowerCase();
+        return s === "1" || s === "part time" || s === "part-time" || s === "parttime" || s === "pt";
+      };
+
       const agg = new Map<
         string,
         { tutor_name: string; team_leader: string; count: number }
@@ -208,6 +214,10 @@ Deno.serve(async (req) => {
       for (const row of rows.slice(1)) {
         const tid = get(row, iId);
         if (!tid) {
+          skipped++;
+          continue;
+        }
+        if (iEmploy >= 0 && isPartTime(get(row, iEmploy))) {
           skipped++;
           continue;
         }
