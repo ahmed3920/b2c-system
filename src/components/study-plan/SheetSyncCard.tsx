@@ -24,11 +24,13 @@ const SESSION_FIELDS = [
   "tutor_external_id",
   "tutor_name",
   "team_leader",
+  "employ_type",
 ];
 const SESSION_DEFAULTS: Record<string, string> = {
   tutor_external_id: "Tutors → T ID",
   tutor_name: "Name I18n → En",
   team_leader: "Admins - Team Lead → Name",
+  employ_type: "Employ Type",
 };
 
 const MODULE_FIELDS = [
