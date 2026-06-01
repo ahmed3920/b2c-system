@@ -22,7 +22,11 @@ export default function IncidentSubmit() {
     (async () => {
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const sb = createClient(import.meta.env.VITE_SUPABASE_URL, ANON_KEY);
+        // Public form: do NOT persist or refresh auth — avoids "JWT issued at future"
+        // errors when a stale/skewed session exists in localStorage from another login.
+        const sb = createClient(import.meta.env.VITE_SUPABASE_URL, ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        });
         const { data } = await sb.from("session_incident_tokens").select("tutor_external_id,tutor_name,team_leader,is_active").eq("token", token).maybeSingle();
         if (!data || !data.is_active) {
           setTokenError("This link is invalid or has been disabled.");
