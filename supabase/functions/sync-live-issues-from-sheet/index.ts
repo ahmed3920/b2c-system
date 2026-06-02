@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
 
     // Existing rows to avoid overwriting team-leader edits.
     // We preserve any DB row that already has edu_validation set.
-    const { data: existingRows } = await admin
+    const { data: existingRows } = await db
       .from("live_session_issues")
       .select("case_id, edu_validation");
     const existingValidated = new Set<string>();
@@ -350,11 +350,11 @@ Deno.serve(async (req) => {
     const batchSize = 500;
     for (let i = 0; i < unique.length; i += batchSize) {
       const batch = unique.slice(i, i + batchSize);
-      const { error } = await admin
+      const { error } = await db
         .from("live_session_issues")
         .upsert(batch, { onConflict: "case_id", ignoreDuplicates: false });
       if (error) {
-        await admin.from("live_issues_sheet_config").update({
+        await db.from("live_issues_sheet_config").update({
           last_sync_status: "error",
           last_sync_message: error.message,
           last_synced_at: new Date().toISOString(),
