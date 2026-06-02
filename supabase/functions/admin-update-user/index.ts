@@ -46,13 +46,13 @@ Deno.serve(async (req) => {
 
     const requestingUserId = claimsData.claims.sub as string;
 
-    const { data: roleData } = await supabaseAdmin
+    const { data: rolesData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", requestingUserId)
-      .single();
+      .eq("user_id", requestingUserId);
 
-    if (!roleData || roleData.role !== "admin") {
+    const isAdmin = Array.isArray(rolesData) && rolesData.some((r: any) => r.role === "admin");
+    if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
