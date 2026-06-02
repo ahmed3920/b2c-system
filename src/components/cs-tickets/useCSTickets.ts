@@ -64,11 +64,23 @@ export function useCSTickets(scope: CSTicketScope = "all") {
       const { data, error } = await supabase.rpc("get_my_assigned_cs_tickets");
       setTickets(!error && data ? normalize(data as any[]) : []);
     } else {
-      const { data, error } = await supabase
-        .from("cs_tickets")
-        .select("*")
-        .order("created_at", { ascending: false });
-      setTickets(!error && data ? normalize(data as any[]) : []);
+      // Paginate to bypass Supabase's default 1000-row limit
+      const PAGE = 1000;
+      let from = 0;
+      const all: any[] = [];
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from("cs_tickets")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error || !data) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      setTickets(normalize(all));
     }
     setLoading(false);
   }, [scope]);
