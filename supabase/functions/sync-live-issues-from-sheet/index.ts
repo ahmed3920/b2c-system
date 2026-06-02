@@ -129,8 +129,9 @@ Deno.serve(async (req) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id);
-    const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
-    if (!isAdmin) return json({ error: "Admin only" }, 403);
+    const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
+    if (!(roles ?? []).some((r: { role: string }) => allowed.has(r.role)))
+      return json({ error: "Admin or team leader only" }, 403);
 
     const { data: cfg, error: cfgErr } = await admin
       .from("live_issues_sheet_config")

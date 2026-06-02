@@ -110,14 +110,13 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // Verify admin
-    const { data: roleRow } = await admin
+    const { data: roles } = await admin
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleRow) {
-      return new Response(JSON.stringify({ error: "Admin only" }), {
+      .eq("user_id", userId);
+    const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
+    if (!(roles ?? []).some((r: any) => allowed.has(r.role))) {
+      return new Response(JSON.stringify({ error: "Admin or team leader only" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
