@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Download, Settings2 } from "lucide-react";
+import { Loader2, Save, Download, Settings2, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 const FIELDS = [
   "tutor_external_id",
