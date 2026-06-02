@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Download, Settings2 } from "lucide-react";
+import { Loader2, Save, Download, Settings2, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 const FIELDS = [
   "tutor_external_id",
@@ -43,6 +44,21 @@ export function LeavesSyncCard() {
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+
+  const loadLastSync = async () => {
+    const { data, error } = await supabase
+      .from("tutor_leaves")
+      .select("updated_at")
+      .eq("source", "google_sheet")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!error && data?.updated_at) {
+      setLastSyncedAt(data.updated_at);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -57,6 +73,7 @@ export function LeavesSyncCard() {
       for (const f of FIELDS) merged[f] = m[f] ?? DEFAULTS[f] ?? f;
       setMapping(merged);
       setCsvUrl(data?.csv_url ?? "");
+      await loadLastSync();
       setLoading(false);
     })();
   }, []);
@@ -84,6 +101,7 @@ export function LeavesSyncCard() {
     }
     setSyncing(true);
     setLastResult(null);
+    setLastSyncError(null);
     try {
       const { data, error } = await supabase.functions.invoke(
         "sync-leaves-from-sheet",
@@ -95,15 +113,24 @@ export function LeavesSyncCard() {
       setLastResult(
         `Parsed ${d.rows_parsed} rows · imported ${d.leave_days_inserted} leave-days · skipped ${d.rows_skipped}`,
       );
+      setLastSyncedAt(new Date().toISOString());
       toast.success("Leaves synced");
       if (d.warnings?.length)
         toast.warning(`${d.warnings.length} warning(s) — see card`);
     } catch (e: any) {
       toast.error(e?.message ?? "Sync failed");
       setLastResult(`Error: ${e?.message ?? "unknown"}`);
+      setLastSyncError(e?.message ?? "Sync failed");
     } finally {
       setSyncing(false);
     }
+  };
+
+  const statusBadge = () => {
+    if (syncing) return <Badge variant="outline" className="gap-1"><Loader2 className="h-3 w-3 animate-spin" />Syncing</Badge>;
+    if (!lastSyncedAt) return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" />Never synced</Badge>;
+    if (lastSyncError) return <Badge variant="destructive" className="gap-1"><AlertCircle className="h-3 w-3" />Error</Badge>;
+    return <Badge className="gap-1 bg-emerald-600 hover:bg-emerald-700"><CheckCircle2 className="h-3 w-3" />Synced</Badge>;
   };
 
   return (
@@ -117,7 +144,7 @@ export function LeavesSyncCard() {
               session day) from the tutor's free hours when generating the plan.
             </p>
           </div>
-          <Badge variant="outline">Leaves</Badge>
+          {statusBadge()}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -162,7 +189,7 @@ export function LeavesSyncCard() {
           </CollapsibleContent>
         </Collapsible>
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 items-center pt-1">
           <Button
             variant="outline"
             size="sm"
@@ -184,6 +211,11 @@ export function LeavesSyncCard() {
             )}
             Sync leaves
           </Button>
+          {lastSyncedAt && (
+            <span className="text-xs text-muted-foreground">
+              Last sync: {formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}
+            </span>
+          )}
         </div>
 
         {lastResult && (
