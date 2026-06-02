@@ -124,17 +124,26 @@ Deno.serve(async (req) => {
     const { data: userData } = await userClient.auth.getUser();
     if (!userData?.user) return json({ error: "Unauthorized" }, 401);
 
-    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: roles, error: rolesErr } = await admin
+    const { data: roles, error: rolesErr } = await userClient
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id);
-    console.log("auth check", { uid: userData.user.id, roles, rolesErr });
+    if (rolesErr) {
+      console.error("role lookup failed", { uid: userData.user.id, rolesErr });
+      return json({ error: "Could not verify user role" }, 403);
+    }
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
-    if (!(roles ?? []).some((r: { role: string }) => allowed.has(r.role)))
-      return json({ error: "Admin or team leader only", uid: userData.user.id, roles }, 403);
+    const roleNames = (roles ?? []).map((r: { role: string }) => r.role);
+    if (!roleNames.some((role) => allowed.has(role)))
+      return json({ error: "Admin or team leader only" }, 403);
 
-    const { data: cfg, error: cfgErr } = await admin
+    const db = roleNames.includes("admin")
+      ? userClient
+      : createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+    const { data: cfg, error: cfgErr } = await db
       .from("live_issues_sheet_config")
       .select("id, csv_url")
       .limit(1)
@@ -151,7 +160,7 @@ Deno.serve(async (req) => {
         ? " — make sure the Sheet is shared as 'Anyone with the link (Viewer)' or published to web."
         : "";
       const msg = `Failed to fetch sheet: HTTP ${resp.status}${hint}`;
-      await admin.from("live_issues_sheet_config").update({
+      await db.from("live_issues_sheet_config").update({
         last_sync_status: "error",
         last_sync_message: msg,
         last_synced_at: new Date().toISOString(),
@@ -203,7 +212,7 @@ Deno.serve(async (req) => {
     // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name).
     // Keys are lowercased + trimmed so lookups are case-insensitive — sheet rows sometimes
     // arrive with mixed casing (e.g. "T-12183" vs "t-12183").
-    const { data: tutorRows } = await admin
+    const { data: tutorRows } = await db
       .from("action_plan_tutors")
       .select("tutor_external_id, team_leader");
     const tutorTlMap = new Map<string, string>();
@@ -217,7 +226,7 @@ Deno.serve(async (req) => {
     }
 
     // Load edu_descriptions name -> id map (normalized)
-    const { data: eduRows } = await admin
+    const { data: eduRows } = await db
       .from("edu_descriptions")
       .select("id, name")
       .eq("is_active", true);
@@ -251,7 +260,7 @@ Deno.serve(async (req) => {
 
     // Existing rows to avoid overwriting team-leader edits.
     // We preserve any DB row that already has edu_validation set.
-    const { data: existingRows } = await admin
+    const { data: existingRows } = await db
       .from("live_session_issues")
       .select("case_id, edu_validation");
     const existingValidated = new Set<string>();
@@ -341,11 +350,11 @@ Deno.serve(async (req) => {
     const batchSize = 500;
     for (let i = 0; i < unique.length; i += batchSize) {
       const batch = unique.slice(i, i + batchSize);
-      const { error } = await admin
+      const { error } = await db
         .from("live_session_issues")
         .upsert(batch, { onConflict: "case_id", ignoreDuplicates: false });
       if (error) {
-        await admin.from("live_issues_sheet_config").update({
+        await db.from("live_issues_sheet_config").update({
           last_sync_status: "error",
           last_sync_message: error.message,
           last_synced_at: new Date().toISOString(),
@@ -355,7 +364,7 @@ Deno.serve(async (req) => {
       inserted += batch.length;
     }
 
-    await admin.from("live_issues_sheet_config").update({
+    await db.from("live_issues_sheet_config").update({
       last_sync_status: "ok",
       last_sync_message: `Synced ${inserted} rows`,
       last_sync_rows: inserted,
