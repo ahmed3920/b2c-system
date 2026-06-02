@@ -44,6 +44,21 @@ export function LeavesSyncCard() {
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+
+  const loadLastSync = async () => {
+    const { data, error } = await supabase
+      .from("tutor_leaves")
+      .select("updated_at")
+      .eq("source", "google_sheet")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!error && data?.updated_at) {
+      setLastSyncedAt(data.updated_at);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -58,6 +73,7 @@ export function LeavesSyncCard() {
       for (const f of FIELDS) merged[f] = m[f] ?? DEFAULTS[f] ?? f;
       setMapping(merged);
       setCsvUrl(data?.csv_url ?? "");
+      await loadLastSync();
       setLoading(false);
     })();
   }, []);
