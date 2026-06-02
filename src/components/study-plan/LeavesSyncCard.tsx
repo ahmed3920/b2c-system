@@ -101,6 +101,7 @@ export function LeavesSyncCard() {
     }
     setSyncing(true);
     setLastResult(null);
+    setLastSyncError(null);
     try {
       const { data, error } = await supabase.functions.invoke(
         "sync-leaves-from-sheet",
@@ -112,12 +113,14 @@ export function LeavesSyncCard() {
       setLastResult(
         `Parsed ${d.rows_parsed} rows · imported ${d.leave_days_inserted} leave-days · skipped ${d.rows_skipped}`,
       );
+      setLastSyncedAt(new Date().toISOString());
       toast.success("Leaves synced");
       if (d.warnings?.length)
         toast.warning(`${d.warnings.length} warning(s) — see card`);
     } catch (e: any) {
       toast.error(e?.message ?? "Sync failed");
       setLastResult(`Error: ${e?.message ?? "unknown"}`);
+      setLastSyncError(e?.message ?? "Sync failed");
     } finally {
       setSyncing(false);
     }
