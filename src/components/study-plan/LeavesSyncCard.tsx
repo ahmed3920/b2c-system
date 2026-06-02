@@ -126,6 +126,13 @@ export function LeavesSyncCard() {
     }
   };
 
+  const statusBadge = () => {
+    if (syncing) return <Badge variant="outline" className="gap-1"><Loader2 className="h-3 w-3 animate-spin" />Syncing</Badge>;
+    if (!lastSyncedAt) return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" />Never synced</Badge>;
+    if (lastSyncError) return <Badge variant="destructive" className="gap-1"><AlertCircle className="h-3 w-3" />Error</Badge>;
+    return <Badge className="gap-1 bg-emerald-600 hover:bg-emerald-700"><CheckCircle2 className="h-3 w-3" />Synced</Badge>;
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -137,7 +144,7 @@ export function LeavesSyncCard() {
               session day) from the tutor's free hours when generating the plan.
             </p>
           </div>
-          <Badge variant="outline">Leaves</Badge>
+          {statusBadge()}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -182,7 +189,7 @@ export function LeavesSyncCard() {
           </CollapsibleContent>
         </Collapsible>
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 items-center pt-1">
           <Button
             variant="outline"
             size="sm"
@@ -204,6 +211,11 @@ export function LeavesSyncCard() {
             )}
             Sync leaves
           </Button>
+          {lastSyncedAt && (
+            <span className="text-xs text-muted-foreground">
+              Last sync: {formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}
+            </span>
+          )}
         </div>
 
         {lastResult && (
