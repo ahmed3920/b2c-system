@@ -127,8 +127,9 @@ Deno.serve(async (req) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id);
-    if (!(roles ?? []).some((r: any) => r.role === "admin"))
-      return json({ error: "Admin only" }, 403);
+    const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
+    if (!(roles ?? []).some((r: any) => allowed.has(r.role)))
+      return json({ error: "Admin or team leader only" }, 403);
 
     const body = await req.json().catch(() => ({}));
     const replaceFrom: string | undefined = body.replace_from;
