@@ -364,7 +364,7 @@ Deno.serve(async (req) => {
       inserted += batch.length;
     }
 
-    await admin.from("live_issues_sheet_config").update({
+    await db.from("live_issues_sheet_config").update({
       last_sync_status: "ok",
       last_sync_message: `Synced ${inserted} rows`,
       last_sync_rows: inserted,
