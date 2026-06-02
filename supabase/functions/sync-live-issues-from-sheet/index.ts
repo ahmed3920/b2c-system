@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
         ? " — make sure the Sheet is shared as 'Anyone with the link (Viewer)' or published to web."
         : "";
       const msg = `Failed to fetch sheet: HTTP ${resp.status}${hint}`;
-      await admin.from("live_issues_sheet_config").update({
+      await db.from("live_issues_sheet_config").update({
         last_sync_status: "error",
         last_sync_message: msg,
         last_synced_at: new Date().toISOString(),
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name).
     // Keys are lowercased + trimmed so lookups are case-insensitive — sheet rows sometimes
     // arrive with mixed casing (e.g. "T-12183" vs "t-12183").
-    const { data: tutorRows } = await admin
+    const { data: tutorRows } = await db
       .from("action_plan_tutors")
       .select("tutor_external_id, team_leader");
     const tutorTlMap = new Map<string, string>();
@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
     }
 
     // Load edu_descriptions name -> id map (normalized)
-    const { data: eduRows } = await admin
+    const { data: eduRows } = await db
       .from("edu_descriptions")
       .select("id, name")
       .eq("is_active", true);
