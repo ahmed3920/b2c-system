@@ -124,7 +124,6 @@ Deno.serve(async (req) => {
     const { data: userData } = await userClient.auth.getUser();
     if (!userData?.user) return json({ error: "Unauthorized" }, 401);
 
-    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: roles, error: rolesErr } = await userClient
       .from("user_roles")
       .select("role")
@@ -134,10 +133,17 @@ Deno.serve(async (req) => {
       return json({ error: "Could not verify user role" }, 403);
     }
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
-    if (!(roles ?? []).some((r: { role: string }) => allowed.has(r.role)))
+    const roleNames = (roles ?? []).map((r: { role: string }) => r.role);
+    if (!roleNames.some((role) => allowed.has(role)))
       return json({ error: "Admin or team leader only" }, 403);
 
-    const { data: cfg, error: cfgErr } = await admin
+    const db = roleNames.includes("admin")
+      ? userClient
+      : createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+    const { data: cfg, error: cfgErr } = await db
       .from("live_issues_sheet_config")
       .select("id, csv_url")
       .limit(1)
