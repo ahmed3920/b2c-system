@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import postgres from "npm:postgres@3.4.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +7,14 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const DATABASE_URL = Deno.env.get("SUPABASE_DB_URL")!;
+
+const sql = postgres(DATABASE_URL, {
+  max: 1,
+  prepare: false,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 interface Payload {
   token?: string;
@@ -25,7 +33,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const body = (await req.json()) as Payload;
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     let tutorExternalId = (body.tutor_external_id || "").trim();
     let tutorName = "";
@@ -34,12 +41,13 @@ Deno.serve(async (req) => {
     let tokenId: string | null = null;
 
     if (body.token) {
-      const { data: tok } = await supabase
-        .from("session_incident_tokens")
-        .select("*")
-        .eq("token", body.token)
-        .eq("is_active", true)
-        .maybeSingle();
+      const [tok] = await sql`
+        SELECT id, tutor_external_id, tutor_name, team_leader, use_count
+        FROM public.session_incident_tokens
+        WHERE token = ${body.token}
+          AND is_active = true
+        LIMIT 1
+      `;
       if (!tok) {
         return new Response(JSON.stringify({ error: "Invalid or expired link" }), {
           status: 400,
@@ -71,9 +79,8 @@ Deno.serve(async (req) => {
     if (!teamLeader) teamLeader = (body as any).team_leader || "Unknown";
     if (!assignedMentor) assignedMentor = (body as any).assigned_mentor_name || "";
 
-    const { data, error } = await supabase
-      .from("session_incidents")
-      .insert({
+    const [data] = await sql`
+      INSERT INTO public.session_incidents ${sql({
         tutor_external_id: tutorExternalId,
         tutor_name: tutorName,
         team_leader: teamLeader,
@@ -89,17 +96,16 @@ Deno.serve(async (req) => {
         source: "tutor_self",
         validation_status: "pending",
         token_id: tokenId,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
+      })}
+      RETURNING id
+    `;
 
     if (tokenId) {
-      await supabase
-        .from("session_incident_tokens")
-        .update({ last_used_at: new Date().toISOString(), use_count: ((data as any).use_count || 0) + 1 })
-        .eq("id", tokenId);
+      await sql`
+        UPDATE public.session_incident_tokens
+        SET last_used_at = now(), use_count = COALESCE(use_count, 0) + 1
+        WHERE id = ${tokenId}
+      `;
     }
 
     return new Response(JSON.stringify({ ok: true, id: data.id }), {
