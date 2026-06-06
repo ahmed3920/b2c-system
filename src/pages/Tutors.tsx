@@ -27,7 +27,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX, Pencil, Upload } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX, Pencil, Upload, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
@@ -148,7 +150,8 @@ export default function Tutors() {
         </div>
 
         {canUpload && (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <ResyncHistoricalButton />
             <Button onClick={() => setUploadOpen(true)} variant="outline">
               <Upload className="h-4 w-4 mr-2" /> Upload Roster Sheet
             </Button>
@@ -472,5 +475,28 @@ function StatCard({
         <div className="text-2xl font-semibold mt-1">{value}</div>
       </CardContent>
     </Card>
+  );
+}
+
+function ResyncHistoricalButton() {
+  const [loading, setLoading] = useState(false);
+  const onClick = async () => {
+    if (!confirm("Re-sync tutor name, mentor and team leader from the roster into all historical records (incidents, CS tickets, action plans, status, emails, leaves, modules, study plans, etc.)? This can take a few seconds.")) return;
+    setLoading(true);
+    const { data, error } = await supabase.rpc("backfill_tutor_assignments_from_overrides" as any);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message || "Backfill failed");
+      return;
+    }
+    const updated = (data as any)?.updated ?? {};
+    const total = Object.values(updated).reduce((a: number, b: any) => a + Number(b || 0), 0);
+    toast.success(`Re-synced ${total} historical rows across ${Object.keys(updated).length} tables`);
+  };
+  return (
+    <Button onClick={onClick} variant="outline" disabled={loading}>
+      <RefreshCw className={"h-4 w-4 mr-2 " + (loading ? "animate-spin" : "")} />
+      {loading ? "Re-syncing…" : "Re-sync Historical Data"}
+    </Button>
   );
 }
