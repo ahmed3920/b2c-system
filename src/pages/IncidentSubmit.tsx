@@ -4,9 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { IncidentForm, type IncidentFormValues } from "@/components/session-incidents/IncidentForm";
 import { tutorRoster } from "@/data/tutorRoster";
+import { supabase } from "@/integrations/supabase/client";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-session-incident`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+// Public page: if a stale/clock-skewed auth session exists in localStorage
+// (e.g. from another logged-in tab/device), the global supabase client tries
+// to auto-refresh it and throws "JWT issued at future". Clear any sb-* auth
+// tokens before any hook touches supabase.
+function purgeStaleAuth() {
+  try {
+    supabase.auth.signOut({ scope: "local" } as any).catch(() => {});
+  } catch {}
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+}
+purgeStaleAuth();
 
 export default function IncidentSubmit() {
   const [params] = useSearchParams();
