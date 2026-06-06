@@ -72,10 +72,26 @@ Deno.serve(async (req) => {
     }
 
     // If we don't have tutor info from token, look it up via roster mirror table or accept submitted-only.
-    // We'll pass tutorName/teamLeader from client if they provided them (lookup happens client-side via tutorRoster).
     if (!tutorName) tutorName = (body as any).tutor_name || tutorExternalId;
     if (!teamLeader) teamLeader = (body as any).team_leader || "Unknown";
     if (!assignedMentor) assignedMentor = (body as any).assigned_mentor_name || "";
+
+    // Server-side safety net: enrich missing mentor/TL from tutor_roster_overrides
+    // so newly-added tutors (and recent assignment changes) still get an assigned
+    // mentor on the incident, even if the client form didn't auto-fill.
+    if (!assignedMentor || teamLeader === "Unknown") {
+      const [ovr] = await sql`
+        SELECT mentor, team_leader, name
+        FROM public.tutor_roster_overrides
+        WHERE tutor_external_id = ${tutorExternalId}
+        LIMIT 1
+      `;
+      if (ovr) {
+        if (!assignedMentor && ovr.mentor) assignedMentor = ovr.mentor;
+        if ((teamLeader === "Unknown" || !teamLeader) && ovr.team_leader) teamLeader = ovr.team_leader;
+        if ((!tutorName || tutorName === tutorExternalId) && ovr.name) tutorName = ovr.name;
+      }
+    }
 
     const [data] = await sql`
       INSERT INTO public.session_incidents ${sql({
