@@ -27,7 +27,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX, Pencil, Upload } from "lucide-react";
+import { Search, Eye, Users, GraduationCap, Globe2, Briefcase, UserX, Pencil, Upload, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
