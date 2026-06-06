@@ -47,7 +47,10 @@ function rebuild() {
         language: o.language ?? existing.language,
         employment_type: (o.employment_type ?? existing.employment_type) as TutorRecord["employment_type"],
       });
-    } else if (o.is_new) {
+    } else {
+      // Override exists for a tutor not in the static roster (newly added via
+      // upload). Always include — do not gate on the legacy `is_new` flag,
+      // which is often false for bulk-imported rows.
       byId.set(o.tutor_external_id, {
         id: o.tutor_external_id,
         name: o.name ?? o.tutor_external_id,

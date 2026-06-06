@@ -71,7 +71,8 @@ export function useTutorRoster() {
           employment_type: (o.employment_type ?? existing.employment_type) as TutorRecord["employment_type"],
           _hasOverride: true,
         });
-      } else if (o.is_new) {
+      } else {
+        // Override exists for a tutor not in static roster — always include.
         byId.set(o.tutor_external_id, {
           id: o.tutor_external_id,
           name: o.name,
@@ -82,7 +83,7 @@ export function useTutorRoster() {
           role: (o.role ?? "Tutor") as TutorRecord["role"],
           language: o.language ?? "",
           employment_type: (o.employment_type ?? "Full-time") as TutorRecord["employment_type"],
-          _isNew: true,
+          _isNew: !!o.is_new,
           _hasOverride: true,
         });
       }

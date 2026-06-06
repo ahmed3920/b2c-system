@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { IncidentForm, type IncidentFormValues } from "@/components/session-incidents/IncidentForm";
 import { tutorRoster } from "@/data/tutorRoster";
+import { bootstrapRosterCache, getMergedTutorById } from "@/data/rosterCache";
 import { supabase } from "@/integrations/supabase/client";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-session-incident`;
@@ -38,6 +39,12 @@ export default function IncidentSubmit() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
+    // Ensure merged roster (static + DB overrides for newly added tutors) is
+    // loaded before lookups happen.
+    bootstrapRosterCache();
+  }, []);
+
+  useEffect(() => {
     if (!token) return;
     (async () => {
       try {
@@ -64,14 +71,19 @@ export default function IncidentSubmit() {
   const handleSubmit = async (v: IncidentFormValues) => {
     setSubmitting(true);
     try {
-      // For generic link, lookup tutor info from roster locally
       let tutorName = v.tutor_name;
       let teamLeader = v.team_leader;
       let mentor = v.assigned_mentor_name;
-      if (!token) {
-        const t = tutorRoster.find((x) => x.id.toUpperCase() === v.tutor_external_id.trim().toUpperCase());
-        if (!t) throw new Error("Tutor ID not found in roster.");
-        tutorName = t.name; teamLeader = t.team_leader; mentor = t.mentor;
+      // Always consult the merged roster (static + DB overrides) so newly
+      // added tutors and overridden mentor/TL assignments are honored.
+      const id = v.tutor_external_id.trim().toUpperCase();
+      const merged = getMergedTutorById(id)
+        ?? tutorRoster.find((x) => x.id.toUpperCase() === id);
+      if (!token && !merged) throw new Error("Tutor ID not found in roster.");
+      if (merged) {
+        if (!tutorName) tutorName = merged.name;
+        if (!teamLeader) teamLeader = merged.team_leader;
+        if (!mentor) mentor = merged.mentor;
       }
 
       const res = await fetch(FN_URL, {
