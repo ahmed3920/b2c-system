@@ -19,6 +19,7 @@ import { useCSTicketCategories } from "./useCSTicketCategories";
 import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
+import { refreshRosterCache } from "@/data/rosterCache";
 
 interface MentorOption {
   user_id: string;
@@ -59,6 +60,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    refreshRosterCache();
     supabase.rpc("list_available_mentors").then(({ data }) => {
       if (data) setMentors(data as MentorOption[]);
     });
