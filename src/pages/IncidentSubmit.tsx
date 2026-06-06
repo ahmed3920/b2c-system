@@ -71,6 +71,9 @@ export default function IncidentSubmit() {
   const handleSubmit = async (v: IncidentFormValues) => {
     setSubmitting(true);
     try {
+      let tutorName = v.tutor_name;
+      let teamLeader = v.team_leader;
+      let mentor = v.assigned_mentor_name;
       // Always consult the merged roster (static + DB overrides) so newly
       // added tutors and overridden mentor/TL assignments are honored.
       const id = v.tutor_external_id.trim().toUpperCase();
