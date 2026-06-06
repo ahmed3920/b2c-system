@@ -477,3 +477,26 @@ function StatCard({
     </Card>
   );
 }
+
+function ResyncHistoricalButton() {
+  const [loading, setLoading] = useState(false);
+  const onClick = async () => {
+    if (!confirm("Re-sync tutor name, mentor and team leader from the roster into all historical records (incidents, CS tickets, action plans, status, emails, leaves, modules, study plans, etc.)? This can take a few seconds.")) return;
+    setLoading(true);
+    const { data, error } = await supabase.rpc("backfill_tutor_assignments_from_overrides" as any);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message || "Backfill failed");
+      return;
+    }
+    const updated = (data as any)?.updated ?? {};
+    const total = Object.values(updated).reduce((a: number, b: any) => a + Number(b || 0), 0);
+    toast.success(`Re-synced ${total} historical rows across ${Object.keys(updated).length} tables`);
+  };
+  return (
+    <Button onClick={onClick} variant="outline" disabled={loading}>
+      <RefreshCw className={"h-4 w-4 mr-2 " + (loading ? "animate-spin" : "")} />
+      {loading ? "Re-syncing…" : "Re-sync Historical Data"}
+    </Button>
+  );
+}
