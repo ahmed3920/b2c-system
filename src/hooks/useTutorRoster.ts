@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { tutorRoster, type TutorRecord } from "@/data/tutorRoster";
+import { setRosterOverrides } from "@/data/rosterCache";
 
 export interface RosterOverride {
   tutor_external_id: string;
@@ -35,7 +36,9 @@ export function useTutorRoster() {
     if (error) {
       toast({ title: "Failed to load roster overrides", description: error.message, variant: "destructive" });
     } else {
-      setOverrides((data ?? []) as RosterOverride[]);
+      const rows = (data ?? []) as RosterOverride[];
+      setOverrides(rows);
+      setRosterOverrides(rows);
     }
     setLoading(false);
   }, [toast]);

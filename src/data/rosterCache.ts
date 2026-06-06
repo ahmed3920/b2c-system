@@ -98,12 +98,16 @@ export function getMergedMentorForTutor(id: string | null | undefined): string {
   return mentorById.get(id.trim().toUpperCase()) ?? "—";
 }
 
+export async function refreshRosterCache() {
+  const { data } = await supabase.from("tutor_roster_overrides").select("*");
+  if (data) setRosterOverrides(data as RosterOverrideRow[]);
+}
+
 export async function bootstrapRosterCache() {
   if (bootstrapped) return;
   bootstrapped = true;
   try {
-    const { data } = await supabase.from("tutor_roster_overrides").select("*");
-    if (data) setRosterOverrides(data as RosterOverrideRow[]);
+    await refreshRosterCache();
   } catch {
     // ignore — cache stays on static roster
   }
@@ -114,8 +118,7 @@ export async function bootstrapRosterCache() {
         "postgres_changes",
         { event: "*", schema: "public", table: "tutor_roster_overrides" },
         async () => {
-          const { data } = await supabase.from("tutor_roster_overrides").select("*");
-          if (data) setRosterOverrides(data as RosterOverrideRow[]);
+          await refreshRosterCache();
         },
       )
       .subscribe();
