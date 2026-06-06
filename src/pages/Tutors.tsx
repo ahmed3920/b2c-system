@@ -150,7 +150,8 @@ export default function Tutors() {
         </div>
 
         {canUpload && (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <ResyncHistoricalButton />
             <Button onClick={() => setUploadOpen(true)} variant="outline">
               <Upload className="h-4 w-4 mr-2" /> Upload Roster Sheet
             </Button>
