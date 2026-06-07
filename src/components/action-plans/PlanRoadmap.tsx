@@ -65,6 +65,13 @@ const ROADMAPS: Record<ActionPlanCategory, RoadmapStep[]> = {
     { kind: "meeting_followup", label: "Log follow-up meeting notes", detail: "Document the meeting outcomes, agreed actions and recording link.", matchMarkers: ["📝 **Meeting Follow-up**"] },
     { kind: "escalate", label: "3rd violation — Financial deduction & escalate to HR", detail: "Apply the financial deduction and escalate to HR for further disciplinary action.", matchEscalated: true, isMain: true },
   ],
+  study_neglect: [
+    { kind: "warning_email", label: "Send warning email", detail: "Email naming the unstudied module(s) and assigned deadline.", matchMarkers: ["📧 **Warning Email Sent**"], isMain: true },
+    { kind: "schedule_meeting", label: "Schedule meeting to discuss reason", detail: "Understand why the modules were not studied and reset expectations.", matchMarkers: ["📅 **Evaluation Meeting Scheduled**"] },
+    { kind: "meeting_followup", label: "Log meeting notes & new study deadline", matchMarkers: ["📝 **Meeting Follow-up**"] },
+    { kind: "monitor", label: "Verify modules completed (quiz / knowledge check)", matchUpdatesAtLeast: 3 },
+    { kind: "escalate", label: "Escalate to HR after 3rd repeat", detail: "Escalate when the tutor neglects assigned modules a 3rd time.", matchEscalated: true },
+  ],
   leaves_abuse: [],
 };
 

@@ -115,7 +115,7 @@ export function CreateActionPlanDialog({
       tutor_name: selectedTutor.tutor_name,
       tutor_external_id: selectedTutor.tutor_external_id,
       team_leader: selectedTutor.team_leader,
-      category,
+      category: category as never,
       summary: summary || null,
       start_date: start.toISOString().slice(0, 10),
       due_date: due.toISOString().slice(0, 10),

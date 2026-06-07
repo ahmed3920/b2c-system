@@ -64,8 +64,8 @@ export function EmailTemplatesDialog({ open, onOpenChange }: Props) {
       is_active: isActive,
     };
     const { error } = editing
-      ? await supabase.from("email_templates").update(payload).eq("id", editing.id)
-      : await supabase.from("email_templates").insert(payload);
+      ? await supabase.from("email_templates").update(payload as never).eq("id", editing.id)
+      : await supabase.from("email_templates").insert(payload as never);
     setSaving(false);
     if (error) {
       toast.error("Save failed", { description: error.message });

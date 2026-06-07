@@ -506,6 +506,7 @@ const CATEGORY_CARD_STYLES: Record<ActionPlanCategory, string> = {
   communication: "bg-purple-500/10 text-purple-700 border-purple-500/30",
   cs_complaints: "bg-pink-500/10 text-pink-700 border-pink-500/30",
   leaves_abuse: "bg-orange-500/10 text-orange-700 border-orange-500/30",
+  study_neglect: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30",
 };
 
 const CategoryCountCard = ({
