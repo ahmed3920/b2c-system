@@ -45,6 +45,12 @@ export const CATEGORY_FIRST_STEP: Record<ActionPlanCategory, FirstStepSpec | nul
     description: "Communication plans should begin with a 1:1 coaching conversation.",
     marker: "📅 **Evaluation Meeting Scheduled**",
   },
+  study_neglect: {
+    kind: "warning_email",
+    label: "Send warning email",
+    description: "Send the tutor a warning email naming the unstudied module(s) and the assigned deadline before scheduling further follow-up.",
+    marker: "📧 **Warning Email Sent**",
+  },
   leaves_abuse: null,
 };
 
