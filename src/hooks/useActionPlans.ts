@@ -59,6 +59,7 @@ export const CATEGORY_LABELS: Record<ActionPlanCategory, string> = {
   no_show_abuse: "No Show Abuse",
   communication: "Communication",
   cs_complaints: "CS Complaints",
+  study_neglect: "Study Neglect",
   leaves_abuse: "Leaves Abuse (Legacy)",
 };
 
@@ -69,6 +70,7 @@ export const SELECTABLE_CATEGORIES: ActionPlanCategory[] = [
   "no_show_abuse",
   "communication",
   "cs_complaints",
+  "study_neglect",
 ];
 
 export const STATUS_LABELS: Record<ActionPlanStatus, string> = {
