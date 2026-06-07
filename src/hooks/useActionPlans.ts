@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 
-export type ActionPlanCategory = Database["public"]["Enums"]["action_plan_category"];
+export type ActionPlanCategory = Database["public"]["Enums"]["action_plan_category"] | "study_neglect";
 export type ActionPlanStatus = Database["public"]["Enums"]["action_plan_status"];
 export type ActionPlanEvaluation = Database["public"]["Enums"]["action_plan_evaluation"];
 
