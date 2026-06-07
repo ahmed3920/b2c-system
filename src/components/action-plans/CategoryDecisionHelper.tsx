@@ -66,6 +66,18 @@ const HELPERS: Record<ActionPlanCategory, HelperBlock | null> = {
       "Re-evaluate at the end of the plan",
     ],
   },
+  study_neglect: {
+    title: "Study Neglect — Recommended Steps",
+    intro: "When a tutor did not study their assigned modules:",
+    items: [
+      "Send a warning email referencing the unstudied module(s) and the assigned deadline",
+      "Schedule a meeting to understand the reason and re-confirm expectations",
+      "Set a new study deadline and require a confirmation once modules are completed",
+      "Verify completion via a short knowledge check or quiz on the assigned modules",
+      "Escalate to HR if the tutor neglects studying assigned modules a 3rd time",
+    ],
+    footer: "Main step: ensure the tutor completes and is evaluated on the assigned modules.",
+  },
   leaves_abuse: null,
 };
 
