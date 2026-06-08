@@ -110,13 +110,62 @@ export function IncidentForm({ initial, lockTutor, onSubmit, submitting, submitL
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Tutor ID{star("tutor_external_id")}</Label>
-            <Input
-              value={values.tutor_external_id}
-              onChange={(e) => set("tutor_external_id", e.target.value)}
-              placeholder="e.g. T-12345"
-              readOnly={lockTutor}
-              className={lockTutor ? "bg-muted" : ""}
-            />
+            {lockTutor ? (
+              <Input value={values.tutor_external_id} readOnly className="bg-muted" />
+            ) : (
+              <Popover open={tutorPickerOpen} onOpenChange={setTutorPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                  >
+                    <span className={cn(!values.tutor_external_id && "text-muted-foreground")}>
+                      {values.tutor_external_id
+                        ? `${values.tutor_external_id}${values.tutor_name ? ` — ${values.tutor_name}` : ""}`
+                        : "Search tutor by ID or name..."}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command
+                    filter={(value, search) => {
+                      const s = search.toLowerCase();
+                      return value.toLowerCase().includes(s) ? 1 : 0;
+                    }}
+                  >
+                    <CommandInput placeholder="Search tutor (ID or name)..." />
+                    <CommandList>
+                      <CommandEmpty>No tutor found.</CommandEmpty>
+                      <CommandGroup>
+                        {pickableTutors.map((t) => (
+                          <CommandItem
+                            key={t.id}
+                            value={`${t.id} ${t.name} ${t.team_leader ?? ""}`}
+                            onSelect={() => {
+                              set("tutor_external_id", t.id);
+                              setTutorPickerOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                values.tutor_external_id === t.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-sm">{t.id} — {t.name}</span>
+                              <span className="text-xs text-muted-foreground">{t.team_leader || "—"}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Tutor Name</Label>
