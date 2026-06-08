@@ -52,6 +52,20 @@ export function IncidentForm({ initial, lockTutor, onSubmit, submitting, submitL
   const [values, setValues] = useState<IncidentFormValues>({ ...empty, ...initial });
   const [error, setError] = useState<string | null>(null);
   const tutorRoster = useMergedRoster();
+  const { inactiveIds } = useInactiveTutorIds();
+  const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
+
+  // Refresh roster cache when form mounts so newly added/edited tutors are
+  // immediately searchable (mirrors the CS ticket form behavior).
+  useEffect(() => {
+    if (lockTutor) return;
+    refreshRosterCache();
+  }, [lockTutor]);
+
+  const pickableTutors = useMemo(
+    () => tutorRoster.filter((t) => !inactiveIds.has(t.id)),
+    [tutorRoster, inactiveIds],
+  );
 
   // Auto-fill tutor info from roster when tutor_external_id changes
   useEffect(() => {
