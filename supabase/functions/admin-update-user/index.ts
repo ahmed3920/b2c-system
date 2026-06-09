@@ -45,16 +45,19 @@ Deno.serve(async (req) => {
     }
 
     const requestingUserId = claimsData.claims.sub as string;
+    console.log("admin-update-user: requestingUserId=", requestingUserId, "email=", claimsData.claims.email);
 
-    const { data: rolesData } = await supabaseAdmin
+    const { data: rolesData, error: rolesErr } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", requestingUserId);
 
+    console.log("admin-update-user: rolesData=", JSON.stringify(rolesData), "err=", rolesErr?.message);
+
     const isAdmin = Array.isArray(rolesData) && rolesData.some((r: any) => r.role === "admin");
     if (!isAdmin) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized: Admin access required" }),
+        JSON.stringify({ error: "Unauthorized: Admin access required", debug: { requestingUserId, roles: rolesData } }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
