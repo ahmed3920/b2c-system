@@ -47,17 +47,22 @@ Deno.serve(async (req) => {
     const requestingUserId = claimsData.claims.sub as string;
     console.log("admin-update-user: requestingUserId=", requestingUserId, "email=", claimsData.claims.email);
 
-    const { data: rolesData, error: rolesErr } = await supabaseAdmin
+    const { data: rolesData, error: rolesErr } = await supabaseAuth
       .from("user_roles")
       .select("role")
       .eq("user_id", requestingUserId);
 
-    console.log("admin-update-user: rolesData=", JSON.stringify(rolesData), "err=", rolesErr?.message);
+    if (rolesErr) {
+      return new Response(
+        JSON.stringify({ error: rolesErr.message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const isAdmin = Array.isArray(rolesData) && rolesData.some((r: any) => r.role === "admin");
     if (!isAdmin) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized: Admin access required", debug: { requestingUserId, roles: rolesData } }),
+        JSON.stringify({ error: "Unauthorized: Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -73,7 +78,7 @@ Deno.serve(async (req) => {
 
     // Update profile if updates provided
     if (profileUpdates && Object.keys(profileUpdates).length > 0) {
-      const { error: profileError } = await supabaseAdmin
+      const { error: profileError } = await supabaseAuth
         .from("profiles")
         .update(profileUpdates)
         .eq("user_id", userId);
@@ -89,7 +94,7 @@ Deno.serve(async (req) => {
     // Update role if provided — delete existing roles, then insert the new one
     // (avoids unique constraint violations on (user_id, role) when promoting/demoting)
     if (newRole) {
-      const { error: deleteError } = await supabaseAdmin
+      const { error: deleteError } = await supabaseAuth
         .from("user_roles")
         .delete()
         .eq("user_id", userId);
@@ -101,7 +106,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { error: insertError } = await supabaseAdmin
+      const { error: insertError } = await supabaseAuth
         .from("user_roles")
         .insert({ user_id: userId, role: newRole });
 
