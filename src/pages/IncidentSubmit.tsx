@@ -10,24 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-session-incident`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Public page: if a stale/clock-skewed auth session exists in localStorage
-// (e.g. from another logged-in tab/device), the global supabase client tries
-// to auto-refresh it and throws "JWT issued at future". Clear any sb-* auth
-// tokens before any hook touches supabase.
-function purgeStaleAuth() {
-  try {
-    supabase.auth.signOut({ scope: "local" } as any).catch(() => {});
-  } catch {}
-  try {
-    const keys: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && (k.startsWith("sb-") || k.includes("supabase.auth"))) keys.push(k);
-    }
-    keys.forEach((k) => localStorage.removeItem(k));
-  } catch {}
-}
-purgeStaleAuth();
+// Public page: uses a separate non-persistent supabase client below for token
+// reads so it never touches the global authenticated session. We intentionally
+// do NOT purge stored auth here — doing so at module scope would log out any
+// signed-in user whenever this module is imported by the app bundle.
+
 
 export default function IncidentSubmit() {
   const [params] = useSearchParams();
