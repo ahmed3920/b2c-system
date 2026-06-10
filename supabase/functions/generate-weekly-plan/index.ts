@@ -1,10 +1,17 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import postgres from "npm:postgres@3.4.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 interface ModuleRow {
   id: string;
@@ -19,58 +26,51 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let db: ReturnType<typeof postgres> | null = null;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.slice("Bearer ".length);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const userClient = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return json({ error: "Unauthorized" }, 401);
     }
-    const userId = userData.user.id;
+    const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    // role check — try userClient first (RLS-aware), fall back to admin, then RPC
-    let roleSet = new Set<string>();
-    const { data: rolesUser } = await userClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (rolesUser && rolesUser.length) {
-      roleSet = new Set(rolesUser.map((r: any) => r.role));
-    } else {
-      const { data: rolesAdmin } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-      roleSet = new Set((rolesAdmin ?? []).map((r: any) => r.role));
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL")?.trim();
+    if (!dbUrl) {
+      return json({ error: "Database connection is not configured" }, 500);
     }
+    db = postgres(dbUrl, {
+      max: 1,
+      prepare: false,
+      ssl: "require",
+      idle_timeout: 3,
+      connect_timeout: 10,
+    });
+    const sql = db;
+
+    // Read roles over the direct database connection so authorization is not
+    // affected by PostgREST JWT clock-skew errors (PGRST303 "JWT issued at future").
+    const callerRoles = await sql<{ role: string }[]>`
+      select role::text as role
+      from public.user_roles
+      where user_id = ${userId}
+    `;
+    const roleSet = new Set(callerRoles.map((r: { role: string }) => r.role));
     let isAdmin = roleSet.has("admin");
     let isTL = roleSet.has("team_leader") || roleSet.has("super_team_leader");
     if (!isAdmin && !isTL) {
-      const checks = await Promise.all([
-        userClient.rpc("has_role", { _user_id: userId, _role: "admin" }),
-        userClient.rpc("has_role", { _user_id: userId, _role: "team_leader" }),
-        userClient.rpc("has_role", { _user_id: userId, _role: "super_team_leader" }),
-      ]);
-      isAdmin = checks[0].data === true;
-      isTL = checks[1].data === true || checks[2].data === true;
-    }
-    if (!isAdmin && !isTL) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Forbidden" }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
@@ -88,48 +88,49 @@ Deno.serve(async (req) => {
     // Scope: TLs limited to their team
     let tlFilter: string | null = null;
     if (!isAdmin && isTL) {
-      const { data: prof } = await admin
-        .from("profiles")
-        .select("mentor_name")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const [prof] = await sql<{ mentor_name: string | null }[]>`
+        select mentor_name
+        from public.profiles
+        where user_id = ${userId}
+        limit 1
+      `;
       tlFilter = prof?.mentor_name ?? null;
       if (!tlFilter) {
-        return new Response(JSON.stringify({ error: "Profile missing" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json({ error: "Profile missing" }, 400);
       }
     }
 
     // Load modules
-    const { data: modules, error: modErr } = await admin
-      .from("study_modules")
-      .select("id, grade_band, module_code, hours_required, display_order")
-      .eq("is_active", true)
-      .order("display_order");
-    if (modErr) throw modErr;
+    const modules = await sql<ModuleRow[]>`
+      select id, grade_band, module_code, hours_required, display_order
+      from public.study_modules
+      where is_active = true
+      order by display_order
+    `;
 
     // Load occupation (pre)
-    let occQ = admin
-      .from("tutor_weekly_occupation")
-      .select("tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions")
-      .eq("week_start", weekStart)
-      .eq("phase", "pre");
-    if (tlFilter) occQ = occQ.eq("team_leader", tlFilter);
-    const { data: occupation, error: occErr } = await occQ;
-    if (occErr) throw occErr;
+    const occupation = tlFilter
+      ? await sql<any[]>`
+          select tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions
+          from public.tutor_weekly_occupation
+          where week_start = ${weekStart}::date
+            and phase = 'pre'
+            and team_leader = ${tlFilter}
+        `
+      : await sql<any[]>`
+          select tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions
+          from public.tutor_weekly_occupation
+          where week_start = ${weekStart}::date
+            and phase = 'pre'
+        `;
 
     if (!occupation || occupation.length === 0) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error:
             "No pre-week occupation data for this week. Seed sample data or sync the sheet first.",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
+        400,
       );
     }
 
@@ -141,16 +142,22 @@ Deno.serve(async (req) => {
     const published: { tutor_external_id: string; module_id: string; is_finished: boolean }[] = [];
     let pubFrom = 0;
     while (true) {
-      let pubQ = admin
-        .from("tutor_published_modules")
-        .select("tutor_external_id, module_id, is_finished")
-        .eq("week_start", weekStart)
-        .eq("phase", "pre")
-        .range(pubFrom, pubFrom + PAGE - 1);
-      if (tlFilter) pubQ = pubQ.eq("team_leader", tlFilter);
-      const { data: pubBatch, error: pubErr } = await pubQ;
-      if (pubErr) throw pubErr;
-      const batch = pubBatch ?? [];
+      const batch = tlFilter
+        ? await sql<{ tutor_external_id: string; module_id: string; is_finished: boolean }[]>`
+            select tutor_external_id, module_id, is_finished
+            from public.tutor_published_modules
+            where week_start = ${weekStart}::date
+              and phase = 'pre'
+              and team_leader = ${tlFilter}
+            limit ${PAGE} offset ${pubFrom}
+          `
+        : await sql<{ tutor_external_id: string; module_id: string; is_finished: boolean }[]>`
+            select tutor_external_id, module_id, is_finished
+            from public.tutor_published_modules
+            where week_start = ${weekStart}::date
+              and phase = 'pre'
+            limit ${PAGE} offset ${pubFrom}
+          `;
       published.push(...batch);
       if (batch.length < PAGE) break;
       pubFrom += PAGE;
@@ -187,12 +194,11 @@ Deno.serve(async (req) => {
       const PAGE_W = 1000;
       let fromW = 0;
       while (true) {
-        const { data: wBatch, error: wErr } = await admin
-          .from("tutor_weekend_days")
-          .select("tutor_external_id, weekend_days")
-          .range(fromW, fromW + PAGE_W - 1);
-        if (wErr) throw wErr;
-        const batch = wBatch ?? [];
+        const batch = await sql<{ tutor_external_id: string; weekend_days: string[] | null }[]>`
+          select tutor_external_id, weekend_days
+          from public.tutor_weekend_days
+          limit ${PAGE_W} offset ${fromW}
+        `;
         for (const r of batch) {
           weekendByTutor.set(
             r.tutor_external_id,
@@ -211,14 +217,13 @@ Deno.serve(async (req) => {
       const PAGE2 = 1000;
       let from2 = 0;
       while (true) {
-        const { data: leaveBatch, error: leaveErr } = await admin
-          .from("tutor_leaves")
-          .select("tutor_external_id, leave_date")
-          .gte("leave_date", weekStart)
-          .lte("leave_date", weekEndStr)
-          .range(from2, from2 + PAGE2 - 1);
-        if (leaveErr) throw leaveErr;
-        const batch = leaveBatch ?? [];
+        const batch = await sql<{ tutor_external_id: string; leave_date: string }[]>`
+          select tutor_external_id, leave_date::text as leave_date
+          from public.tutor_leaves
+          where leave_date >= ${weekStart}::date
+            and leave_date <= ${weekEndStr}::date
+          limit ${PAGE2} offset ${from2}
+        `;
         for (const l of batch) {
           const arr = leaveDatesByTutor.get(l.tutor_external_id) ?? [];
           arr.push(l.leave_date);
@@ -233,13 +238,13 @@ Deno.serve(async (req) => {
     // Load official holidays inside the 7-day window. We'll filter per tutor by
     // their actual working days so a Friday holiday doesn't deduct from a tutor
     // whose weekend is Thu/Fri.
-    const { data: holidayRows, error: holErr } = await admin
-      .from("official_holidays")
-      .select("holiday_date")
-      .gte("holiday_date", weekStart)
-      .lte("holiday_date", weekEndStr);
-    if (holErr) throw holErr;
-    const holidayDates: string[] = (holidayRows ?? []).map((r: any) => r.holiday_date);
+    const holidayRows = await sql<{ holiday_date: string }[]>`
+      select holiday_date::text as holiday_date
+      from public.official_holidays
+      where holiday_date >= ${weekStart}::date
+        and holiday_date <= ${weekEndStr}::date
+    `;
+    const holidayDates: string[] = holidayRows.map((r: any) => r.holiday_date);
 
     // Load persistent blocked modules per tutor (e.g. device limitation).
     // These modules are excluded from the candidate set when generating the plan.
@@ -248,12 +253,11 @@ Deno.serve(async (req) => {
       const PAGE3 = 1000;
       let from3 = 0;
       while (true) {
-        const { data: blockBatch, error: blockErr } = await admin
-          .from("tutor_blocked_modules")
-          .select("tutor_external_id, module_id")
-          .range(from3, from3 + PAGE3 - 1);
-        if (blockErr) throw blockErr;
-        const batch = blockBatch ?? [];
+        const batch = await sql<{ tutor_external_id: string; module_id: string }[]>`
+          select tutor_external_id, module_id
+          from public.tutor_blocked_modules
+          limit ${PAGE3} offset ${from3}
+        `;
         for (const b of batch) {
           if (!blockedByTutor.has(b.tutor_external_id))
             blockedByTutor.set(b.tutor_external_id, new Set());
@@ -281,29 +285,38 @@ Deno.serve(async (req) => {
 
     // Rebuild plans for the selected week/scope from scratch so tutors that are now
     // fully finished or no longer eligible do not keep stale plans from earlier runs.
-    let existingPlansQ = admin
-      .from("weekly_study_plans")
-      .select("id")
-      .eq("week_start", weekStart);
-    if (tlFilter) existingPlansQ = existingPlansQ.eq("team_leader", tlFilter);
-    const { data: existingPlans, error: existingPlansErr } = await existingPlansQ;
-    if (existingPlansErr) throw existingPlansErr;
+    const existingPlans = tlFilter
+      ? await sql<{ id: string }[]>`
+          select id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+            and team_leader = ${tlFilter}
+        `
+      : await sql<{ id: string }[]>`
+          select id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+        `;
 
-    const existingPlanIds = (existingPlans ?? []).map((p) => p.id);
+    const existingPlanIds = existingPlans.map((p) => p.id);
     if (existingPlanIds.length > 0) {
-      const { error: deleteItemsErr } = await admin
-        .from("weekly_study_plan_items")
-        .delete()
-        .in("plan_id", existingPlanIds);
-      if (deleteItemsErr) throw deleteItemsErr;
+      await sql`
+        delete from public.weekly_study_plan_items
+        where plan_id in ${sql(existingPlanIds)}
+      `;
 
-      let deletePlansQ = admin
-        .from("weekly_study_plans")
-        .delete()
-        .eq("week_start", weekStart);
-      if (tlFilter) deletePlansQ = deletePlansQ.eq("team_leader", tlFilter);
-      const { error: deletePlansErr } = await deletePlansQ;
-      if (deletePlansErr) throw deletePlansErr;
+      if (tlFilter) {
+        await sql`
+          delete from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+            and team_leader = ${tlFilter}
+        `;
+      } else {
+        await sql`
+          delete from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+        `;
+      }
     }
 
     for (const tutor of occupation) {
@@ -397,69 +410,74 @@ Deno.serve(async (req) => {
       const planned = items.reduce((s, i) => s + Number(i.planned_hours), 0);
 
       // Upsert plan header
-      const { data: planRow, error: upErr } = await admin
-        .from("weekly_study_plans")
-        .upsert(
-          {
-            tutor_external_id: tutor.tutor_external_id,
-            tutor_name: tutor.tutor_name,
-            team_leader: tutor.team_leader,
-            week_start: weekStart,
-            free_hours: adjustedFree,
-            notes: (() => {
-              const base = `Free = 25 − ${sessionCount} sessions = ${baseFree}h`;
-              const parts: string[] = [];
-              if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
-              if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
-              return parts.length > 0
-                ? `${base} − (${parts.join(" + ")}) × 5h = ${adjustedFree}h`
-                : base;
-            })(),
-            planned_hours: planned,
-            status: "draft",
-            generated_by: userId,
-          },
-          { onConflict: "tutor_external_id,week_start" },
+      const notes = (() => {
+        const base = `Free = 25 − ${sessionCount} sessions = ${baseFree}h`;
+        const parts: string[] = [];
+        if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
+        if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
+        return parts.length > 0
+          ? `${base} − (${parts.join(" + ")}) × 5h = ${adjustedFree}h`
+          : base;
+      })();
+      const [planRow] = await sql<{ id: string }[]>`
+        insert into public.weekly_study_plans (
+          tutor_external_id, tutor_name, team_leader, week_start, free_hours,
+          notes, planned_hours, status, generated_by
+        ) values (
+          ${tutor.tutor_external_id}, ${tutor.tutor_name}, ${tutor.team_leader},
+          ${weekStart}::date, ${adjustedFree}, ${notes}, ${planned}, 'draft', ${userId}::uuid
         )
-        .select("id")
-        .single();
-      if (upErr) throw upErr;
+        on conflict (tutor_external_id, week_start) do update set
+          tutor_name = excluded.tutor_name,
+          team_leader = excluded.team_leader,
+          free_hours = excluded.free_hours,
+          notes = excluded.notes,
+          planned_hours = excluded.planned_hours,
+          status = excluded.status,
+          generated_by = excluded.generated_by,
+          updated_at = now()
+        returning id
+      `;
 
       // Replace items
-      await admin
-        .from("weekly_study_plan_items")
-        .delete()
-        .eq("plan_id", planRow.id);
+      await sql`
+        delete from public.weekly_study_plan_items
+        where plan_id = ${planRow.id}
+      `;
       if (items.length > 0) {
-        const { error: itErr } = await admin
-          .from("weekly_study_plan_items")
-          .insert(items.map((i) => ({ ...i, plan_id: planRow.id })));
-        if (itErr) throw itErr;
+        await sql`
+          insert into public.weekly_study_plan_items ${sql(
+            items.map((i) => ({ ...i, plan_id: planRow.id })),
+            "plan_id",
+            "module_id",
+            "planned_hours",
+            "is_partial",
+            "display_order",
+          )}
+        `;
         itemsCreated += items.length;
       }
       plansCreated += 1;
     }
 
-    const { data: weekPlans, error: weekPlansErr } = await admin
-      .from("weekly_study_plans")
-      .select("id, tutor_external_id")
-      .eq("week_start", weekStart);
-    if (weekPlansErr) throw weekPlansErr;
+    const weekPlans = await sql<{ id: string; tutor_external_id: string }[]>`
+      select id, tutor_external_id
+      from public.weekly_study_plans
+      where week_start = ${weekStart}::date
+    `;
 
-    for (const plan of weekPlans ?? []) {
+    for (const plan of weekPlans) {
       const finished = finishedByTutor.get(plan.tutor_external_id);
       if (finished && finished.size >= allModuleIds.size) {
-        const { error: deletePlanItemsErr } = await admin
-          .from("weekly_study_plan_items")
-          .delete()
-          .eq("plan_id", plan.id);
-        if (deletePlanItemsErr) throw deletePlanItemsErr;
+        await sql`
+          delete from public.weekly_study_plan_items
+          where plan_id = ${plan.id}
+        `;
 
-        const { error: deletePlanErr } = await admin
-          .from("weekly_study_plans")
-          .delete()
-          .eq("id", plan.id);
-        if (deletePlanErr) throw deletePlanErr;
+        await sql`
+          delete from public.weekly_study_plans
+          where id = ${plan.id}
+        `;
 
         skippedAllDone++;
         plansCreated = Math.max(0, plansCreated - 1);
@@ -467,43 +485,49 @@ Deno.serve(async (req) => {
     }
 
     // Compute snapshot totals from the actual saved plans for this week/scope
-    let totalsQ = admin
-      .from("weekly_study_plans")
-      .select("free_hours, planned_hours, tutor_external_id")
-      .eq("week_start", weekStart);
-    if (tlFilter) totalsQ = totalsQ.eq("team_leader", tlFilter);
-    const { data: totalsRows } = await totalsQ;
-    const totalFree = (totalsRows ?? []).reduce(
+    const totalsRows = tlFilter
+      ? await sql<{ free_hours: number | null; planned_hours: number | null; tutor_external_id: string }[]>`
+          select free_hours, planned_hours, tutor_external_id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+            and team_leader = ${tlFilter}
+        `
+      : await sql<{ free_hours: number | null; planned_hours: number | null; tutor_external_id: string }[]>`
+          select free_hours, planned_hours, tutor_external_id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+        `;
+    const totalFree = totalsRows.reduce(
       (s, r: any) => s + Number(r.free_hours ?? 0),
       0,
     );
-    const totalPlanned = (totalsRows ?? []).reduce(
+    const totalPlanned = totalsRows.reduce(
       (s, r: any) => s + Number(r.planned_hours ?? 0),
       0,
     );
 
     // Resolve generator name
     let generatorName: string | null = null;
-    const { data: prof } = await admin
-      .from("profiles")
-      .select("mentor_name, full_name")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const [prof] = await sql<{ mentor_name: string | null; full_name: string | null }[]>`
+      select mentor_name, full_name
+      from public.profiles
+      where user_id = ${userId}
+      limit 1
+    `;
     generatorName = prof?.full_name ?? prof?.mentor_name ?? null;
 
-    await admin.from("weekly_study_plan_snapshots").insert({
-      week_start: weekStart,
-      team_leader: tlFilter,
-      tutors_count: plansCreated,
-      items_count: itemsCreated,
-      total_free_hours: totalFree,
-      total_planned_hours: totalPlanned,
-      generated_by: userId,
-      generated_by_name: generatorName,
-    });
+    await sql`
+      insert into public.weekly_study_plan_snapshots (
+        week_start, team_leader, tutors_count, items_count, total_free_hours,
+        total_planned_hours, generated_by, generated_by_name
+      ) values (
+        ${weekStart}::date, ${tlFilter}, ${plansCreated}, ${itemsCreated}, ${totalFree},
+        ${totalPlanned}, ${userId}::uuid, ${generatorName}
+      )
+    `;
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         week_start: weekStart,
         plans_created: plansCreated,
@@ -516,10 +540,6 @@ Deno.serve(async (req) => {
         tutors_with_leaves: leaveDatesByTutor.size,
         leave_days_total: Array.from(leaveDatesByTutor.values()).reduce((s, v) => s + v.length, 0),
         holiday_dates_in_week: holidayDates,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
   } catch (e: any) {
@@ -537,5 +557,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
+  } finally {
+    if (db) await db.end({ timeout: 3 });
   }
 });
