@@ -285,29 +285,38 @@ Deno.serve(async (req) => {
 
     // Rebuild plans for the selected week/scope from scratch so tutors that are now
     // fully finished or no longer eligible do not keep stale plans from earlier runs.
-    let existingPlansQ = admin
-      .from("weekly_study_plans")
-      .select("id")
-      .eq("week_start", weekStart);
-    if (tlFilter) existingPlansQ = existingPlansQ.eq("team_leader", tlFilter);
-    const { data: existingPlans, error: existingPlansErr } = await existingPlansQ;
-    if (existingPlansErr) throw existingPlansErr;
+    const existingPlans = tlFilter
+      ? await sql<{ id: string }[]>`
+          select id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+            and team_leader = ${tlFilter}
+        `
+      : await sql<{ id: string }[]>`
+          select id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+        `;
 
-    const existingPlanIds = (existingPlans ?? []).map((p) => p.id);
+    const existingPlanIds = existingPlans.map((p) => p.id);
     if (existingPlanIds.length > 0) {
-      const { error: deleteItemsErr } = await admin
-        .from("weekly_study_plan_items")
-        .delete()
-        .in("plan_id", existingPlanIds);
-      if (deleteItemsErr) throw deleteItemsErr;
+      await sql`
+        delete from public.weekly_study_plan_items
+        where plan_id in ${sql(existingPlanIds)}
+      `;
 
-      let deletePlansQ = admin
-        .from("weekly_study_plans")
-        .delete()
-        .eq("week_start", weekStart);
-      if (tlFilter) deletePlansQ = deletePlansQ.eq("team_leader", tlFilter);
-      const { error: deletePlansErr } = await deletePlansQ;
-      if (deletePlansErr) throw deletePlansErr;
+      if (tlFilter) {
+        await sql`
+          delete from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+            and team_leader = ${tlFilter}
+        `;
+      } else {
+        await sql`
+          delete from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+        `;
+      }
     }
 
     for (const tutor of occupation) {
@@ -401,44 +410,51 @@ Deno.serve(async (req) => {
       const planned = items.reduce((s, i) => s + Number(i.planned_hours), 0);
 
       // Upsert plan header
-      const { data: planRow, error: upErr } = await admin
-        .from("weekly_study_plans")
-        .upsert(
-          {
-            tutor_external_id: tutor.tutor_external_id,
-            tutor_name: tutor.tutor_name,
-            team_leader: tutor.team_leader,
-            week_start: weekStart,
-            free_hours: adjustedFree,
-            notes: (() => {
-              const base = `Free = 25 − ${sessionCount} sessions = ${baseFree}h`;
-              const parts: string[] = [];
-              if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
-              if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
-              return parts.length > 0
-                ? `${base} − (${parts.join(" + ")}) × 5h = ${adjustedFree}h`
-                : base;
-            })(),
-            planned_hours: planned,
-            status: "draft",
-            generated_by: userId,
-          },
-          { onConflict: "tutor_external_id,week_start" },
+      const notes = (() => {
+        const base = `Free = 25 − ${sessionCount} sessions = ${baseFree}h`;
+        const parts: string[] = [];
+        if (leaveDays > 0) parts.push(`${leaveDays} leave day${leaveDays > 1 ? "s" : ""}`);
+        if (holidayDays > 0) parts.push(`${holidayDays} official holiday${holidayDays > 1 ? "s" : ""}`);
+        return parts.length > 0
+          ? `${base} − (${parts.join(" + ")}) × 5h = ${adjustedFree}h`
+          : base;
+      })();
+      const [planRow] = await sql<{ id: string }[]>`
+        insert into public.weekly_study_plans (
+          tutor_external_id, tutor_name, team_leader, week_start, free_hours,
+          notes, planned_hours, status, generated_by
+        ) values (
+          ${tutor.tutor_external_id}, ${tutor.tutor_name}, ${tutor.team_leader},
+          ${weekStart}::date, ${adjustedFree}, ${notes}, ${planned}, 'draft', ${userId}::uuid
         )
-        .select("id")
-        .single();
-      if (upErr) throw upErr;
+        on conflict (tutor_external_id, week_start) do update set
+          tutor_name = excluded.tutor_name,
+          team_leader = excluded.team_leader,
+          free_hours = excluded.free_hours,
+          notes = excluded.notes,
+          planned_hours = excluded.planned_hours,
+          status = excluded.status,
+          generated_by = excluded.generated_by,
+          updated_at = now()
+        returning id
+      `;
 
       // Replace items
-      await admin
-        .from("weekly_study_plan_items")
-        .delete()
-        .eq("plan_id", planRow.id);
+      await sql`
+        delete from public.weekly_study_plan_items
+        where plan_id = ${planRow.id}
+      `;
       if (items.length > 0) {
-        const { error: itErr } = await admin
-          .from("weekly_study_plan_items")
-          .insert(items.map((i) => ({ ...i, plan_id: planRow.id })));
-        if (itErr) throw itErr;
+        await sql`
+          insert into public.weekly_study_plan_items ${sql(
+            items.map((i) => ({ ...i, plan_id: planRow.id })),
+            "plan_id",
+            "module_id",
+            "planned_hours",
+            "is_partial",
+            "display_order",
+          )}
+        `;
         itemsCreated += items.length;
       }
       plansCreated += 1;
