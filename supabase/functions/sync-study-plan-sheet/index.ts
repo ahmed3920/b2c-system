@@ -108,38 +108,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
-    const hasAllowedRole = (roles: Array<{ role: string }> | null | undefined) =>
-      (roles ?? []).some((r) => allowed.has(r.role));
 
-    // First check through the caller's authenticated session. The user_roles
-    // table allows users to read their own role, so this mirrors the app's
-    // `useUserRole` logic and avoids false 403s from service-key issues.
-    const { data: callerRoles, error: callerRolesErr } = await userClient
+    // Use the service-role admin client for the role lookup so we don't hit
+    // PostgREST JWT clock-skew errors (PGRST303 "JWT issued at future").
+    const { data: callerRoles, error: callerRolesErr } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
     if (callerRolesErr) {
-      console.warn("sync-study-plan-sheet role lookup failed", callerRolesErr.message);
+      console.error("sync-study-plan-sheet role lookup failed", callerRolesErr);
+      return json({ error: `Role lookup failed: ${callerRolesErr.message}` }, 500);
     }
 
-    let authorized = hasAllowedRole(callerRoles as Array<{ role: string }> | null);
-
-    // Security-definer fallback keeps authorization working even if direct
-    // role rows are blocked by an RLS/grant regression.
-    if (!authorized) {
-      const checks = await Promise.all(
-        Array.from(allowed).map(async (role) => {
-          const { data, error } = await userClient.rpc("has_role", {
-            _user_id: userId,
-            _role: role,
-          });
-          if (error) console.warn(`sync-study-plan-sheet has_role(${role}) failed`, error.message);
-          return data === true;
-        }),
-      );
-      authorized = checks.some(Boolean);
-    }
-
+    const authorized = (callerRoles ?? []).some((r: { role: string }) =>
+      allowed.has(r.role),
+    );
     if (!authorized)
       return json({ error: "Admin or team leader only" }, 403);
 
@@ -395,8 +378,13 @@ Deno.serve(async (req) => {
       rows_skipped: skipped,
       warnings: errors.slice(0, 10),
     });
-  } catch (e) {
-    console.error(e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  } catch (e: any) {
+    console.error("sync-study-plan-sheet error:", e);
+    const msg =
+      e?.message ||
+      e?.error_description ||
+      e?.hint ||
+      (typeof e === "string" ? e : JSON.stringify(e));
+    return json({ error: msg }, 500);
   }
 });
