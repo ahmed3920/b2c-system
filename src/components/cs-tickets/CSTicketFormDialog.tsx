@@ -115,6 +115,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
   const reset = () => {
     setTutorIds([]);
+    setTutorMentorOverrides({});
     setTicketNumber("");
     setCsCategory("");
     setEduCategory("");
@@ -131,6 +132,20 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   };
   const removeTutor = (id: string) => {
     setTutorIds((cur) => cur.filter((x) => x !== id));
+    setTutorMentorOverrides((cur) => {
+      const { [id]: _, ...rest } = cur;
+      return rest;
+    });
+  };
+  const setMentorForTutor = (tutorId: string, mentorUserId: string) => {
+    // "__none" -> explicit none; "__auto" -> clear override; otherwise mentor user_id
+    setTutorMentorOverrides((cur) => {
+      if (mentorUserId === "__auto") {
+        const { [tutorId]: _, ...rest } = cur;
+        return rest;
+      }
+      return { ...cur, [tutorId]: mentorUserId === "__none" ? "" : mentorUserId };
+    });
   };
 
   const buildDeadline = (): string | null => {
