@@ -196,67 +196,105 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         <div className="space-y-6 py-2">
           {/* Staff Info */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Staff Info</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-1 space-y-2">
-                <Label>Tutor Name *</Label>
-                <Popover open={tutorPickerOpen} onOpenChange={setTutorPickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-                      <span className="truncate">{selectedTutor?.name ?? "Search tutor..."}</span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search tutor by name or ID..." />
-                      <CommandList>
-                        <CommandEmpty>No tutor found.</CommandEmpty>
-                        <CommandGroup>
-                          {activeTutors.map((t) => (
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Staff Info</h3>
+              <span className="text-xs text-muted-foreground">
+                Add one or more tutors. The first is the primary tutor.
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tutors *</Label>
+              <Popover open={tutorPickerOpen} onOpenChange={setTutorPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                    <span className="truncate text-muted-foreground">
+                      {selectedTutors.length === 0
+                        ? "Search and add tutors..."
+                        : `Add another tutor (${selectedTutors.length} added)`}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search tutor by name or ID..." />
+                    <CommandList>
+                      <CommandEmpty>No tutor found.</CommandEmpty>
+                      <CommandGroup>
+                        {activeTutors.map((t) => {
+                          const isSelected = tutorIds.includes(t.id);
+                          return (
                             <CommandItem
                               key={t.id}
                               value={`${t.name} ${t.id}`}
                               onSelect={() => {
-                                setTutorId(t.id);
-                                setTutorPickerOpen(false);
+                                if (isSelected) {
+                                  removeTutor(t.id);
+                                } else {
+                                  addTutor(t.id);
+                                }
                               }}
                             >
-                              <Check className={cn("mr-2 h-4 w-4", tutorId === t.id ? "opacity-100" : "opacity-0")} />
+                              <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                               <div className="flex flex-col">
                                 <span>{t.name}</span>
                                 <span className="text-xs text-muted-foreground">{t.id} · {t.team_leader}</span>
                               </div>
                             </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label>Tutor ID</Label>
-                <Input value={selectedTutor?.id ?? ""} readOnly className="bg-muted" placeholder="Auto-filled" />
-              </div>
-              <div className="space-y-2">
-                <Label>Team Leader</Label>
-                <Input value={selectedTutor?.team_leader ?? ""} readOnly className="bg-muted" placeholder="Auto-filled" />
-              </div>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-            {selectedTutor && (
-              <p className="text-xs text-muted-foreground">
-                Recommended mentor:{" "}
-                {recommendedMentor ? (
-                  <span className="font-medium text-foreground">
-                    {recommendedMentor.full_name || recommendedMentor.mentor_name} — will be auto-assigned
-                  </span>
-                ) : (
-                  <span>
-                    {getMentorForTutor(selectedTutor.id) || "—"} (no matching mentor account; assign manually after creation)
-                  </span>
+
+            {selectedTutors.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {selectedTutors.map((t, idx) => (
+                    <Badge
+                      key={t.id}
+                      variant={idx === 0 ? "default" : "secondary"}
+                      className="gap-1 pl-2 pr-1 py-1"
+                    >
+                      <span>
+                        {idx === 0 ? "Primary: " : ""}
+                        {t.name} ({t.id}) — TL: {t.team_leader || "—"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTutor(t.id)}
+                        className="ml-1 rounded hover:bg-background/30 p-0.5"
+                        aria-label={`Remove ${t.name}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                {selectedTutor && (
+                  <p className="text-xs text-muted-foreground">
+                    Recommended mentor (from primary tutor):{" "}
+                    {recommendedMentor ? (
+                      <span className="font-medium text-foreground">
+                        {recommendedMentor.full_name || recommendedMentor.mentor_name} — will be auto-assigned
+                      </span>
+                    ) : (
+                      <span>
+                        {getMentorForTutor(selectedTutor.id) || "—"} (no matching mentor account; assign manually after creation)
+                      </span>
+                    )}
+                  </p>
                 )}
-              </p>
+                {selectedTutors.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Team leaders of all listed tutors will see this ticket and be notified.
+                  </p>
+                )}
+              </div>
             )}
           </section>
 
