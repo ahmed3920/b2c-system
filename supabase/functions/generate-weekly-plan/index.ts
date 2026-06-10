@@ -194,12 +194,11 @@ Deno.serve(async (req) => {
       const PAGE_W = 1000;
       let fromW = 0;
       while (true) {
-        const { data: wBatch, error: wErr } = await admin
-          .from("tutor_weekend_days")
-          .select("tutor_external_id, weekend_days")
-          .range(fromW, fromW + PAGE_W - 1);
-        if (wErr) throw wErr;
-        const batch = wBatch ?? [];
+        const batch = await sql<{ tutor_external_id: string; weekend_days: string[] | null }[]>`
+          select tutor_external_id, weekend_days
+          from public.tutor_weekend_days
+          limit ${PAGE_W} offset ${fromW}
+        `;
         for (const r of batch) {
           weekendByTutor.set(
             r.tutor_external_id,
@@ -218,14 +217,13 @@ Deno.serve(async (req) => {
       const PAGE2 = 1000;
       let from2 = 0;
       while (true) {
-        const { data: leaveBatch, error: leaveErr } = await admin
-          .from("tutor_leaves")
-          .select("tutor_external_id, leave_date")
-          .gte("leave_date", weekStart)
-          .lte("leave_date", weekEndStr)
-          .range(from2, from2 + PAGE2 - 1);
-        if (leaveErr) throw leaveErr;
-        const batch = leaveBatch ?? [];
+        const batch = await sql<{ tutor_external_id: string; leave_date: string }[]>`
+          select tutor_external_id, leave_date::text as leave_date
+          from public.tutor_leaves
+          where leave_date >= ${weekStart}::date
+            and leave_date <= ${weekEndStr}::date
+          limit ${PAGE2} offset ${from2}
+        `;
         for (const l of batch) {
           const arr = leaveDatesByTutor.get(l.tutor_external_id) ?? [];
           arr.push(l.leave_date);
@@ -240,13 +238,13 @@ Deno.serve(async (req) => {
     // Load official holidays inside the 7-day window. We'll filter per tutor by
     // their actual working days so a Friday holiday doesn't deduct from a tutor
     // whose weekend is Thu/Fri.
-    const { data: holidayRows, error: holErr } = await admin
-      .from("official_holidays")
-      .select("holiday_date")
-      .gte("holiday_date", weekStart)
-      .lte("holiday_date", weekEndStr);
-    if (holErr) throw holErr;
-    const holidayDates: string[] = (holidayRows ?? []).map((r: any) => r.holiday_date);
+    const holidayRows = await sql<{ holiday_date: string }[]>`
+      select holiday_date::text as holiday_date
+      from public.official_holidays
+      where holiday_date >= ${weekStart}::date
+        and holiday_date <= ${weekEndStr}::date
+    `;
+    const holidayDates: string[] = holidayRows.map((r: any) => r.holiday_date);
 
     // Load persistent blocked modules per tutor (e.g. device limitation).
     // These modules are excluded from the candidate set when generating the plan.
@@ -255,12 +253,11 @@ Deno.serve(async (req) => {
       const PAGE3 = 1000;
       let from3 = 0;
       while (true) {
-        const { data: blockBatch, error: blockErr } = await admin
-          .from("tutor_blocked_modules")
-          .select("tutor_external_id, module_id")
-          .range(from3, from3 + PAGE3 - 1);
-        if (blockErr) throw blockErr;
-        const batch = blockBatch ?? [];
+        const batch = await sql<{ tutor_external_id: string; module_id: string }[]>`
+          select tutor_external_id, module_id
+          from public.tutor_blocked_modules
+          limit ${PAGE3} offset ${from3}
+        `;
         for (const b of batch) {
           if (!blockedByTutor.has(b.tutor_external_id))
             blockedByTutor.set(b.tutor_external_id, new Set());
