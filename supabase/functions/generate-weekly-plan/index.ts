@@ -460,26 +460,24 @@ Deno.serve(async (req) => {
       plansCreated += 1;
     }
 
-    const { data: weekPlans, error: weekPlansErr } = await admin
-      .from("weekly_study_plans")
-      .select("id, tutor_external_id")
-      .eq("week_start", weekStart);
-    if (weekPlansErr) throw weekPlansErr;
+    const weekPlans = await sql<{ id: string; tutor_external_id: string }[]>`
+      select id, tutor_external_id
+      from public.weekly_study_plans
+      where week_start = ${weekStart}::date
+    `;
 
-    for (const plan of weekPlans ?? []) {
+    for (const plan of weekPlans) {
       const finished = finishedByTutor.get(plan.tutor_external_id);
       if (finished && finished.size >= allModuleIds.size) {
-        const { error: deletePlanItemsErr } = await admin
-          .from("weekly_study_plan_items")
-          .delete()
-          .eq("plan_id", plan.id);
-        if (deletePlanItemsErr) throw deletePlanItemsErr;
+        await sql`
+          delete from public.weekly_study_plan_items
+          where plan_id = ${plan.id}
+        `;
 
-        const { error: deletePlanErr } = await admin
-          .from("weekly_study_plans")
-          .delete()
-          .eq("id", plan.id);
-        if (deletePlanErr) throw deletePlanErr;
+        await sql`
+          delete from public.weekly_study_plans
+          where id = ${plan.id}
+        `;
 
         skippedAllDone++;
         plansCreated = Math.max(0, plansCreated - 1);
@@ -487,40 +485,46 @@ Deno.serve(async (req) => {
     }
 
     // Compute snapshot totals from the actual saved plans for this week/scope
-    let totalsQ = admin
-      .from("weekly_study_plans")
-      .select("free_hours, planned_hours, tutor_external_id")
-      .eq("week_start", weekStart);
-    if (tlFilter) totalsQ = totalsQ.eq("team_leader", tlFilter);
-    const { data: totalsRows } = await totalsQ;
-    const totalFree = (totalsRows ?? []).reduce(
+    const totalsRows = tlFilter
+      ? await sql<{ free_hours: number | null; planned_hours: number | null; tutor_external_id: string }[]>`
+          select free_hours, planned_hours, tutor_external_id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+            and team_leader = ${tlFilter}
+        `
+      : await sql<{ free_hours: number | null; planned_hours: number | null; tutor_external_id: string }[]>`
+          select free_hours, planned_hours, tutor_external_id
+          from public.weekly_study_plans
+          where week_start = ${weekStart}::date
+        `;
+    const totalFree = totalsRows.reduce(
       (s, r: any) => s + Number(r.free_hours ?? 0),
       0,
     );
-    const totalPlanned = (totalsRows ?? []).reduce(
+    const totalPlanned = totalsRows.reduce(
       (s, r: any) => s + Number(r.planned_hours ?? 0),
       0,
     );
 
     // Resolve generator name
     let generatorName: string | null = null;
-    const { data: prof } = await admin
-      .from("profiles")
-      .select("mentor_name, full_name")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const [prof] = await sql<{ mentor_name: string | null; full_name: string | null }[]>`
+      select mentor_name, full_name
+      from public.profiles
+      where user_id = ${userId}
+      limit 1
+    `;
     generatorName = prof?.full_name ?? prof?.mentor_name ?? null;
 
-    await admin.from("weekly_study_plan_snapshots").insert({
-      week_start: weekStart,
-      team_leader: tlFilter,
-      tutors_count: plansCreated,
-      items_count: itemsCreated,
-      total_free_hours: totalFree,
-      total_planned_hours: totalPlanned,
-      generated_by: userId,
-      generated_by_name: generatorName,
-    });
+    await sql`
+      insert into public.weekly_study_plan_snapshots (
+        week_start, team_leader, tutors_count, items_count, total_free_hours,
+        total_planned_hours, generated_by, generated_by_name
+      ) values (
+        ${weekStart}::date, ${tlFilter}, ${plansCreated}, ${itemsCreated}, ${totalFree},
+        ${totalPlanned}, ${userId}::uuid, ${generatorName}
+      )
+    `;
 
     return new Response(
       JSON.stringify({
