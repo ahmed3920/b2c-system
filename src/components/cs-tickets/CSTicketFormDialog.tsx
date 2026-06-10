@@ -97,7 +97,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   }, [eduCategories, eduCategory]);
 
   const reset = () => {
-    setTutorId("");
+    setTutorIds([]);
     setTicketNumber("");
     setCsCategory("");
     setEduCategory("");
@@ -107,6 +107,13 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     setSessionNumOrDate("");
     setDeadlineDate(undefined);
     setDeadlineTime("17:00");
+  };
+
+  const addTutor = (id: string) => {
+    setTutorIds((cur) => (cur.includes(id) ? cur : [...cur, id]));
+  };
+  const removeTutor = (id: string) => {
+    setTutorIds((cur) => cur.filter((x) => x !== id));
   };
 
   const buildDeadline = (): string | null => {
