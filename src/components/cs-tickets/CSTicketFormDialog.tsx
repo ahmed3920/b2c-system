@@ -37,7 +37,8 @@ interface Props {
 export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const { byType } = useCSTicketCategories();
   const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
-  const [tutorId, setTutorId] = useState<string>("");
+  // First entry is the primary tutor; the rest are stored in additional_tutors.
+  const [tutorIds, setTutorIds] = useState<string[]>([]);
   const [ticketNumber, setTicketNumber] = useState<string>("");
   const [csCategory, setCsCategory] = useState<string>("");
   const [eduCategory, setEduCategory] = useState<string>("");
@@ -56,7 +57,11 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     () => tutorRoster.filter((t) => !inactiveIds.has(t.id)),
     [inactiveIds, tutorRoster],
   );
-  const selectedTutor = useMemo(() => tutorRoster.find((t) => t.id === tutorId), [tutorId, tutorRoster]);
+  const selectedTutors = useMemo(
+    () => tutorIds.map((id) => tutorRoster.find((t) => t.id === id)).filter(Boolean) as typeof tutorRoster,
+    [tutorIds, tutorRoster],
+  );
+  const selectedTutor = selectedTutors[0]; // primary tutor
 
   useEffect(() => {
     if (!open) return;
