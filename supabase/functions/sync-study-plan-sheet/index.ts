@@ -87,14 +87,21 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.slice("Bearer ".length);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const userClient = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) return json({ error: "Unauthorized" }, 401);
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const userId = claimsData.claims.sub as string;
 
     const admin = createClient(
       supabaseUrl,
@@ -103,7 +110,7 @@ Deno.serve(async (req) => {
     const { data: roles } = await admin
       .from("user_roles")
       .select("role")
-      .eq("user_id", userData.user.id);
+      .eq("user_id", userId);
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
     if (!(roles ?? []).some((r: any) => allowed.has(r.role)))
       return json({ error: "Admin or team leader only" }, 403);
