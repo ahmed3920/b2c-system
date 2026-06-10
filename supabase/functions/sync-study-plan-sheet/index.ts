@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import postgres from "npm:postgres@3.4.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
 
+  let db: ReturnType<typeof postgres> | null = null;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
@@ -103,24 +105,29 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL")?.trim();
+    if (!dbUrl) {
+      return json({ error: "Database connection is not configured" }, 500);
+    }
+    db = postgres(dbUrl, {
+      max: 1,
+      prepare: false,
+      ssl: "require",
+      idle_timeout: 3,
+      connect_timeout: 10,
+    });
+    const sql = db;
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
 
-    // Use the service-role admin client for the role lookup so we don't hit
-    // PostgREST JWT clock-skew errors (PGRST303 "JWT issued at future").
-    const { data: callerRoles, error: callerRolesErr } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (callerRolesErr) {
-      console.error("sync-study-plan-sheet role lookup failed", callerRolesErr);
-      return json({ error: `Role lookup failed: ${callerRolesErr.message}` }, 500);
-    }
+    // Read roles over the direct database connection so authorization is not
+    // affected by PostgREST JWT clock-skew errors (PGRST303 "JWT issued at future").
+    const callerRoles = await sql<{ role: string }[]>`
+      select role::text as role
+      from public.user_roles
+      where user_id = ${userId}
+    `;
 
-    const authorized = (callerRoles ?? []).some((r: { role: string }) =>
+    const authorized = callerRoles.some((r: { role: string }) =>
       allowed.has(r.role),
     );
     if (!authorized)
@@ -142,12 +149,14 @@ Deno.serve(async (req) => {
     if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart))
       return json({ error: "week_start (YYYY-MM-DD) required" }, 400);
 
-    const { data: cfg, error: cfgErr } = await admin
-      .from("study_plan_sheet_configs")
-      .select("csv_url, column_mapping")
-      .eq("sheet_kind", sheetKind)
-      .maybeSingle();
-    if (cfgErr) throw cfgErr;
+    const [cfg] = await sql<
+      { csv_url: string | null; column_mapping: Record<string, string> | null }[]
+    >`
+      select csv_url, column_mapping
+      from public.study_plan_sheet_configs
+      where sheet_kind = ${sheetKind}
+      limit 1
+    `;
     if (!cfg?.csv_url)
       return json({ error: "Sheet URL not configured for this kind" }, 400);
 
@@ -263,17 +272,24 @@ Deno.serve(async (req) => {
 
       if (records.length) {
         // Wipe this tutor/week/phase set first to avoid stale rows
-        const { error: delErr } = await admin
-          .from("tutor_weekly_occupation")
-          .delete()
-          .eq("week_start", weekStart)
-          .eq("phase", phase);
-        if (delErr) throw delErr;
+        await sql`
+          delete from public.tutor_weekly_occupation
+          where week_start = ${weekStart}::date
+            and phase = ${phase}
+        `;
 
-        const { error } = await admin
-          .from("tutor_weekly_occupation")
-          .insert(records);
-        if (error) throw error;
+        await sql`
+          insert into public.tutor_weekly_occupation ${sql(
+            records,
+            "tutor_external_id",
+            "tutor_name",
+            "team_leader",
+            "week_start",
+            "phase",
+            "scheduled_sessions",
+            "source",
+          )}
+        `;
         inserted = records.length;
       }
     } else {
@@ -303,11 +319,14 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: modules } = await admin
-        .from("study_modules")
-        .select("id, grade_band, module_code");
+      const modules = await sql<
+        { id: string; grade_band: string; module_code: string }[]
+      >`
+        select id, grade_band, module_code
+        from public.study_modules
+      `;
       const modIdx = new Map<string, string>();
-      for (const m of modules ?? []) {
+      for (const m of modules) {
         modIdx.set(`${m.grade_band}|${m.module_code}`.toLowerCase(), m.id);
       }
 
@@ -354,17 +373,25 @@ Deno.serve(async (req) => {
         });
       }
       if (records.length) {
-        const { error: delErr } = await admin
-          .from("tutor_published_modules")
-          .delete()
-          .eq("week_start", weekStart)
-          .eq("phase", phase);
-        if (delErr) throw delErr;
+        await sql`
+          delete from public.tutor_published_modules
+          where week_start = ${weekStart}::date
+            and phase = ${phase}
+        `;
 
-        const { error } = await admin
-          .from("tutor_published_modules")
-          .insert(records);
-        if (error) throw error;
+        await sql`
+          insert into public.tutor_published_modules ${sql(
+            records,
+            "tutor_external_id",
+            "tutor_name",
+            "team_leader",
+            "week_start",
+            "phase",
+            "module_id",
+            "is_assigned",
+            "is_finished",
+          )}
+        `;
         inserted = records.length;
       }
     }
@@ -386,5 +413,7 @@ Deno.serve(async (req) => {
       e?.hint ||
       (typeof e === "string" ? e : JSON.stringify(e));
     return json({ error: msg }, 500);
+  } finally {
+    await db?.end({ timeout: 1 });
   }
 });
