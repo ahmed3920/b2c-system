@@ -107,12 +107,40 @@ Deno.serve(async (req) => {
       supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const { data: roles } = await admin
+    const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
+    const hasAllowedRole = (roles: Array<{ role: string }> | null | undefined) =>
+      (roles ?? []).some((r) => allowed.has(r.role));
+
+    // First check through the caller's authenticated session. The user_roles
+    // table allows users to read their own role, so this mirrors the app's
+    // `useUserRole` logic and avoids false 403s from service-key issues.
+    const { data: callerRoles, error: callerRolesErr } = await userClient
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
-    if (!(roles ?? []).some((r: any) => allowed.has(r.role)))
+    if (callerRolesErr) {
+      console.warn("sync-study-plan-sheet role lookup failed", callerRolesErr.message);
+    }
+
+    let authorized = hasAllowedRole(callerRoles as Array<{ role: string }> | null);
+
+    // Security-definer fallback keeps authorization working even if direct
+    // role rows are blocked by an RLS/grant regression.
+    if (!authorized) {
+      const checks = await Promise.all(
+        Array.from(allowed).map(async (role) => {
+          const { data, error } = await userClient.rpc("has_role", {
+            _user_id: userId,
+            _role: role,
+          });
+          if (error) console.warn(`sync-study-plan-sheet has_role(${role}) failed`, error.message);
+          return data === true;
+        }),
+      );
+      authorized = checks.some(Boolean);
+    }
+
+    if (!authorized)
       return json({ error: "Admin or team leader only" }, 403);
 
 
