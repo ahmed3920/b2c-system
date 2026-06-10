@@ -279,6 +279,20 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                 />
                 <Field label="Created" value={format(new Date(ticket.created_at), "PPp")} />
               </div>
+              {ticket.additional_tutors.length > 0 && (
+                <Field
+                  label="Additional Tutors"
+                  value={
+                    <div className="flex flex-wrap gap-1.5">
+                      {ticket.additional_tutors.map((t) => (
+                        <Badge key={t.tutor_external_id} variant="secondary">
+                          {t.tutor_name} ({t.tutor_external_id}) — TL: {t.team_leader || "—"}
+                        </Badge>
+                      ))}
+                    </div>
+                  }
+                />
+              )}
               <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
 
               {canValidate && (
