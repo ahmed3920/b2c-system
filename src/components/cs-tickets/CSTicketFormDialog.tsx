@@ -178,11 +178,16 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id ?? null;
       const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const additional = selectedTutors.slice(1).map((t) => ({
-        tutor_external_id: t.id,
-        tutor_name: t.name,
-        team_leader: t.team_leader || "",
-      }));
+      const additional = selectedTutors.slice(1).map((t) => {
+        const m = effectiveMentorFor(t.id);
+        return {
+          tutor_external_id: t.id,
+          tutor_name: t.name,
+          team_leader: t.team_leader || "",
+          assigned_mentor_id: m?.user_id ?? null,
+          assigned_mentor_name: m ? m.full_name || m.mentor_name || null : null,
+        };
+      });
       const { error } = await supabase.from("cs_tickets").insert({
         ticket_number: ticketNumber.trim(),
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
