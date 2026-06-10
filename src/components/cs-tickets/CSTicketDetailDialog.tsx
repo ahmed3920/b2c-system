@@ -253,7 +253,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
             <div className="space-y-6 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Ticket Date" value={ticket.ticket_date} />
-                <Field label="Tutor" value={`${ticket.tutor_name} (${ticket.tutor_external_id})`} />
+                <Field
+                  label={ticket.additional_tutors.length > 0 ? "Primary Tutor" : "Tutor"}
+                  value={`${ticket.tutor_name} (${ticket.tutor_external_id})`}
+                />
                 <Field
                   label="CS Category"
                   value={ticket.cs_category || (ticket.case_types.includes("CS") ? ticket.category : null)}
