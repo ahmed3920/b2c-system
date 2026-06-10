@@ -15,6 +15,8 @@ export interface AdditionalTutor {
   tutor_external_id: string;
   tutor_name: string;
   team_leader: string;
+  assigned_mentor_id?: string | null;
+  assigned_mentor_name?: string | null;
 }
 
 export interface CSTicket {
