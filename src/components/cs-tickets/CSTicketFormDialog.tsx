@@ -296,48 +296,85 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
 
             {selectedTutors.length > 0 && (
               <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  {selectedTutors.map((t, idx) => (
-                    <Badge
+                {selectedTutors.map((t, idx) => {
+                  const eligibleMentors = mentors.filter((m) =>
+                    teamLeaderMatches(m.team_leader, t.team_leader),
+                  );
+                  const rec = resolveMentorFor(t.id);
+                  const override = tutorMentorOverrides[t.id];
+                  const selectValue =
+                    override === undefined ? "__auto" : override === "" ? "__none" : override;
+                  const effective = effectiveMentorFor(t.id);
+                  return (
+                    <div
                       key={t.id}
-                      variant={idx === 0 ? "default" : "secondary"}
-                      className="gap-1 pl-2 pr-1 py-1"
+                      className="flex flex-wrap items-center gap-2 rounded-md border p-2"
                     >
-                      <span>
-                        {idx === 0 ? "Primary: " : ""}
-                        {t.name} ({t.id}) — TL: {t.team_leader || "—"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeTutor(t.id)}
-                        className="ml-1 rounded hover:bg-background/30 p-0.5"
-                        aria-label={`Remove ${t.name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                {selectedTutor && (
-                  <p className="text-xs text-muted-foreground">
-                    Recommended mentor (from primary tutor):{" "}
-                    {recommendedMentor ? (
-                      <span className="font-medium text-foreground">
-                        {recommendedMentor.full_name || recommendedMentor.mentor_name} — will be auto-assigned
-                      </span>
-                    ) : (
-                      <span>
-                        {getMentorForTutor(selectedTutor.id) || "—"} (no matching mentor account; assign manually after creation)
-                      </span>
-                    )}
-                  </p>
-                )}
+                      <Badge variant={idx === 0 ? "default" : "secondary"} className="gap-1 pl-2 pr-1 py-1">
+                        <span>
+                          {idx === 0 ? "Primary: " : ""}
+                          {t.name} ({t.id}) — TL: {t.team_leader || "—"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeTutor(t.id)}
+                          className="ml-1 rounded hover:bg-background/30 p-0.5"
+                          aria-label={`Remove ${t.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                      <div className="ml-auto flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Assigned mentor</Label>
+                        <Select
+                          value={selectValue}
+                          onValueChange={(v) => setMentorForTutor(t.id, v)}
+                        >
+                          <SelectTrigger className="h-8 w-[240px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[260px]">
+                            <SelectItem value="__auto">
+                              Auto: {rec ? rec.full_name || rec.mentor_name : "no match"}
+                            </SelectItem>
+                            <SelectItem value="__none">No mentor</SelectItem>
+                            {eligibleMentors.length > 0 && (
+                              <SelectGroup>
+                                <SelectLabel>Same team leader</SelectLabel>
+                                {eligibleMentors.map((m) => (
+                                  <SelectItem key={m.user_id} value={m.user_id}>
+                                    {m.full_name || m.mentor_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )}
+                            <SelectGroup>
+                              <SelectLabel>All mentors</SelectLabel>
+                              {mentors.map((m) => (
+                                <SelectItem key={`all-${m.user_id}`} value={m.user_id}>
+                                  {m.full_name || m.mentor_name} {m.team_leader ? `· ${m.team_leader}` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <p className="basis-full text-xs text-muted-foreground">
+                        {effective
+                          ? `Will notify: ${effective.full_name || effective.mentor_name}`
+                          : "No mentor will be notified for this tutor"}
+                      </p>
+                    </div>
+                  );
+                })}
                 {selectedTutors.length > 1 && (
                   <p className="text-xs text-muted-foreground">
                     Team leaders of all listed tutors will see this ticket and be notified.
+                    Each tutor's assigned mentor is also notified.
                   </p>
                 )}
               </div>
+            )}
             )}
           </section>
 
