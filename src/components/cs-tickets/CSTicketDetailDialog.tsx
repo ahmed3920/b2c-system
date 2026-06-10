@@ -283,11 +283,16 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                 <Field
                   label="Additional Tutors"
                   value={
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-col gap-1.5">
                       {ticket.additional_tutors.map((t) => (
-                        <Badge key={t.tutor_external_id} variant="secondary">
-                          {t.tutor_name} ({t.tutor_external_id}) — TL: {t.team_leader || "—"}
-                        </Badge>
+                        <div key={t.tutor_external_id} className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">
+                            {t.tutor_name} ({t.tutor_external_id}) — TL: {t.team_leader || "—"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Mentor: {t.assigned_mentor_name || "—"}
+                          </span>
+                        </div>
                       ))}
                     </div>
                   }
