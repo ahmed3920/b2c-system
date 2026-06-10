@@ -73,14 +73,14 @@ const norm = (s: string) =>
 // Map sheet/roster team-leader names -> short form used in profiles.mentor_name
 // Keys are normalized (lowercased, single-space). Values are the canonical mentor_name.
 const TL_ALIASES: Record<string, string> = {
-  "ahmed hesham helmy": "Ahmed Hesham",
-  "ahmed hesham": "Ahmed Hesham",
-  "anan mohammed mohammed zewil": "Anan Zewil",
-  "anan zewil": "Anan Zewil",
-  "kareem abdalwahab abdalhaleem": "Kareem Abdalwahab",
-  "kareem abdalwahab": "Kareem Abdalwahab",
-  "ghada mohamed ahmed": "Ghada Mohamed",
-  "ghada mohamed": "Ghada Mohamed",
+  "ahmed hesham helmy": "Ahmed Hesham Helmy",
+  "ahmed hesham": "Ahmed Hesham Helmy",
+  "anan mohammed mohammed zewil": "Anan Mohammed Mohammed Zewil",
+  "anan zewil": "Anan Mohammed Mohammed Zewil",
+  "kareem abdalwahab abdalhaleem": "Kareem Abdalwahab Abdalhaleem",
+  "kareem abdalwahab": "Kareem Abdalwahab Abdalhaleem",
+  "ghada mohamed ahmed": "Ghada Mohamed Ahmed",
+  "ghada mohamed": "Ghada Mohamed Ahmed",
   "nermeen alhububati": "Nermeen Alhububati",
 };
 
@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
       // Resolve team_leader: prefer tutor map (case-insensitive lookup), else normalize sheet value
       const sheetTl = get(row, cols.team_leader) || null;
       const tutorTl = fromTid ? tutorTlMap.get(fromTid.trim().toLowerCase()) : undefined;
-      const resolvedTl = tutorTl ?? normalizeTeamLeader(sheetTl);
+      const resolvedTl = normalizeTeamLeader(tutorTl ?? sheetTl);
 
       // Pull validation fields from sheet, but don't overwrite TL edits already in DB
       const sheetValidationRaw = get(row, cols.edu_validation_sheet);
