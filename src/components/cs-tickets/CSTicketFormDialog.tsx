@@ -375,8 +375,8 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
                 )}
               </div>
             )}
-            )}
           </section>
+
 
           {/* Case Info */}
           <section className="space-y-3">
