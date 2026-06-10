@@ -63,6 +63,9 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   );
   const selectedTutor = selectedTutors[0]; // primary tutor
 
+  // Per-tutor mentor overrides (tutorId -> mentor user_id; "" = explicitly none)
+  const [tutorMentorOverrides, setTutorMentorOverrides] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!open) return;
     refreshRosterCache();
@@ -71,19 +74,33 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     });
   }, [open]);
 
-  const recommendedMentor = useMemo(() => {
-    if (!selectedTutor) return null;
-    const name = getMentorForTutor(selectedTutor.id);
+  const resolveMentorFor = (tutorId: string): MentorOption | null => {
+    const tutor = tutorRoster.find((t) => t.id === tutorId);
+    if (!tutor) return null;
+    const name = getMentorForTutor(tutor.id);
     if (!name || name === "—") return null;
     const target = normalizeName(name);
     return (
       mentors.find(
         (m) =>
-          teamLeaderMatches(m.team_leader, selectedTutor.team_leader) &&
+          teamLeaderMatches(m.team_leader, tutor.team_leader) &&
           (normalizeName(m.full_name ?? "") === target || normalizeName(m.mentor_name ?? "") === target),
       ) ?? null
     );
-  }, [selectedTutor, mentors]);
+  };
+
+  const effectiveMentorFor = (tutorId: string): MentorOption | null => {
+    const override = tutorMentorOverrides[tutorId];
+    if (override !== undefined) {
+      return override ? mentors.find((m) => m.user_id === override) ?? null : null;
+    }
+    return resolveMentorFor(tutorId);
+  };
+
+  const recommendedMentor = useMemo(
+    () => (selectedTutor ? effectiveMentorFor(selectedTutor.id) : null),
+    [selectedTutor, mentors, tutorRoster, tutorMentorOverrides],
+  );
 
   const csCategories = useMemo(() => byType["CS"] ?? [], [byType]);
   const eduCategories = useMemo(() => byType["Edu"] ?? [], [byType]);
