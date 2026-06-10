@@ -271,17 +271,24 @@ Deno.serve(async (req) => {
 
       if (records.length) {
         // Wipe this tutor/week/phase set first to avoid stale rows
-        const { error: delErr } = await admin
-          .from("tutor_weekly_occupation")
-          .delete()
-          .eq("week_start", weekStart)
-          .eq("phase", phase);
-        if (delErr) throw delErr;
+        await db`
+          delete from public.tutor_weekly_occupation
+          where week_start = ${weekStart}::date
+            and phase = ${phase}
+        `;
 
-        const { error } = await admin
-          .from("tutor_weekly_occupation")
-          .insert(records);
-        if (error) throw error;
+        await db`
+          insert into public.tutor_weekly_occupation ${db(
+            records,
+            "tutor_external_id",
+            "tutor_name",
+            "team_leader",
+            "week_start",
+            "phase",
+            "scheduled_sessions",
+            "source",
+          )}
+        `;
         inserted = records.length;
       }
     } else {
@@ -311,11 +318,14 @@ Deno.serve(async (req) => {
         );
       }
 
-      const { data: modules } = await admin
-        .from("study_modules")
-        .select("id, grade_band, module_code");
+      const modules = await db<
+        { id: string; grade_band: string; module_code: string }[]
+      >`
+        select id, grade_band, module_code
+        from public.study_modules
+      `;
       const modIdx = new Map<string, string>();
-      for (const m of modules ?? []) {
+      for (const m of modules) {
         modIdx.set(`${m.grade_band}|${m.module_code}`.toLowerCase(), m.id);
       }
 
@@ -362,17 +372,25 @@ Deno.serve(async (req) => {
         });
       }
       if (records.length) {
-        const { error: delErr } = await admin
-          .from("tutor_published_modules")
-          .delete()
-          .eq("week_start", weekStart)
-          .eq("phase", phase);
-        if (delErr) throw delErr;
+        await db`
+          delete from public.tutor_published_modules
+          where week_start = ${weekStart}::date
+            and phase = ${phase}
+        `;
 
-        const { error } = await admin
-          .from("tutor_published_modules")
-          .insert(records);
-        if (error) throw error;
+        await db`
+          insert into public.tutor_published_modules ${db(
+            records,
+            "tutor_external_id",
+            "tutor_name",
+            "team_leader",
+            "week_start",
+            "phase",
+            "module_id",
+            "is_assigned",
+            "is_finished",
+          )}
+        `;
         inserted = records.length;
       }
     }
