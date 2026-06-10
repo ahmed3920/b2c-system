@@ -116,11 +116,12 @@ Deno.serve(async (req) => {
       idle_timeout: 3,
       connect_timeout: 10,
     });
+    const sql = db;
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
 
     // Read roles over the direct database connection so authorization is not
     // affected by PostgREST JWT clock-skew errors (PGRST303 "JWT issued at future").
-    const callerRoles = await db<{ role: string }[]>`
+    const callerRoles = await sql<{ role: string }[]>`
       select role::text as role
       from public.user_roles
       where user_id = ${userId}
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
     if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart))
       return json({ error: "week_start (YYYY-MM-DD) required" }, 400);
 
-    const [cfg] = await db<
+    const [cfg] = await sql<
       { csv_url: string | null; column_mapping: Record<string, string> | null }[]
     >`
       select csv_url, column_mapping
@@ -271,14 +272,14 @@ Deno.serve(async (req) => {
 
       if (records.length) {
         // Wipe this tutor/week/phase set first to avoid stale rows
-        await db`
+        await sql`
           delete from public.tutor_weekly_occupation
           where week_start = ${weekStart}::date
             and phase = ${phase}
         `;
 
-        await db`
-          insert into public.tutor_weekly_occupation ${db(
+        await sql`
+          insert into public.tutor_weekly_occupation ${sql(
             records,
             "tutor_external_id",
             "tutor_name",
@@ -318,7 +319,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const modules = await db<
+      const modules = await sql<
         { id: string; grade_band: string; module_code: string }[]
       >`
         select id, grade_band, module_code
@@ -372,14 +373,14 @@ Deno.serve(async (req) => {
         });
       }
       if (records.length) {
-        await db`
+        await sql`
           delete from public.tutor_published_modules
           where week_start = ${weekStart}::date
             and phase = ${phase}
         `;
 
-        await db`
-          insert into public.tutor_published_modules ${db(
+        await sql`
+          insert into public.tutor_published_modules ${sql(
             records,
             "tutor_external_id",
             "tutor_name",
@@ -412,5 +413,7 @@ Deno.serve(async (req) => {
       e?.hint ||
       (typeof e === "string" ? e : JSON.stringify(e));
     return json({ error: msg }, 500);
+  } finally {
+    await db?.end({ timeout: 1 });
   }
 });
