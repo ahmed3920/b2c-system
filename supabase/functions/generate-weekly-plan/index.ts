@@ -522,10 +522,16 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
-  } catch (e) {
-    console.error(e);
+  } catch (e: any) {
+    console.error("generate-weekly-plan error:", e);
+    const msg =
+      e?.message ||
+      e?.error_description ||
+      e?.hint ||
+      e?.details ||
+      (typeof e === "string" ? e : JSON.stringify(e));
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+      JSON.stringify({ error: msg, code: e?.code }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
