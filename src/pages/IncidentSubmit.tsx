@@ -5,7 +5,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { IncidentForm, type IncidentFormValues } from "@/components/session-incidents/IncidentForm";
 import { tutorRoster } from "@/data/tutorRoster";
 import { bootstrapRosterCache, getMergedTutorById } from "@/data/rosterCache";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-session-incident`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
