@@ -88,48 +88,49 @@ Deno.serve(async (req) => {
     // Scope: TLs limited to their team
     let tlFilter: string | null = null;
     if (!isAdmin && isTL) {
-      const { data: prof } = await admin
-        .from("profiles")
-        .select("mentor_name")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const [prof] = await sql<{ mentor_name: string | null }[]>`
+        select mentor_name
+        from public.profiles
+        where user_id = ${userId}
+        limit 1
+      `;
       tlFilter = prof?.mentor_name ?? null;
       if (!tlFilter) {
-        return new Response(JSON.stringify({ error: "Profile missing" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json({ error: "Profile missing" }, 400);
       }
     }
 
     // Load modules
-    const { data: modules, error: modErr } = await admin
-      .from("study_modules")
-      .select("id, grade_band, module_code, hours_required, display_order")
-      .eq("is_active", true)
-      .order("display_order");
-    if (modErr) throw modErr;
+    const modules = await sql<ModuleRow[]>`
+      select id, grade_band, module_code, hours_required, display_order
+      from public.study_modules
+      where is_active = true
+      order by display_order
+    `;
 
     // Load occupation (pre)
-    let occQ = admin
-      .from("tutor_weekly_occupation")
-      .select("tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions")
-      .eq("week_start", weekStart)
-      .eq("phase", "pre");
-    if (tlFilter) occQ = occQ.eq("team_leader", tlFilter);
-    const { data: occupation, error: occErr } = await occQ;
-    if (occErr) throw occErr;
+    const occupation = tlFilter
+      ? await sql<any[]>`
+          select tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions
+          from public.tutor_weekly_occupation
+          where week_start = ${weekStart}::date
+            and phase = 'pre'
+            and team_leader = ${tlFilter}
+        `
+      : await sql<any[]>`
+          select tutor_external_id, tutor_name, team_leader, free_hours, scheduled_sessions
+          from public.tutor_weekly_occupation
+          where week_start = ${weekStart}::date
+            and phase = 'pre'
+        `;
 
     if (!occupation || occupation.length === 0) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error:
             "No pre-week occupation data for this week. Seed sample data or sync the sheet first.",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
+        400,
       );
     }
 
@@ -141,16 +142,22 @@ Deno.serve(async (req) => {
     const published: { tutor_external_id: string; module_id: string; is_finished: boolean }[] = [];
     let pubFrom = 0;
     while (true) {
-      let pubQ = admin
-        .from("tutor_published_modules")
-        .select("tutor_external_id, module_id, is_finished")
-        .eq("week_start", weekStart)
-        .eq("phase", "pre")
-        .range(pubFrom, pubFrom + PAGE - 1);
-      if (tlFilter) pubQ = pubQ.eq("team_leader", tlFilter);
-      const { data: pubBatch, error: pubErr } = await pubQ;
-      if (pubErr) throw pubErr;
-      const batch = pubBatch ?? [];
+      const batch = tlFilter
+        ? await sql<{ tutor_external_id: string; module_id: string; is_finished: boolean }[]>`
+            select tutor_external_id, module_id, is_finished
+            from public.tutor_published_modules
+            where week_start = ${weekStart}::date
+              and phase = 'pre'
+              and team_leader = ${tlFilter}
+            limit ${PAGE} offset ${pubFrom}
+          `
+        : await sql<{ tutor_external_id: string; module_id: string; is_finished: boolean }[]>`
+            select tutor_external_id, module_id, is_finished
+            from public.tutor_published_modules
+            where week_start = ${weekStart}::date
+              and phase = 'pre'
+            limit ${PAGE} offset ${pubFrom}
+          `;
       published.push(...batch);
       if (batch.length < PAGE) break;
       pubFrom += PAGE;
