@@ -11,6 +11,12 @@ export interface SessionRecording {
   added_by?: string;
 }
 
+export interface AdditionalTutor {
+  tutor_external_id: string;
+  tutor_name: string;
+  team_leader: string;
+}
+
 export interface CSTicket {
   id: string;
   ticket_number: string;
@@ -40,6 +46,7 @@ export interface CSTicket {
   mentor_recommendation: string | null;
   mentor_validation: string | null;
   session_recordings: SessionRecording[];
+  additional_tutors: AdditionalTutor[];
 }
 
 export type CSTicketScope = "all" | "mine" | "assigned_to_me";
@@ -49,6 +56,7 @@ const normalize = (rows: any[]): CSTicket[] =>
     ...r,
     case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
     session_recordings: Array.isArray(r.session_recordings) ? r.session_recordings : [],
+    additional_tutors: Array.isArray(r.additional_tutors) ? r.additional_tutors : [],
   })) as CSTicket[];
 
 export function useCSTickets(scope: CSTicketScope = "all") {

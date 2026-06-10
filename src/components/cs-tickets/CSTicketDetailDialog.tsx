@@ -253,7 +253,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
             <div className="space-y-6 py-2">
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Ticket Date" value={ticket.ticket_date} />
-                <Field label="Tutor" value={`${ticket.tutor_name} (${ticket.tutor_external_id})`} />
+                <Field
+                  label={ticket.additional_tutors.length > 0 ? "Primary Tutor" : "Tutor"}
+                  value={`${ticket.tutor_name} (${ticket.tutor_external_id})`}
+                />
                 <Field
                   label="CS Category"
                   value={ticket.cs_category || (ticket.case_types.includes("CS") ? ticket.category : null)}
@@ -276,6 +279,20 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                 />
                 <Field label="Created" value={format(new Date(ticket.created_at), "PPp")} />
               </div>
+              {ticket.additional_tutors.length > 0 && (
+                <Field
+                  label="Additional Tutors"
+                  value={
+                    <div className="flex flex-wrap gap-1.5">
+                      {ticket.additional_tutors.map((t) => (
+                        <Badge key={t.tutor_external_id} variant="secondary">
+                          {t.tutor_name} ({t.tutor_external_id}) — TL: {t.team_leader || "—"}
+                        </Badge>
+                      ))}
+                    </div>
+                  }
+                />
+              )}
               <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
 
               {canValidate && (
