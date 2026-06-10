@@ -378,8 +378,13 @@ Deno.serve(async (req) => {
       rows_skipped: skipped,
       warnings: errors.slice(0, 10),
     });
-  } catch (e) {
-    console.error(e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  } catch (e: any) {
+    console.error("sync-study-plan-sheet error:", e);
+    const msg =
+      e?.message ||
+      e?.error_description ||
+      e?.hint ||
+      (typeof e === "string" ? e : JSON.stringify(e));
+    return json({ error: msg }, 500);
   }
 });
