@@ -146,6 +146,11 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id ?? null;
       const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
+      const additional = selectedTutors.slice(1).map((t) => ({
+        tutor_external_id: t.id,
+        tutor_name: t.name,
+        team_leader: t.team_leader || "",
+      }));
       const { error } = await supabase.from("cs_tickets").insert({
         ticket_number: ticketNumber.trim(),
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
@@ -157,6 +162,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         tutor_external_id: selectedTutor.id,
         tutor_name: selectedTutor.name,
         team_leader: selectedTutor.team_leader,
+        additional_tutors: additional,
         case_details: caseDetails || null,
         student_id: studentId || null,
         session_num_or_date: sessionNumOrDate || null,
@@ -168,7 +174,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
           : null,
         mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
         mentor_assigned_by: recommendedMentor ? userId : null,
-      });
+      } as any);
       if (error) {
         if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
           throw new Error(`Ticket # "${ticketNumber.trim()}" already exists. Choose a different one.`);
