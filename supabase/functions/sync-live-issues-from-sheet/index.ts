@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
       // Resolve team_leader: prefer tutor map (case-insensitive lookup), else normalize sheet value
       const sheetTl = get(row, cols.team_leader) || null;
       const tutorTl = fromTid ? tutorTlMap.get(fromTid.trim().toLowerCase()) : undefined;
-      const resolvedTl = tutorTl ?? normalizeTeamLeader(sheetTl);
+      const resolvedTl = normalizeTeamLeader(tutorTl ?? sheetTl);
 
       // Pull validation fields from sheet, but don't overwrite TL edits already in DB
       const sheetValidationRaw = get(row, cols.edu_validation_sheet);
