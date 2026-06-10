@@ -1,10 +1,17 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import postgres from "npm:postgres@3.4.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 interface ModuleRow {
   id: string;
@@ -19,58 +26,51 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let db: ReturnType<typeof postgres> | null = null;
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+    const token = authHeader.slice("Bearer ".length);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const userClient = createClient(
       supabaseUrl,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return json({ error: "Unauthorized" }, 401);
     }
-    const userId = userData.user.id;
+    const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    // role check — try userClient first (RLS-aware), fall back to admin, then RPC
-    let roleSet = new Set<string>();
-    const { data: rolesUser } = await userClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (rolesUser && rolesUser.length) {
-      roleSet = new Set(rolesUser.map((r: any) => r.role));
-    } else {
-      const { data: rolesAdmin } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-      roleSet = new Set((rolesAdmin ?? []).map((r: any) => r.role));
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL")?.trim();
+    if (!dbUrl) {
+      return json({ error: "Database connection is not configured" }, 500);
     }
+    db = postgres(dbUrl, {
+      max: 1,
+      prepare: false,
+      ssl: "require",
+      idle_timeout: 3,
+      connect_timeout: 10,
+    });
+    const sql = db;
+
+    // Read roles over the direct database connection so authorization is not
+    // affected by PostgREST JWT clock-skew errors (PGRST303 "JWT issued at future").
+    const callerRoles = await sql<{ role: string }[]>`
+      select role::text as role
+      from public.user_roles
+      where user_id = ${userId}
+    `;
+    const roleSet = new Set(callerRoles.map((r: { role: string }) => r.role));
     let isAdmin = roleSet.has("admin");
     let isTL = roleSet.has("team_leader") || roleSet.has("super_team_leader");
     if (!isAdmin && !isTL) {
-      const checks = await Promise.all([
-        userClient.rpc("has_role", { _user_id: userId, _role: "admin" }),
-        userClient.rpc("has_role", { _user_id: userId, _role: "team_leader" }),
-        userClient.rpc("has_role", { _user_id: userId, _role: "super_team_leader" }),
-      ]);
-      isAdmin = checks[0].data === true;
-      isTL = checks[1].data === true || checks[2].data === true;
-    }
-    if (!isAdmin && !isTL) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Forbidden" }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
