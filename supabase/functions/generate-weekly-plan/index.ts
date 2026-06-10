@@ -40,14 +40,32 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // role check
-    const { data: roles } = await admin
+    // role check — try userClient first (RLS-aware), fall back to admin, then RPC
+    let roleSet = new Set<string>();
+    const { data: rolesUser } = await userClient
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const roleSet = new Set((roles ?? []).map((r: any) => r.role));
-    const isAdmin = roleSet.has("admin");
-    const isTL = roleSet.has("team_leader");
+    if (rolesUser && rolesUser.length) {
+      roleSet = new Set(rolesUser.map((r: any) => r.role));
+    } else {
+      const { data: rolesAdmin } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      roleSet = new Set((rolesAdmin ?? []).map((r: any) => r.role));
+    }
+    let isAdmin = roleSet.has("admin");
+    let isTL = roleSet.has("team_leader") || roleSet.has("super_team_leader");
+    if (!isAdmin && !isTL) {
+      const checks = await Promise.all([
+        userClient.rpc("has_role", { _user_id: userId, _role: "admin" }),
+        userClient.rpc("has_role", { _user_id: userId, _role: "team_leader" }),
+        userClient.rpc("has_role", { _user_id: userId, _role: "super_team_leader" }),
+      ]);
+      isAdmin = checks[0].data === true;
+      isTL = checks[1].data === true || checks[2].data === true;
+    }
     if (!isAdmin && !isTL) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
