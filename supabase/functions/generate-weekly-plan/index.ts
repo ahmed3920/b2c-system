@@ -526,8 +526,8 @@ Deno.serve(async (req) => {
       )
     `;
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         week_start: weekStart,
         plans_created: plansCreated,
@@ -540,10 +540,6 @@ Deno.serve(async (req) => {
         tutors_with_leaves: leaveDatesByTutor.size,
         leave_days_total: Array.from(leaveDatesByTutor.values()).reduce((s, v) => s + v.length, 0),
         holiday_dates_in_week: holidayDates,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
   } catch (e: any) {
@@ -561,5 +557,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
+  } finally {
+    if (db) await db.end({ timeout: 3 });
   }
 });
