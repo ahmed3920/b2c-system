@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import postgres from "npm:postgres@3.4.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,6 +112,8 @@ function isRequest(reason: string): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let db: postgres.Sql | undefined;
+
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
@@ -129,25 +132,38 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: roles } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL")?.trim();
+    if (!dbUrl) {
+      return json({ error: "Database connection is not configured" }, 500);
+    }
+
+    db = postgres(dbUrl, {
+      max: 1,
+      prepare: false,
+      ssl: "require",
+      idle_timeout: 3,
+      connect_timeout: 10,
+    });
+
+    const roles = await db<{ role: string }[]>`
+      select role::text as role
+      from public.user_roles
+      where user_id = ${userId}
+    `;
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
-    if (!(roles ?? []).some((r: any) => allowed.has(r.role)))
+    if (!roles.some((r: { role: string }) => allowed.has(r.role)))
       return json({ error: "Admin or team leader only" }, 403);
 
     const body = await req.json().catch(() => ({}));
     const replaceFrom: string | undefined = body.replace_from;
     const replaceTo: string | undefined = body.replace_to;
 
-    const { data: cfg, error: cfgErr } = await admin
-      .from("study_plan_sheet_configs")
-      .select("csv_url, column_mapping")
-      .eq("sheet_kind", "leaves")
-      .maybeSingle();
-    if (cfgErr) throw cfgErr;
+    const [cfg] = await db<{ csv_url: string | null; column_mapping: Record<string, string> | null }[]>`
+      select csv_url, column_mapping
+      from public.study_plan_sheet_configs
+      where sheet_kind = 'leaves'
+      limit 1
+    `;
     if (!cfg?.csv_url) return json({ error: "Leaves sheet URL not configured" }, 400);
 
     const mapping = (cfg.column_mapping ?? {}) as Record<string, string>;
@@ -301,11 +317,18 @@ Deno.serve(async (req) => {
     }
 
     // Replace strategy: clear existing sheet-source rows in the window (or all of them)
-    let delQ = admin.from("tutor_leaves").delete().eq("source", "google_sheet");
-    if (replaceFrom) delQ = delQ.gte("leave_date", replaceFrom);
-    if (replaceTo) delQ = delQ.lte("leave_date", replaceTo);
-    const { error: delErr } = await delQ;
-    if (delErr) throw delErr;
+    const replaceFromDate = typeof replaceFrom === "string" && /^\d{4}-\d{2}-\d{2}$/.test(replaceFrom)
+      ? replaceFrom
+      : null;
+    const replaceToDate = typeof replaceTo === "string" && /^\d{4}-\d{2}-\d{2}$/.test(replaceTo)
+      ? replaceTo
+      : null;
+    await db`
+      delete from public.tutor_leaves
+      where source = 'google_sheet'
+        and (${replaceFromDate}::date is null or leave_date >= ${replaceFromDate}::date)
+        and (${replaceToDate}::date is null or leave_date <= ${replaceToDate}::date)
+    `;
 
     let inserted = 0;
     if (records.length) {
@@ -329,10 +352,20 @@ Deno.serve(async (req) => {
         }
       }
       const unique = Array.from(seen.values());
-      const { error } = await admin.from("tutor_leaves").upsert(unique, {
-        onConflict: "tutor_external_id,leave_date",
-      });
-      if (error) throw error;
+      await db`
+        insert into public.tutor_leaves ${db(unique, "tutor_external_id", "tutor_name", "team_leader", "is_mentor", "leave_reason", "leave_rule_id", "leave_date", "leave_end_date", "effective_days", "is_request", "source")}
+        on conflict (tutor_external_id, leave_date) do update set
+          tutor_name = excluded.tutor_name,
+          team_leader = excluded.team_leader,
+          is_mentor = excluded.is_mentor,
+          leave_reason = excluded.leave_reason,
+          leave_rule_id = excluded.leave_rule_id,
+          leave_end_date = excluded.leave_end_date,
+          effective_days = excluded.effective_days,
+          is_request = excluded.is_request,
+          source = excluded.source,
+          updated_at = now()
+      `;
       inserted = unique.length;
     }
 
@@ -348,5 +381,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  } finally {
+    await db?.end({ timeout: 1 });
   }
 });
