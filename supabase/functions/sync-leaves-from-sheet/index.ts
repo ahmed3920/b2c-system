@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import postgres from "npm:postgres@3.4.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,6 +112,8 @@ function isRequest(reason: string): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let db: postgres.Sql | undefined;
+
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
@@ -129,14 +132,29 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: roles } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL")?.trim();
+    if (!dbUrl) {
+      return json({ error: "Database connection is not configured" }, 500);
+    }
+
+    db = postgres(dbUrl, {
+      max: 1,
+      prepare: false,
+      ssl: "require",
+      idle_timeout: 3,
+      connect_timeout: 10,
+    });
+
+    const roles = await db<{ role: string }[]>`
+      select role::text as role
+      from public.user_roles
+      where user_id = ${userId}
+    `;
     const allowed = new Set(["admin", "team_leader", "super_team_leader"]);
-    if (!(roles ?? []).some((r: any) => allowed.has(r.role)))
+    if (!roles.some((r: { role: string }) => allowed.has(r.role)))
       return json({ error: "Admin or team leader only" }, 403);
+
+    const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const body = await req.json().catch(() => ({}));
     const replaceFrom: string | undefined = body.replace_from;
@@ -348,5 +366,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  } finally {
+    await db?.end({ timeout: 1 });
   }
 });
