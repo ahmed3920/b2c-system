@@ -54,10 +54,18 @@ export function CSTicketsTable() {
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
   };
 
+  const normalizeTL = (s: string | null | undefined) =>
+    (s ?? "").replace(/\s+/g, " ").trim();
+
   const teamLeaders = useMemo(() => {
-    const set = new Set<string>();
-    tickets.forEach((t) => { if (t.team_leader) set.add(t.team_leader); });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    // Dedupe by normalized name (collapse double spaces / trim) so entries
+    // like "Ahmed Hesham  Helmy" and "Ahmed Hesham Helmy" appear once.
+    const map = new Map<string, string>();
+    tickets.forEach((t) => {
+      const n = normalizeTL(t.team_leader);
+      if (n && !map.has(n)) map.set(n, n);
+    });
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [tickets]);
 
   const monthOptions = useMemo(() => {
@@ -88,7 +96,7 @@ export function CSTicketsTable() {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
-      if (teamLeaderFilter !== "all" && t.team_leader !== teamLeaderFilter) return false;
+      if (teamLeaderFilter !== "all" && normalizeTL(t.team_leader) !== teamLeaderFilter) return false;
       if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
       if (csCategoryFilter !== "all" && t.cs_category !== csCategoryFilter) return false;
       if (eduCategoryFilter !== "all" && t.edu_category !== eduCategoryFilter) return false;
