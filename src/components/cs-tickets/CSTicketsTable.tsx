@@ -96,7 +96,7 @@ export function CSTicketsTable() {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
-      if (teamLeaderFilter !== "all" && t.team_leader !== teamLeaderFilter) return false;
+      if (teamLeaderFilter !== "all" && normalizeTL(t.team_leader) !== teamLeaderFilter) return false;
       if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
       if (csCategoryFilter !== "all" && t.cs_category !== csCategoryFilter) return false;
       if (eduCategoryFilter !== "all" && t.edu_category !== eduCategoryFilter) return false;
