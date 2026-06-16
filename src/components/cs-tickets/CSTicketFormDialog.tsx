@@ -588,6 +588,23 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
             </div>
           </section>
 
+          {/* Parent Attachments */}
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Parent Attachments</h3>
+            <ParentAttachmentsPanel
+              ticketId={null}
+              attachments={parentAttachments}
+              onChange={handleAttachmentsChange}
+              canEdit={true}
+              currentUserName={currentUserName}
+            />
+            <p className="text-xs text-muted-foreground">
+              Files will be uploaded after the ticket is created.
+            </p>
+          </section>
+
+
+
           <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground flex items-center justify-between">
             <span>Status will start as <Badge variant="secondary" className="ml-1">Pending</Badge></span>
             <span>Ticket # must be unique</span>
