@@ -300,6 +300,20 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     <History className="mr-2 h-3 w-3" /> History
                   </Button>
                   {canManage && (
+                    <Button
+                      size="sm"
+                      variant={ticket.closed_at ? "outline" : "secondary"}
+                      onClick={handleToggleClose}
+                      disabled={closing}
+                    >
+                      {ticket.closed_at ? (
+                        <><RotateCcw className="mr-2 h-3 w-3" /> Reopen</>
+                      ) : (
+                        <><Lock className="mr-2 h-3 w-3" /> Close</>
+                      )}
+                    </Button>
+                  )}
+                  {canManage && (
                     <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
                       <Pencil className="mr-2 h-3 w-3" /> Edit
                     </Button>
