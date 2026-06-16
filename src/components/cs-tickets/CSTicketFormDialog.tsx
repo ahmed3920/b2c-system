@@ -20,7 +20,7 @@ import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
 import { refreshRosterCache } from "@/data/rosterCache";
-import { ParentAttachmentsPanel, uploadPendingParentAttachments } from "./ParentAttachmentsPanel";
+import { ParentAttachmentsPanel } from "./ParentAttachmentsPanel";
 import type { ParentAttachment } from "./useCSTickets";
 
 interface MentorOption {
