@@ -19,11 +19,26 @@ export interface RosterOverrideRow {
   is_new: boolean | null;
 }
 
+// Collapse internal whitespace and trim so variants like "Ahmed Hesham  Helmy"
+// (double space) and "Ahmed Hesham Helmy" (single space) are treated as the
+// same canonical team-leader / mentor name across the whole app. Without this,
+// every list/filter that groups by `team_leader` shows the same person twice.
+function canon(s: string | null | undefined): string {
+  return (s ?? "").replace(/\s+/g, " ").trim();
+}
+
+const normalizedStatic: TutorRecord[] = tutorRoster.map((t) => ({
+  ...t,
+  team_leader: canon(t.team_leader),
+  mentor: canon(t.mentor),
+  name: canon(t.name),
+}));
+
 let overrides: RosterOverrideRow[] = [];
-let cached: TutorRecord[] = [...tutorRoster];
-let cachedById = new Map<string, TutorRecord>(tutorRoster.map((t) => [t.id, t]));
+let cached: TutorRecord[] = [...normalizedStatic];
+let cachedById = new Map<string, TutorRecord>(normalizedStatic.map((t) => [t.id, t]));
 let mentorById = new Map<string, string>();
-for (const t of tutorRoster) {
+for (const t of normalizedStatic) {
   if (t.id && t.mentor) mentorById.set(t.id.trim().toUpperCase(), t.mentor);
 }
 
@@ -32,15 +47,15 @@ let bootstrapped = false;
 
 function rebuild() {
   const byId = new Map<string, TutorRecord>();
-  for (const t of tutorRoster) byId.set(t.id, { ...t });
+  for (const t of normalizedStatic) byId.set(t.id, { ...t });
   for (const o of overrides) {
     const existing = byId.get(o.tutor_external_id);
     if (existing) {
       byId.set(o.tutor_external_id, {
         ...existing,
-        name: o.name || existing.name,
-        team_leader: o.team_leader ?? existing.team_leader,
-        mentor: o.mentor ?? existing.mentor,
+        name: canon(o.name) || existing.name,
+        team_leader: canon(o.team_leader ?? existing.team_leader),
+        mentor: canon(o.mentor ?? existing.mentor),
         ranking: o.ranking ?? existing.ranking,
         phone: o.phone ?? existing.phone,
         role: (o.role ?? existing.role) as TutorRecord["role"],
@@ -48,14 +63,11 @@ function rebuild() {
         employment_type: (o.employment_type ?? existing.employment_type) as TutorRecord["employment_type"],
       });
     } else {
-      // Override exists for a tutor not in the static roster (newly added via
-      // upload). Always include — do not gate on the legacy `is_new` flag,
-      // which is often false for bulk-imported rows.
       byId.set(o.tutor_external_id, {
         id: o.tutor_external_id,
-        name: o.name ?? o.tutor_external_id,
-        team_leader: o.team_leader ?? "",
-        mentor: o.mentor ?? "",
+        name: canon(o.name) || o.tutor_external_id,
+        team_leader: canon(o.team_leader),
+        mentor: canon(o.mentor),
         ranking: o.ranking ?? "",
         phone: o.phone ?? "",
         role: (o.role ?? "Tutor") as TutorRecord["role"],
