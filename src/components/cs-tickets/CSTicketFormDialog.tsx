@@ -20,6 +20,8 @@ import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
 import { teamLeaderMatches, normalizeName } from "@/lib/teamLeaderMatch";
 import { refreshRosterCache } from "@/data/rosterCache";
+import { ParentAttachmentsPanel } from "./ParentAttachmentsPanel";
+import type { ParentAttachment } from "./useCSTickets";
 
 interface MentorOption {
   user_id: string;
@@ -50,6 +52,9 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
   const [submitting, setSubmitting] = useState(false);
   const [mentors, setMentors] = useState<MentorOption[]>([]);
+  const [parentAttachments, setParentAttachments] = useState<ParentAttachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
 
   const { inactiveIds } = useInactiveTutorIds();
   const tutorRoster = useMergedRoster();
@@ -71,6 +76,16 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     refreshRosterCache();
     supabase.rpc("list_available_mentors").then(({ data }) => {
       if (data) setMentors(data as MentorOption[]);
+    });
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id;
+      if (!uid) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name, mentor_name")
+        .eq("user_id", uid)
+        .maybeSingle();
+      setCurrentUserName(prof?.full_name ?? prof?.mentor_name ?? null);
     });
   }, [open]);
 
@@ -125,6 +140,23 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     setSessionNumOrDate("");
     setDeadlineDate(undefined);
     setDeadlineTime("17:00");
+    setParentAttachments([]);
+    setPendingFiles([]);
+  };
+
+  const handleAttachmentsChange = (next: ParentAttachment[]) => {
+    // detect newly added pending file entries; if removed, drop matching file
+    setParentAttachments(next);
+    // Sync pendingFiles: remove files whose pending entries no longer exist
+    setPendingFiles((cur) =>
+      cur.filter((f) =>
+        next.some((a) => a.kind === "file" && a.url === `pending:${f.name}` && a.label === f.name),
+      ),
+    );
+  };
+
+  const handleFilesPicked = (files: File[]) => {
+    setPendingFiles((cur) => [...cur, ...files]);
   };
 
   const addTutor = (id: string) => {
@@ -188,36 +220,76 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
           assigned_mentor_name: m ? m.full_name || m.mentor_name || null : null,
         };
       });
-      const { error } = await supabase.from("cs_tickets").insert({
-        ticket_number: ticketNumber.trim(),
-        ticket_date: format(ticketDate, "yyyy-MM-dd"),
-        case_type: "CS",
-        case_types: ["CS", "Edu"],
-        category: combinedCategory,
-        cs_category: csCategory,
-        edu_category: eduCategory,
-        tutor_external_id: selectedTutor.id,
-        tutor_name: selectedTutor.name,
-        team_leader: selectedTutor.team_leader,
-        additional_tutors: additional,
-        case_details: caseDetails || null,
-        student_id: studentId || null,
-        session_num_or_date: sessionNumOrDate || null,
-        need_response_deadline: buildDeadline(),
-        created_by: userId,
-        assigned_mentor_id: recommendedMentor?.user_id ?? null,
-        assigned_mentor_name: recommendedMentor
-          ? recommendedMentor.full_name || recommendedMentor.mentor_name || null
-          : null,
-        mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
-        mentor_assigned_by: recommendedMentor ? userId : null,
-      } as any);
+      const { data: inserted, error } = await supabase
+        .from("cs_tickets")
+        .insert({
+          ticket_number: ticketNumber.trim(),
+          ticket_date: format(ticketDate, "yyyy-MM-dd"),
+          case_type: "CS",
+          case_types: ["CS", "Edu"],
+          category: combinedCategory,
+          cs_category: csCategory,
+          edu_category: eduCategory,
+          tutor_external_id: selectedTutor.id,
+          tutor_name: selectedTutor.name,
+          team_leader: selectedTutor.team_leader,
+          additional_tutors: additional,
+          case_details: caseDetails || null,
+          student_id: studentId || null,
+          session_num_or_date: sessionNumOrDate || null,
+          need_response_deadline: buildDeadline(),
+          created_by: userId,
+          created_by_name: currentUserName,
+          assigned_mentor_id: recommendedMentor?.user_id ?? null,
+          assigned_mentor_name: recommendedMentor
+            ? recommendedMentor.full_name || recommendedMentor.mentor_name || null
+            : null,
+          mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
+          mentor_assigned_by: recommendedMentor ? userId : null,
+        } as any)
+        .select("id")
+        .single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
           throw new Error(`Ticket # "${ticketNumber.trim()}" already exists. Choose a different one.`);
         }
         throw error;
       }
+      const newTicketId = (inserted as any)?.id as string | undefined;
+
+      // Upload pending parent attachment files and persist the merged list
+      if (newTicketId && (pendingFiles.length > 0 || parentAttachments.length > 0)) {
+        try {
+          const nonFile = parentAttachments.filter((a) => !(a.kind === "file" && a.url.startsWith("pending:")));
+          const finalList: ParentAttachment[] = [...nonFile];
+          for (const file of pendingFiles) {
+            const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+            const path = `${newTicketId}/parent/${Date.now()}_${safe}`;
+            const { error: upErr } = await supabase.storage
+              .from("cs-recordings")
+              .upload(path, file, { upsert: false, contentType: file.type || undefined });
+            if (upErr) throw upErr;
+            finalList.push({
+              kind: "file",
+              url: path,
+              path,
+              label: file.name,
+              size: file.size,
+              mime: file.type,
+              added_at: new Date().toISOString(),
+              added_by: userId ?? undefined,
+              added_by_name: currentUserName ?? undefined,
+            });
+          }
+          await supabase
+            .from("cs_tickets")
+            .update({ parent_attachments: finalList } as any)
+            .eq("id", newTicketId);
+        } catch (e: any) {
+          toast({ title: "Attachments upload failed", description: e.message, variant: "destructive" });
+        }
+      }
+
       toast({ title: "Ticket created", description: "The CS ticket has been logged." });
       reset();
       onOpenChange(false);
@@ -515,6 +587,24 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
             </div>
           </section>
+
+          {/* Parent Attachments */}
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Parent Attachments</h3>
+            <ParentAttachmentsPanel
+              ticketId={null}
+              attachments={parentAttachments}
+              onChange={handleAttachmentsChange}
+              onFilesPicked={handleFilesPicked}
+              canEdit={true}
+              currentUserName={currentUserName}
+            />
+            <p className="text-xs text-muted-foreground">
+              Files will be uploaded after the ticket is created.
+            </p>
+          </section>
+
+
 
           <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground flex items-center justify-between">
             <span>Status will start as <Badge variant="secondary" className="ml-1">Pending</Badge></span>

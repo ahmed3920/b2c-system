@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, History, Pencil, Trash2, X } from "lucide-react";
+import { CalendarIcon, History, Lock, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -32,6 +32,8 @@ import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
 import { logCSTicketChanges } from "./logCSTicketChanges";
 import { MentorEvaluationSection } from "./MentorEvaluationSection";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { ParentAttachmentsPanel } from "./ParentAttachmentsPanel";
+import type { ParentAttachment } from "./useCSTickets";
 
 interface Props {
   ticket: CSTicket | null;
@@ -72,6 +74,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+  const [parentAttachments, setParentAttachments] = useState<ParentAttachment[]>([]);
 
   useEffect(() => {
     if (ticket) {
@@ -93,8 +99,24 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
         setDeadlineTime("17:00");
       }
       setEditMode(false);
+      setParentAttachments(ticket.parent_attachments ?? []);
     }
   }, [ticket]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id ?? null;
+      setCurrentUserId(uid);
+      if (uid) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name, mentor_name")
+          .eq("user_id", uid)
+          .maybeSingle();
+        setCurrentUserName(prof?.full_name ?? prof?.mentor_name ?? null);
+      }
+    });
+  }, []);
 
   if (!ticket) return null;
 
@@ -207,6 +229,49 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     }
   };
 
+  const handleToggleClose = async () => {
+    if (!ticket) return;
+    setClosing(true);
+    try {
+      const willClose = !ticket.closed_at;
+      const after: any = willClose
+        ? {
+            closed_at: new Date().toISOString(),
+            closed_by: currentUserId,
+            closed_by_name: currentUserName,
+            status: "Closed",
+          }
+        : {
+            closed_at: null,
+            closed_by: null,
+            closed_by_name: null,
+            status: ticket.mentor_validation === "valid"
+              ? "Valid"
+              : ticket.mentor_validation === "invalid"
+              ? "Not Valid"
+              : ticket.mentor_validation === "not_a_complain"
+              ? "Not a Complain"
+              : "Pending",
+          };
+      const { error } = await supabase.from("cs_tickets").update(after as any).eq("id", ticket.id);
+      if (error) throw error;
+      // Audit log: status change is tracked by logCSTicketChanges
+      await logCSTicketChanges({
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        before: { status: ticket.status },
+        after: { status: after.status },
+      });
+      toast({ title: willClose ? "Ticket closed" : "Ticket reopened" });
+      onOpenChange(false);
+      onUpdated?.();
+    } catch (e: any) {
+      toast({ title: "Action failed", description: e.message, variant: "destructive" });
+    } finally {
+      setClosing(false);
+    }
+  };
+
   const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="space-y-1">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -234,6 +299,20 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                   <Button size="sm" variant="outline" onClick={() => setHistoryOpen(true)}>
                     <History className="mr-2 h-3 w-3" /> History
                   </Button>
+                  {canManage && (
+                    <Button
+                      size="sm"
+                      variant={ticket.closed_at ? "outline" : "secondary"}
+                      onClick={handleToggleClose}
+                      disabled={closing}
+                    >
+                      {ticket.closed_at ? (
+                        <><RotateCcw className="mr-2 h-3 w-3" /> Reopen</>
+                      ) : (
+                        <><Lock className="mr-2 h-3 w-3" /> Close</>
+                      )}
+                    </Button>
+                  )}
                   {canManage && (
                     <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
                       <Pencil className="mr-2 h-3 w-3" /> Edit
@@ -277,7 +356,30 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                       : null
                   }
                 />
-                <Field label="Created" value={format(new Date(ticket.created_at), "PPp")} />
+                <Field
+                  label="Created"
+                  value={
+                    <>
+                      {format(new Date(ticket.created_at), "PPp")}
+                      {ticket.created_by_name && (
+                        <span className="block text-xs text-muted-foreground">by {ticket.created_by_name}</span>
+                      )}
+                    </>
+                  }
+                />
+                {ticket.closed_at && (
+                  <Field
+                    label="Closed"
+                    value={
+                      <>
+                        {format(new Date(ticket.closed_at), "PPp")}
+                        {ticket.closed_by_name && (
+                          <span className="block text-xs text-muted-foreground">by {ticket.closed_by_name}</span>
+                        )}
+                      </>
+                    }
+                  />
+                )}
               </div>
               {ticket.additional_tutors.length > 0 && (
                 <Field
@@ -299,6 +401,19 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                 />
               )}
               <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
+
+              <div className="border-t pt-4">
+                <ParentAttachmentsPanel
+                  ticketId={ticket.id}
+                  attachments={parentAttachments}
+                  onChange={setParentAttachments}
+                  canEdit={canManage || canValidate}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                />
+              </div>
+
+
 
               {canValidate && (
               <div className="space-y-3 border-t pt-4">
