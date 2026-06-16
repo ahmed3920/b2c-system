@@ -47,15 +47,15 @@ let bootstrapped = false;
 
 function rebuild() {
   const byId = new Map<string, TutorRecord>();
-  for (const t of tutorRoster) byId.set(t.id, { ...t });
+  for (const t of normalizedStatic) byId.set(t.id, { ...t });
   for (const o of overrides) {
     const existing = byId.get(o.tutor_external_id);
     if (existing) {
       byId.set(o.tutor_external_id, {
         ...existing,
-        name: o.name || existing.name,
-        team_leader: o.team_leader ?? existing.team_leader,
-        mentor: o.mentor ?? existing.mentor,
+        name: canon(o.name) || existing.name,
+        team_leader: canon(o.team_leader ?? existing.team_leader),
+        mentor: canon(o.mentor ?? existing.mentor),
         ranking: o.ranking ?? existing.ranking,
         phone: o.phone ?? existing.phone,
         role: (o.role ?? existing.role) as TutorRecord["role"],
@@ -63,14 +63,11 @@ function rebuild() {
         employment_type: (o.employment_type ?? existing.employment_type) as TutorRecord["employment_type"],
       });
     } else {
-      // Override exists for a tutor not in the static roster (newly added via
-      // upload). Always include — do not gate on the legacy `is_new` flag,
-      // which is often false for bulk-imported rows.
       byId.set(o.tutor_external_id, {
         id: o.tutor_external_id,
-        name: o.name ?? o.tutor_external_id,
-        team_leader: o.team_leader ?? "",
-        mentor: o.mentor ?? "",
+        name: canon(o.name) || o.tutor_external_id,
+        team_leader: canon(o.team_leader),
+        mentor: canon(o.mentor),
         ranking: o.ranking ?? "",
         phone: o.phone ?? "",
         role: (o.role ?? "Tutor") as TutorRecord["role"],
