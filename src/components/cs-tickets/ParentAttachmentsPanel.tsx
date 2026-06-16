@@ -107,7 +107,7 @@ export function ParentAttachmentsPanel({
       // Persist immediately when working against a saved ticket
       const { error: updErr } = await supabase
         .from("cs_tickets")
-        .update({ parent_attachments: next as any })
+        .update({ parent_attachments: next } as any)
         .eq("id", ticketId);
       if (updErr) throw updErr;
       toast({ title: `Uploaded ${added.length} file(s)` });
@@ -128,7 +128,7 @@ export function ParentAttachmentsPanel({
       await supabase.storage.from("cs-recordings").remove([rec.path]);
     }
     if (ticketId) {
-      await supabase.from("cs_tickets").update({ parent_attachments: next as any }).eq("id", ticketId);
+      await supabase.from("cs_tickets").update({ parent_attachments: next } as any).eq("id", ticketId);
     }
     // remove from pendingFiles if matches by name (best effort)
     if (!ticketId && rec.kind === "file") {
