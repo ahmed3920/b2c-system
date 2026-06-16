@@ -19,6 +19,18 @@ export interface AdditionalTutor {
   assigned_mentor_name?: string | null;
 }
 
+export interface ParentAttachment {
+  kind: "file" | "link";
+  url: string;
+  label?: string;
+  path?: string;
+  size?: number;
+  mime?: string;
+  added_at?: string;
+  added_by?: string;
+  added_by_name?: string;
+}
+
 export interface CSTicket {
   id: string;
   ticket_number: string;
@@ -38,8 +50,12 @@ export interface CSTicket {
   status: CSTicketStatus;
   team_leader_response: string | null;
   created_by: string | null;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
+  closed_at: string | null;
+  closed_by: string | null;
+  closed_by_name: string | null;
   // Mentor evaluation
   assigned_mentor_id: string | null;
   assigned_mentor_name: string | null;
@@ -49,6 +65,7 @@ export interface CSTicket {
   mentor_validation: string | null;
   session_recordings: SessionRecording[];
   additional_tutors: AdditionalTutor[];
+  parent_attachments: ParentAttachment[];
 }
 
 export type CSTicketScope = "all" | "mine" | "assigned_to_me";
@@ -59,6 +76,7 @@ const normalize = (rows: any[]): CSTicket[] =>
     case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
     session_recordings: Array.isArray(r.session_recordings) ? r.session_recordings : [],
     additional_tutors: Array.isArray(r.additional_tutors) ? r.additional_tutors : [],
+    parent_attachments: Array.isArray(r.parent_attachments) ? r.parent_attachments : [],
   })) as CSTicket[];
 
 export function useCSTickets(scope: CSTicketScope = "all") {
