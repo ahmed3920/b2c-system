@@ -253,7 +253,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               ? "Not a Complain"
               : "Pending",
           };
-      const { error } = await supabase.from("cs_tickets").update(after).eq("id", ticket.id);
+      const { error } = await supabase.from("cs_tickets").update(after as any).eq("id", ticket.id);
       if (error) throw error;
       // Audit log: status change is tracked by logCSTicketChanges
       await logCSTicketChanges({
