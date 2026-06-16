@@ -52,6 +52,9 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
   const [submitting, setSubmitting] = useState(false);
   const [mentors, setMentors] = useState<MentorOption[]>([]);
+  const [parentAttachments, setParentAttachments] = useState<ParentAttachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
 
   const { inactiveIds } = useInactiveTutorIds();
   const tutorRoster = useMergedRoster();
