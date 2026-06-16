@@ -140,6 +140,23 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     setSessionNumOrDate("");
     setDeadlineDate(undefined);
     setDeadlineTime("17:00");
+    setParentAttachments([]);
+    setPendingFiles([]);
+  };
+
+  const handleAttachmentsChange = (next: ParentAttachment[]) => {
+    // detect newly added pending file entries; if removed, drop matching file
+    setParentAttachments(next);
+    // Sync pendingFiles: remove files whose pending entries no longer exist
+    setPendingFiles((cur) =>
+      cur.filter((f) =>
+        next.some((a) => a.kind === "file" && a.url === `pending:${f.name}` && a.label === f.name),
+      ),
+    );
+  };
+
+  const handleFilesPicked = (files: File[]) => {
+    setPendingFiles((cur) => [...cur, ...files]);
   };
 
   const addTutor = (id: string) => {
