@@ -27,6 +27,7 @@ export function ParentAttachmentsPanel({
   currentUserId,
   currentUserName,
   storageFolder = "parent",
+  onFilesPicked,
 }: Props) {
   const [linkInput, setLinkInput] = useState("");
   const [uploading, setUploading] = useState(false);
