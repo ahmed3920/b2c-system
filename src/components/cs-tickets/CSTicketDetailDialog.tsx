@@ -356,7 +356,30 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                       : null
                   }
                 />
-                <Field label="Created" value={format(new Date(ticket.created_at), "PPp")} />
+                <Field
+                  label="Created"
+                  value={
+                    <>
+                      {format(new Date(ticket.created_at), "PPp")}
+                      {ticket.created_by_name && (
+                        <span className="block text-xs text-muted-foreground">by {ticket.created_by_name}</span>
+                      )}
+                    </>
+                  }
+                />
+                {ticket.closed_at && (
+                  <Field
+                    label="Closed"
+                    value={
+                      <>
+                        {format(new Date(ticket.closed_at), "PPp")}
+                        {ticket.closed_by_name && (
+                          <span className="block text-xs text-muted-foreground">by {ticket.closed_by_name}</span>
+                        )}
+                      </>
+                    }
+                  />
+                )}
               </div>
               {ticket.additional_tutors.length > 0 && (
                 <Field
