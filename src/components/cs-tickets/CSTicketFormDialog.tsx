@@ -595,6 +595,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               ticketId={null}
               attachments={parentAttachments}
               onChange={handleAttachmentsChange}
+              onFilesPicked={handleFilesPicked}
               canEdit={true}
               currentUserName={currentUserName}
             />
