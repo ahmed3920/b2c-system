@@ -32,6 +32,8 @@ import { CSTicketAuditDialog } from "./CSTicketAuditDialog";
 import { logCSTicketChanges } from "./logCSTicketChanges";
 import { MentorEvaluationSection } from "./MentorEvaluationSection";
 import { getMentorForTutor } from "@/lib/tutorMentorLookup";
+import { ParentAttachmentsPanel } from "./ParentAttachmentsPanel";
+import type { ParentAttachment } from "./useCSTickets";
 
 interface Props {
   ticket: CSTicket | null;
