@@ -99,8 +99,24 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
         setDeadlineTime("17:00");
       }
       setEditMode(false);
+      setParentAttachments(ticket.parent_attachments ?? []);
     }
   }, [ticket]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id ?? null;
+      setCurrentUserId(uid);
+      if (uid) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name, mentor_name")
+          .eq("user_id", uid)
+          .maybeSingle();
+        setCurrentUserName(prof?.full_name ?? prof?.mentor_name ?? null);
+      }
+    });
+  }, []);
 
   if (!ticket) return null;
 
