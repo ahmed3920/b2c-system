@@ -16,6 +16,7 @@ interface Props {
   currentUserId?: string | null;
   currentUserName?: string | null;
   storageFolder?: string; // e.g. "parent"
+  onFilesPicked?: (files: File[]) => void; // deferred mode: parent gets actual File objects
 }
 
 export function ParentAttachmentsPanel({
