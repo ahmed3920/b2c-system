@@ -62,6 +62,7 @@ export function ParentAttachmentsPanel({
     // Deferred upload mode: stash files; parent form will upload after insert
     if (!ticketId) {
       setPendingFiles((cur) => [...cur, ...arr]);
+      onFilesPicked?.(arr);
       onChange([
         ...attachments,
         ...arr.map((f) => ({
