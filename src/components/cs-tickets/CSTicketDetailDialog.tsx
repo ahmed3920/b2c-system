@@ -402,6 +402,19 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               )}
               <Field label="Case Details" value={<span className="whitespace-pre-wrap">{ticket.case_details}</span>} />
 
+              <div className="border-t pt-4">
+                <ParentAttachmentsPanel
+                  ticketId={ticket.id}
+                  attachments={parentAttachments}
+                  onChange={setParentAttachments}
+                  canEdit={canManage || canValidate}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                />
+              </div>
+
+
+
               {canValidate && (
               <div className="space-y-3 border-t pt-4">
                 <h3 className="text-sm font-semibold">Validation & Follow-up</h3>
