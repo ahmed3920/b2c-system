@@ -74,6 +74,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+  const [parentAttachments, setParentAttachments] = useState<ParentAttachment[]>([]);
 
   useEffect(() => {
     if (ticket) {
