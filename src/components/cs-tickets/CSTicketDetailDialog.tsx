@@ -229,6 +229,49 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     }
   };
 
+  const handleToggleClose = async () => {
+    if (!ticket) return;
+    setClosing(true);
+    try {
+      const willClose = !ticket.closed_at;
+      const after: any = willClose
+        ? {
+            closed_at: new Date().toISOString(),
+            closed_by: currentUserId,
+            closed_by_name: currentUserName,
+            status: "Closed",
+          }
+        : {
+            closed_at: null,
+            closed_by: null,
+            closed_by_name: null,
+            status: ticket.mentor_validation === "valid"
+              ? "Valid"
+              : ticket.mentor_validation === "invalid"
+              ? "Not Valid"
+              : ticket.mentor_validation === "not_a_complain"
+              ? "Not a Complain"
+              : "Pending",
+          };
+      const { error } = await supabase.from("cs_tickets").update(after).eq("id", ticket.id);
+      if (error) throw error;
+      // Audit log: status change is tracked by logCSTicketChanges
+      await logCSTicketChanges({
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        before: { status: ticket.status },
+        after: { status: after.status },
+      });
+      toast({ title: willClose ? "Ticket closed" : "Ticket reopened" });
+      onOpenChange(false);
+      onUpdated?.();
+    } catch (e: any) {
+      toast({ title: "Action failed", description: e.message, variant: "destructive" });
+    } finally {
+      setClosing(false);
+    }
+  };
+
   const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="space-y-1">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
