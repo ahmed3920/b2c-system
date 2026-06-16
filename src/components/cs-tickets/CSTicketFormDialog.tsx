@@ -77,6 +77,16 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     supabase.rpc("list_available_mentors").then(({ data }) => {
       if (data) setMentors(data as MentorOption[]);
     });
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id;
+      if (!uid) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name, mentor_name")
+        .eq("user_id", uid)
+        .maybeSingle();
+      setCurrentUserName(prof?.full_name ?? prof?.mentor_name ?? null);
+    });
   }, [open]);
 
   const resolveMentorFor = (tutorId: string): MentorOption | null => {
