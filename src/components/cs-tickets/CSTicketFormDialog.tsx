@@ -133,6 +133,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   }, [eduCategories, eduCategory]);
 
   const reset = () => {
+    setKind("tutor");
     setTutorIds([]);
     setTutorMentorOverrides({});
     setTicketNumber("");
@@ -147,6 +148,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     setParentAttachments([]);
     setPendingFiles([]);
   };
+
 
   const handleAttachmentsChange = (next: ParentAttachment[]) => {
     // detect newly added pending file entries; if removed, drop matching file
