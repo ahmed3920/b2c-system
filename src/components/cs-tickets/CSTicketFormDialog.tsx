@@ -36,8 +36,11 @@ interface Props {
   onCreated?: () => void;
 }
 
+type TicketKind = "tutor" | "system";
+
 export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const { byType } = useCSTicketCategories();
+  const [kind, setKind] = useState<TicketKind>("tutor");
   const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
   // First entry is the primary tutor; the rest are stored in additional_tutors.
   const [tutorIds, setTutorIds] = useState<string[]>([]);
@@ -55,6 +58,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [parentAttachments, setParentAttachments] = useState<ParentAttachment[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+
 
   const { inactiveIds } = useInactiveTutorIds();
   const tutorRoster = useMergedRoster();
