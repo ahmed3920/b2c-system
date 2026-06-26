@@ -36,8 +36,11 @@ interface Props {
   onCreated?: () => void;
 }
 
+type TicketKind = "tutor" | "system";
+
 export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const { byType } = useCSTicketCategories();
+  const [kind, setKind] = useState<TicketKind>("tutor");
   const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
   // First entry is the primary tutor; the rest are stored in additional_tutors.
   const [tutorIds, setTutorIds] = useState<string[]>([]);
@@ -55,6 +58,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   const [parentAttachments, setParentAttachments] = useState<ParentAttachment[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+
 
   const { inactiveIds } = useInactiveTutorIds();
   const tutorRoster = useMergedRoster();
@@ -129,6 +133,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
   }, [eduCategories, eduCategory]);
 
   const reset = () => {
+    setKind("tutor");
     setTutorIds([]);
     setTutorMentorOverrides({});
     setTicketNumber("");
@@ -143,6 +148,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     setParentAttachments([]);
     setPendingFiles([]);
   };
+
 
   const handleAttachmentsChange = (next: ParentAttachment[]) => {
     // detect newly added pending file entries; if removed, drop matching file
@@ -193,15 +199,15 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       toast({ title: "Ticket # required", description: "Enter a unique ticket number.", variant: "destructive" });
       return;
     }
-    if (!selectedTutor) {
+    if (kind === "tutor" && !selectedTutor) {
       toast({ title: "Tutor required", description: "Pick a tutor from the list.", variant: "destructive" });
       return;
     }
     if (!csCategory) {
-      toast({ title: "CS Category required", description: "Select a CS category.", variant: "destructive" });
+      toast({ title: "Category required", description: "Select a category.", variant: "destructive" });
       return;
     }
-    if (!eduCategory) {
+    if (kind === "tutor" && !eduCategory) {
       toast({ title: "Edu Category required", description: "Select an Edu category.", variant: "destructive" });
       return;
     }
@@ -209,30 +215,35 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id ?? null;
-      const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const additional = selectedTutors.slice(1).map((t) => {
-        const m = effectiveMentorFor(t.id);
-        return {
-          tutor_external_id: t.id,
-          tutor_name: t.name,
-          team_leader: t.team_leader || "",
-          assigned_mentor_id: m?.user_id ?? null,
-          assigned_mentor_name: m ? m.full_name || m.mentor_name || null : null,
-        };
-      });
+      const isSystem = kind === "system";
+      const combinedCategory = isSystem
+        ? `System: ${csCategory}`
+        : `CS: ${csCategory} | Edu: ${eduCategory}`;
+      const additional = isSystem
+        ? []
+        : selectedTutors.slice(1).map((t) => {
+            const m = effectiveMentorFor(t.id);
+            return {
+              tutor_external_id: t.id,
+              tutor_name: t.name,
+              team_leader: t.team_leader || "",
+              assigned_mentor_id: m?.user_id ?? null,
+              assigned_mentor_name: m ? m.full_name || m.mentor_name || null : null,
+            };
+          });
       const { data: inserted, error } = await supabase
         .from("cs_tickets")
         .insert({
           ticket_number: ticketNumber.trim(),
           ticket_date: format(ticketDate, "yyyy-MM-dd"),
           case_type: "CS",
-          case_types: ["CS", "Edu"],
+          case_types: isSystem ? ["CS"] : ["CS", "Edu"],
           category: combinedCategory,
           cs_category: csCategory,
-          edu_category: eduCategory,
-          tutor_external_id: selectedTutor.id,
-          tutor_name: selectedTutor.name,
-          team_leader: selectedTutor.team_leader,
+          edu_category: isSystem ? null : eduCategory,
+          tutor_external_id: isSystem ? "SYSTEM" : selectedTutor!.id,
+          tutor_name: isSystem ? "System / Content Issue" : selectedTutor!.name,
+          team_leader: isSystem ? "—" : selectedTutor!.team_leader,
           additional_tutors: additional,
           case_details: caseDetails || null,
           student_id: studentId || null,
@@ -240,15 +251,18 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
           need_response_deadline: buildDeadline(),
           created_by: userId,
           created_by_name: currentUserName,
-          assigned_mentor_id: recommendedMentor?.user_id ?? null,
-          assigned_mentor_name: recommendedMentor
+          assigned_mentor_id: isSystem ? null : recommendedMentor?.user_id ?? null,
+          assigned_mentor_name: isSystem
+            ? null
+            : recommendedMentor
             ? recommendedMentor.full_name || recommendedMentor.mentor_name || null
             : null,
-          mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
-          mentor_assigned_by: recommendedMentor ? userId : null,
+          mentor_assigned_at: !isSystem && recommendedMentor ? new Date().toISOString() : null,
+          mentor_assigned_by: !isSystem && recommendedMentor ? userId : null,
         } as any)
         .select("id")
         .single();
+
       if (error) {
         if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
           throw new Error(`Ticket # "${ticketNumber.trim()}" already exists. Choose a different one.`);
@@ -309,8 +323,34 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         </DialogHeader>
 
         <div className="space-y-6 py-2">
+          {/* Ticket kind switcher */}
+          <div className="inline-flex rounded-md border bg-muted/30 p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setKind("tutor")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                kind === "tutor" ? "bg-background shadow font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Tutor Complaint
+            </button>
+            <button
+              type="button"
+              onClick={() => setKind("system")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                kind === "system" ? "bg-background shadow font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              System &amp; Content Issue
+            </button>
+          </div>
+
           {/* Staff Info */}
+          {kind === "tutor" && (
           <section className="space-y-3">
+
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Staff Info</h3>
               <span className="text-xs text-muted-foreground">
@@ -448,6 +488,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
             )}
           </section>
+          )}
 
 
           {/* Case Info */}
@@ -455,9 +496,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Case Info</h3>
               <span className="text-xs text-muted-foreground">
-                Both <Badge variant="default" className="mx-1">CS</Badge> and <Badge variant="secondary" className="mx-1">Edu</Badge> categories are required
+                {kind === "system"
+                  ? <>Pick a <Badge variant="default" className="mx-1">Category</Badge> describing the system or content issue</>
+                  : <>Both <Badge variant="default" className="mx-1">CS</Badge> and <Badge variant="secondary" className="mx-1">Edu</Badge> categories are required</>}
               </span>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Ticket # *</Label>
@@ -489,34 +533,37 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <Badge variant="default">CS</Badge> Category *
+                  {kind === "system" ? <>Category *</> : <><Badge variant="default">CS</Badge> Category *</>}
                 </Label>
                 <Select value={csCategory} onValueChange={setCsCategory}>
-                  <SelectTrigger><SelectValue placeholder="Select CS category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {csCategories.length === 0 ? (
-                      <div className="px-2 py-3 text-xs text-muted-foreground">No CS categories. Ask admin to add some.</div>
+                      <div className="px-2 py-3 text-xs text-muted-foreground">No categories. Ask admin to add some.</div>
                     ) : csCategories.map((c) => (
                       <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Badge variant="secondary">Edu</Badge> Category *
-                </Label>
-                <Select value={eduCategory} onValueChange={setEduCategory}>
-                  <SelectTrigger><SelectValue placeholder="Select Edu category" /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {eduCategories.length === 0 ? (
-                      <div className="px-2 py-3 text-xs text-muted-foreground">No Edu categories. Ask admin to add some.</div>
-                    ) : eduCategories.map((c) => (
-                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {kind === "tutor" && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Badge variant="secondary">Edu</Badge> Category *
+                  </Label>
+                  <Select value={eduCategory} onValueChange={setEduCategory}>
+                    <SelectTrigger><SelectValue placeholder="Select Edu category" /></SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {eduCategories.length === 0 ? (
+                        <div className="px-2 py-3 text-xs text-muted-foreground">No Edu categories. Ask admin to add some.</div>
+                      ) : eduCategories.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
             </div>
             <div className="space-y-2">
               <Label>Case Details</Label>
