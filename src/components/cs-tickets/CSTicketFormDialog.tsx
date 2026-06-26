@@ -488,6 +488,7 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
             )}
           </section>
+          )}
 
 
           {/* Case Info */}
@@ -495,9 +496,12 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Case Info</h3>
               <span className="text-xs text-muted-foreground">
-                Both <Badge variant="default" className="mx-1">CS</Badge> and <Badge variant="secondary" className="mx-1">Edu</Badge> categories are required
+                {kind === "system"
+                  ? <>Pick a <Badge variant="default" className="mx-1">Category</Badge> describing the system or content issue</>
+                  : <>Both <Badge variant="default" className="mx-1">CS</Badge> and <Badge variant="secondary" className="mx-1">Edu</Badge> categories are required</>}
               </span>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Ticket # *</Label>
