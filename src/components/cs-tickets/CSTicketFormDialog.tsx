@@ -199,15 +199,15 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
       toast({ title: "Ticket # required", description: "Enter a unique ticket number.", variant: "destructive" });
       return;
     }
-    if (!selectedTutor) {
+    if (kind === "tutor" && !selectedTutor) {
       toast({ title: "Tutor required", description: "Pick a tutor from the list.", variant: "destructive" });
       return;
     }
     if (!csCategory) {
-      toast({ title: "CS Category required", description: "Select a CS category.", variant: "destructive" });
+      toast({ title: "Category required", description: "Select a category.", variant: "destructive" });
       return;
     }
-    if (!eduCategory) {
+    if (kind === "tutor" && !eduCategory) {
       toast({ title: "Edu Category required", description: "Select an Edu category.", variant: "destructive" });
       return;
     }
@@ -215,30 +215,35 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id ?? null;
-      const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const additional = selectedTutors.slice(1).map((t) => {
-        const m = effectiveMentorFor(t.id);
-        return {
-          tutor_external_id: t.id,
-          tutor_name: t.name,
-          team_leader: t.team_leader || "",
-          assigned_mentor_id: m?.user_id ?? null,
-          assigned_mentor_name: m ? m.full_name || m.mentor_name || null : null,
-        };
-      });
+      const isSystem = kind === "system";
+      const combinedCategory = isSystem
+        ? `System: ${csCategory}`
+        : `CS: ${csCategory} | Edu: ${eduCategory}`;
+      const additional = isSystem
+        ? []
+        : selectedTutors.slice(1).map((t) => {
+            const m = effectiveMentorFor(t.id);
+            return {
+              tutor_external_id: t.id,
+              tutor_name: t.name,
+              team_leader: t.team_leader || "",
+              assigned_mentor_id: m?.user_id ?? null,
+              assigned_mentor_name: m ? m.full_name || m.mentor_name || null : null,
+            };
+          });
       const { data: inserted, error } = await supabase
         .from("cs_tickets")
         .insert({
           ticket_number: ticketNumber.trim(),
           ticket_date: format(ticketDate, "yyyy-MM-dd"),
           case_type: "CS",
-          case_types: ["CS", "Edu"],
+          case_types: isSystem ? ["CS"] : ["CS", "Edu"],
           category: combinedCategory,
           cs_category: csCategory,
-          edu_category: eduCategory,
-          tutor_external_id: selectedTutor.id,
-          tutor_name: selectedTutor.name,
-          team_leader: selectedTutor.team_leader,
+          edu_category: isSystem ? null : eduCategory,
+          tutor_external_id: isSystem ? "SYSTEM" : selectedTutor!.id,
+          tutor_name: isSystem ? "System / Content Issue" : selectedTutor!.name,
+          team_leader: isSystem ? "—" : selectedTutor!.team_leader,
           additional_tutors: additional,
           case_details: caseDetails || null,
           student_id: studentId || null,
@@ -246,15 +251,18 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
           need_response_deadline: buildDeadline(),
           created_by: userId,
           created_by_name: currentUserName,
-          assigned_mentor_id: recommendedMentor?.user_id ?? null,
-          assigned_mentor_name: recommendedMentor
+          assigned_mentor_id: isSystem ? null : recommendedMentor?.user_id ?? null,
+          assigned_mentor_name: isSystem
+            ? null
+            : recommendedMentor
             ? recommendedMentor.full_name || recommendedMentor.mentor_name || null
             : null,
-          mentor_assigned_at: recommendedMentor ? new Date().toISOString() : null,
-          mentor_assigned_by: recommendedMentor ? userId : null,
+          mentor_assigned_at: !isSystem && recommendedMentor ? new Date().toISOString() : null,
+          mentor_assigned_by: !isSystem && recommendedMentor ? userId : null,
         } as any)
         .select("id")
         .single();
+
       if (error) {
         if ((error as any).code === "23505" || /duplicate|unique/i.test(error.message)) {
           throw new Error(`Ticket # "${ticketNumber.trim()}" already exists. Choose a different one.`);
