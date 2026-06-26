@@ -323,8 +323,34 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
         </DialogHeader>
 
         <div className="space-y-6 py-2">
+          {/* Ticket kind switcher */}
+          <div className="inline-flex rounded-md border bg-muted/30 p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setKind("tutor")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                kind === "tutor" ? "bg-background shadow font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Tutor Complaint
+            </button>
+            <button
+              type="button"
+              onClick={() => setKind("system")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                kind === "system" ? "bg-background shadow font-medium" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              System &amp; Content Issue
+            </button>
+          </div>
+
           {/* Staff Info */}
+          {kind === "tutor" && (
           <section className="space-y-3">
+
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Staff Info</h3>
               <span className="text-xs text-muted-foreground">
