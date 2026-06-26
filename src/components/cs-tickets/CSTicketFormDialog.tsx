@@ -533,34 +533,37 @@ export function CSTicketFormDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <Badge variant="default">CS</Badge> Category *
+                  {kind === "system" ? <>Category *</> : <><Badge variant="default">CS</Badge> Category *</>}
                 </Label>
                 <Select value={csCategory} onValueChange={setCsCategory}>
-                  <SelectTrigger><SelectValue placeholder="Select CS category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {csCategories.length === 0 ? (
-                      <div className="px-2 py-3 text-xs text-muted-foreground">No CS categories. Ask admin to add some.</div>
+                      <div className="px-2 py-3 text-xs text-muted-foreground">No categories. Ask admin to add some.</div>
                     ) : csCategories.map((c) => (
                       <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Badge variant="secondary">Edu</Badge> Category *
-                </Label>
-                <Select value={eduCategory} onValueChange={setEduCategory}>
-                  <SelectTrigger><SelectValue placeholder="Select Edu category" /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {eduCategories.length === 0 ? (
-                      <div className="px-2 py-3 text-xs text-muted-foreground">No Edu categories. Ask admin to add some.</div>
-                    ) : eduCategories.map((c) => (
-                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {kind === "tutor" && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Badge variant="secondary">Edu</Badge> Category *
+                  </Label>
+                  <Select value={eduCategory} onValueChange={setEduCategory}>
+                    <SelectTrigger><SelectValue placeholder="Select Edu category" /></SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {eduCategories.length === 0 ? (
+                        <div className="px-2 py-3 text-xs text-muted-foreground">No Edu categories. Ask admin to add some.</div>
+                      ) : eduCategories.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
             </div>
             <div className="space-y-2">
               <Label>Case Details</Label>
