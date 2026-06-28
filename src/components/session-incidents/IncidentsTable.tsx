@@ -144,6 +144,33 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={tlFilter} onValueChange={setTlFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All team leaders</SelectItem>
+                {teamLeaders.map((tl) => (
+                  <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={mentorFilter} onValueChange={setMentorFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Mentor" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All mentors</SelectItem>
+                {mentors.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={tutorFilter} onValueChange={setTutorFilter}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Tutor" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All tutors</SelectItem>
+                {tutors.map(([id, label]) => (
+                  <SelectItem key={id} value={id}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -152,6 +179,21 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 <SelectItem value="tutor_self">Tutor self</SelectItem>
               </SelectContent>
             </Select>
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" title="From date" />
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" title="To date" />
+            {(tlFilter !== "all" || mentorFilter !== "all" || tutorFilter !== "all" || categoryFilter !== "all" || sourceFilter !== "all" || csFilter !== "all" || dateFrom || dateTo || search) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setTlFilter("all"); setMentorFilter("all"); setTutorFilter("all");
+                  setCategoryFilter("all"); setSourceFilter("all"); setCsFilter("all");
+                  setDateFrom(""); setDateTo(""); setSearch("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
