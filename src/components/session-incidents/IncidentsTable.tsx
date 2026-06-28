@@ -27,10 +27,47 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
   const [csFilter, setCsFilter] = useState<string>("all");
   const [active, setActive] = useState<SessionIncident | null>(null);
 
+  const [tlFilter, setTlFilter] = useState<string>("all");
+  const [mentorFilter, setMentorFilter] = useState<string>("all");
+  const [tutorFilter, setTutorFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+
+  const canonName = (s: string | null | undefined) =>
+    (s ?? "").replace(/\s+/g, " ").trim();
+
   const categories = useMemo(() => {
     const set = new Set<string>();
     items.forEach((r) => r.case_category && set.add(r.case_category));
     return Array.from(set).sort();
+  }, [items]);
+
+  const teamLeaders = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((r) => {
+      const tl = canonName(r.team_leader);
+      if (tl) set.add(tl);
+    });
+    return Array.from(set).sort();
+  }, [items]);
+
+  const mentors = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((r) => {
+      const m = canonName(r.assigned_mentor_name);
+      if (m) set.add(m);
+    });
+    return Array.from(set).sort();
+  }, [items]);
+
+  const tutors = useMemo(() => {
+    const map = new Map<string, string>();
+    items.forEach((r) => {
+      if (r.tutor_external_id) {
+        map.set(r.tutor_external_id, `${r.tutor_external_id} · ${r.tutor_name || ""}`.trim());
+      }
+    });
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [items]);
 
   const filtered = useMemo(() => {
@@ -39,6 +76,11 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
     if (statusFilter !== "all") rows = rows.filter((r) => r.validation_status === statusFilter);
     if (sourceFilter !== "all") rows = rows.filter((r) => r.source === sourceFilter);
     if (categoryFilter !== "all") rows = rows.filter((r) => r.case_category === categoryFilter);
+    if (tlFilter !== "all") rows = rows.filter((r) => canonName(r.team_leader) === tlFilter);
+    if (mentorFilter !== "all") rows = rows.filter((r) => canonName(r.assigned_mentor_name) === mentorFilter);
+    if (tutorFilter !== "all") rows = rows.filter((r) => r.tutor_external_id === tutorFilter);
+    if (dateFrom) rows = rows.filter((r) => (r.session_date || r.created_at.slice(0, 10)) >= dateFrom);
+    if (dateTo) rows = rows.filter((r) => (r.session_date || r.created_at.slice(0, 10)) <= dateTo);
     if (csFilter !== "all") {
       rows = rows.filter((r) => {
         if (csFilter === "not_sent") return !r.sent_to_cs;
@@ -55,7 +97,7 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
       );
     }
     return rows;
-  }, [items, search, statusFilter, sourceFilter, categoryFilter, csFilter, pendingOnly]);
+  }, [items, search, statusFilter, sourceFilter, categoryFilter, csFilter, tlFilter, mentorFilter, tutorFilter, dateFrom, dateTo, pendingOnly]);
 
   const statusBadge = (s: string) => {
     if (s === "approved") return <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/20">Approved</Badge>;
@@ -102,6 +144,33 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={tlFilter} onValueChange={setTlFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Team Leader" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All team leaders</SelectItem>
+                {teamLeaders.map((tl) => (
+                  <SelectItem key={tl} value={tl}>{tl}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={mentorFilter} onValueChange={setMentorFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Mentor" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All mentors</SelectItem>
+                {mentors.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={tutorFilter} onValueChange={setTutorFilter}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Tutor" /></SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">All tutors</SelectItem>
+                {tutors.map(([id, label]) => (
+                  <SelectItem key={id} value={id}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -110,6 +179,21 @@ export function IncidentsTable({ items, loading, onChanged, pendingOnly, canVali
                 <SelectItem value="tutor_self">Tutor self</SelectItem>
               </SelectContent>
             </Select>
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" title="From date" />
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px]" title="To date" />
+            {(tlFilter !== "all" || mentorFilter !== "all" || tutorFilter !== "all" || categoryFilter !== "all" || sourceFilter !== "all" || csFilter !== "all" || dateFrom || dateTo || search) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setTlFilter("all"); setMentorFilter("all"); setTutorFilter("all");
+                  setCategoryFilter("all"); setSourceFilter("all"); setCsFilter("all");
+                  setDateFrom(""); setDateTo(""); setSearch("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
