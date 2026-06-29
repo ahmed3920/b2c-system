@@ -471,17 +471,11 @@ const Tasks = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                exportTasksToExcel({
-                  tasks: displayTasks,
-                  ownerNames: adminView.taskOwnerNames,
-                });
-                toast({ title: "Export Complete", description: "Tasks exported to Excel." });
-              }}
+              onClick={() => setIsExportOpen(true)}
               className="gap-2"
             >
               <Download className="w-4 h-4" />
-              Export Excel
+              Export
             </Button>
           )}
           {isAdmin && adminView.viewMode !== "my" && (
