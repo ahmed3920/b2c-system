@@ -248,6 +248,13 @@ export function EngagementTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} disabled={rows.length === 0}>
+          <Download className="w-4 h-4 mr-2" /> Export
+        </Button>
+      </div>
+      <EngagementExportDialog open={exportOpen} onOpenChange={setExportOpen} rows={rows} />
+
       {/* Upload (admins only) */}
       {isAdmin && (
         <Card>
