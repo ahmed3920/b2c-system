@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, Download } from "lucide-react";
+import { CSTicketsExportDialog } from "./CSTicketsExportDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
