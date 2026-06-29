@@ -79,6 +79,7 @@ export function TasksExportDialog({ open, onOpenChange, tasks, ownerNames, owner
 
   const columns: ExportColumn<Task>[] = [
     { key: "owner", label: "Assignee", accessor: (r) => ownerNames[r.user_id] || r.user_id },
+    { key: "team_leader", label: "Team Leader", accessor: (r) => ownerTeamLeaders[r.user_id] ?? "" },
     { key: "type", label: "Task Type", accessor: (r) => r.task_type },
     { key: "description", label: "Description", accessor: (r) => r.description },
     { key: "status", label: "Status", accessor: (r) => statusLabels[r.status] || r.status },
