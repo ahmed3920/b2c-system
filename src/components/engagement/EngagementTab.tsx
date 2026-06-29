@@ -9,7 +9,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload, Star, TrendingUp, TrendingDown, Minus, Search } from "lucide-react";
+import { Loader2, Upload, Star, TrendingUp, TrendingDown, Minus, Search, Download } from "lucide-react";
+import { EngagementExportDialog } from "./EngagementExportDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
