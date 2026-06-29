@@ -347,6 +347,7 @@ export function CSTicketsTable() {
         onOpenChange={(v) => !v && setSelected(null)}
         onUpdated={refresh}
       />
+      <CSTicketsExportDialog open={exportOpen} onOpenChange={setExportOpen} tickets={tickets} />
     </Card>
   );
 }
