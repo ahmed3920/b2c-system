@@ -199,7 +199,7 @@ export function EngagementTab() {
           tutor_language: r["Tutor Language"] ?? null,
           availability_type: r["Availability Type"] ?? null,
           team_leader: r["Admins - Team Lead → Name"]
-            ? String(r["Admins - Team Lead → Name"]).trim()
+            ? String(r["Admins - Team Lead → Name"]).replace(/\s+/g, " ").trim()
             : "Unassigned",
           month: uploadMonth,
           total_sessions: Number(r["Total Sessions"] ?? 0),
