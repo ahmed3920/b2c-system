@@ -85,7 +85,12 @@ export function useAdminView(): AdminViewState {
   }, [profiles, roleMap]);
 
   const mentors = useMemo(() => {
-    return profiles.filter(p => roleMap.get(p.user_id) === "mentor");
+    // Everyone who isn't a team leader / super team leader counts as a "mentor-like"
+    // entry in the picker — mentors, community moderators, admins acting as mentors, etc.
+    return profiles.filter(p => {
+      const r = roleMap.get(p.user_id);
+      return r !== "team_leader" && r !== "super_team_leader";
+    });
   }, [profiles, roleMap]);
 
   const selectedProfile = useMemo(() => {
@@ -126,9 +131,18 @@ export function useAdminView(): AdminViewState {
       }
       // "all" mode - no filter, get everything
 
-      const { data, error } = await query.limit(1000);
-      if (error) throw error;
-      setTasks(data || []);
+      // Paginate to bypass PostgREST's 1000-row cap so older tasks aren't hidden.
+      const all: Task[] = [];
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await query.range(from, from + pageSize - 1);
+        if (error) throw error;
+        const batch = data || [];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+      }
+      const data = all;
+      setTasks(all);
 
       // Build owner name map
       const userIds = [...new Set((data || []).map(t => t.user_id))];
