@@ -70,7 +70,8 @@ export function EngagementTab() {
         from += pageSize;
       }
 
-      setRows(allRows);
+      const canon = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
+      setRows(allRows.map(r => ({ ...r, team_leader: canon(r.team_leader) || "Unassigned" })));
     } catch (error: any) {
       toast({ title: "Failed to load", description: error.message, variant: "destructive" });
     } finally {
