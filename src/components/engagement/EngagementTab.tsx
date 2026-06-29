@@ -9,7 +9,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload, Star, TrendingUp, TrendingDown, Minus, Search } from "lucide-react";
+import { Loader2, Upload, Star, TrendingUp, TrendingDown, Minus, Search, Download } from "lucide-react";
+import { EngagementExportDialog } from "./EngagementExportDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
@@ -47,6 +48,7 @@ export function EngagementTab() {
   );
   const [search, setSearch] = useState("");
   const [tlFilter, setTlFilter] = useState<string>("all");
+  const [exportOpen, setExportOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -246,6 +248,13 @@ export function EngagementTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} disabled={rows.length === 0}>
+          <Download className="w-4 h-4 mr-2" /> Export
+        </Button>
+      </div>
+      <EngagementExportDialog open={exportOpen} onOpenChange={setExportOpen} rows={rows} />
+
       {/* Upload (admins only) */}
       {isAdmin && (
         <Card>
