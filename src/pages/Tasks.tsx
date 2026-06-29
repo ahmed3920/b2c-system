@@ -941,6 +941,14 @@ const Tasks = () => {
           }}
         />
       )}
+      {isAdmin && (
+        <TasksExportDialog
+          open={isExportOpen}
+          onOpenChange={setIsExportOpen}
+          tasks={displayTasks}
+          ownerNames={adminView.taskOwnerNames}
+        />
+      )}
     </AppLayout>
   );
 };
