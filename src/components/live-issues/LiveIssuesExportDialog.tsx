@@ -19,9 +19,12 @@ interface LiveIssueRow {
   edu_notes: string | null;
   language: string | null;
   class_type: string | null;
+  edu_description_id: string | null;
+  edu_description_name?: string | null;
   last_synced_at: string;
   created_at: string;
 }
+
 
 interface Props {
   open: boolean;
