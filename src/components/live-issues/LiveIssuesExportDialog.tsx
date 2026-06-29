@@ -42,7 +42,7 @@ export function LiveIssuesExportDialog({ open, onOpenChange, teamLeaders, issueT
     while (true) {
       const { data, error } = await supabase
         .from("live_session_issues")
-        .select("id, case_id, session_id, session_date, time_slot, from_tutor_id, from_tutor_name, to_tutor_id, to_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_notes, language, class_type, last_synced_at, created_at")
+        .select("id, case_id, session_id, session_date, time_slot, from_tutor_id, from_tutor_name, to_tutor_id, to_tutor_name, team_leader, issue_reason, issue_details, edu_validation, edu_description_id, edu_notes, language, class_type, last_synced_at, created_at")
         .order("session_date", { ascending: false, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error || !data) break;
@@ -50,8 +50,22 @@ export function LiveIssuesExportDialog({ open, onOpenChange, teamLeaders, issueT
       if (data.length < PAGE) break;
       from += PAGE;
     }
+    // Resolve edu_description_id -> name
+    const ids = Array.from(new Set(all.map((r) => r.edu_description_id).filter(Boolean)));
+    const idToName = new Map<string, string>();
+    if (ids.length) {
+      const { data: descs } = await supabase
+        .from("edu_descriptions")
+        .select("id, name")
+        .in("id", ids as string[]);
+      (descs ?? []).forEach((d: any) => idToName.set(d.id, d.name));
+    }
+    for (const r of all) {
+      r.edu_description_name = r.edu_description_id ? idToName.get(r.edu_description_id) ?? "" : "";
+    }
     return all as LiveIssueRow[];
   }, []);
+
 
   const columns: ExportColumn<LiveIssueRow>[] = [
     { key: "case_id", label: "Case ID", accessor: (r) => r.case_id },
