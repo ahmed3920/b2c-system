@@ -39,6 +39,9 @@ export default function SessionIncidents() {
             <p className="text-sm text-muted-foreground">Edu-side incidents that may need to be escalated to CS.</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4 mr-1" /> Export
+            </Button>
             {canCreate && (
               <Button variant="outline" onClick={() => setLinkOpen(true)}>
                 <LinkIcon className="h-4 w-4 mr-1" /> Tutor Link
