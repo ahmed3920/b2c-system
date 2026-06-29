@@ -54,6 +54,7 @@ import { TaskFilters } from "@/components/task/TaskFilters";
 import { TaskBreakdownStats, type BreakdownGroupBy } from "@/components/task/TaskBreakdownStats";
 import { cn } from "@/lib/utils";
 import { exportTasksToExcel } from "@/utils/exportTasksToExcel";
+import { TasksExportDialog } from "@/components/task/TasksExportDialog";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -96,6 +97,7 @@ const Tasks = () => {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   // Form states
   const [formType, setFormType] = useState("");
