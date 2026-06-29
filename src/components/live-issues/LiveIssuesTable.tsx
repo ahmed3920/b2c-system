@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Database, History, Loader2, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Database, History, Loader2, Search, Download } from "lucide-react";
+import { LiveIssuesExportDialog } from "./LiveIssuesExportDialog";
 import { toast } from "sonner";
 import { useEduDescriptions } from "@/hooks/useEduDescriptions";
 import { EduValidationBadge, type EduValidation } from "./EduValidationBadge";
@@ -111,6 +112,7 @@ export function LiveIssuesTable() {
   // Audit
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditIssue, setAuditIssue] = useState<{ id: string; case_id: string } | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Distinct filter options (from current page-agnostic small query)
   const [issueTypes, setIssueTypes] = useState<string[]>([]);
@@ -358,16 +360,19 @@ export function LiveIssuesTable() {
               <Label className="text-xs">Date to</Label>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
                 variant="outline"
-                className="w-full"
+                className="flex-1"
                 onClick={() => {
                   setSearch(""); setTutorId(""); setTeamLeader(ALL); setIssueType(ALL);
                   setEduDescId(ALL); setValidation(ALL); setBillingMonth(ALL); setDateFrom(""); setDateTo("");
                 }}
               >
                 Clear filters
+              </Button>
+              <Button variant="outline" onClick={() => setExportOpen(true)} title="Export to CSV">
+                <Download className="h-4 w-4" />
               </Button>
             </div>
           </div>
