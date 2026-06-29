@@ -77,6 +77,7 @@ export default function SessionIncidents() {
 
       <IncidentFormDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
       <GenerateTutorLinkDialog open={linkOpen} onOpenChange={setLinkOpen} />
+      <SessionIncidentsExportDialog open={exportOpen} onOpenChange={setExportOpen} items={items} />
     </AppLayout>
   );
 }
