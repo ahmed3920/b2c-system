@@ -485,6 +485,7 @@ const ActionPlans = () => {
         </AlertDialogContent>
       </AlertDialog>
       <EmailTemplatesDialog open={templatesOpen} onOpenChange={setTemplatesOpen} />
+      <ActionPlansExportDialog open={exportOpen} onOpenChange={setExportOpen} plans={plans} />
     </AppLayout>
   );
 };
