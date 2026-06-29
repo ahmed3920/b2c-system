@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { IncidentForm, type IncidentFormValues } from "@/components/session-incidents/IncidentForm";
 import { tutorRoster } from "@/data/tutorRoster";
-import { bootstrapRosterCache, getMergedTutorById } from "@/data/rosterCache";
+import { getMergedTutorById, setRosterOverrides, type RosterOverrideRow } from "@/data/rosterCache";
 
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-session-incident`;
