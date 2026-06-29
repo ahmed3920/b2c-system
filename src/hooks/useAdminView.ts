@@ -102,44 +102,60 @@ export function useAdminView(): AdminViewState {
   const fetchTasks = async () => {
     setIsLoadingTasks(true);
     try {
-      let query = supabase.from("tasks").select("*").order("created_at", { ascending: false });
+      // Build a fresh query each page so the PostgREST builder isn't reused after await.
+      const buildQuery = () => {
+        let q = supabase.from("tasks").select("*").order("created_at", { ascending: false });
 
-      if (viewMode === "my" && currentUserId) {
-        query = query.eq("user_id", currentUserId);
-      } else if (viewMode === "team_leader" && selectedUserId) {
-        const leader = profiles.find(p => p.user_id === selectedUserId);
-        if (leader) {
-          if (tlSubView === "own") {
-            // Only the TL's own tasks
-            query = query.eq("user_id", selectedUserId);
-          } else {
-            // Team's tasks (mentors under this TL)
-            const teamMentorIds = profiles
-              .filter(p => p.team_leader === leader.mentor_name && p.user_id !== selectedUserId)
-              .map(p => p.user_id);
-            if (teamMentorIds.length > 0) {
-              query = query.in("user_id", teamMentorIds);
+        if (viewMode === "my" && currentUserId) {
+          q = q.eq("user_id", currentUserId);
+        } else if (viewMode === "team_leader" && selectedUserId) {
+          const leader = profiles.find(p => p.user_id === selectedUserId);
+          if (leader) {
+            if (tlSubView === "own") {
+              q = q.eq("user_id", selectedUserId);
             } else {
-              setTasks([]);
-              setIsLoadingTasks(false);
-              return;
+              const teamMentorIds = profiles
+                .filter(p => p.team_leader === leader.mentor_name && p.user_id !== selectedUserId)
+                .map(p => p.user_id);
+              if (teamMentorIds.length > 0) {
+                q = q.in("user_id", teamMentorIds);
+              } else {
+                return null;
+              }
             }
           }
+        } else if (viewMode === "mentor" && selectedUserId) {
+          q = q.eq("user_id", selectedUserId);
         }
-      } else if (viewMode === "mentor" && selectedUserId) {
-        query = query.eq("user_id", selectedUserId);
+        return q;
+      };
+
+      // Quick check: if the team view has no members, bail out cleanly.
+      if (viewMode === "team_leader" && selectedUserId) {
+        const leader = profiles.find(p => p.user_id === selectedUserId);
+        if (leader && tlSubView !== "own") {
+          const hasTeam = profiles.some(
+            p => p.team_leader === leader.mentor_name && p.user_id !== selectedUserId,
+          );
+          if (!hasTeam) {
+            setTasks([]);
+            setIsLoadingTasks(false);
+            return;
+          }
+        }
       }
-      // "all" mode - no filter, get everything
 
       // Paginate to bypass PostgREST's 1000-row cap so older tasks aren't hidden.
       const all: Task[] = [];
       const pageSize = 1000;
       for (let from = 0; ; from += pageSize) {
-        const { data, error } = await query.range(from, from + pageSize - 1);
+        const q = buildQuery();
+        if (!q) break;
+        const { data: batch, error } = await q.range(from, from + pageSize - 1);
         if (error) throw error;
-        const batch = data || [];
-        all.push(...batch);
-        if (batch.length < pageSize) break;
+        const rows = batch || [];
+        all.push(...rows);
+        if (rows.length < pageSize) break;
       }
       const data = all;
       setTasks(all);
