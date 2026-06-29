@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Link as LinkIcon } from "lucide-react";
+import { Plus, Link as LinkIcon, Download } from "lucide-react";
+import { SessionIncidentsExportDialog } from "@/components/session-incidents/SessionIncidentsExportDialog";
 import { useSessionIncidents } from "@/hooks/useSessionIncidents";
 import { useUserRole } from "@/hooks/useUserRole";
 import { IncidentFormDialog } from "@/components/session-incidents/IncidentFormDialog";
@@ -17,6 +18,7 @@ export default function SessionIncidents() {
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const [createOpen, setCreateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const isAdmin = role === "admin";
   const isTL = role === "team_leader" || role === "super_team_leader";
@@ -37,6 +39,9 @@ export default function SessionIncidents() {
             <p className="text-sm text-muted-foreground">Edu-side incidents that may need to be escalated to CS.</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4 mr-1" /> Export
+            </Button>
             {canCreate && (
               <Button variant="outline" onClick={() => setLinkOpen(true)}>
                 <LinkIcon className="h-4 w-4 mr-1" /> Tutor Link
@@ -72,6 +77,7 @@ export default function SessionIncidents() {
 
       <IncidentFormDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
       <GenerateTutorLinkDialog open={linkOpen} onOpenChange={setLinkOpen} />
+      <SessionIncidentsExportDialog open={exportOpen} onOpenChange={setExportOpen} items={items} />
     </AppLayout>
   );
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, Download } from "lucide-react";
+import { CSTicketsExportDialog } from "./CSTicketsExportDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ export function CSTicketsTable() {
   const { tickets, loading, refresh } = useCSTickets(scope);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [selected, setSelected] = useState<CSTicket | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
@@ -310,11 +312,16 @@ export function CSTicketsTable() {
             {counts.total} total · {counts.pending} pending · {counts.valid} valid · {counts.notValid} not valid
           </p>
         </div>
-        {canCreate && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> New Ticket
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setExportOpen(true)}>
+            <Download className="mr-2 h-4 w-4" /> Export
           </Button>
-        )}
+          {canCreate && (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> New Ticket
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {isSuperTeamLeader ? (
@@ -340,6 +347,7 @@ export function CSTicketsTable() {
         onOpenChange={(v) => !v && setSelected(null)}
         onUpdated={refresh}
       />
+      <CSTicketsExportDialog open={exportOpen} onOpenChange={setExportOpen} tickets={tickets} />
     </Card>
   );
 }
