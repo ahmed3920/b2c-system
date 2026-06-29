@@ -26,9 +26,31 @@ export default function IncidentSubmit() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Ensure merged roster (static + DB overrides for newly added tutors) is
-    // loaded before lookups happen.
-    bootstrapRosterCache();
+    // Public page: load roster overrides via the anon-readable view so newly
+    // added tutors (e.g. T-19226) resolve here without an authenticated session.
+    (async () => {
+      try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const sb = createClient(import.meta.env.VITE_SUPABASE_URL, ANON_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        });
+        const { data } = await sb.from("tutor_roster_public").select("*");
+        if (data) {
+          setRosterOverrides(
+            (data as any[]).map((r) => ({
+              tutor_external_id: r.tutor_external_id,
+              name: r.name,
+              team_leader: r.team_leader,
+              mentor: r.mentor,
+              ranking: null, phone: null, role: null, language: null,
+              employment_type: null, is_new: r.is_new ?? null,
+            })) as RosterOverrideRow[],
+          );
+        }
+      } catch {
+        // ignore — fall back to static roster
+      }
+    })();
   }, []);
 
   useEffect(() => {
