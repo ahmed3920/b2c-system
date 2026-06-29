@@ -650,6 +650,12 @@ export function LiveIssuesTable() {
         issueId={auditIssue?.id ?? null}
         caseId={auditIssue?.case_id ?? null}
       />
+      <LiveIssuesExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        teamLeaders={teamLeaders}
+        issueTypes={issueTypes}
+      />
     </div>
   );
 }
