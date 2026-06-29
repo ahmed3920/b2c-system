@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Link as LinkIcon } from "lucide-react";
+import { Plus, Link as LinkIcon, Download } from "lucide-react";
+import { SessionIncidentsExportDialog } from "@/components/session-incidents/SessionIncidentsExportDialog";
 import { useSessionIncidents } from "@/hooks/useSessionIncidents";
 import { useUserRole } from "@/hooks/useUserRole";
 import { IncidentFormDialog } from "@/components/session-incidents/IncidentFormDialog";
@@ -17,6 +18,7 @@ export default function SessionIncidents() {
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const [createOpen, setCreateOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const isAdmin = role === "admin";
   const isTL = role === "team_leader" || role === "super_team_leader";
