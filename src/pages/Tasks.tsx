@@ -947,6 +947,12 @@ const Tasks = () => {
           onOpenChange={setIsExportOpen}
           tasks={displayTasks}
           ownerNames={adminView.taskOwnerNames}
+          ownerTeamLeaders={Object.fromEntries(
+            adminView.profiles.map((p) => {
+              const isTL = adminView.teamLeaders.some((tl) => tl.user_id === p.user_id);
+              return [p.user_id, isTL ? "-" : (p.team_leader || "")];
+            })
+          )}
         />
       )}
     </AppLayout>
