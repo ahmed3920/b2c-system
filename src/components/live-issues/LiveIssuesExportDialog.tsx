@@ -80,6 +80,8 @@ export function LiveIssuesExportDialog({ open, onOpenChange, teamLeaders, issueT
     { key: "issue_reason", label: "Issue Reason", accessor: (r) => r.issue_reason ?? "" },
     { key: "issue_details", label: "Issue Details", accessor: (r) => r.issue_details ?? "" },
     { key: "edu_validation", label: "Edu Validation", accessor: (r) => r.edu_validation ?? "" },
+    { key: "edu_description", label: "Edu Description", accessor: (r) => r.edu_description_name ?? "" },
+
     { key: "edu_notes", label: "Edu Notes", accessor: (r) => r.edu_notes ?? "", defaultOn: false },
     { key: "language", label: "Language", accessor: (r) => r.language ?? "", defaultOn: false },
     { key: "class_type", label: "Class Type", accessor: (r) => r.class_type ?? "", defaultOn: false },
