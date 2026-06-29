@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Loader2, Plus, Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, PauseCircle, Flame, TrendingUp, ThumbsUp, ThumbsDown, Users, ChevronRight, Trash2, Mail, FileText,
+  ArrowLeft, Loader2, Plus, Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, PauseCircle, Flame, TrendingUp, ThumbsUp, ThumbsDown, Users, ChevronRight, Trash2, Mail, FileText, Download,
 } from "lucide-react";
+import { ActionPlansExportDialog } from "@/components/action-plans/ActionPlansExportDialog";
 import { format, isAfter } from "date-fns";
 import { motion } from "framer-motion";
 import {
@@ -54,6 +55,7 @@ const ActionPlans = () => {
   const [planToDelete, setPlanToDelete] = useState<ActionPlan | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const handleDelete = async () => {
     if (!planToDelete) return;
@@ -185,6 +187,9 @@ const ActionPlans = () => {
     <AppLayout title="Action Plans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setExportOpen(true)}>
+            <Download className="w-4 h-4 mr-2" /> Export
+          </Button>
           {isAdmin && (
             <Button variant="outline" onClick={() => setTemplatesOpen(true)}>
               <FileText className="w-4 h-4 mr-2" /> Email Templates
