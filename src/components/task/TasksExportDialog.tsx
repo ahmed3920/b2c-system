@@ -22,9 +22,10 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   tasks: Task[];
   ownerNames: Record<string, string>;
+  ownerTeamLeaders?: Record<string, string>;
 }
 
-export function TasksExportDialog({ open, onOpenChange, tasks, ownerNames }: Props) {
+export function TasksExportDialog({ open, onOpenChange, tasks, ownerNames, ownerTeamLeaders = {} }: Props) {
   const owners = Array.from(new Set(tasks.map((t) => t.user_id)))
     .map((id) => ({ value: id, label: ownerNames[id] || id }))
     .sort((a, b) => a.label.localeCompare(b.label));
@@ -78,6 +79,7 @@ export function TasksExportDialog({ open, onOpenChange, tasks, ownerNames }: Pro
 
   const columns: ExportColumn<Task>[] = [
     { key: "owner", label: "Assignee", accessor: (r) => ownerNames[r.user_id] || r.user_id },
+    { key: "team_leader", label: "Team Leader", accessor: (r) => ownerTeamLeaders[r.user_id] ?? "" },
     { key: "type", label: "Task Type", accessor: (r) => r.task_type },
     { key: "description", label: "Description", accessor: (r) => r.description },
     { key: "status", label: "Status", accessor: (r) => statusLabels[r.status] || r.status },
