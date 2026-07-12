@@ -50,9 +50,9 @@ Deno.serve(async (req) => {
     const requestingUserId = userData.user.id;
 
     // Check if requesting user is admin (user may have multiple roles).
-    // Use the caller-scoped client for this check so RLS evaluates against the
-    // signed-in admin instead of depending on elevated-client table access.
-    const { data: roleRows, error: roleError } = await supabaseAuth
+    // Use the service client here because the caller JWT can be slightly ahead
+    // of the edge runtime clock; getUser() already validated the token with auth.
+    const { data: roleRows, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", requestingUserId)
