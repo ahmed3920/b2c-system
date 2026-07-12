@@ -49,12 +49,21 @@ Deno.serve(async (req) => {
 
     const requestingUserId = claimsData.claims.sub as string;
 
-    // Check if requesting user is admin (user may have multiple roles)
-    const { data: roleRows } = await supabaseAdmin
+    // Check if requesting user is admin (user may have multiple roles).
+    // Use the caller-scoped client for this check so RLS evaluates against the
+    // signed-in admin instead of depending on elevated-client table access.
+    const { data: roleRows, error: roleError } = await supabaseAuth
       .from("user_roles")
       .select("role")
       .eq("user_id", requestingUserId)
       .eq("role", "admin");
+
+    if (roleError) {
+      return new Response(
+        JSON.stringify({ error: roleError.message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!roleRows || roleRows.length === 0) {
       return new Response(
