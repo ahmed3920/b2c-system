@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,23 +32,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create anon client to verify token
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseAuth = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+    let requestingUserId: string;
 
-    if (userError || !userData?.user) {
+    try {
+      const JWKS = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
+      const { payload } = await jwtVerify(token, JWKS, {
+        clockTolerance: 600,
+      });
+
+      if (!payload.sub) {
+        throw new Error("Missing user id in token");
+      }
+
+      requestingUserId = payload.sub;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Invalid token";
       return new Response(
-        JSON.stringify({ error: userError?.message || "Invalid token" }),
+        JSON.stringify({ error: message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const requestingUserId = userData.user.id;
 
     // Check if requesting user is admin (user may have multiple roles).
     // Use the service client here because the caller JWT can be slightly ahead
