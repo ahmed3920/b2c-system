@@ -26,6 +26,7 @@ import Performance from "./pages/Performance";
 import Tracking from "./pages/Tracking";
 import Growth from "./pages/Growth";
 import RiskControl from "./pages/RiskControl";
+import TutorSegmentation from "./pages/TutorSegmentation";
 import StudyPlan from "./pages/StudyPlan";
 import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
 import FeaturePlansAdmin from "./pages/FeaturePlansAdmin";
@@ -91,6 +92,7 @@ const App = () => (
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/growth" element={<Growth />} />
           <Route path="/risk-control" element={<RiskControl />} />
+          <Route path="/tutor-segmentation" element={<TutorSegmentation />} />
           <Route path="/study-plan" element={<StudyPlan />} />
           <Route path="/admin/announcements" element={<AnnouncementsAdmin />} />
           <Route path="/admin/feature-plans" element={<FeaturePlansAdmin />} />
