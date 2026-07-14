@@ -32,6 +32,7 @@ export default function TutorSegmentation() {
   const [sortKey, setSortKey] = useState<keyof SegmentationScore>("health_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [auditOpen, setAuditOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const teamLeaders = useMemo(
     () => Array.from(new Set(scores.map((s) => s.team_leader).filter(Boolean))) as string[],
