@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { format, startOfMonth, endOfMonth, subDays, subMonths } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
 import { QualityUpload } from "./QualityUpload";
 import { QualitySheetSync } from "./QualitySheetSync";
 import { ManualQualityEntry } from "@/components/quality/ManualQualityEntry";
