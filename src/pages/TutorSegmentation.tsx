@@ -131,6 +131,9 @@ export default function TutorSegmentation() {
             <Button variant="outline" onClick={() => setAuditOpen(true)}>
               <History className="h-4 w-4 mr-2" /> Audit log
             </Button>
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4 mr-2" /> Export CSV
+            </Button>
             {isAdmin && (
               <Button onClick={handleRecompute} disabled={running}>
                 {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
