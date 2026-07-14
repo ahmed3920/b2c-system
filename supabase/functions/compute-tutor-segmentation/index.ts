@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
         where period_month >= ${cutoff90}::date
       `,
       db<Row[]>`
-        select tutor_external_id, snapshot_date::text as snapshot_date, health_score
+        select tutor_external_id, snapshot_date::text as snapshot_date, health_score, segment::text as segment
         from public.tutor_segmentation_scores
         order by snapshot_date desc
       `,
