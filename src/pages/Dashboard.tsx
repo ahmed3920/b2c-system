@@ -57,12 +57,6 @@ export default function Dashboard() {
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button variant="outline" className="justify-between" asChild>
-              <Link to="/risk-control">
-                <span className="flex items-center gap-2"><Flag className="h-4 w-4" />Risk Control</span>
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       </div>
