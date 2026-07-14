@@ -633,6 +633,7 @@ export function LeavesVerificationTab() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && <LeavesUpload onUploaded={() => setReloadTick((t) => t + 1)} />}
       {isAdmin && <LeavesSyncCard />}
 
       {/* Filters bar */}
