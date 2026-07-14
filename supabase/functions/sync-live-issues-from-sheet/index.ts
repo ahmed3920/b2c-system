@@ -210,14 +210,12 @@ Deno.serve(async (req) => {
     };
 
     // Helper: paginate PostgREST reads past the default 1000-row cap.
-    async function fetchAll<T>(
-      build: () => ReturnType<typeof db.from>,
-      cols: string,
-    ): Promise<T[]> {
+    // `build` must return a query with `.select()` (and any filters) already applied.
+    async function fetchAll<T>(build: () => any): Promise<T[]> {
       const out: T[] = [];
       const size = 1000;
       for (let from = 0; ; from += size) {
-        const { data, error } = await build().select(cols).range(from, from + size - 1);
+        const { data, error } = await build().range(from, from + size - 1);
         if (error) throw error;
         const rows = (data ?? []) as T[];
         out.push(...rows);
@@ -227,11 +225,8 @@ Deno.serve(async (req) => {
     }
 
     // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name).
-    // Keys are lowercased + trimmed so lookups are case-insensitive — sheet rows sometimes
-    // arrive with mixed casing (e.g. "T-12183" vs "t-12183").
     const tutorRows = await fetchAll<{ tutor_external_id: string | null; team_leader: string | null }>(
-      () => db.from("action_plan_tutors"),
-      "tutor_external_id, team_leader",
+      () => db.from("action_plan_tutors").select("tutor_external_id, team_leader"),
     );
     const tutorTlMap = new Map<string, string>();
     for (const t of tutorRows) {
@@ -245,8 +240,7 @@ Deno.serve(async (req) => {
 
     // Load edu_descriptions name -> id map (normalized)
     const eduRows = await fetchAll<{ id: string; name: string | null }>(
-      () => db.from("edu_descriptions").eq("is_active", true),
-      "id, name",
+      () => db.from("edu_descriptions").select("id, name").eq("is_active", true),
     );
     const eduNameMap = new Map<string, string>();
     for (const e of eduRows) {
@@ -277,8 +271,7 @@ Deno.serve(async (req) => {
     // Existing rows to avoid overwriting team-leader edits.
     // Paginated so all validated rows are preserved once the table grows past 1000.
     const existingRows = await fetchAll<{ case_id: string; edu_validation: string | null }>(
-      () => db.from("live_session_issues"),
-      "case_id, edu_validation",
+      () => db.from("live_session_issues").select("case_id, edu_validation"),
     );
     const existingValidated = new Set<string>();
     for (const r of existingRows) {
