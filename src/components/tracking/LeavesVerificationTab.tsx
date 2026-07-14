@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
+import { LeavesUpload } from "@/components/tracking/LeavesUpload";
 import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
 import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
 import type { ActionPlan } from "@/hooks/useActionPlans";
@@ -175,6 +176,7 @@ export function LeavesVerificationTab() {
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all"); // all | tutor | mentor
   const [monthFilter, setMonthFilter] = useState<string>("all"); // policy month key
+  const [reloadTick, setReloadTick] = useState(0);
 
   /* ---------- Emergency-abuse action plans (existing) ---------- */
   // Map of tutor_external_id → most-recent active emergency_abuse plan.
@@ -250,7 +252,7 @@ export function LeavesVerificationTab() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadTick]);
 
   const teamLeaderOptions = useMemo(() => {
     const set = new Set<string>();
@@ -631,6 +633,7 @@ export function LeavesVerificationTab() {
 
   return (
     <div className="space-y-4">
+      {isAdmin && <LeavesUpload onUploaded={() => setReloadTick((t) => t + 1)} />}
       {isAdmin && <LeavesSyncCard />}
 
       {/* Filters bar */}
