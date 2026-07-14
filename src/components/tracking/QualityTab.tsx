@@ -108,11 +108,23 @@ export const QualityTab = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("quality_uploads")
-      .select("id, tutor_id, agent_name, team_leader, session_date, score")
-      .order("created_at", { ascending: false });
-    if (!error && data) setRows(data as QualityRow[]);
+    // Paginate — Supabase caps each request at 1000 rows
+    const PAGE = 1000;
+    let from = 0;
+    const all: QualityRow[] = [];
+    while (true) {
+      const { data, error } = await supabase
+        .from("quality_uploads")
+        .select("id, tutor_id, agent_name, team_leader, session_date, score")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error || !data) break;
+      all.push(...(data as QualityRow[]));
+      if (data.length < PAGE) break;
+      from += PAGE;
+      if (from > 200000) break; // safety cap
+    }
+    setRows(all);
     setLoading(false);
   }, []);
 
