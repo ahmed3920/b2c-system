@@ -220,6 +220,15 @@ Deno.serve(async (req) => {
     const auth = await verifyAdmin(req, db);
     if (auth.response) return auth.response;
 
+    // Parse optional filters/context passed from the client for the audit log
+    let clientContext: Record<string, unknown> = {};
+    try {
+      if (req.method === "POST") {
+        const bodyText = await req.text();
+        if (bodyText) clientContext = JSON.parse(bodyText) ?? {};
+      }
+    } catch (_e) { /* ignore */ }
+
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
     const cutoff90 = new Date(today.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
