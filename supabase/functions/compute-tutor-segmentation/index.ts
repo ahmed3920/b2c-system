@@ -220,6 +220,15 @@ Deno.serve(async (req) => {
     const auth = await verifyAdmin(req, db);
     if (auth.response) return auth.response;
 
+    // Parse optional filters/context passed from the client for the audit log
+    let clientContext: Record<string, unknown> = {};
+    try {
+      if (req.method === "POST") {
+        const bodyText = await req.text();
+        if (bodyText) clientContext = JSON.parse(bodyText) ?? {};
+      }
+    } catch (_e) { /* ignore */ }
+
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
     const cutoff90 = new Date(today.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
@@ -507,6 +516,32 @@ Deno.serve(async (req) => {
       `;
     }
     if (recommendations.length) await insertRecommendations(db, recommendations);
+
+    // Audit log — record the recompute event
+    let actorName: string | null = null;
+    try {
+      const rows = await db<Row[]>`
+        select coalesce(full_name, email) as name from public.profiles where user_id = ${auth.userId} limit 1
+      `;
+      actorName = rows?.[0]?.name ?? null;
+    } catch (_e) { /* ignore */ }
+
+    const auditContext = {
+      ...clientContext,
+      snapshot_date: todayIso,
+      tutors_scored: snapshots.length,
+      recommendations_generated: recommendations.length,
+      cutoff_date: cutoff90,
+    };
+    try {
+      await db`
+        insert into public.tutor_segmentation_audit
+          (event_type, actor_id, actor_name, context)
+        values ('recompute', ${auth.userId}::uuid, ${actorName}, ${db.json(auditContext)}::jsonb)
+      `;
+    } catch (e) {
+      console.error("audit insert failed", e);
+    }
 
     return json({ ok: true, tutors: snapshots.length, recommendations: recommendations.length, snapshot_date: todayIso });
   } catch (e) {

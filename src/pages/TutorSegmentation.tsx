@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCw, Loader2, History } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTutorSegmentation, type SegmentationScore, type TutorSegment } from "@/hooks/useTutorSegmentation";
 import { SegmentBadge, TrendIndicator } from "@/components/segmentation/SegmentBadge";
 import { TutorProfileDialog } from "@/components/segmentation/TutorProfileDialog";
+import { AuditLogDialog } from "@/components/segmentation/AuditLogDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ export default function TutorSegmentation() {
   const [selected, setSelected] = useState<SegmentationScore | null>(null);
   const [sortKey, setSortKey] = useState<keyof SegmentationScore>("health_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const teamLeaders = useMemo(
     () => Array.from(new Set(scores.map((s) => s.team_leader).filter(Boolean))) as string[],
@@ -101,7 +103,14 @@ export default function TutorSegmentation() {
 
   const handleRecompute = async () => {
     try {
-      await recompute();
+      await recompute({
+        filters: {
+          search: search || undefined,
+          team_leader: tlFilter !== "all" ? tlFilter : undefined,
+          language: langFilter !== "all" ? langFilter : undefined,
+          segment: segFilter !== "all" ? segFilter : undefined,
+        },
+      });
       toast.success("Segmentation recomputed");
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to recompute");
@@ -116,12 +125,17 @@ export default function TutorSegmentation() {
             <h2 className="text-xl font-semibold">Tutor Segmentation</h2>
             <p className="text-sm text-muted-foreground">Weighted Tutor Health Score with automatic Elite / Growth / At Risk classification.</p>
           </div>
-          {isAdmin && (
-            <Button onClick={handleRecompute} disabled={running}>
-              {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Recompute
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setAuditOpen(true)}>
+              <History className="h-4 w-4 mr-2" /> Audit log
             </Button>
-          )}
+            {isAdmin && (
+              <Button onClick={handleRecompute} disabled={running}>
+                {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Recompute
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Summary cards */}
@@ -269,6 +283,7 @@ export default function TutorSegmentation() {
           score={selected}
           recommendations={recommendations}
         />
+        <AuditLogDialog open={auditOpen} onOpenChange={setAuditOpen} />
       </div>
     </AppLayout>
   );
