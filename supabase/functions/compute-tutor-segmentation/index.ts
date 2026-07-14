@@ -477,7 +477,21 @@ Deno.serve(async (req) => {
       if (engagement_score != null && engagement_score < 70) push("engagement_low", "Engagement below 70", "warning", "Observe a live session");
       if (communication_score != null && communication_score < 60) push("communication_low", "Communication low", "warning", "Communication training");
       if (emergLast30 >= 2) push("emergency_leaves_spike", "Emergency leaves spike", "critical", "Schedule coaching");
-      if (segment === "elite") push("elite_ready", "Elite performer", "info", "Assign more students / bonus candidate");
+
+      // Emergency leaves +50% MoM (last 30d vs 30-60d)
+      const emergPrev30 = tLeaves.filter((l) => isEmergency(l.leave_reason) && daysSince(l.leave_date) > 30 && daysSince(l.leave_date) <= 60).length;
+      if (emergPrev30 > 0 && emergLast30 >= Math.ceil(emergPrev30 * 1.5) && emergLast30 >= 2) {
+        push("emergency_leaves_mom", "Emergency leaves +50% MoM", "warning", "Schedule coaching", `Prev 30d: ${emergPrev30}, last 30d: ${emergLast30}`);
+      }
+
+      // Elite for 3 consecutive snapshots
+      const hist = historyByTutor.get(tid) ?? [];
+      const prev2Elite = hist.slice(0, 2).length === 2 && hist.slice(0, 2).every((h) => (h as any).segment === "elite");
+      if (segment === "elite" && prev2Elite) {
+        push("elite_streak", "Elite 3 snapshots in a row", "info", "Eligible for mentoring / bonus");
+      } else if (segment === "elite") {
+        push("elite_ready", "Elite performer", "info", "Assign more students / bonus candidate");
+      }
     }
 
     // Upsert snapshots for today
