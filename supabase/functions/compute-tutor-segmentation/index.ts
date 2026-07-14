@@ -517,6 +517,32 @@ Deno.serve(async (req) => {
     }
     if (recommendations.length) await insertRecommendations(db, recommendations);
 
+    // Audit log — record the recompute event
+    let actorName: string | null = null;
+    try {
+      const rows = await db<Row[]>`
+        select coalesce(full_name, email) as name from public.profiles where user_id = ${auth.userId} limit 1
+      `;
+      actorName = rows?.[0]?.name ?? null;
+    } catch (_e) { /* ignore */ }
+
+    const auditContext = {
+      ...clientContext,
+      snapshot_date: todayIso,
+      tutors_scored: snapshots.length,
+      recommendations_generated: recommendations.length,
+      cutoff_date: cutoff90,
+    };
+    try {
+      await db`
+        insert into public.tutor_segmentation_audit
+          (event_type, actor_id, actor_name, context)
+        values ('recompute', ${auth.userId}::uuid, ${actorName}, ${sqlJson(auditContext)}::jsonb)
+      `;
+    } catch (e) {
+      console.error("audit insert failed", e);
+    }
+
     return json({ ok: true, tutors: snapshots.length, recommendations: recommendations.length, snapshot_date: todayIso });
   } catch (e) {
     console.error(e);
