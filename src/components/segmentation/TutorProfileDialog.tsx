@@ -107,6 +107,19 @@ export function TutorProfileDialog({ open, onOpenChange, score, recommendations 
         </div>
 
         <Card>
+          <CardHeader><CardTitle className="text-sm">Health Score History</CardTitle></CardHeader>
+          <CardContent>
+            <ScoreHistoryChart tutorExternalId={score.tutor_external_id} />
+          </CardContent>
+        </Card>
+
+        <ManualRatingPanel
+          tutorExternalId={score.tutor_external_id}
+          tutorName={score.tutor_name}
+          teamLeader={score.team_leader}
+        />
+
+        <Card>
           <CardHeader><CardTitle className="text-sm">Recommendations</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
             {recs.length === 0 && <div className="text-muted-foreground">No open recommendations.</div>}
