@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Loader2, History } from "lucide-react";
+import { RefreshCw, Loader2, History, Download } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTutorSegmentation, type SegmentationScore, type TutorSegment } from "@/hooks/useTutorSegmentation";
 import { SegmentBadge, TrendIndicator } from "@/components/segmentation/SegmentBadge";
 import { TutorProfileDialog } from "@/components/segmentation/TutorProfileDialog";
 import { AuditLogDialog } from "@/components/segmentation/AuditLogDialog";
+import { ExportDialog } from "@/components/segmentation/ExportDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { toast } from "sonner";
 
@@ -31,6 +32,7 @@ export default function TutorSegmentation() {
   const [sortKey, setSortKey] = useState<keyof SegmentationScore>("health_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [auditOpen, setAuditOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const teamLeaders = useMemo(
     () => Array.from(new Set(scores.map((s) => s.team_leader).filter(Boolean))) as string[],
@@ -128,6 +130,9 @@ export default function TutorSegmentation() {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setAuditOpen(true)}>
               <History className="h-4 w-4 mr-2" /> Audit log
+            </Button>
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4 mr-2" /> Export CSV
             </Button>
             {isAdmin && (
               <Button onClick={handleRecompute} disabled={running}>
@@ -284,6 +289,17 @@ export default function TutorSegmentation() {
           recommendations={recommendations}
         />
         <AuditLogDialog open={auditOpen} onOpenChange={setAuditOpen} />
+        <ExportDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          rows={filtered}
+          filterSummary={[
+            search && `search="${search}"`,
+            tlFilter !== "all" && `TL=${tlFilter}`,
+            langFilter !== "all" && `lang=${langFilter}`,
+            segFilter !== "all" && `segment=${segFilter}`,
+          ].filter(Boolean).join(", ") || undefined}
+        />
       </div>
     </AppLayout>
   );
