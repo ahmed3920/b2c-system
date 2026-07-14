@@ -169,7 +169,7 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
             <span className="font-medium text-foreground">Year</span>,{" "}
             <span className="font-medium text-foreground">Month</span> (1-12),{" "}
             <span className="font-medium text-foreground">Achieved</span> (score % for that month).
-            Re-uploading the same tutor + month overwrites the previous entry.
+            Each upload <span className="font-medium text-foreground">replaces all existing quality data</span> — the dashboard reflects only the latest file.
           </p>
 
           <input
