@@ -283,6 +283,7 @@ export default function TutorSegmentation() {
           score={selected}
           recommendations={recommendations}
         />
+        <AuditLogDialog open={auditOpen} onOpenChange={setAuditOpen} />
       </div>
     </AppLayout>
   );
