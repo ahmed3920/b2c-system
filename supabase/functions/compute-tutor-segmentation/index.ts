@@ -118,7 +118,7 @@ async function upsertSnapshots(sql: ReturnType<typeof postgres>, snapshots: Row[
         hard_stop_reason,
         next_action,
         coalesce(metrics_meta, '{}'::jsonb)
-      from jsonb_to_recordset(${JSON.stringify(chunk)}::jsonb) as x(
+      from jsonb_to_recordset(${sql.json(chunk)}::jsonb) as x(
         tutor_external_id text,
         tutor_name text,
         team_leader text,
@@ -186,7 +186,7 @@ async function insertRecommendations(sql: ReturnType<typeof postgres>, recommend
         suggested_action,
         status::public.recommendation_status,
         coalesce(meta, '{}'::jsonb)
-      from jsonb_to_recordset(${JSON.stringify(chunk)}::jsonb) as x(
+      from jsonb_to_recordset(${sql.json(chunk)}::jsonb) as x(
         tutor_external_id text,
         tutor_name text,
         team_leader text,
