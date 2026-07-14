@@ -219,6 +219,7 @@ export const QualityTab = () => {
 
   return (
     <div className="space-y-6">
+      <ManualQualityEntry onAdded={() => load()} />
       <QualityUpload onUploaded={() => load()} />
       <QualitySheetSync isAdmin={isAdmin} onSynced={() => load()} />
 
