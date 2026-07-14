@@ -248,11 +248,13 @@ Deno.serve(async (req) => {
         select from_tutor_id, session_date::text as session_date, edu_validation
         from public.live_session_issues
         where session_date >= ${cutoff90}::date
+          and edu_validation = 'deduct'
       `,
       db<Row[]>`
         select tutor_external_id, ticket_date::text as ticket_date, mentor_validation, additional_tutors
         from public.cs_tickets
         where ticket_date >= ${cutoff90}::date
+          and mentor_validation = 'valid'
       `,
       db<Row[]>`
         select tutor_external_id, month::text as month, rating, total_sessions, sessions_with_feedback
@@ -265,17 +267,21 @@ Deno.serve(async (req) => {
         where period_month >= ${cutoff90}::date
       `,
       db<Row[]>`
-        select tutor_external_id, snapshot_date::text as snapshot_date, health_score
+        select tutor_external_id, snapshot_date::text as snapshot_date, health_score, segment::text as segment
         from public.tutor_segmentation_scores
         order by snapshot_date desc
       `,
     ]);
 
-    // Index prev scores per tutor (most recent before today)
+    // Index prev scores per tutor (most recent before today first, keep list for streaks)
     const prevByTutor = new Map<string, Row>();
+    const historyByTutor = new Map<string, Row[]>();
     for (const r of prevScores) {
       if (r.snapshot_date === todayIso) continue;
       if (!prevByTutor.has(r.tutor_external_id)) prevByTutor.set(r.tutor_external_id, r);
+      const arr = historyByTutor.get(r.tutor_external_id) ?? [];
+      arr.push(r);
+      historyByTutor.set(r.tutor_external_id, arr);
     }
 
     // Emergency leave keywords
@@ -334,8 +340,15 @@ Deno.serve(async (req) => {
         weightedIssues <= 0.5 ? 100 : weightedIssues <= 2 ? 80 : weightedIssues <= 4 ? 55 : Math.max(0, 40 - (weightedIssues - 5) * 8)
       );
 
-      // CS tickets — valid tutor-related only, recency-weighted
-      const tCs = csTickets.filter((c) => c.tutor_external_id === tid && c.mentor_validation === "valid");
+      // CS tickets — pre-filtered to valid; match on primary or additional_tutors, recency-weighted
+      const tCs = csTickets.filter((c) => {
+        if (c.tutor_external_id === tid) return true;
+        const add = c.additional_tutors;
+        if (Array.isArray(add)) {
+          return add.some((e: any) => e && (e.tutor_external_id === tid || e.tutor_id === tid));
+        }
+        return false;
+      });
       let weightedCs = 0;
       for (const c of tCs) weightedCs += recencyWeight(daysSince(c.ticket_date));
       const cs_tickets_score = clamp(
@@ -464,7 +477,21 @@ Deno.serve(async (req) => {
       if (engagement_score != null && engagement_score < 70) push("engagement_low", "Engagement below 70", "warning", "Observe a live session");
       if (communication_score != null && communication_score < 60) push("communication_low", "Communication low", "warning", "Communication training");
       if (emergLast30 >= 2) push("emergency_leaves_spike", "Emergency leaves spike", "critical", "Schedule coaching");
-      if (segment === "elite") push("elite_ready", "Elite performer", "info", "Assign more students / bonus candidate");
+
+      // Emergency leaves +50% MoM (last 30d vs 30-60d)
+      const emergPrev30 = tLeaves.filter((l) => isEmergency(l.leave_reason) && daysSince(l.leave_date) > 30 && daysSince(l.leave_date) <= 60).length;
+      if (emergPrev30 > 0 && emergLast30 >= Math.ceil(emergPrev30 * 1.5) && emergLast30 >= 2) {
+        push("emergency_leaves_mom", "Emergency leaves +50% MoM", "warning", "Schedule coaching", `Prev 30d: ${emergPrev30}, last 30d: ${emergLast30}`);
+      }
+
+      // Elite for 3 consecutive snapshots
+      const hist = historyByTutor.get(tid) ?? [];
+      const prev2Elite = hist.slice(0, 2).length === 2 && hist.slice(0, 2).every((h) => (h as any).segment === "elite");
+      if (segment === "elite" && prev2Elite) {
+        push("elite_streak", "Elite 3 snapshots in a row", "info", "Eligible for mentoring / bonus");
+      } else if (segment === "elite") {
+        push("elite_ready", "Elite performer", "info", "Assign more students / bonus candidate");
+      }
     }
 
     // Upsert snapshots for today

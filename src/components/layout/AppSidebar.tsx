@@ -72,9 +72,9 @@ const tracking: NavItem[] = [
 ];
 
 const growthRisk: NavItem[] = [
+  { title: "Tutor Segmentation", url: "/tutor-segmentation", icon: Activity, roles: ["admin", "team_leader", "super_team_leader"] },
   { title: "Growth", url: "/growth", icon: TrendingUp, featureKey: "growth" },
   { title: "Risk Control", url: "/risk-control", icon: ShieldAlert, featureKey: "risk_control" },
-  { title: "Tutor Segmentation", url: "/tutor-segmentation", icon: Activity, roles: ["admin", "team_leader", "super_team_leader"] },
   { title: "Action Plans", url: "/action-plans", icon: Target, featureKey: "action_plans" },
 ];
 

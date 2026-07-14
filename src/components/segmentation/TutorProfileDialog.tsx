@@ -2,6 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { SegmentBadge, TrendIndicator } from "./SegmentBadge";
+import { ManualRatingPanel } from "./ManualRatingPanel";
+import { ScoreHistoryChart } from "./ScoreHistoryChart";
 import type { SegmentationScore, SegmentationRecommendation } from "@/hooks/useTutorSegmentation";
 import { Badge } from "@/components/ui/badge";
 
@@ -103,6 +105,19 @@ export function TutorProfileDialog({ open, onOpenChange, score, recommendations 
             </Card>
           </div>
         </div>
+
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Health Score History</CardTitle></CardHeader>
+          <CardContent>
+            <ScoreHistoryChart tutorExternalId={score.tutor_external_id} />
+          </CardContent>
+        </Card>
+
+        <ManualRatingPanel
+          tutorExternalId={score.tutor_external_id}
+          tutorName={score.tutor_name}
+          teamLeader={score.team_leader}
+        />
 
         <Card>
           <CardHeader><CardTitle className="text-sm">Recommendations</CardTitle></CardHeader>
