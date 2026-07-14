@@ -69,11 +69,11 @@ export const QualityTab = () => {
   const { isAdmin } = useUserRole();
   const roster = useMergedRoster();
   const rosterById = useMemo(() => {
-    const m = new Map<string, { name: string; mentor: string }>();
+    const m = new Map<string, { name: string; team_leader: string }>();
     for (const r of roster) {
       m.set(r.id.trim().toUpperCase(), {
         name: r.name || r.id,
-        mentor: (r as { mentor?: string }).mentor ?? "",
+        team_leader: (r as { team_leader?: string }).team_leader ?? "",
       });
     }
     return m;
@@ -93,7 +93,7 @@ export const QualityTab = () => {
       return {
         ...r,
         agent_name: hit?.name || r.agent_name || r.tutor_id || "",
-        team_leader: r.team_leader || hit?.mentor || "",
+        team_leader: hit?.team_leader || r.team_leader || "",
       };
     });
   }, [rawRows, rosterById]);
