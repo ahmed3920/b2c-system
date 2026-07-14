@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Loader2, History } from "lucide-react";
+import { RefreshCw, Loader2, History, Download } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTutorSegmentation, type SegmentationScore, type TutorSegment } from "@/hooks/useTutorSegmentation";
 import { SegmentBadge, TrendIndicator } from "@/components/segmentation/SegmentBadge";
 import { TutorProfileDialog } from "@/components/segmentation/TutorProfileDialog";
 import { AuditLogDialog } from "@/components/segmentation/AuditLogDialog";
+import { ExportDialog } from "@/components/segmentation/ExportDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { toast } from "sonner";
 
