@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCurrentTeamLeader } from "@/hooks/useCurrentTeamLeader";
 import { LeavesSyncCard } from "@/components/study-plan/LeavesSyncCard";
+import { LeavesUpload } from "@/components/tracking/LeavesUpload";
 import { CreateActionPlanDialog } from "@/components/action-plans/CreateActionPlanDialog";
 import { ActionPlanDetailDialog } from "@/components/action-plans/ActionPlanDetailDialog";
 import type { ActionPlan } from "@/hooks/useActionPlans";
