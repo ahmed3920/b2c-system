@@ -271,8 +271,7 @@ Deno.serve(async (req) => {
     // Existing rows to avoid overwriting team-leader edits.
     // Paginated so all validated rows are preserved once the table grows past 1000.
     const existingRows = await fetchAll<{ case_id: string; edu_validation: string | null }>(
-      () => db.from("live_session_issues"),
-      "case_id, edu_validation",
+      () => db.from("live_session_issues").select("case_id, edu_validation"),
     );
     const existingValidated = new Set<string>();
     for (const r of existingRows) {
