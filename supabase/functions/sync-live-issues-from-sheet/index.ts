@@ -240,8 +240,7 @@ Deno.serve(async (req) => {
 
     // Load edu_descriptions name -> id map (normalized)
     const eduRows = await fetchAll<{ id: string; name: string | null }>(
-      () => db.from("edu_descriptions").eq("is_active", true),
-      "id, name",
+      () => db.from("edu_descriptions").select("id, name").eq("is_active", true),
     );
     const eduNameMap = new Map<string, string>();
     for (const e of eduRows) {
