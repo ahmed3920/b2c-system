@@ -114,26 +114,12 @@ export const QualityUpload = ({ onUploaded }: QualityUploadProps) => {
 
       if (cleaned.length === 0) throw new Error("No valid rows found.");
 
-      // Delete existing entries by this uploader for the (tutor, month) combos in the file
-      const monthGroups = new Map<string, { y: number; m: number; ids: Set<string> }>();
-      for (const r of cleaned) {
-        const key = `${r.year}-${r.month}`;
-        if (!monthGroups.has(key)) monthGroups.set(key, { y: r.year, m: r.month, ids: new Set() });
-        monthGroups.get(key)!.ids.add(r.tutor_id);
-      }
-      for (const { y, m, ids } of monthGroups.values()) {
-        const start = `${y}-${String(m).padStart(2, "0")}-01`;
-        const nx = new Date(y, m, 1);
-        const nxISO = `${nx.getFullYear()}-${String(nx.getMonth() + 1).padStart(2, "0")}-01`;
-        const { error: delErr } = await supabase
-          .from("quality_uploads")
-          .delete()
-          .eq("uploaded_by", user.id)
-          .in("tutor_id", Array.from(ids))
-          .gte("session_date", start)
-          .lt("session_date", nxISO);
-        if (delErr) throw delErr;
-      }
+      // Full replace: wipe ALL existing quality data so the dashboard only reflects this upload.
+      const { error: wipeErr } = await supabase
+        .from("quality_uploads")
+        .delete()
+        .not("id", "is", null);
+      if (wipeErr) throw wipeErr;
 
       const records = cleaned.map((r) => ({
         tutor_id: r.tutor_id,
