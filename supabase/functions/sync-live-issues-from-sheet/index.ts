@@ -209,14 +209,32 @@ Deno.serve(async (req) => {
       edu_case: findCol(headerNorm, ["Edu Case Mar", "Edu Case", "Education Case"]),
     };
 
+    // Helper: paginate PostgREST reads past the default 1000-row cap.
+    async function fetchAll<T>(
+      build: () => ReturnType<typeof db.from>,
+      cols: string,
+    ): Promise<T[]> {
+      const out: T[] = [];
+      const size = 1000;
+      for (let from = 0; ; from += size) {
+        const { data, error } = await build().select(cols).range(from, from + size - 1);
+        if (error) throw error;
+        const rows = (data ?? []) as T[];
+        out.push(...rows);
+        if (rows.length < size) break;
+      }
+      return out;
+    }
+
     // Build tutor_id -> team_leader map from action_plan_tutors (already normalized to mentor_name).
     // Keys are lowercased + trimmed so lookups are case-insensitive — sheet rows sometimes
     // arrive with mixed casing (e.g. "T-12183" vs "t-12183").
-    const { data: tutorRows } = await db
-      .from("action_plan_tutors")
-      .select("tutor_external_id, team_leader");
+    const tutorRows = await fetchAll<{ tutor_external_id: string | null; team_leader: string | null }>(
+      () => db.from("action_plan_tutors"),
+      "tutor_external_id, team_leader",
+    );
     const tutorTlMap = new Map<string, string>();
-    for (const t of (tutorRows ?? [])) {
+    for (const t of tutorRows) {
       if (t.tutor_external_id && t.team_leader) {
         tutorTlMap.set(
           String(t.tutor_external_id).trim().toLowerCase(),
@@ -226,22 +244,20 @@ Deno.serve(async (req) => {
     }
 
     // Load edu_descriptions name -> id map (normalized)
-    const { data: eduRows } = await db
-      .from("edu_descriptions")
-      .select("id, name")
-      .eq("is_active", true);
+    const eduRows = await fetchAll<{ id: string; name: string | null }>(
+      () => db.from("edu_descriptions").eq("is_active", true),
+      "id, name",
+    );
     const eduNameMap = new Map<string, string>();
-    for (const e of (eduRows ?? [])) {
+    for (const e of eduRows) {
       if (e.name && e.id) eduNameMap.set(norm(String(e.name)), String(e.id));
     }
     const resolveEduDescriptionId = (raw: string): string | null => {
       if (!raw) return null;
       const key = norm(raw);
       if (eduNameMap.has(key)) return eduNameMap.get(key)!;
-      // Try stripped of leading dashes/punct (sheet has "- Accepted Sick Leave")
       const stripped = norm(raw.replace(/^[-\s]+/, ""));
       if (eduNameMap.has(stripped)) return eduNameMap.get(stripped)!;
-      // Try contains match either direction
       for (const [k, v] of eduNameMap) {
         if (k.includes(key) || key.includes(k)) return v;
       }
@@ -259,12 +275,13 @@ Deno.serve(async (req) => {
     };
 
     // Existing rows to avoid overwriting team-leader edits.
-    // We preserve any DB row that already has edu_validation set.
-    const { data: existingRows } = await db
-      .from("live_session_issues")
-      .select("case_id, edu_validation");
+    // Paginated so all validated rows are preserved once the table grows past 1000.
+    const existingRows = await fetchAll<{ case_id: string; edu_validation: string | null }>(
+      () => db.from("live_session_issues"),
+      "case_id, edu_validation",
+    );
     const existingValidated = new Set<string>();
-    for (const r of (existingRows ?? [])) {
+    for (const r of existingRows) {
       if (r.edu_validation) existingValidated.add(String(r.case_id));
     }
 
