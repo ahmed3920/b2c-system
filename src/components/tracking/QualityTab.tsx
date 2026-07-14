@@ -149,7 +149,7 @@ export const QualityTab = () => {
       from += PAGE;
       if (from > 200000) break; // safety cap
     }
-    setRows(all);
+    setRawRows(all);
     setLoading(false);
   }, []);
 
