@@ -537,7 +537,7 @@ Deno.serve(async (req) => {
       await db`
         insert into public.tutor_segmentation_audit
           (event_type, actor_id, actor_name, context)
-        values ('recompute', ${auth.userId}::uuid, ${actorName}, ${sqlJson(auditContext)}::jsonb)
+        values ('recompute', ${auth.userId}::uuid, ${actorName}, ${db.json(auditContext)}::jsonb)
       `;
     } catch (e) {
       console.error("audit insert failed", e);
