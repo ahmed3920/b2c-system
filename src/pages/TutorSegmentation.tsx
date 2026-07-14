@@ -125,12 +125,17 @@ export default function TutorSegmentation() {
             <h2 className="text-xl font-semibold">Tutor Segmentation</h2>
             <p className="text-sm text-muted-foreground">Weighted Tutor Health Score with automatic Elite / Growth / At Risk classification.</p>
           </div>
-          {isAdmin && (
-            <Button onClick={handleRecompute} disabled={running}>
-              {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Recompute
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setAuditOpen(true)}>
+              <History className="h-4 w-4 mr-2" /> Audit log
             </Button>
-          )}
+            {isAdmin && (
+              <Button onClick={handleRecompute} disabled={running}>
+                {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Recompute
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Summary cards */}
