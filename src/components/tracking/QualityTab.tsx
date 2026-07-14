@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { QualityUpload } from "./QualityUpload";
 import { QualitySheetSync } from "./QualitySheetSync";
+import { ManualQualityEntry } from "@/components/quality/ManualQualityEntry";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -218,6 +219,7 @@ export const QualityTab = () => {
 
   return (
     <div className="space-y-6">
+      <ManualQualityEntry onAdded={() => load()} />
       <QualityUpload onUploaded={() => load()} />
       <QualitySheetSync isAdmin={isAdmin} onSynced={() => load()} />
 

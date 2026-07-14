@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
+import { QualityTab } from "@/components/tracking/QualityTab";
 
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -51,6 +52,10 @@ export default function Performance() {
             ))}
           </TabsList>
 
+          <TabsContent value="quality" className="mt-4">
+            <QualityTab />
+          </TabsContent>
+
           <TabsContent value="live-issues" className="mt-4">
             <LiveIssuesTable />
           </TabsContent>
@@ -59,7 +64,7 @@ export default function Performance() {
             <CSTicketsTable />
           </TabsContent>
 
-          {sections.filter((s) => s.v !== "live-issues" && s.v !== "cs-tickets").map((s) => (
+          {sections.filter((s) => !["live-issues", "cs-tickets", "quality"].includes(s.v)).map((s) => (
             <TabsContent key={s.v} value={s.v}>
               <Card>
                 <CardHeader><CardTitle>{s.l}</CardTitle></CardHeader>
