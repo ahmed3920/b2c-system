@@ -2,6 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { SegmentBadge, TrendIndicator } from "./SegmentBadge";
+import { ManualRatingPanel } from "./ManualRatingPanel";
+import { ScoreHistoryChart } from "./ScoreHistoryChart";
 import type { SegmentationScore, SegmentationRecommendation } from "@/hooks/useTutorSegmentation";
 import { Badge } from "@/components/ui/badge";
 
