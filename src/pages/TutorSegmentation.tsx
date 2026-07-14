@@ -289,6 +289,17 @@ export default function TutorSegmentation() {
           recommendations={recommendations}
         />
         <AuditLogDialog open={auditOpen} onOpenChange={setAuditOpen} />
+        <ExportDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          rows={filtered}
+          filterSummary={[
+            search && `search="${search}"`,
+            tlFilter !== "all" && `TL=${tlFilter}`,
+            langFilter !== "all" && `lang=${langFilter}`,
+            segFilter !== "all" && `segment=${segFilter}`,
+          ].filter(Boolean).join(", ") || undefined}
+        />
       </div>
     </AppLayout>
   );
