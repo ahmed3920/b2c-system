@@ -252,7 +252,7 @@ export function LeavesVerificationTab() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadTick]);
 
   const teamLeaderOptions = useMemo(() => {
     const set = new Set<string>();
