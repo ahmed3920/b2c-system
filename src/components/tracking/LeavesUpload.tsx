@@ -39,9 +39,17 @@ interface ParsedRow {
 }
 
 function findColumn(headers: string[], aliases: string[]): string | null {
-  const lower = headers.map((h) => h.trim().toLowerCase());
+  const norm = (s: string) => s.trim().toLowerCase().replace(/[→\-–—>]+/g, " ").replace(/\s+/g, " ").trim();
+  const normHeaders = headers.map(norm);
   for (const a of aliases) {
-    const idx = lower.indexOf(a.toLowerCase());
+    const na = norm(a);
+    const idx = normHeaders.indexOf(na);
+    if (idx >= 0) return headers[idx];
+  }
+  // fallback: contains match
+  for (const a of aliases) {
+    const na = norm(a);
+    const idx = normHeaders.findIndex((h) => h.includes(na));
     if (idx >= 0) return headers[idx];
   }
   return null;
