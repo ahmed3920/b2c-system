@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { QualityUpload } from "./QualityUpload";
 import { QualitySheetSync } from "./QualitySheetSync";
+import { ManualQualityEntry } from "@/components/quality/ManualQualityEntry";
 import { Card } from "@/components/ui/card";
 import {
   Table,
