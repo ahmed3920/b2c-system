@@ -4,11 +4,12 @@
 // - Produces a Tutor Health Score, segment, trend, confidence, hard-stop, next action
 // - Upserts today's snapshot into tutor_segmentation_scores
 // - Regenerates open recommendations in tutor_segmentation_recommendations
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import postgres from "npm:postgres@3.4.5";
+import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const DATABASE_URL = Deno.env.get("SUPABASE_DB_URL")?.trim();
 
 type Row = Record<string, any>;
 
@@ -26,6 +27,12 @@ const W = {
   culture_fit: 5,
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 function recencyWeight(days: number): number {
   if (days <= 30) return 1.0;
   if (days <= 60) return 0.6;
@@ -37,53 +44,231 @@ function clamp(n: number, lo = 0, hi = 100) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-// Fetch all pages
-async function fetchAll<T>(supabase: any, build: () => any): Promise<T[]> {
-  const pageSize = 1000;
-  const out: T[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await build().range(from, from + pageSize - 1);
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    out.push(...data);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
+function dateOnly(value?: string | Date | null): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const str = String(value);
+  return /^\d{4}-\d{2}-\d{2}/.test(str) ? str.slice(0, 10) : str;
+}
+
+function chunks<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
+}
+
+async function verifyAdmin(req: Request, sql: ReturnType<typeof postgres>) {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return { response: json({ error: "Unauthorized" }, 401), userId: null };
+  }
+
+  const token = authHeader.slice("Bearer ".length);
+  let userId: string;
+  try {
+    const jwks = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
+    const { payload } = await jwtVerify(token, jwks, { clockTolerance: 600 });
+    if (!payload.sub) throw new Error("Missing user id in token");
+    userId = payload.sub;
+  } catch (_error) {
+    return { response: json({ error: "Unauthorized" }, 401), userId: null };
+  }
+
+  const roles = await sql<{ role: string }[]>`
+    select role::text as role
+    from public.user_roles
+    where user_id = ${userId}
+  `;
+  if (!roles.some((r) => r.role === "admin")) {
+    return { response: json({ error: "Admin access required" }, 403), userId: null };
+  }
+
+  return { response: null, userId };
+}
+
+async function upsertSnapshots(sql: ReturnType<typeof postgres>, snapshots: Row[]) {
+  for (const chunk of chunks(snapshots, 500)) {
+    await sql`
+      insert into public.tutor_segmentation_scores (
+        tutor_external_id, tutor_name, team_leader, language, snapshot_date,
+        quality_score, planned_leaves_score, emergency_leaves_score, live_issues_score, cs_tickets_score,
+        communication_score, tl_feedback_score, engagement_score, parent_handling_score, culture_fit_score,
+        health_score, segment, trend, confidence, hard_stop_reason, next_action, metrics_meta
+      )
+      select
+        tutor_external_id,
+        tutor_name,
+        team_leader,
+        language,
+        snapshot_date::date,
+        quality_score,
+        planned_leaves_score,
+        emergency_leaves_score,
+        live_issues_score,
+        cs_tickets_score,
+        communication_score,
+        tl_feedback_score,
+        engagement_score,
+        parent_handling_score,
+        culture_fit_score,
+        health_score,
+        segment::public.tutor_segment,
+        trend::public.tutor_trend,
+        confidence::public.tutor_confidence,
+        hard_stop_reason,
+        next_action,
+        coalesce(metrics_meta, '{}'::jsonb)
+      from jsonb_to_recordset(${JSON.stringify(chunk)}::jsonb) as x(
+        tutor_external_id text,
+        tutor_name text,
+        team_leader text,
+        language text,
+        snapshot_date text,
+        quality_score numeric,
+        planned_leaves_score numeric,
+        emergency_leaves_score numeric,
+        live_issues_score numeric,
+        cs_tickets_score numeric,
+        communication_score numeric,
+        tl_feedback_score numeric,
+        engagement_score numeric,
+        parent_handling_score numeric,
+        culture_fit_score numeric,
+        health_score numeric,
+        segment text,
+        trend text,
+        confidence text,
+        hard_stop_reason text,
+        next_action text,
+        metrics_meta jsonb
+      )
+      on conflict (tutor_external_id, snapshot_date) do update set
+        tutor_name = excluded.tutor_name,
+        team_leader = excluded.team_leader,
+        language = excluded.language,
+        quality_score = excluded.quality_score,
+        planned_leaves_score = excluded.planned_leaves_score,
+        emergency_leaves_score = excluded.emergency_leaves_score,
+        live_issues_score = excluded.live_issues_score,
+        cs_tickets_score = excluded.cs_tickets_score,
+        communication_score = excluded.communication_score,
+        tl_feedback_score = excluded.tl_feedback_score,
+        engagement_score = excluded.engagement_score,
+        parent_handling_score = excluded.parent_handling_score,
+        culture_fit_score = excluded.culture_fit_score,
+        health_score = excluded.health_score,
+        segment = excluded.segment,
+        trend = excluded.trend,
+        confidence = excluded.confidence,
+        hard_stop_reason = excluded.hard_stop_reason,
+        next_action = excluded.next_action,
+        metrics_meta = excluded.metrics_meta,
+        updated_at = now()
+    `;
+  }
+}
+
+async function insertRecommendations(sql: ReturnType<typeof postgres>, recommendations: Row[]) {
+  for (const chunk of chunks(recommendations, 500)) {
+    await sql`
+      insert into public.tutor_segmentation_recommendations (
+        tutor_external_id, tutor_name, team_leader, rule_id, title, description,
+        severity, suggested_action, status, meta
+      )
+      select
+        tutor_external_id,
+        tutor_name,
+        team_leader,
+        rule_id,
+        title,
+        description,
+        severity::public.recommendation_severity,
+        suggested_action,
+        status::public.recommendation_status,
+        coalesce(meta, '{}'::jsonb)
+      from jsonb_to_recordset(${JSON.stringify(chunk)}::jsonb) as x(
+        tutor_external_id text,
+        tutor_name text,
+        team_leader text,
+        rule_id text,
+        title text,
+        description text,
+        severity text,
+        suggested_action text,
+        status text,
+        meta jsonb
+      )
+    `;
+  }
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  let db: ReturnType<typeof postgres> | null = null;
   try {
-    const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${SERVICE_KEY}` } },
+    if (!DATABASE_URL) return json({ error: "Database connection is not configured" }, 500);
+
+    db = postgres(DATABASE_URL, {
+      max: 1,
+      prepare: false,
+      ssl: "require",
+      idle_timeout: 3,
+      connect_timeout: 10,
     });
+
+    const auth = await verifyAdmin(req, db);
+    if (auth.response) return auth.response;
 
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
     const cutoff90 = new Date(today.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
-    const cutoff60 = new Date(today.getTime() - 60 * 86400_000).toISOString().slice(0, 10);
-    const cutoff30 = new Date(today.getTime() - 30 * 86400_000).toISOString().slice(0, 10);
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
 
     // 1) Tutor universe from action_plan_tutors (roster)
-    const tutors = await fetchAll<Row>(sb, () =>
-      sb.from("action_plan_tutors").select("tutor_external_id, tutor_name, team_leader, mentor_name, language, is_mentor")
-    );
+    const tutors = await db<Row[]>`
+      select tutor_external_id, tutor_name, team_leader, mentor_name, language, is_mentor
+      from public.action_plan_tutors
+      order by tutor_name
+    `;
     const roster = tutors.filter((t) => !t.is_mentor && t.tutor_external_id);
 
-    // 2) Signals
+    // 2) Signals. Direct DB access avoids PostgREST JWT clock-skew failures and has no 1,000-row cap.
     const [quality, leaves, liveIssues, csTickets, engagement, manualRatings, prevScores] = await Promise.all([
-      fetchAll<Row>(sb, () => sb.from("quality_uploads").select("tutor_id, agent_name, team_leader, session_date, score").gte("session_date", cutoff90)),
-      fetchAll<Row>(sb, () => sb.from("tutor_leaves").select("tutor_external_id, leave_date, leave_reason, source").gte("leave_date", cutoff90)),
-      fetchAll<Row>(sb, () => sb.from("live_session_issues").select("from_tutor_id, session_date, edu_validation").gte("session_date", cutoff90)),
-      fetchAll<Row>(sb, () => sb.from("cs_tickets").select("tutor_external_id, ticket_date, mentor_validation, additional_tutors").gte("ticket_date", cutoff90)),
-      fetchAll<Row>(sb, () => sb.from("engagement_uploads").select("tutor_external_id, month, rating, total_sessions, sessions_with_feedback").gte("month", cutoff90)),
-      fetchAll<Row>(sb, () => sb.from("tutor_manual_ratings").select("tutor_external_id, period_month, communication, tl_feedback, parent_handling, culture_fit").gte("period_month", cutoff90)),
-      fetchAll<Row>(sb, () => sb.from("tutor_segmentation_scores").select("tutor_external_id, snapshot_date, health_score").order("snapshot_date", { ascending: false })),
+      db<Row[]>`
+        select tutor_id, agent_name, team_leader, session_date::text as session_date, score
+        from public.quality_uploads
+        where session_date >= ${cutoff90}::date
+      `,
+      db<Row[]>`
+        select tutor_external_id, leave_date::text as leave_date, leave_reason, source
+        from public.tutor_leaves
+        where leave_date >= ${cutoff90}::date
+      `,
+      db<Row[]>`
+        select from_tutor_id, session_date::text as session_date, edu_validation
+        from public.live_session_issues
+        where session_date >= ${cutoff90}::date
+      `,
+      db<Row[]>`
+        select tutor_external_id, ticket_date::text as ticket_date, mentor_validation, additional_tutors
+        from public.cs_tickets
+        where ticket_date >= ${cutoff90}::date
+      `,
+      db<Row[]>`
+        select tutor_external_id, month::text as month, rating, total_sessions, sessions_with_feedback
+        from public.engagement_uploads
+        where month >= ${cutoff90}::date
+      `,
+      db<Row[]>`
+        select tutor_external_id, period_month::text as period_month, communication, tl_feedback, parent_handling, culture_fit
+        from public.tutor_manual_ratings
+        where period_month >= ${cutoff90}::date
+      `,
+      db<Row[]>`
+        select tutor_external_id, snapshot_date::text as snapshot_date, health_score
+        from public.tutor_segmentation_scores
+        order by snapshot_date desc
+      `,
     ]);
 
     // Index prev scores per tutor (most recent before today)
@@ -97,9 +282,10 @@ Deno.serve(async (req) => {
     const isEmergency = (reason?: string | null) =>
       !!reason && /emergenc|sick|urgent|no[- ]?show/i.test(String(reason));
 
-    const daysSince = (dateStr?: string | null) => {
-      if (!dateStr) return 9999;
-      const d = new Date(dateStr).getTime();
+    const daysSince = (dateStr?: string | Date | null) => {
+      const normalized = dateOnly(dateStr);
+      if (!normalized) return 9999;
+      const d = new Date(normalized).getTime();
       return Math.max(0, Math.floor((today.getTime() - d) / 86400_000));
     };
 
@@ -163,7 +349,8 @@ Deno.serve(async (req) => {
       if (eRows.length) {
         let num = 0, den = 0;
         for (const e of eRows) {
-          const w = recencyWeight(daysSince(e.month + "-01"));
+          const month = dateOnly(e.month);
+          const w = recencyWeight(daysSince(month?.length === 7 ? `${month}-01` : month));
           const raw = Number(e.rating) || 0;
           const norm = raw > 10 ? raw : raw * 20; // supports /5 or /100 storage
           num += norm * w; den += w;
@@ -269,7 +456,7 @@ Deno.serve(async (req) => {
           tutor_name: t.tutor_name,
           team_leader: t.team_leader,
           rule_id, title, description: description ?? null,
-          severity, suggested_action, status: "open",
+          severity, suggested_action, status: "open", meta: {},
         });
       };
       if (quality_score != null && quality_score < 85 && qRows.length >= 2) push("quality_low", "Quality below 85", "warning", "Create action plan", `Latest quality avg ${quality_score.toFixed(1)}`);
@@ -281,40 +468,24 @@ Deno.serve(async (req) => {
     }
 
     // Upsert snapshots for today
-    if (snapshots.length) {
-      // Chunk to be safe
-      for (let i = 0; i < snapshots.length; i += 500) {
-        const chunk = snapshots.slice(i, i + 500);
-        const { error } = await sb.from("tutor_segmentation_scores").upsert(chunk, { onConflict: "tutor_external_id,snapshot_date" });
-        if (error) throw error;
-      }
-    }
+    if (snapshots.length) await upsertSnapshots(db, snapshots);
 
     // Refresh recommendations — clear open ones from today's compute, then insert
     const tutorIds = snapshots.map((s) => s.tutor_external_id);
     if (tutorIds.length) {
-      await sb.from("tutor_segmentation_recommendations")
-        .delete()
-        .eq("status", "open")
-        .in("tutor_external_id", tutorIds);
+      await db`
+        delete from public.tutor_segmentation_recommendations
+        where status = 'open'::public.recommendation_status
+          and tutor_external_id in ${db(tutorIds)}
+      `;
     }
-    if (recommendations.length) {
-      for (let i = 0; i < recommendations.length; i += 500) {
-        const chunk = recommendations.slice(i, i + 500);
-        const { error } = await sb.from("tutor_segmentation_recommendations").insert(chunk);
-        if (error) throw error;
-      }
-    }
+    if (recommendations.length) await insertRecommendations(db, recommendations);
 
-    return new Response(
-      JSON.stringify({ ok: true, tutors: snapshots.length, recommendations: recommendations.length, snapshot_date: todayIso }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ ok: true, tutors: snapshots.length, recommendations: recommendations.length, snapshot_date: todayIso });
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: String((e as any)?.message ?? e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: String((e as any)?.message ?? e) }, 500);
+  } finally {
+    await db?.end({ timeout: 1 });
   }
 });
