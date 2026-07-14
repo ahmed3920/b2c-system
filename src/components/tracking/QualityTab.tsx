@@ -67,12 +67,36 @@ const ACTION_THRESHOLD = 90;
 
 export const QualityTab = () => {
   const { isAdmin } = useUserRole();
-  const [rows, setRows] = useState<QualityRow[]>([]);
+  const roster = useMergedRoster();
+  const rosterById = useMemo(() => {
+    const m = new Map<string, { name: string; mentor: string }>();
+    for (const r of roster) {
+      m.set(r.id.trim().toUpperCase(), {
+        name: r.name || r.id,
+        mentor: (r as { mentor?: string }).mentor ?? "",
+      });
+    }
+    return m;
+  }, [roster]);
+  const [rawRows, setRawRows] = useState<QualityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTutor, setSelectedTutor] = useState<AgentStat | null>(null);
   const [preset, setPreset] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  // Resolve names/team leader from roster by Tutor ID
+  const rows = useMemo<QualityRow[]>(() => {
+    return rawRows.map((r) => {
+      const key = (r.tutor_id ?? "").trim().toUpperCase();
+      const hit = key ? rosterById.get(key) : undefined;
+      return {
+        ...r,
+        agent_name: hit?.name || r.agent_name || r.tutor_id || "",
+        team_leader: r.team_leader || hit?.mentor || "",
+      };
+    });
+  }, [rawRows, rosterById]);
 
   const applyPreset = useCallback((p: string) => {
     setPreset(p);
