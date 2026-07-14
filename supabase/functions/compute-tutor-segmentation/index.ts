@@ -273,11 +273,15 @@ Deno.serve(async (req) => {
       `,
     ]);
 
-    // Index prev scores per tutor (most recent before today)
+    // Index prev scores per tutor (most recent before today first, keep list for streaks)
     const prevByTutor = new Map<string, Row>();
+    const historyByTutor = new Map<string, Row[]>();
     for (const r of prevScores) {
       if (r.snapshot_date === todayIso) continue;
       if (!prevByTutor.has(r.tutor_external_id)) prevByTutor.set(r.tutor_external_id, r);
+      const arr = historyByTutor.get(r.tutor_external_id) ?? [];
+      arr.push(r);
+      historyByTutor.set(r.tutor_external_id, arr);
     }
 
     // Emergency leave keywords
@@ -336,8 +340,15 @@ Deno.serve(async (req) => {
         weightedIssues <= 0.5 ? 100 : weightedIssues <= 2 ? 80 : weightedIssues <= 4 ? 55 : Math.max(0, 40 - (weightedIssues - 5) * 8)
       );
 
-      // CS tickets — valid tutor-related only, recency-weighted
-      const tCs = csTickets.filter((c) => c.tutor_external_id === tid && c.mentor_validation === "valid");
+      // CS tickets — pre-filtered to valid; match on primary or additional_tutors, recency-weighted
+      const tCs = csTickets.filter((c) => {
+        if (c.tutor_external_id === tid) return true;
+        const add = c.additional_tutors;
+        if (Array.isArray(add)) {
+          return add.some((e: any) => e && (e.tutor_external_id === tid || e.tutor_id === tid));
+        }
+        return false;
+      });
       let weightedCs = 0;
       for (const c of tCs) weightedCs += recencyWeight(daysSince(c.ticket_date));
       const cs_tickets_score = clamp(
