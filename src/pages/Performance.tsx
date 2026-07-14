@@ -52,6 +52,10 @@ export default function Performance() {
             ))}
           </TabsList>
 
+          <TabsContent value="quality" className="mt-4">
+            <QualityTab />
+          </TabsContent>
+
           <TabsContent value="live-issues" className="mt-4">
             <LiveIssuesTable />
           </TabsContent>
@@ -60,7 +64,7 @@ export default function Performance() {
             <CSTicketsTable />
           </TabsContent>
 
-          {sections.filter((s) => s.v !== "live-issues" && s.v !== "cs-tickets").map((s) => (
+          {sections.filter((s) => !["live-issues", "cs-tickets", "quality"].includes(s.v)).map((s) => (
             <TabsContent key={s.v} value={s.v}>
               <Card>
                 <CardHeader><CardTitle>{s.l}</CardTitle></CardHeader>
