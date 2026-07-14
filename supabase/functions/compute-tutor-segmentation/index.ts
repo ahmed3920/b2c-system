@@ -57,7 +57,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: `Bearer ${SERVICE_KEY}` } },
+    });
 
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
