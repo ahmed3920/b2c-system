@@ -12,7 +12,7 @@ interface Props {
 }
 
 const ALIASES: Record<string, string[]> = {
-  tutor_external_id: ["T ID", "Tutors - Requester", "Tutor ID", "TutorID", "Tutor Id", "Mentor ID", "Agent ID", "External ID"],
+  tutor_external_id: ["Tutors - Requester → T ID", "Tutors - Requester -> T ID", "T ID", "Tutors - Requester", "Tutor ID", "TutorID", "Tutor Id", "Mentor ID", "Agent ID", "External ID"],
   tutor_name: ["Tutor Name", "Agent Name", "Instructor Name", "Instructor's Name", "Name"],
   team_leader: ["Team Leader", "TL"],
   leave_date: ["Start Date: Day", "Leave Date", "Start Date", "Date", "From"],
@@ -39,9 +39,17 @@ interface ParsedRow {
 }
 
 function findColumn(headers: string[], aliases: string[]): string | null {
-  const lower = headers.map((h) => h.trim().toLowerCase());
+  const norm = (s: string) => s.trim().toLowerCase().replace(/[→\-–—>]+/g, " ").replace(/\s+/g, " ").trim();
+  const normHeaders = headers.map(norm);
   for (const a of aliases) {
-    const idx = lower.indexOf(a.toLowerCase());
+    const na = norm(a);
+    const idx = normHeaders.indexOf(na);
+    if (idx >= 0) return headers[idx];
+  }
+  // fallback: contains match
+  for (const a of aliases) {
+    const na = norm(a);
+    const idx = normHeaders.findIndex((h) => h.includes(na));
     if (idx >= 0) return headers[idx];
   }
   return null;
