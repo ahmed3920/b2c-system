@@ -12,7 +12,7 @@ interface Props {
 }
 
 const ALIASES: Record<string, string[]> = {
-  tutor_external_id: ["T ID", "Tutors - Requester", "Tutor ID", "TutorID", "Tutor Id", "Mentor ID", "Agent ID", "External ID"],
+  tutor_external_id: ["Tutors - Requester → T ID", "Tutors - Requester -> T ID", "T ID", "Tutors - Requester", "Tutor ID", "TutorID", "Tutor Id", "Mentor ID", "Agent ID", "External ID"],
   tutor_name: ["Tutor Name", "Agent Name", "Instructor Name", "Instructor's Name", "Name"],
   team_leader: ["Team Leader", "TL"],
   leave_date: ["Start Date: Day", "Leave Date", "Start Date", "Date", "From"],
