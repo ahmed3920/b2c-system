@@ -82,10 +82,10 @@ export function useTutorSegmentation() {
     setLoading(false);
   }, []);
 
-  const recompute = useCallback(async () => {
+  const recompute = useCallback(async (context: Record<string, unknown> = {}) => {
     setRunning(true);
     try {
-      const { error } = await supabase.functions.invoke("compute-tutor-segmentation", { body: {} });
+      const { error } = await supabase.functions.invoke("compute-tutor-segmentation", { body: { context } });
       if (error) throw error;
       await refresh();
     } finally {
