@@ -93,7 +93,7 @@ export const QualityTab = () => {
       return {
         ...r,
         agent_name: hit?.name || r.agent_name || r.tutor_id || "",
-        team_leader: r.team_leader || hit?.mentor || "",
+        team_leader: hit?.team_leader || r.team_leader || "",
       };
     });
   }, [rawRows, rosterById]);
