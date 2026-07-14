@@ -176,6 +176,7 @@ export function LeavesVerificationTab() {
   const [tlFilter, setTlFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all"); // all | tutor | mentor
   const [monthFilter, setMonthFilter] = useState<string>("all"); // policy month key
+  const [reloadTick, setReloadTick] = useState(0);
 
   /* ---------- Emergency-abuse action plans (existing) ---------- */
   // Map of tutor_external_id → most-recent active emergency_abuse plan.
