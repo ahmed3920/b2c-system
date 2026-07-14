@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCw, Loader2, History } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTutorSegmentation, type SegmentationScore, type TutorSegment } from "@/hooks/useTutorSegmentation";
 import { SegmentBadge, TrendIndicator } from "@/components/segmentation/SegmentBadge";
 import { TutorProfileDialog } from "@/components/segmentation/TutorProfileDialog";
+import { AuditLogDialog } from "@/components/segmentation/AuditLogDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ export default function TutorSegmentation() {
   const [selected, setSelected] = useState<SegmentationScore | null>(null);
   const [sortKey, setSortKey] = useState<keyof SegmentationScore>("health_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const teamLeaders = useMemo(
     () => Array.from(new Set(scores.map((s) => s.team_leader).filter(Boolean))) as string[],
@@ -101,7 +103,14 @@ export default function TutorSegmentation() {
 
   const handleRecompute = async () => {
     try {
-      await recompute();
+      await recompute({
+        filters: {
+          search: search || undefined,
+          team_leader: tlFilter !== "all" ? tlFilter : undefined,
+          language: langFilter !== "all" ? langFilter : undefined,
+          segment: segFilter !== "all" ? segFilter : undefined,
+        },
+      });
       toast.success("Segmentation recomputed");
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to recompute");
