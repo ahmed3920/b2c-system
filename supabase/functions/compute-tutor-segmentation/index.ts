@@ -260,10 +260,10 @@ Deno.serve(async (req) => {
           and edu_validation = 'deduct'
       `,
       db<Row[]>`
-        select tutor_external_id, ticket_date::text as ticket_date, mentor_validation, additional_tutors
+        select tutor_external_id, ticket_date::text as ticket_date, status, additional_tutors
         from public.cs_tickets
         where ticket_date >= ${cutoff90}::date
-          and mentor_validation = 'valid'
+          and status = 'Valid'
       `,
       db<Row[]>`
         select tutor_external_id, month::text as month, rating, total_sessions, sessions_with_feedback
