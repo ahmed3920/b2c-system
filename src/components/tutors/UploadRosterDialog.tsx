@@ -77,9 +77,15 @@ export function UploadRosterDialog({ open, onOpenChange, onDone }: Props) {
           const key = HEADER_MAP[k.trim()];
           if (key) out[key] = normalize(v);
         }
-        // Employment type may come as 0/1 numeric
-        if (out.employment_type === "0" || out.employment_type === "") out.employment_type = "Full-time";
-        else if (out.employment_type === "1") out.employment_type = "Part-time";
+        // Employment type may come as 0/1/2 numeric or as text
+        const rawEmp = (out.employment_type ?? "").toString().trim().toLowerCase();
+        if (rawEmp === "0" || rawEmp === "" || rawEmp === "full time" || rawEmp === "full-time" || rawEmp === "fulltime" || rawEmp === "ft") {
+          out.employment_type = "Full-time";
+        } else if (rawEmp === "1" || rawEmp === "part time" || rawEmp === "part-time" || rawEmp === "parttime" || rawEmp === "pt") {
+          out.employment_type = "Part-time";
+        } else if (rawEmp === "2" || rawEmp === "contract" || rawEmp === "contractor" || rawEmp === "project" || rawEmp === "project-based" || rawEmp === "project based") {
+          out.employment_type = "Contract";
+        }
         return {
           id: out.id ?? "",
           name: out.name ?? "",

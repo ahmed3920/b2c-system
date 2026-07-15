@@ -78,6 +78,7 @@ export default function Tracking() {
         english: members.filter((m) => m.language === "English").length,
         full_time: members.filter((m) => m.employment_type === "Full-time").length,
         part_time: members.filter((m) => m.employment_type === "Part-time").length,
+        contract: members.filter((m) => m.employment_type === "Contract").length,
         members,
       }))
       .sort((a, b) => b.total - a.total);
@@ -94,6 +95,7 @@ export default function Tracking() {
           english: acc.english + t.english,
           fullTime: acc.fullTime + t.full_time,
           partTime: acc.partTime + t.part_time,
+          contract: acc.contract + t.contract,
         }),
         {
           total: 0,
@@ -103,6 +105,7 @@ export default function Tracking() {
           english: 0,
           fullTime: 0,
           partTime: 0,
+          contract: 0,
         },
       ),
     [teams],
@@ -141,8 +144,8 @@ export default function Tracking() {
               />
               <SummaryCard
                 icon={<Briefcase className="h-4 w-4" />}
-                label="Full / Part"
-                value={`${totals.fullTime} / ${totals.partTime}`}
+                label="FT / PT / Contract"
+                value={`${totals.fullTime} / ${totals.partTime} / ${totals.contract}`}
               />
             </div>
 
@@ -168,6 +171,7 @@ export default function Tracking() {
                         <TableHead className="text-right">English</TableHead>
                         <TableHead className="text-right">Full-time</TableHead>
                         <TableHead className="text-right">Part-time</TableHead>
+                        <TableHead className="text-right">Contract</TableHead>
                         <TableHead>Mix</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -186,6 +190,7 @@ export default function Tracking() {
                             <TableCell className="text-right">{t.english}</TableCell>
                             <TableCell className="text-right">{t.full_time}</TableCell>
                             <TableCell className="text-right">{t.part_time}</TableCell>
+                            <TableCell className="text-right">{t.contract}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <Badge variant="secondary" className="text-[10px]">

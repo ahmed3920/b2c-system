@@ -51,6 +51,7 @@ export default function Teams() {
         english: members.filter((m) => m.language === "English").length,
         full_time: members.filter((m) => m.employment_type === "Full-time").length,
         part_time: members.filter((m) => m.employment_type === "Part-time").length,
+        contract: members.filter((m) => m.employment_type === "Contract").length,
         members,
       }))
       .sort((a, b) => b.total - a.total);
@@ -64,8 +65,9 @@ export default function Teams() {
           total: acc.total + t.total,
           fullTime: acc.fullTime + t.full_time,
           partTime: acc.partTime + t.part_time,
+          contract: acc.contract + t.contract,
         }),
-        { tutors: 0, mentors: 0, total: 0, fullTime: 0, partTime: 0 },
+        { tutors: 0, mentors: 0, total: 0, fullTime: 0, partTime: 0, contract: 0 },
       ),
     [teams],
   );
@@ -73,13 +75,14 @@ export default function Teams() {
   return (
     <AppLayout title="Teams" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <SummaryCard label={isTLView ? "Mentors" : "Teams"} value={teams.length} />
           <SummaryCard label="Total Members" value={totals.total} />
           <SummaryCard label="Tutors" value={totals.tutors} />
           <SummaryCard label="Mentors" value={totals.mentors} />
           <SummaryCard label="Full-time" value={totals.fullTime} />
           <SummaryCard label="Part-time" value={totals.partTime} />
+          <SummaryCard label="Contract" value={totals.contract} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
