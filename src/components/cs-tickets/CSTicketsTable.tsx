@@ -160,6 +160,13 @@ export function CSTicketsTable() {
         >
           Not Validated ({counts.notValidated})
         </Button>
+        <Button
+          size="sm"
+          variant={quickFilter === "system" ? "default" : "outline"}
+          onClick={() => setQuickFilter(quickFilter === "system" ? "all" : "system")}
+        >
+          System Issue ({counts.system})
+        </Button>
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
