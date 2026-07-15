@@ -506,6 +506,63 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     </PopoverContent>
                   </Popover>
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Tutor</Label>
+                  <Popover open={tutorPickerOpen} onOpenChange={setTutorPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                        <span className="truncate">
+                          {tutorExternalId === "SYSTEM" || !tutorExternalId ? (
+                            <span className="text-muted-foreground">System / Content Issue — click to assign a tutor</span>
+                          ) : (
+                            <>{tutorName} <span className="text-muted-foreground">({tutorExternalId}) · TL: {tutorTeamLeader || "—"}</span></>
+                          )}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search tutor by name or ID..." />
+                        <CommandList>
+                          <CommandEmpty>No tutor found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="system content issue"
+                              onSelect={() => {
+                                setTutorExternalId("SYSTEM");
+                                setTutorName("System / Content Issue");
+                                setTutorTeamLeader("—");
+                                setTutorPickerOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", tutorExternalId === "SYSTEM" ? "opacity-100" : "opacity-0")} />
+                              <span className="italic">System / Content Issue (no tutor)</span>
+                            </CommandItem>
+                            {activeTutors.map((t) => (
+                              <CommandItem
+                                key={t.id}
+                                value={`${t.name} ${t.id}`}
+                                onSelect={() => {
+                                  setTutorExternalId(t.id);
+                                  setTutorName(t.name);
+                                  setTutorTeamLeader(t.team_leader || "");
+                                  setTutorPickerOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", tutorExternalId === t.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span>{t.name}</span>
+                                  <span className="text-xs text-muted-foreground">{t.id} · {t.team_leader}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Badge variant="default">CS</Badge> Category *
