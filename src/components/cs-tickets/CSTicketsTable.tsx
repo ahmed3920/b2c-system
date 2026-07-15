@@ -47,6 +47,8 @@ export function CSTicketsTable() {
   const [csCategoryFilter, setCsCategoryFilter] = useState<string>("all");
   const [eduCategoryFilter, setEduCategoryFilter] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [search, setSearch] = useState("");
 
   const isSameDay = (iso: string | null) => {
@@ -102,6 +104,8 @@ export function CSTicketsTable() {
       if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
       if (csCategoryFilter !== "all" && t.cs_category !== csCategoryFilter) return false;
       if (eduCategoryFilter !== "all" && t.edu_category !== eduCategoryFilter) return false;
+      if (dateFrom && (!t.ticket_date || t.ticket_date < dateFrom)) return false;
+      if (dateTo && (!t.ticket_date || t.ticket_date > dateTo)) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
       if (search) {
@@ -118,7 +122,7 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search]);
+  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search, dateFrom, dateTo]);
 
 
   const counts = useMemo(() => ({
@@ -164,7 +168,31 @@ export function CSTicketsTable() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-1">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-[150px]"
+              placeholder="From"
+              aria-label="Ticket date from"
+            />
+            <span className="text-muted-foreground text-xs">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-[150px]"
+              placeholder="To"
+              aria-label="Ticket date to"
+            />
+            {(dateFrom || dateTo) && (
+              <Button size="sm" variant="ghost" onClick={() => { setDateFrom(""); setDateTo(""); }}>
+                Clear
+              </Button>
+            )}
+          </div>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
             <SelectTrigger className="w-[150px]">
               <Filter className="mr-2 h-3 w-3" />
@@ -240,7 +268,14 @@ export function CSTicketsTable() {
         </div>
       </div>
 
-      <div className="rounded-md border mt-4">
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{filtered.length}</span> of {counts.total} ticket{counts.total === 1 ? "" : "s"}
+        </div>
+      </div>
+
+      <div className="rounded-md border mt-2">
+
         <Table>
           <TableHeader>
             <TableRow>
