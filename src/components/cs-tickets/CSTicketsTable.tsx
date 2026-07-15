@@ -104,6 +104,8 @@ export function CSTicketsTable() {
       if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
       if (csCategoryFilter !== "all" && t.cs_category !== csCategoryFilter) return false;
       if (eduCategoryFilter !== "all" && t.edu_category !== eduCategoryFilter) return false;
+      if (dateFrom && (!t.ticket_date || t.ticket_date < dateFrom)) return false;
+      if (dateTo && (!t.ticket_date || t.ticket_date > dateTo)) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
       if (search) {
