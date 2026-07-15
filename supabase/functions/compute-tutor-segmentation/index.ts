@@ -57,6 +57,25 @@ function chunks<T>(items: T[], size: number): T[][] {
   return out;
 }
 
+// Normalize team leader names to the 5 canonical values so filter dropdowns and
+// group-bys don't show duplicates like "Ahmed Hesham  Helmy" vs "Ahmed Hesham Helmy"
+// or "Anan Zewil" vs "Anan Mohammed Mohammed Zewil".
+function normalizeTeamLeader(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (lower.startsWith("ahmed")) return "Ahmed Hesham Helmy";
+  if (lower.startsWith("anan")) return "Anan";
+  if (lower.startsWith("kareem") || lower.startsWith("karim")) return "Kareem";
+  if (lower.startsWith("nermeen") || lower.startsWith("nermin")) return "Nermeen";
+  if (lower.startsWith("ghada")) return "Ghada";
+  return s;
+}
+
+const CANONICAL_TLS = new Set(["Ahmed Hesham Helmy", "Anan", "Kareem", "Nermeen", "Ghada"]);
+
+
 async function verifyAdmin(req: Request, sql: ReturnType<typeof postgres>) {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
@@ -233,13 +252,31 @@ Deno.serve(async (req) => {
     const todayIso = today.toISOString().slice(0, 10);
     const cutoff90 = new Date(today.getTime() - 90 * 86400_000).toISOString().slice(0, 10);
 
-    // 1) Tutor universe from action_plan_tutors (roster)
+    // 1) Tutor universe from action_plan_tutors (roster), excluding resigned/terminated
     const tutors = await db<Row[]>`
       select tutor_external_id, tutor_name, team_leader, mentor_name, language, is_mentor
       from public.action_plan_tutors
       order by tutor_name
     `;
-    const roster = tutors.filter((t) => !t.is_mentor && t.tutor_external_id);
+    const inactive = await db<Row[]>`
+      select tutor_external_id from public.tutor_status where status <> 'active'
+    `;
+    const inactiveIds = new Set(inactive.map((r) => r.tutor_external_id));
+    // Dedupe by tutor_external_id, drop mentors, drop inactive, and normalize team_leader.
+    const seen = new Set<string>();
+    const roster: Row[] = [];
+    for (const t of tutors) {
+      if (t.is_mentor) continue;
+      const tid = t.tutor_external_id;
+      if (!tid || seen.has(tid)) continue;
+      if (inactiveIds.has(tid)) continue;
+      seen.add(tid);
+      const normalizedTL = normalizeTeamLeader(t.team_leader);
+      // Only keep tutors under a real canonical team leader
+      if (!normalizedTL || !CANONICAL_TLS.has(normalizedTL)) continue;
+      roster.push({ ...t, team_leader: normalizedTL });
+    }
+
 
     // 2) Signals. Direct DB access avoids PostgREST JWT clock-skew failures and has no 1,000-row cap.
     const [quality, leaves, liveIssues, csTickets, engagement, manualRatings, prevScores] = await Promise.all([
