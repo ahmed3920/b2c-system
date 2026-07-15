@@ -133,6 +133,7 @@ export function CSTicketsTable() {
     notValid: tickets.filter((t) => t.status === "Not Valid" || t.status === "Rejected").length,
     dueToday: tickets.filter((t) => isSameDay(t.need_response_deadline)).length,
     notValidated: tickets.filter((t) => t.status === "Pending").length,
+    system: tickets.filter((t) => t.tutor_external_id === "SYSTEM").length,
   }), [tickets]);
 
   const renderTable = () => (
