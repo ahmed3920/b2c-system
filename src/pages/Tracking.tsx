@@ -95,6 +95,7 @@ export default function Tracking() {
           english: acc.english + t.english,
           fullTime: acc.fullTime + t.full_time,
           partTime: acc.partTime + t.part_time,
+          contract: acc.contract + t.contract,
         }),
         {
           total: 0,
@@ -104,6 +105,7 @@ export default function Tracking() {
           english: 0,
           fullTime: 0,
           partTime: 0,
+          contract: 0,
         },
       ),
     [teams],
