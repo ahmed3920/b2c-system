@@ -75,6 +75,18 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
   const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
 
+  // Editable tutor identity
+  const [tutorExternalId, setTutorExternalId] = useState<string>("");
+  const [tutorName, setTutorName] = useState<string>("");
+  const [tutorTeamLeader, setTutorTeamLeader] = useState<string>("");
+  const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
+  const tutorRoster = useMergedRoster();
+  const { inactiveIds } = useInactiveTutorIds();
+  const activeTutors = useMemo(
+    () => tutorRoster.filter((t) => !inactiveIds.has(t.id)),
+    [inactiveIds, tutorRoster],
+  );
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [closing, setClosing] = useState(false);
