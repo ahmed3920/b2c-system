@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, History, Lock, Pencil, RotateCcw, Trash2, X } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown, History, Lock, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import {
   AlertDialog,
   AlertDialogAction,
