@@ -46,7 +46,7 @@ export function CSTicketsTable() {
   const [monthFilter, setMonthFilter] = useState<string>("all");
   const [csCategoryFilter, setCsCategoryFilter] = useState<string>("all");
   const [eduCategoryFilter, setEduCategoryFilter] = useState<string>("all");
-  const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
+  const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated" | "system">("all");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -108,6 +108,7 @@ export function CSTicketsTable() {
       if (dateTo && (!t.ticket_date || t.ticket_date > dateTo)) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
+      if (quickFilter === "system" && t.tutor_external_id !== "SYSTEM") return false;
       if (search) {
         const q = search.toLowerCase();
         if (
@@ -132,6 +133,7 @@ export function CSTicketsTable() {
     notValid: tickets.filter((t) => t.status === "Not Valid" || t.status === "Rejected").length,
     dueToday: tickets.filter((t) => isSameDay(t.need_response_deadline)).length,
     notValidated: tickets.filter((t) => t.status === "Pending").length,
+    system: tickets.filter((t) => t.tutor_external_id === "SYSTEM").length,
   }), [tickets]);
 
   const renderTable = () => (
@@ -157,6 +159,13 @@ export function CSTicketsTable() {
           onClick={() => setQuickFilter(quickFilter === "not_validated" ? "all" : "not_validated")}
         >
           Not Validated ({counts.notValidated})
+        </Button>
+        <Button
+          size="sm"
+          variant={quickFilter === "system" ? "default" : "outline"}
+          onClick={() => setQuickFilter(quickFilter === "system" ? "all" : "system")}
+        >
+          System Issue ({counts.system})
         </Button>
       </div>
 

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, History, Lock, Pencil, RotateCcw, Trash2, X } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown, History, Lock, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useMergedRoster } from "@/hooks/useMergedRoster";
+import { useInactiveTutorIds } from "@/hooks/useInactiveTutorIds";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,6 +75,18 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
   const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined);
   const [deadlineTime, setDeadlineTime] = useState<string>("17:00");
 
+  // Editable tutor identity
+  const [tutorExternalId, setTutorExternalId] = useState<string>("");
+  const [tutorName, setTutorName] = useState<string>("");
+  const [tutorTeamLeader, setTutorTeamLeader] = useState<string>("");
+  const [tutorPickerOpen, setTutorPickerOpen] = useState(false);
+  const tutorRoster = useMergedRoster();
+  const { inactiveIds } = useInactiveTutorIds();
+  const activeTutors = useMemo(
+    () => tutorRoster.filter((t) => !inactiveIds.has(t.id)),
+    [inactiveIds, tutorRoster],
+  );
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -100,6 +115,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
       }
       setEditMode(false);
       setParentAttachments(ticket.parent_attachments ?? []);
+      setTutorExternalId(ticket.tutor_external_id);
+      setTutorName(ticket.tutor_name);
+      setTutorTeamLeader(ticket.team_leader);
     }
   }, [ticket]);
 
@@ -158,18 +176,25 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
       toast({ title: "Ticket # required", variant: "destructive" });
       return;
     }
-    if (!csCategory || !eduCategory) {
-      toast({ title: "CS and Edu categories required", variant: "destructive" });
+    if (!csCategory) {
+      toast({ title: "CS category required", variant: "destructive" });
+      return;
+    }
+    const isSystemTicket = tutorExternalId === "SYSTEM" || !tutorExternalId;
+    if (!isSystemTicket && !eduCategory) {
+      toast({ title: "Edu category required", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const after = {
+      const combinedCategory = isSystemTicket
+        ? `System: ${csCategory}`
+        : `CS: ${csCategory} | Edu: ${eduCategory}`;
+      const after: any = {
         ticket_number: ticketNumber.trim(),
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
         cs_category: csCategory,
-        edu_category: eduCategory,
+        edu_category: isSystemTicket ? null : eduCategory,
         category: combinedCategory,
         case_details: caseDetails || null,
         student_id: studentId || null,
@@ -177,6 +202,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
         need_response_deadline: buildDeadline(),
         status,
         team_leader_response: response || null,
+        tutor_external_id: tutorExternalId,
+        tutor_name: tutorName,
+        team_leader: tutorTeamLeader,
+        case_types: isSystemTicket ? ["CS"] : ["CS", "Edu"],
       };
       const { error } = await supabase.from("cs_tickets").update(after).eq("id", ticket.id);
       if (error) {
@@ -199,6 +228,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
           need_response_deadline: ticket.need_response_deadline,
           status: ticket.status,
           team_leader_response: ticket.team_leader_response,
+          tutor_external_id: ticket.tutor_external_id,
+          tutor_name: ticket.tutor_name,
+          team_leader: ticket.team_leader,
         },
         after,
       });
@@ -474,6 +506,63 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
                     </PopoverContent>
                   </Popover>
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Tutor</Label>
+                  <Popover open={tutorPickerOpen} onOpenChange={setTutorPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                        <span className="truncate">
+                          {tutorExternalId === "SYSTEM" || !tutorExternalId ? (
+                            <span className="text-muted-foreground">System / Content Issue — click to assign a tutor</span>
+                          ) : (
+                            <>{tutorName} <span className="text-muted-foreground">({tutorExternalId}) · TL: {tutorTeamLeader || "—"}</span></>
+                          )}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search tutor by name or ID..." />
+                        <CommandList>
+                          <CommandEmpty>No tutor found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="system content issue"
+                              onSelect={() => {
+                                setTutorExternalId("SYSTEM");
+                                setTutorName("System / Content Issue");
+                                setTutorTeamLeader("—");
+                                setTutorPickerOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", tutorExternalId === "SYSTEM" ? "opacity-100" : "opacity-0")} />
+                              <span className="italic">System / Content Issue (no tutor)</span>
+                            </CommandItem>
+                            {activeTutors.map((t) => (
+                              <CommandItem
+                                key={t.id}
+                                value={`${t.name} ${t.id}`}
+                                onSelect={() => {
+                                  setTutorExternalId(t.id);
+                                  setTutorName(t.name);
+                                  setTutorTeamLeader(t.team_leader || "");
+                                  setTutorPickerOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", tutorExternalId === t.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span>{t.name}</span>
+                                  <span className="text-xs text-muted-foreground">{t.id} · {t.team_leader}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Badge variant="default">CS</Badge> Category *
@@ -580,7 +669,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Tutor and Team Leader cannot be changed after creation.
+                {tutorExternalId === "SYSTEM"
+                  ? "This is a System / Content Issue ticket. Assign a tutor to convert it into a tutor complaint."
+                  : "Changing the tutor updates the Team Leader automatically."}
               </p>
             </div>
           )}
