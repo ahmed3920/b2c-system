@@ -76,6 +76,22 @@ function normGradeBand(s: string): string {
   return s.trim();
 }
 
+function normalizeTeamLeader(raw: string | null | undefined): string | null {
+  const key = (raw ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!key) return null;
+  if (key.includes("ahmed") && key.includes("hesham")) return "Ahmed Hesham Helmy";
+  if (key.includes("anan")) return "Anan Mohammed Mohammed Zewil";
+  if (key.includes("ghada")) return "Ghada Mohamed Ahmed";
+  if (key.includes("nermeen") || key.includes("nermin")) return "Nermeen Alhububati";
+  if (key.includes("kareem") || key.includes("karim")) return "Kareem Abdalwahab Abdalhaleem";
+  return null;
+}
+
 // Extract M1/M2/M3/M4 from strings like "M1: 2D Game Design With Game Engine - 1"
 function extractModuleCode(s: string): string | null {
   const m = s.match(/\bM\s*([1-4])\b/i);
@@ -255,7 +271,7 @@ Deno.serve(async (req) => {
         else
           agg.set(tid, {
             tutor_name: get(row, iName) || tid,
-            team_leader: get(row, iTl) || "Unknown",
+            team_leader: normalizeTeamLeader(get(row, iTl)) || "Unknown",
             count: 1,
           });
       }
@@ -364,7 +380,7 @@ Deno.serve(async (req) => {
         records.push({
           tutor_external_id: tid,
           tutor_name: get(row, iName) || tid,
-          team_leader: get(row, iTl) || "Unknown",
+          team_leader: normalizeTeamLeader(get(row, iTl)) || "Unknown",
           week_start: weekStart,
           phase,
           module_id: moduleId,

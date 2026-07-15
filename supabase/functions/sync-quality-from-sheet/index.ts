@@ -28,6 +28,22 @@ function findColumn(headers: string[], aliases: string[]): number {
   return -1;
 }
 
+function normalizeTeamLeader(raw: string | null | undefined): string | null {
+  const key = (raw ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!key) return null;
+  if (key.includes("ahmed") && key.includes("hesham")) return "Ahmed Hesham Helmy";
+  if (key.includes("anan")) return "Anan Mohammed Mohammed Zewil";
+  if (key.includes("ghada")) return "Ghada Mohamed Ahmed";
+  if (key.includes("nermeen") || key.includes("nermin")) return "Nermeen Alhububati";
+  if (key.includes("kareem") || key.includes("karim")) return "Kareem Abdalwahab Abdalhaleem";
+  return null;
+}
+
 // Minimal CSV parser supporting quoted fields and commas inside quotes.
 function parseCSV(text: string): string[][] {
   const rows: string[][] = [];
@@ -186,7 +202,7 @@ Deno.serve(async (req) => {
       const row = matrix[i];
       const tutorId = (row[idx.tutor_id] ?? "").trim();
       const agent = (row[idx.agent_name] ?? "").trim();
-      const tl = (row[idx.team_leader] ?? "").trim();
+      const tl = normalizeTeamLeader(row[idx.team_leader] ?? "");
       const dateRaw = (row[idx.session_date] ?? "").trim();
       const scoreRaw = (row[idx.score] ?? "").trim();
 

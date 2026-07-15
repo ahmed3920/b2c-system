@@ -62,18 +62,28 @@ function chunks<T>(items: T[], size: number): T[][] {
 // or "Anan Zewil" vs "Anan Mohammed Mohammed Zewil".
 function normalizeTeamLeader(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const s = String(raw).trim().replace(/\s+/g, " ");
-  if (!s) return null;
-  const lower = s.toLowerCase();
-  if (lower.startsWith("ahmed")) return "Ahmed Hesham Helmy";
-  if (lower.startsWith("anan")) return "Anan";
-  if (lower.startsWith("kareem") || lower.startsWith("karim")) return "Kareem";
-  if (lower.startsWith("nermeen") || lower.startsWith("nermin")) return "Nermeen";
-  if (lower.startsWith("ghada")) return "Ghada";
-  return s;
+  const key = String(raw)
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!key) return null;
+  if (key.includes("ahmed") && key.includes("hesham")) return "Ahmed Hesham Helmy";
+  if (key.includes("anan")) return "Anan Mohammed Mohammed Zewil";
+  if (key.includes("ghada")) return "Ghada Mohamed Ahmed";
+  if (key.includes("nermeen") || key.includes("nermin")) return "Nermeen Alhububati";
+  if (key.includes("kareem") || key.includes("karim")) return "Kareem Abdalwahab Abdalhaleem";
+  return null;
 }
 
-const CANONICAL_TLS = new Set(["Ahmed Hesham Helmy", "Anan", "Kareem", "Nermeen", "Ghada"]);
+const CANONICAL_TLS = new Set([
+  "Ahmed Hesham Helmy",
+  "Anan Mohammed Mohammed Zewil",
+  "Ghada Mohamed Ahmed",
+  "Nermeen Alhububati",
+  "Kareem Abdalwahab Abdalhaleem",
+]);
 
 
 async function verifyAdmin(req: Request, sql: ReturnType<typeof postgres>) {
@@ -540,18 +550,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Replace today's computed snapshot so old aliases/inactive tutors disappear.
+    await db`
+      delete from public.tutor_segmentation_scores
+      where snapshot_date = ${todayIso}::date
+    `;
+
+    await db`
+      delete from public.tutor_segmentation_recommendations
+      where status = 'open'::public.recommendation_status
+    `;
+
     // Upsert snapshots for today
     if (snapshots.length) await upsertSnapshots(db, snapshots);
 
-    // Refresh recommendations — clear open ones from today's compute, then insert
-    const tutorIds = snapshots.map((s) => s.tutor_external_id);
-    if (tutorIds.length) {
-      await db`
-        delete from public.tutor_segmentation_recommendations
-        where status = 'open'::public.recommendation_status
-          and tutor_external_id in ${db(tutorIds)}
-      `;
-    }
+    // Refresh recommendations from the fresh canonical snapshot.
     if (recommendations.length) await insertRecommendations(db, recommendations);
 
     // Audit log — record the recompute event

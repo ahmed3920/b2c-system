@@ -12,7 +12,7 @@ const normalizeKey = (value: string | null | undefined): string =>
   (value ?? "")
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 
