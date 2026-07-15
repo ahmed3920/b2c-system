@@ -171,6 +171,7 @@ export default function Tracking() {
                         <TableHead className="text-right">English</TableHead>
                         <TableHead className="text-right">Full-time</TableHead>
                         <TableHead className="text-right">Part-time</TableHead>
+                        <TableHead className="text-right">Contract</TableHead>
                         <TableHead>Mix</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
