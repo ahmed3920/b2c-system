@@ -176,18 +176,25 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
       toast({ title: "Ticket # required", variant: "destructive" });
       return;
     }
-    if (!csCategory || !eduCategory) {
-      toast({ title: "CS and Edu categories required", variant: "destructive" });
+    if (!csCategory) {
+      toast({ title: "CS category required", variant: "destructive" });
+      return;
+    }
+    const isSystemTicket = tutorExternalId === "SYSTEM" || !tutorExternalId;
+    if (!isSystemTicket && !eduCategory) {
+      toast({ title: "Edu category required", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      const combinedCategory = `CS: ${csCategory} | Edu: ${eduCategory}`;
-      const after = {
+      const combinedCategory = isSystemTicket
+        ? `System: ${csCategory}`
+        : `CS: ${csCategory} | Edu: ${eduCategory}`;
+      const after: any = {
         ticket_number: ticketNumber.trim(),
         ticket_date: format(ticketDate, "yyyy-MM-dd"),
         cs_category: csCategory,
-        edu_category: eduCategory,
+        edu_category: isSystemTicket ? null : eduCategory,
         category: combinedCategory,
         case_details: caseDetails || null,
         student_id: studentId || null,
@@ -195,6 +202,10 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
         need_response_deadline: buildDeadline(),
         status,
         team_leader_response: response || null,
+        tutor_external_id: tutorExternalId,
+        tutor_name: tutorName,
+        team_leader: tutorTeamLeader,
+        case_types: isSystemTicket ? ["CS"] : ["CS", "Edu"],
       };
       const { error } = await supabase.from("cs_tickets").update(after).eq("id", ticket.id);
       if (error) {
@@ -217,6 +228,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
           need_response_deadline: ticket.need_response_deadline,
           status: ticket.status,
           team_leader_response: ticket.team_leader_response,
+          tutor_external_id: ticket.tutor_external_id,
+          tutor_name: ticket.tutor_name,
+          team_leader: ticket.team_leader,
         },
         after,
       });
