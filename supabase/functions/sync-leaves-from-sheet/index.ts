@@ -81,6 +81,22 @@ function parseBool(s: string): boolean {
   return t === "true" || t === "yes" || t === "1" || t === "y";
 }
 
+function normalizeTeamLeader(raw: string | null | undefined): string | null {
+  const key = (raw ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!key) return null;
+  if (key.includes("ahmed") && key.includes("hesham")) return "Ahmed Hesham Helmy";
+  if (key.includes("anan")) return "Anan Mohammed Mohammed Zewil";
+  if (key.includes("ghada")) return "Ghada Mohamed Ahmed";
+  if (key.includes("nermeen") || key.includes("nermin")) return "Nermeen Alhububati";
+  if (key.includes("kareem") || key.includes("karim")) return "Kareem Abdalwahab Abdalhaleem";
+  return null;
+}
+
 // Normalize a reason string for classification
 function normReason(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
@@ -236,7 +252,7 @@ Deno.serve(async (req) => {
       const ruleId = iRuleId >= 0 ? get(row, iRuleId) : "";
       const isMentor = iIsMentor >= 0 ? parseBool(get(row, iIsMentor)) : false;
       const tname = iName >= 0 ? get(row, iName) || tid : tid;
-      const tl = iTl >= 0 ? get(row, iTl) || null : null;
+      const tl = iTl >= 0 ? normalizeTeamLeader(get(row, iTl)) : null;
       const sheetEffective = iEffective >= 0 ? Number(get(row, iEffective)) : NaN;
 
       const isReq = isRequest(reason);

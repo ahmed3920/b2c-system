@@ -14,6 +14,7 @@ import { AuditLogDialog } from "@/components/segmentation/AuditLogDialog";
 import { ExportDialog } from "@/components/segmentation/ExportDialog";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { toast } from "sonner";
+import { CANONICAL_TEAM_LEADERS } from "@/lib/teamLeaders";
 
 const SEGMENT_COLORS: Record<TutorSegment, string> = {
   elite: "#10b981",
@@ -35,7 +36,7 @@ export default function TutorSegmentation() {
   const [exportOpen, setExportOpen] = useState(false);
 
   const teamLeaders = useMemo(
-    () => Array.from(new Set(scores.map((s) => s.team_leader).filter(Boolean))) as string[],
+    () => CANONICAL_TEAM_LEADERS.filter((tl) => scores.some((s) => s.team_leader === tl)),
     [scores]
   );
   const languages = useMemo(
