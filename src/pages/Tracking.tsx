@@ -190,6 +190,7 @@ export default function Tracking() {
                             <TableCell className="text-right">{t.english}</TableCell>
                             <TableCell className="text-right">{t.full_time}</TableCell>
                             <TableCell className="text-right">{t.part_time}</TableCell>
+                            <TableCell className="text-right">{t.contract}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <Badge variant="secondary" className="text-[10px]">
