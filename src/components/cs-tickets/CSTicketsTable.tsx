@@ -108,6 +108,7 @@ export function CSTicketsTable() {
       if (dateTo && (!t.ticket_date || t.ticket_date > dateTo)) return false;
       if (quickFilter === "due_today" && !isSameDay(t.need_response_deadline)) return false;
       if (quickFilter === "not_validated" && !(t.status === "Pending")) return false;
+      if (quickFilter === "system" && t.tutor_external_id !== "SYSTEM") return false;
       if (search) {
         const q = search.toLowerCase();
         if (
