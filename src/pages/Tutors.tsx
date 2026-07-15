@@ -117,6 +117,7 @@ export default function Tutors() {
       english: scopedRoster.filter((t) => t.language === "English").length,
       fullTime: scopedRoster.filter((t) => t.employment_type === "Full-time").length,
       partTime: scopedRoster.filter((t) => t.employment_type === "Part-time").length,
+      contract: scopedRoster.filter((t) => t.employment_type === "Contract").length,
     }),
     [scopedRoster],
   );
