@@ -44,6 +44,7 @@ export function getTeamSummaries(excludeIds?: Set<string>): TeamSummary[] {
       english: members.filter((m) => m.language === "English").length,
       full_time: members.filter((m) => m.employment_type === "Full-time").length,
       part_time: members.filter((m) => m.employment_type === "Part-time").length,
+      contract: members.filter((m) => m.employment_type === "Contract").length,
       members,
     }))
     .sort((a, b) => b.total - a.total);
