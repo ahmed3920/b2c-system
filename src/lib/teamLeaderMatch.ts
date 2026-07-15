@@ -1,3 +1,5 @@
+import { normalizeTeamLeaderName } from "./teamLeaders";
+
 /**
  * Names of team leaders may differ between the auth profile (`mentor_name`)
  * and the tutor roster (`team_leader`) — e.g. "Ahmed Hesham" vs
@@ -17,6 +19,10 @@ export function teamLeaderMatches(
   candidate: string | null | undefined,
   myName: string | null | undefined,
 ): boolean {
+  const canonicalCandidate = normalizeTeamLeaderName(candidate);
+  const canonicalMine = normalizeTeamLeaderName(myName);
+  if (canonicalCandidate && canonicalMine) return canonicalCandidate === canonicalMine;
+
   const a = normalizeName(candidate);
   const b = normalizeName(myName);
   if (!a || !b) return false;

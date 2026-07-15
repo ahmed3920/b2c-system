@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeTeamLeaderName } from "@/lib/teamLeaders";
 
 export type TutorSegment = "elite" | "growth" | "at_risk";
 export type TutorTrend = "up" | "flat" | "down";
@@ -68,7 +69,14 @@ export function useTutorSegmentation() {
         .select("*")
         .eq("snapshot_date", latestDate)
         .order("health_score", { ascending: false });
-      setScores(((data as any[]) ?? []) as SegmentationScore[]);
+      setScores(
+        (((data as any[]) ?? []) as SegmentationScore[])
+          .map((score) => ({
+            ...score,
+            team_leader: normalizeTeamLeaderName(score.team_leader),
+          }))
+          .filter((score) => Boolean(score.team_leader)),
+      );
     } else {
       setScores([]);
     }
@@ -78,7 +86,14 @@ export function useTutorSegmentation() {
       .select("*")
       .eq("status", "open")
       .order("severity", { ascending: false });
-    setRecommendations(((recs as any[]) ?? []) as SegmentationRecommendation[]);
+    setRecommendations(
+      (((recs as any[]) ?? []) as SegmentationRecommendation[])
+        .map((rec) => ({
+          ...rec,
+          team_leader: normalizeTeamLeaderName(rec.team_leader),
+        }))
+        .filter((rec) => Boolean(rec.team_leader)),
+    );
     setLoading(false);
   }, []);
 
