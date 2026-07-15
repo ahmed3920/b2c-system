@@ -47,6 +47,8 @@ export function CSTicketsTable() {
   const [csCategoryFilter, setCsCategoryFilter] = useState<string>("all");
   const [eduCategoryFilter, setEduCategoryFilter] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<"all" | "due_today" | "not_validated">("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [search, setSearch] = useState("");
 
   const isSameDay = (iso: string | null) => {
