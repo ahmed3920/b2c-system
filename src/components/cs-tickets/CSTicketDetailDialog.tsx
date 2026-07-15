@@ -612,7 +612,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Tutor and Team Leader cannot be changed after creation.
+                {tutorExternalId === "SYSTEM"
+                  ? "This is a System / Content Issue ticket. Assign a tutor to convert it into a tutor complaint."
+                  : "Changing the tutor updates the Team Leader automatically."}
               </p>
             </div>
           )}
