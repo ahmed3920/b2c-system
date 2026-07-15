@@ -168,7 +168,31 @@ export function CSTicketsTable() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-1">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-[150px]"
+              placeholder="From"
+              aria-label="Ticket date from"
+            />
+            <span className="text-muted-foreground text-xs">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-[150px]"
+              placeholder="To"
+              aria-label="Ticket date to"
+            />
+            {(dateFrom || dateTo) && (
+              <Button size="sm" variant="ghost" onClick={() => { setDateFrom(""); setDateTo(""); }}>
+                Clear
+              </Button>
+            )}
+          </div>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
             <SelectTrigger className="w-[150px]">
               <Filter className="mr-2 h-3 w-3" />
