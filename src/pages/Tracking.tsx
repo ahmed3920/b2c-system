@@ -144,8 +144,8 @@ export default function Tracking() {
               />
               <SummaryCard
                 icon={<Briefcase className="h-4 w-4" />}
-                label="Full / Part"
-                value={`${totals.fullTime} / ${totals.partTime}`}
+                label="FT / PT / Contract"
+                value={`${totals.fullTime} / ${totals.partTime} / ${totals.contract}`}
               />
             </div>
 
