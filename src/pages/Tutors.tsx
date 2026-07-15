@@ -128,7 +128,7 @@ export default function Tutors() {
     <AppLayout title="Tutors" allowedRoles={["admin", "team_leader", "super_team_leader"]}>
       <div className="p-6 space-y-4 max-w-7xl mx-auto">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3">
           <StatCard icon={<Users className="h-4 w-4" />} label="Total" value={stats.total} />
           <StatCard icon={<Users className="h-4 w-4" />} label="Tutors" value={stats.tutors} />
           <StatCard
@@ -147,6 +147,11 @@ export default function Tutors() {
             icon={<Briefcase className="h-4 w-4" />}
             label="Part-time"
             value={stats.partTime}
+          />
+          <StatCard
+            icon={<Briefcase className="h-4 w-4" />}
+            label="Contract"
+            value={stats.contract}
           />
         </div>
 
