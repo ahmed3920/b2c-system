@@ -115,6 +115,9 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
       }
       setEditMode(false);
       setParentAttachments(ticket.parent_attachments ?? []);
+      setTutorExternalId(ticket.tutor_external_id);
+      setTutorName(ticket.tutor_name);
+      setTutorTeamLeader(ticket.team_leader);
     }
   }, [ticket]);
 
