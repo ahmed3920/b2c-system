@@ -51,6 +51,7 @@ export default function Teams() {
         english: members.filter((m) => m.language === "English").length,
         full_time: members.filter((m) => m.employment_type === "Full-time").length,
         part_time: members.filter((m) => m.employment_type === "Part-time").length,
+        contract: members.filter((m) => m.employment_type === "Contract").length,
         members,
       }))
       .sort((a, b) => b.total - a.total);
@@ -64,8 +65,9 @@ export default function Teams() {
           total: acc.total + t.total,
           fullTime: acc.fullTime + t.full_time,
           partTime: acc.partTime + t.part_time,
+          contract: acc.contract + t.contract,
         }),
-        { tutors: 0, mentors: 0, total: 0, fullTime: 0, partTime: 0 },
+        { tutors: 0, mentors: 0, total: 0, fullTime: 0, partTime: 0, contract: 0 },
       ),
     [teams],
   );
