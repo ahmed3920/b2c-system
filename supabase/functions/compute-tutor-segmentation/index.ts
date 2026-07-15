@@ -57,6 +57,25 @@ function chunks<T>(items: T[], size: number): T[][] {
   return out;
 }
 
+// Normalize team leader names to the 5 canonical values so filter dropdowns and
+// group-bys don't show duplicates like "Ahmed Hesham  Helmy" vs "Ahmed Hesham Helmy"
+// or "Anan Zewil" vs "Anan Mohammed Mohammed Zewil".
+function normalizeTeamLeader(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (lower.startsWith("ahmed")) return "Ahmed Hesham Helmy";
+  if (lower.startsWith("anan")) return "Anan";
+  if (lower.startsWith("kareem") || lower.startsWith("karim")) return "Kareem";
+  if (lower.startsWith("nermeen") || lower.startsWith("nermin")) return "Nermeen";
+  if (lower.startsWith("ghada")) return "Ghada";
+  return s;
+}
+
+const CANONICAL_TLS = new Set(["Ahmed Hesham Helmy", "Anan", "Kareem", "Nermeen", "Ghada"]);
+
+
 async function verifyAdmin(req: Request, sql: ReturnType<typeof postgres>) {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
