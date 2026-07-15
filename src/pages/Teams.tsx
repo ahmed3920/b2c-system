@@ -75,13 +75,14 @@ export default function Teams() {
   return (
     <AppLayout title="Teams" allowedRoles={["admin", "team_leader"]}>
       <div className="p-6 max-w-7xl mx-auto space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <SummaryCard label={isTLView ? "Mentors" : "Teams"} value={teams.length} />
           <SummaryCard label="Total Members" value={totals.total} />
           <SummaryCard label="Tutors" value={totals.tutors} />
           <SummaryCard label="Mentors" value={totals.mentors} />
           <SummaryCard label="Full-time" value={totals.fullTime} />
           <SummaryCard label="Part-time" value={totals.partTime} />
+          <SummaryCard label="Contract" value={totals.contract} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
