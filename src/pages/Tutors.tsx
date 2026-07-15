@@ -245,6 +245,7 @@ export default function Tutors() {
                   <SelectItem value="all">All Employment</SelectItem>
                   <SelectItem value="Full-time">Full-time</SelectItem>
                   <SelectItem value="Part-time">Part-time</SelectItem>
+                  <SelectItem value="Contract">Contract</SelectItem>
                 </SelectContent>
               </Select>
               <Select
