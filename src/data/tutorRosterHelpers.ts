@@ -20,6 +20,7 @@ export interface TeamSummary {
   english: number;
   full_time: number;
   part_time: number;
+  contract: number;
   members: TutorRecord[];
 }
 
