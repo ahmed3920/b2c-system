@@ -268,7 +268,14 @@ export function CSTicketsTable() {
         </div>
       </div>
 
-      <div className="rounded-md border mt-4">
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-muted-foreground">
+          Showing <span className="font-semibold text-foreground">{filtered.length}</span> of {counts.total} ticket{counts.total === 1 ? "" : "s"}
+        </div>
+      </div>
+
+      <div className="rounded-md border mt-2">
+
         <Table>
           <TableHeader>
             <TableRow>
