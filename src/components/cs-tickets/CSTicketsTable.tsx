@@ -125,6 +125,11 @@ export function CSTicketsTable() {
     });
   }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search, dateFrom, dateTo]);
 
+  const filteredTableKey = useMemo(
+    () => (loading ? "loading" : filtered.map((t) => t.id).join("|") || "empty"),
+    [filtered, loading],
+  );
+
 
   const counts = useMemo(() => ({
     total: tickets.length,
@@ -299,14 +304,14 @@ export function CSTicketsTable() {
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody key={filteredTableKey}>
             {loading ? (
               <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
               <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No tickets found</TableCell></TableRow>
             ) : (
-              filtered.map((t) => (
-                <TableRow key={t.id} onClick={() => setSelected(t)} className="cursor-pointer">
+              filtered.map((t, index) => (
+                <TableRow key={`${t.id}-${index}`} onClick={() => setSelected(t)} className="cursor-pointer">
                   <TableCell className="font-mono text-xs">{t.ticket_number}</TableCell>
                   <TableCell>{t.ticket_date}</TableCell>
                   <TableCell className="max-w-[200px] truncate">
