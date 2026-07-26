@@ -70,8 +70,25 @@ export interface CSTicket {
 
 export type CSTicketScope = "all" | "mine" | "assigned_to_me";
 
+const dedupeByTicketId = (rows: any[]): any[] => {
+  const seen = new Set<string>();
+  const unique: any[] = [];
+
+  for (const row of rows) {
+    const id = typeof row?.id === "string" ? row.id : "";
+    const fallbackKey = [row?.ticket_number, row?.tutor_external_id, row?.created_at].filter(Boolean).join("|");
+    const key = id || fallbackKey || String(unique.length);
+
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+
+  return unique;
+};
+
 const normalize = (rows: any[]): CSTicket[] =>
-  rows.map((r) => ({
+  dedupeByTicketId(rows).map((r) => ({
     ...r,
     case_types: r.case_types && r.case_types.length > 0 ? r.case_types : [r.case_type],
     session_recordings: Array.isArray(r.session_recordings) ? r.session_recordings : [],
@@ -102,6 +119,7 @@ export function useCSTickets(scope: CSTicketScope = "all") {
           .from("cs_tickets")
           .select("*")
           .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
           .range(from, from + PAGE - 1);
         if (error || !data) break;
         all.push(...data);
