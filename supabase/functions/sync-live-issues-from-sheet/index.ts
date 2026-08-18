@@ -356,6 +356,21 @@ Deno.serve(async (req) => {
     for (const r of records) seen.set(r.case_id as string, r);
     const unique = Array.from(seen.values());
 
+    if (unique.length === 0) {
+      const msg =
+        `Sheet returned ${rows.length - 1} data row(s) but none had a Session ID or From tutor ID ` +
+        `(${skipped} skipped). The published tab is likely showing formula errors (e.g. #N/A) or an ` +
+        `empty/wrong gid. Re-publish the correct tab and try again.`;
+      await db.from("live_issues_sheet_config").update({
+        last_sync_status: "error",
+        last_sync_message: msg,
+        last_sync_rows: 0,
+        last_synced_at: new Date().toISOString(),
+      }).eq("id", cfg.id);
+      return json({ error: msg }, 400);
+    }
+
+
     let inserted = 0;
     const batchSize = 500;
     for (let i = 0; i < unique.length; i += batchSize) {
