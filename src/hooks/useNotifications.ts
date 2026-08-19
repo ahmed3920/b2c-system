@@ -39,6 +39,42 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [muted, setMutedState] = useState<boolean>(() => {
+    try { return localStorage.getItem(MUTE_KEY) === "true"; } catch { return false; }
+  });
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Unlock/create the audio context after the first user interaction.
+  useEffect(() => {
+    const unlock = () => {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) audioCtxRef.current = new Ctx();
+      }
+      audioCtxRef.current?.resume().catch(() => {});
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  const setMuted = useCallback((value: boolean) => {
+    setMutedState(value);
+    try { localStorage.setItem(MUTE_KEY, String(value)); } catch { /* ignore */ }
+  }, []);
+
+  const notify = useCallback(() => {
+    if (mutedRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    ctx.resume().then(() => playChime(ctx)).catch(() => {});
+  }, []);
+
 
   const fetchNotifications = useCallback(async (uid: string) => {
     const { data } = await supabase
