@@ -96,7 +96,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
   useEffect(() => {
     if (ticket) {
-      setStatus(ticket.status);
+      setStatus(STATUS_OPTIONS.includes(ticket.status) ? ticket.status : "Pending");
       setResponse(ticket.team_leader_response ?? "");
       setTicketNumber(ticket.ticket_number);
       setTicketDate(new Date(ticket.ticket_date));
