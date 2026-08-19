@@ -274,7 +274,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
             closed_at: new Date().toISOString(),
             closed_by: currentUserId,
             closed_by_name: currentUserName,
-            status: "Closed",
+            status: STATUS_OPTIONS.includes(ticket.status) ? ticket.status : "Pending",
           }
         : {
             closed_at: null,
