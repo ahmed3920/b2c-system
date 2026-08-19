@@ -23,7 +23,7 @@ const iconForType = (type: string) => {
 
 export function NotificationsBell() {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, muted, setMuted } = useNotifications();
 
   const handleClick = (n: AppNotification) => {
     if (!n.read_status) markAsRead(n.id);
