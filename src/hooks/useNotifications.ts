@@ -124,7 +124,7 @@ export function useNotifications() {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, notify]);
 
   const markAsRead = useCallback(
     async (id: string) => {
