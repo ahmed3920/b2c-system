@@ -146,10 +146,13 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     return d.toISOString();
   };
 
+  const safeStatus = (): CSTicketStatus =>
+    STATUS_OPTIONS.includes(status) ? status : (ticket?.status ?? "Pending");
+
   const handleSaveValidation = async () => {
     setSaving(true);
     try {
-      const after = { status, team_leader_response: response || null };
+      const after = { status: safeStatus(), team_leader_response: response || null };
       const { error } = await supabase
         .from("cs_tickets")
         .update(after)
