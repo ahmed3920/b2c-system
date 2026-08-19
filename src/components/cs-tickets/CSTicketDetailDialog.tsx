@@ -96,7 +96,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
   useEffect(() => {
     if (ticket) {
-      setStatus(ticket.status);
+      setStatus(STATUS_OPTIONS.includes(ticket.status) ? ticket.status : "Pending");
       setResponse(ticket.team_leader_response ?? "");
       setTicketNumber(ticket.ticket_number);
       setTicketDate(new Date(ticket.ticket_date));
@@ -146,10 +146,13 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     return d.toISOString();
   };
 
+  const safeStatus = (): CSTicketStatus =>
+    STATUS_OPTIONS.includes(status) ? status : (ticket?.status ?? "Pending");
+
   const handleSaveValidation = async () => {
     setSaving(true);
     try {
-      const after = { status, team_leader_response: response || null };
+      const after = { status: safeStatus(), team_leader_response: response || null };
       const { error } = await supabase
         .from("cs_tickets")
         .update(after)
@@ -200,7 +203,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
         student_id: studentId || null,
         session_num_or_date: sessionNumOrDate || null,
         need_response_deadline: buildDeadline(),
-        status,
+        status: safeStatus(),
         team_leader_response: response || null,
         tutor_external_id: tutorExternalId,
         tutor_name: tutorName,
@@ -271,7 +274,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
             closed_at: new Date().toISOString(),
             closed_by: currentUserId,
             closed_by_name: currentUserName,
-            status: "Closed",
+            status: STATUS_OPTIONS.includes(ticket.status) ? ticket.status : "Pending",
           }
         : {
             closed_at: null,
