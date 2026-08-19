@@ -203,7 +203,7 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
         student_id: studentId || null,
         session_num_or_date: sessionNumOrDate || null,
         need_response_deadline: buildDeadline(),
-        status,
+        status: safeStatus(),
         team_leader_response: response || null,
         tutor_external_id: tutorExternalId,
         tutor_name: tutorName,
