@@ -48,11 +48,23 @@ export function NotificationsBell() {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <p className="font-semibold text-sm">Notifications</p>
-          {unreadCount > 0 && (
-            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={markAllAsRead}>
-              Mark all read
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={markAllAsRead}>
+                Mark all read
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              aria-label={muted ? "Unmute notification sound" : "Mute notification sound"}
+              title={muted ? "Sound off" : "Sound on"}
+              onClick={() => setMuted(!muted)}
+            >
+              {muted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}
             </Button>
-          )}
+          </div>
         </div>
         <ScrollArea className="max-h-96">
           {notifications.length === 0 ? (
