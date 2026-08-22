@@ -1,25 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-const MUTE_KEY = "notifications:muted";
-
-/** Short two-tone chime generated with the Web Audio API (no asset needed). */
-function playChime(ctx: AudioContext) {
-  const now = ctx.currentTime;
-  [880, 1320].forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    const start = now + i * 0.14;
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(start);
-    osc.stop(start + 0.35);
-  });
-}
 
 export interface AppNotification {
   id: string;
@@ -39,42 +19,6 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [muted, setMutedState] = useState<boolean>(() => {
-    try { return localStorage.getItem(MUTE_KEY) === "true"; } catch { return false; }
-  });
-  const mutedRef = useRef(muted);
-  mutedRef.current = muted;
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  // Unlock/create the audio context after the first user interaction.
-  useEffect(() => {
-    const unlock = () => {
-      if (!audioCtxRef.current) {
-        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
-        if (Ctx) audioCtxRef.current = new Ctx();
-      }
-      audioCtxRef.current?.resume().catch(() => {});
-    };
-    window.addEventListener("pointerdown", unlock);
-    window.addEventListener("keydown", unlock);
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
-  }, []);
-
-  const setMuted = useCallback((value: boolean) => {
-    setMutedState(value);
-    try { localStorage.setItem(MUTE_KEY, String(value)); } catch { /* ignore */ }
-  }, []);
-
-  const notify = useCallback(() => {
-    if (mutedRef.current) return;
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-    ctx.resume().then(() => playChime(ctx)).catch(() => {});
-  }, []);
-
 
   const fetchNotifications = useCallback(async (uid: string) => {
     const { data } = await supabase
@@ -111,12 +55,7 @@ export function useNotifications() {
             filter: `user_id=eq.${uid}`,
           },
           (payload) => {
-            const incoming = payload.new as AppNotification;
-            setNotifications((prev) => {
-              if (prev.some((n) => n.id === incoming.id)) return prev;
-              return [incoming, ...prev].slice(0, 30);
-            });
-            notify();
+            setNotifications((prev) => [payload.new as AppNotification, ...prev].slice(0, 30));
           },
         )
         .subscribe();
@@ -124,7 +63,7 @@ export function useNotifications() {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [fetchNotifications, notify]);
+  }, [fetchNotifications]);
 
   const markAsRead = useCallback(
     async (id: string) => {
@@ -148,5 +87,5 @@ export function useNotifications() {
 
   const unreadCount = notifications.filter((n) => !n.read_status).length;
 
-  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, muted, setMuted };
+  return { notifications, unreadCount, loading, markAsRead, markAllAsRead };
 }

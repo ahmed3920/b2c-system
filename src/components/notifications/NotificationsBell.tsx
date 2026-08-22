@@ -1,4 +1,4 @@
-import { Bell, AlertTriangle, Clock, FileText, Megaphone, CheckCircle2, Volume2, VolumeX } from "lucide-react";
+import { Bell, AlertTriangle, Clock, FileText, Megaphone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,12 @@ const iconForType = (type: string) => {
   if (type === "cs_ticket_new") return <FileText className="w-4 h-4 text-primary" />;
   if (type === "live_issue_new") return <AlertTriangle className="w-4 h-4 text-destructive" />;
   if (type === "announcement_new") return <Megaphone className="w-4 h-4 text-primary" />;
-  if (type === "cs_ticket_validated") return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
   return <Bell className="w-4 h-4 text-muted-foreground" />;
 };
 
 export function NotificationsBell() {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, muted, setMuted } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const handleClick = (n: AppNotification) => {
     if (!n.read_status) markAsRead(n.id);
@@ -48,23 +47,11 @@ export function NotificationsBell() {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <p className="font-semibold text-sm">Notifications</p>
-          <div className="flex items-center gap-3">
-            {unreadCount > 0 && (
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={markAllAsRead}>
-                Mark all read
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              aria-label={muted ? "Unmute notification sound" : "Mute notification sound"}
-              title={muted ? "Sound off" : "Sound on"}
-              onClick={() => setMuted(!muted)}
-            >
-              {muted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}
+          {unreadCount > 0 && (
+            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={markAllAsRead}>
+              Mark all read
             </Button>
-          </div>
+          )}
         </div>
         <ScrollArea className="max-h-96">
           {notifications.length === 0 ? (
