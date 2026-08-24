@@ -115,5 +115,5 @@ export function useNotifications() {
 
   const unreadCount = notifications.filter((n) => !n.read_status).length;
 
-  return { notifications, unreadCount, loading, markAsRead, markAllAsRead };
+  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, soundMuted, toggleSound };
 }
