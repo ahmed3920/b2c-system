@@ -51,8 +51,9 @@ export function CSTicketsTable() {
 
   useEffect(() => {
     if (!deepLinkTicket || loading) return;
-    if (handledDeepLink.current === deepLinkTicket) return;
     handledDeepLink.current = deepLinkTicket;
+
+
 
     const match = tickets.find((t) => String(t.ticket_number) === String(deepLinkTicket));
     if (match) {
@@ -67,6 +68,8 @@ export function CSTicketsTable() {
     const next = new URLSearchParams(searchParams);
     next.delete("ticket");
     setSearchParams(next, { replace: true });
+    handledDeepLink.current = null;
+
   }, [deepLinkTicket, loading, tickets, searchParams, setSearchParams]);
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
