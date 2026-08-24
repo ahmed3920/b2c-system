@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +9,7 @@ import { QualityTab } from "@/components/tracking/QualityTab";
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCsFullAccess } from "@/hooks/useCsFullAccess";
+
 
 const sections = [
   { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
