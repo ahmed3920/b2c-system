@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +10,7 @@ import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluat
 import { useUserRole } from "@/hooks/useUserRole";
 import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 
+
 const sections = [
   { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
   { v: "live-issues", l: "Live Issues" },
@@ -19,8 +21,12 @@ const sections = [
 export default function Performance() {
   const { isMentor, isAdmin, isTeamLeader } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = sections.some((s) => s.v === tabParam) ? (tabParam as string) : "live-issues";
   const mentorOnly = isMentor && !isAdmin && !isTeamLeader && !csFullAccess;
   const csOnly = isMentor && !isAdmin && !isTeamLeader && csFullAccess;
+
 
   if (mentorOnly) {
     return (
@@ -45,7 +51,15 @@ export default function Performance() {
   return (
     <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
       <div className="p-6 max-w-[1600px] mx-auto">
-        <Tabs defaultValue="live-issues">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            const next = new URLSearchParams(searchParams);
+            next.set("tab", v);
+            setSearchParams(next, { replace: true });
+          }}
+        >
+
           <TabsList className="flex-wrap h-auto">
             {sections.map((s) => (
               <TabsTrigger key={s.v} value={s.v}>{s.l}</TabsTrigger>

@@ -1,5 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isSoundMuted,
+  playNotificationSound,
+  primeNotificationSound,
+  setSoundMuted,
+} from "@/lib/notificationSound";
+
 
 export interface AppNotification {
   id: string;
@@ -19,6 +26,21 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
+
+  const toggleSound = useCallback(() => {
+    setSoundMutedState((prev) => {
+      const next = !prev;
+      setSoundMuted(next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    primeNotificationSound();
+  }, []);
+
+
 
   const fetchNotifications = useCallback(async (uid: string) => {
     const { data } = await supabase
@@ -55,8 +77,14 @@ export function useNotifications() {
             filter: `user_id=eq.${uid}`,
           },
           (payload) => {
-            setNotifications((prev) => [payload.new as AppNotification, ...prev].slice(0, 30));
+            const incoming = payload.new as AppNotification;
+            setNotifications((prev) => {
+              if (prev.some((n) => n.id === incoming.id)) return prev;
+              return [incoming, ...prev].slice(0, 30);
+            });
+            playNotificationSound();
           },
+
         )
         .subscribe();
     })();
@@ -87,5 +115,5 @@ export function useNotifications() {
 
   const unreadCount = notifications.filter((n) => !n.read_status).length;
 
-  return { notifications, unreadCount, loading, markAsRead, markAllAsRead };
+  return { notifications, unreadCount, loading, markAsRead, markAllAsRead, soundMuted, toggleSound };
 }
