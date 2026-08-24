@@ -1,5 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isSoundMuted,
+  playNotificationSound,
+  primeNotificationSound,
+  setSoundMuted,
+} from "@/lib/notificationSound";
+
 
 export interface AppNotification {
   id: string;
