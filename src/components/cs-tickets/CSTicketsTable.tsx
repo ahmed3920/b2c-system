@@ -43,6 +43,32 @@ export function CSTicketsTable() {
   const [createOpen, setCreateOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [selected, setSelected] = useState<CSTicket | null>(null);
+
+  // Deep link from a notification: /performance?tab=cs-tickets&ticket=<ticket_number>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkTicket = searchParams.get("ticket");
+  const handledDeepLink = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!deepLinkTicket || loading) return;
+    if (handledDeepLink.current === deepLinkTicket) return;
+    handledDeepLink.current = deepLinkTicket;
+
+    const match = tickets.find((t) => String(t.ticket_number) === String(deepLinkTicket));
+    if (match) {
+      setSelected(match);
+    } else {
+      toast({
+        title: "Ticket not found",
+        description: `Ticket #${deepLinkTicket} is not available or not accessible to you.`,
+        variant: "destructive",
+      });
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete("ticket");
+    setSearchParams(next, { replace: true });
+  }, [deepLinkTicket, loading, tickets, searchParams, setSearchParams]);
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
   const [teamLeaderFilter, setTeamLeaderFilter] = useState<string>("all");
