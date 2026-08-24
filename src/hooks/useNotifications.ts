@@ -77,8 +77,14 @@ export function useNotifications() {
             filter: `user_id=eq.${uid}`,
           },
           (payload) => {
-            setNotifications((prev) => [payload.new as AppNotification, ...prev].slice(0, 30));
+            const incoming = payload.new as AppNotification;
+            setNotifications((prev) => {
+              if (prev.some((n) => n.id === incoming.id)) return prev;
+              return [incoming, ...prev].slice(0, 30);
+            });
+            playNotificationSound();
           },
+
         )
         .subscribe();
     })();
