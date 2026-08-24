@@ -54,6 +54,7 @@ export function CSTicketsTable() {
     if (handledDeepLink.current === deepLinkTicket) return;
     handledDeepLink.current = deepLinkTicket;
 
+
     const match = tickets.find((t) => String(t.ticket_number) === String(deepLinkTicket));
     if (match) {
       setSelected(match);
