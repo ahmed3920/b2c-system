@@ -1,4 +1,4 @@
-import { Bell, AlertTriangle, Clock, FileText, Megaphone } from "lucide-react";
+import { Bell, AlertTriangle, Clock, FileText, Megaphone, CheckCircle2, UserCheck, Volume2, VolumeX } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 const iconForType = (type: string) => {
   if (type === "cs_ticket_due_today") return <Clock className="w-4 h-4 text-amber-500" />;
   if (type === "cs_ticket_new") return <FileText className="w-4 h-4 text-primary" />;
+  if (type === "cs_ticket_validated") return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+  if (type === "cs_ticket_assigned") return <UserCheck className="w-4 h-4 text-primary" />;
   if (type === "live_issue_new") return <AlertTriangle className="w-4 h-4 text-destructive" />;
   if (type === "announcement_new") return <Megaphone className="w-4 h-4 text-primary" />;
   return <Bell className="w-4 h-4 text-muted-foreground" />;
@@ -22,12 +24,14 @@ const iconForType = (type: string) => {
 
 export function NotificationsBell() {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, soundMuted, toggleSound } =
+    useNotifications();
 
   const handleClick = (n: AppNotification) => {
     if (!n.read_status) markAsRead(n.id);
     if (n.link) navigate(n.link);
   };
+
 
   return (
     <Popover>
@@ -47,12 +51,25 @@ export function NotificationsBell() {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <p className="font-semibold text-sm">Notifications</p>
-          {unreadCount > 0 && (
-            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={markAllAsRead}>
-              Mark all read
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={toggleSound}
+              title={soundMuted ? "Unmute notification sound" : "Mute notification sound"}
+              aria-label={soundMuted ? "Unmute notification sound" : "Mute notification sound"}
+            >
+              {soundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={markAllAsRead}>
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
+
         <ScrollArea className="max-h-96">
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
