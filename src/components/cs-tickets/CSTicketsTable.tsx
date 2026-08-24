@@ -68,6 +68,8 @@ export function CSTicketsTable() {
     const next = new URLSearchParams(searchParams);
     next.delete("ticket");
     setSearchParams(next, { replace: true });
+    handledDeepLink.current = null;
+
   }, [deepLinkTicket, loading, tickets, searchParams, setSearchParams]);
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
