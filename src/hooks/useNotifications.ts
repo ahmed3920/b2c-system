@@ -26,6 +26,21 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [soundMuted, setSoundMutedState] = useState(() => isSoundMuted());
+
+  const toggleSound = useCallback(() => {
+    setSoundMutedState((prev) => {
+      const next = !prev;
+      setSoundMuted(next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    primeNotificationSound();
+  }, []);
+
+
 
   const fetchNotifications = useCallback(async (uid: string) => {
     const { data } = await supabase
