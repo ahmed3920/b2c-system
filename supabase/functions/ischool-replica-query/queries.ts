@@ -12,6 +12,29 @@ export type ReplicaQuery = {
   limit?: number;
 };
 
+// Shared join + filter blocks for the quality review reports.
+// Filter params, in order: date_from, date_to, team_lead, tutor,
+// session_type, status, min_score, max_score.
+const QUALITY_JOINS = `from public.quality_reviews qr
+          join public.tutors t on t.id = qr.tutor_id
+          left join public.admins a on a.id = t.team_lead_id
+          left join public.sessions s on s.id = qr.session_id
+          left join public.lessons l on l.id = s.lesson_id`;
+
+const QUALITY_WHERE = `where qr.type = 'QualityReview'
+            and ($1::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) >= $1::timestamptz)
+            and ($2::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) < ($2::timestamptz + interval '1 day'))
+            and ($3::text is null or a.name ilike '%' || $3::text || '%')
+            and ($4::text is null or t.t_id ilike '%' || $4::text || '%' or (t.name_i18n->>'en') ilike '%' || $4::text || '%')
+            and ($5::text is null or qr.session_type::text = $5::text)
+            and ($6::text is null or qr.status::text = $6::text)
+            and ($7::numeric is null or qr.score >= $7::numeric)
+            and ($8::numeric is null or qr.score <= $8::numeric)`;
+
+const QUALITY_FROM = `${QUALITY_JOINS}
+          ${QUALITY_WHERE}`;
+
+
 export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Diagnostics -----------------------------------------------------
   connection_check: {
