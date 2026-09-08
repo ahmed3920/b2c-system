@@ -30,6 +30,7 @@ import {
 } from "recharts";
 import { AlertTriangle, Download, Loader2, X } from "lucide-react";
 import { useReplicaQuery, runReplicaQuery } from "@/hooks/useReplicaQuery";
+import { useQualityScope } from "@/hooks/useQualityScope";
 import type { QualityFilterOptions } from "@/hooks/useQualityReviews";
 import { Field, downloadCsv } from "./QualityFilterBar";
 import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
@@ -55,7 +56,11 @@ function Delta({ value }: { value: number | null }) {
 }
 
 export function QualityCycleComparisonTab() {
-  const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options");
+  const scope = useQualityScope();
+  const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options", {
+    team_lead: scope.lockedTeamLead,
+    mentor: scope.lockedMentor,
+  });
   const allCycles = options.rows[0]?.review_cycles ?? [];
 
   const [cycles, setCycles] = useState<string[]>([]);
@@ -72,11 +77,12 @@ export function QualityCycleComparisonTab() {
 
   const filterParams = useMemo(
     () => ({
-      team_lead: teamLead || null,
+      team_lead: scope.loading ? "__loading__" : scope.lockedTeamLead || teamLead || null,
       tutor: tutor || null,
       tutor_status: tutorStatus === "" ? null : Number(tutorStatus),
+      mentor: scope.lockedMentor,
     }),
-    [teamLead, tutor, tutorStatus],
+    [teamLead, tutor, tutorStatus, scope.loading, scope.lockedTeamLead, scope.lockedMentor],
   );
   const matrixParams = useMemo(() => ({ cycles, ...filterParams }), [cycles, filterParams]);
   const trendParams = useMemo(() => ({ cycles: null, ...filterParams }), [filterParams]);
