@@ -12,6 +12,7 @@ import {
 import { Loader2, RefreshCw, X } from "lucide-react";
 import type { QualityFilters, QualityFilterOptions } from "@/hooks/useQualityReviews";
 import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
+import { FLAG_FILTER_OPTIONS } from "@/lib/qualityFlags";
 
 const ALL = "all";
 
@@ -157,6 +158,19 @@ export function QualityFilterBar({
             </Select>
           </Field>
         )}
+        {show("flag") && (
+          <Field label="Flag">
+            <Select value={filters.flag || ALL} onValueChange={(v) => update({ flag: v === ALL ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Any</SelectItem>
+                {FLAG_FILTER_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
         {show("min_score") && (
           <Field label="Min score">
             <Input type="number" step="0.1" min={0} max={5} value={filters.min_score} onChange={(e) => update({ min_score: e.target.value })} />
@@ -167,6 +181,7 @@ export function QualityFilterBar({
             <Input type="number" step="0.1" min={0} max={5} value={filters.max_score} onChange={(e) => update({ max_score: e.target.value })} />
           </Field>
         )}
+
         {children}
       </CardContent>
     </Card>

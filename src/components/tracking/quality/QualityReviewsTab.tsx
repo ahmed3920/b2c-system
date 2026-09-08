@@ -18,6 +18,7 @@ import { QualityFilterBar, Kpi, downloadCsv } from "./QualityFilterBar";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { toast } from "@/hooks/use-toast";
 import { tutorStatusLabel, cycleLabel } from "@/lib/tutorStatus";
+import { flagBadgeClass, flagLevelLabel, scorePct } from "@/lib/qualityFlags";
 
 export function QualityReviewsTab() {
   const q = useQualityReviews();
@@ -35,7 +36,12 @@ export function QualityReviewsTab() {
         limit: 2000,
         offset: 0,
       });
-      const mapped = rows.map((r) => ({ ...r, tutor_status: tutorStatusLabel(r.tutor_status as number) }));
+      const mapped = rows.map((r) => ({
+        ...r,
+        tutor_status: tutorStatusLabel(r.tutor_status as number),
+        flag_level: flagLevelLabel(r.flag_level as string),
+        score_pct: scorePct(r.score as string),
+      }));
       if (!downloadCsv(`quality-reviews-${new Date().toISOString().slice(0, 10)}.csv`, mapped)) {
         toast({ title: "Nothing to export" });
       }
@@ -57,15 +63,18 @@ export function QualityReviewsTab() {
         <Kpi
           label="Average score"
           value={q.summary?.avg_score ? `${Number(q.summary.avg_score).toFixed(2)} / 5` : "—"}
+          hint={q.summary?.avg_score ? `${scorePct(q.summary.avg_score)} overall` : undefined}
           loading={q.summaryLoading}
         />
         <Kpi
-          label="Immediate action"
-          value={(q.summary?.needs_immediate_action ?? 0).toLocaleString()}
+          label="Flagged reviews"
+          value={`${(q.summary?.red_flagged ?? 0).toLocaleString()} red · ${(q.summary?.yellow_flagged ?? 0).toLocaleString()} yellow`}
+          hint={`${(q.summary?.needs_immediate_action ?? 0).toLocaleString()} need immediate action`}
           loading={q.summaryLoading}
         />
         <Kpi label="Tutors reviewed" value={(q.summary?.tutors ?? 0).toLocaleString()} loading={q.summaryLoading} />
       </div>
+
 
       <QualityFilterBar
         filters={q.filters}
@@ -116,20 +125,23 @@ export function QualityReviewsTab() {
                       <TableHead>Type</TableHead>
                       <TableHead>Cycle</TableHead>
                       <TableHead className="text-right">Score</TableHead>
+                      <TableHead className="text-right">Score %</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Flag</TableHead>
                       <TableHead>Flags</TableHead>
+
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {q.loading && q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                           Loading reviews…
                         </TableCell>
                       </TableRow>
                     ) : q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                           No reviews match these filters.
                         </TableCell>
                       </TableRow>
@@ -166,11 +178,25 @@ export function QualityReviewsTab() {
                           <TableCell className="text-right font-medium">
                             {r.score != null ? Number(r.score).toFixed(2) : "—"}
                           </TableCell>
+                          <TableCell className="text-right text-sm">{scorePct(r.score)}</TableCell>
                           <TableCell>
                             <Badge variant={r.status === "1" ? "secondary" : "outline"}>
                               {statusLabel(r.status)}
                             </Badge>
                           </TableCell>
+                          <TableCell>
+                            {r.flag_level && r.flag_level !== "none" ? (
+                              <Badge className={flagBadgeClass(r.flag_level)}>
+                                {flagLevelLabel(r.flag_level)}
+                                {(r.red_flags ?? 0) + (r.yellow_flags ?? 0) > 1
+                                  ? ` (${(r.red_flags ?? 0) + (r.yellow_flags ?? 0)})`
+                                  : ""}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
+                            )}
+                          </TableCell>
+
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {r.needs_immediate_action && (

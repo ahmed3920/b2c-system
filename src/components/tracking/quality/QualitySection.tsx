@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QualityTab } from "@/components/tracking/QualityTab";
+import { QualityOverviewTab } from "./QualityOverviewTab";
 import { QualityReviewsTab } from "./QualityReviewsTab";
 import { QualitySessionDetailsTab } from "./QualitySessionDetailsTab";
 import { QualityMentorCommentsTab } from "./QualityMentorCommentsTab";
@@ -63,7 +63,7 @@ export function QualitySection() {
       </TabsList>
 
       <TabsContent value="overview" className="mt-0">
-        <QualityTab />
+        <QualityOverviewTab />
       </TabsContent>
       <TabsContent value="reviews" className="mt-0">
         <QualityReviewsTab />
