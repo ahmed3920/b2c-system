@@ -129,11 +129,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     sql: `select coalesce(parent.name_i18n->>'en', qc.name_i18n->>'en') as category,
                  round(avg(qe.score)::numeric, 2) as avg_score,
                  count(*)::int as evaluations
-          ${QUALITY_FROM}
-            and true
+          ${QUALITY_JOINS}
           join public.quality_evaluations qe on qe.quality_review_id = qr.id
           join public.quality_criteria qc on qc.id = qe.quality_criterion_id
           left join public.quality_criteria parent on parent.id = qc.parent_id
+          ${QUALITY_WHERE}
           group by 1
           order by 1`,
     params: [
