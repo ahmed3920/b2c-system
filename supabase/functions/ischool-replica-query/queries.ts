@@ -89,7 +89,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($9::int, 100) offset coalesce($10::int, 0)`,
+          limit coalesce($10::int, 100) offset coalesce($11::int, 0)`,
     params: [
       "date_from",
       "date_to",
