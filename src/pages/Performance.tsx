@@ -28,25 +28,42 @@ export default function Performance() {
   const csOnly = isMentor && !isAdmin && !isTeamLeader && csFullAccess;
 
 
-  if (mentorOnly) {
+  if (mentorOnly || csOnly) {
+    const mentorTabs = [
+      { v: "quality", l: "Quality" },
+      { v: "cs-tickets", l: csOnly ? "CS Tickets" : "CS Evaluations" },
+    ];
+    const mentorActive = mentorTabs.some((s) => s.v === tabParam) ? (tabParam as string) : "cs-tickets";
     return (
       <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
         <div className="p-6 max-w-[1600px] mx-auto">
-          <AssignedCSEvaluations />
+          <Tabs
+            value={mentorActive}
+            onValueChange={(v) => {
+              const next = new URLSearchParams(searchParams);
+              next.set("tab", v);
+              setSearchParams(next, { replace: true });
+            }}
+          >
+            <TabsList className="flex-wrap h-auto">
+              {mentorTabs.map((s) => (
+                <TabsTrigger key={s.v} value={s.v}>{s.l}</TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value="quality" className="mt-4">
+              <QualitySection />
+            </TabsContent>
+
+            <TabsContent value="cs-tickets" className="mt-4">
+              {csOnly ? <CSTicketsTable /> : <AssignedCSEvaluations />}
+            </TabsContent>
+          </Tabs>
         </div>
       </AppLayout>
     );
   }
 
-  if (csOnly) {
-    return (
-      <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
-        <div className="p-6 max-w-[1600px] mx-auto">
-          <CSTicketsTable />
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout title="Performance" allowedRoles={["admin", "team_leader", "mentor", "community_moderator"]}>
