@@ -174,6 +174,24 @@ export function QualityReviewsTab() {
               </SelectContent>
             </Select>
           </Field>
+          <Field label="Review cycle">
+            <Select
+              value={q.filters.review_cycle || ALL}
+              onValueChange={(v) => q.update({ review_cycle: v === ALL ? "" : v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={ALL}>All cycles</SelectItem>
+                {(q.options?.review_cycles ?? []).map((c) => (
+                  <SelectItem key={c} value={c}>
+                    Cycle {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Status">
             <Select
               value={q.filters.status || ALL}
@@ -238,6 +256,7 @@ export function QualityReviewsTab() {
                       <TableHead>Team leader</TableHead>
                       <TableHead>Lesson</TableHead>
                       <TableHead>Type</TableHead>
+                      <TableHead>Cycle</TableHead>
                       <TableHead className="text-right">Score</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Flags</TableHead>
@@ -246,13 +265,13 @@ export function QualityReviewsTab() {
                   <TableBody>
                     {q.loading && q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           Loading reviews…
                         </TableCell>
                       </TableRow>
                     ) : q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           No reviews match these filters.
                         </TableCell>
                       </TableRow>
@@ -277,6 +296,9 @@ export function QualityReviewsTab() {
                             {r.lesson_name ?? "—"}
                           </TableCell>
                           <TableCell className="text-sm">{r.session_type}</TableCell>
+                          <TableCell className="text-sm">
+                            {r.review_cycle != null ? `Cycle ${r.review_cycle}` : "—"}
+                          </TableCell>
                           <TableCell className="text-right font-medium">
                             {r.score != null ? Number(r.score).toFixed(2) : "—"}
                           </TableCell>
