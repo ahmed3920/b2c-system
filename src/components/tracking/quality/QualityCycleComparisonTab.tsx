@@ -191,15 +191,17 @@ export function QualityCycleComparisonTab() {
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Team leader">
-              <Select value={teamLead || ALL} onValueChange={(v) => setTeamLead(v === ALL ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <SelectItem value={ALL}>All team leaders</SelectItem>
-                  {(options.rows[0]?.team_leaders ?? []).map((tl) => <SelectItem key={tl} value={tl}>{tl}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
+            {!(scope.lockedTeamLead || scope.lockedMentor) && (
+              <Field label="Team leader">
+                <Select value={teamLead || ALL} onValueChange={(v) => setTeamLead(v === ALL ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value={ALL}>All team leaders</SelectItem>
+                    {(options.rows[0]?.team_leaders ?? []).map((tl) => <SelectItem key={tl} value={tl}>{tl}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
             <Field label="Tutor name or T-ID">
               <Input placeholder="e.g. T-4602" value={tutor} onChange={(e) => setTutor(e.target.value)} />
             </Field>
