@@ -13,6 +13,8 @@ import { Loader2, RefreshCw, X } from "lucide-react";
 import type { QualityFilters, QualityFilterOptions } from "@/hooks/useQualityReviews";
 import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
 import { FLAG_FILTER_OPTIONS } from "@/lib/qualityFlags";
+import { useQualityScope } from "@/hooks/useQualityScope";
+import { Badge } from "@/components/ui/badge";
 
 const ALL = "all";
 
