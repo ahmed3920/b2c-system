@@ -30,15 +30,30 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return { error: json({ error: "Unauthorized" }, 401) };
 
-  let userId: string;
+  let userId: string | null = null;
   try {
     const jwks = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
     const { payload } = await jwtVerify(authHeader.slice(7), jwks, { clockTolerance: 600 });
-    if (!payload.sub) throw new Error("no sub");
-    userId = payload.sub;
+    userId = payload.sub ?? null;
   } catch (_e) {
-    return { error: json({ error: "Unauthorized" }, 401) };
+    // Legacy (HS256) tokens aren't in the JWKS — fall back to asking Auth directly.
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          Authorization: authHeader,
+          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        },
+      });
+      if (res.ok) {
+        const user = await res.json();
+        userId = user?.id ?? null;
+      }
+    } catch (_e2) {
+      userId = null;
+    }
   }
+  if (!userId) return { error: json({ error: "Unauthorized" }, 401) };
+
 
   if (!APP_DB_URL) return { error: json({ error: "App database not configured" }, 500) };
   const app = postgres(APP_DB_URL, { prepare: false, max: 1, idle_timeout: 5 });
