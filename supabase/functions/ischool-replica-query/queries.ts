@@ -66,6 +66,7 @@ const QUALITY_CLAUSES: Record<string, string> = {
               when $12::text = 'none' then ${FLAG_LEVEL} = 'none'
               when $12::text = 'any' then ${FLAG_LEVEL} <> 'none'
               else ${FLAG_LEVEL} = $12::text end)`,
+  mentor: `($13::text is null or (m.name_i18n->>'en') ilike '%' || $13::text || '%')`,
 };
 
 /** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
