@@ -26,6 +26,7 @@ const QUALITY_PARAMS = [
   "max_score",
   "review_cycle",
   "tutor_status",
+  "organization",
 ];
 
 const QUALITY_JOINS = `from public.quality_reviews qr
@@ -35,17 +36,38 @@ const QUALITY_JOINS = `from public.quality_reviews qr
           left join public.sessions s on s.id = qr.session_id
           left join public.lessons l on l.id = s.lesson_id`;
 
-const QUALITY_WHERE = `where qr.type = 'QualityReview'
-            and ($1::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) >= $1::timestamptz)
-            and ($2::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) < ($2::timestamptz + interval '1 day'))
-            and ($3::text is null or a.name ilike '%' || $3::text || '%')
-            and ($4::text is null or t.t_id ilike '%' || $4::text || '%' or (t.name_i18n->>'en') ilike '%' || $4::text || '%')
-            and ($5::text is null or qr.session_type::text = $5::text)
-            and ($6::text is null or qr.status::text = $6::text)
-            and ($7::numeric is null or qr.score >= $7::numeric)
-            and ($8::numeric is null or qr.score <= $8::numeric)
-            and ($9::text is null or qr.review_cycle::text = $9::text)
-            and ($10::int is null or t.status::int = $10::int)`;
+const QUALITY_CLAUSES: Record<string, string> = {
+  date_from: `($1::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) >= $1::timestamptz)`,
+  date_to: `($2::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) < ($2::timestamptz + interval '1 day'))`,
+  team_lead: `($3::text is null or a.name ilike '%' || $3::text || '%')`,
+  tutor: `($4::text is null or t.t_id ilike '%' || $4::text || '%' or (t.name_i18n->>'en') ilike '%' || $4::text || '%')`,
+  session_type: `($5::text is null or qr.session_type::text = $5::text)`,
+  status: `($6::text is null or qr.status::text = $6::text)`,
+  min_score: `($7::numeric is null or qr.score >= $7::numeric)`,
+  max_score: `($8::numeric is null or qr.score <= $8::numeric)`,
+  review_cycle: `($9::text is null or qr.review_cycle::text = $9::text)`,
+  tutor_status: `($10::int is null or t.status::int = $10::int)`,
+  organization: `($11::text is null or exists (
+              select 1 from public.tutor_organizations tor
+              join public.organizations o on o.id = tor.organization_id
+              where tor.tutor_id = t.id and o.name = $11::text))`,
+};
+
+/** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
+function qualityWhere(exclude?: string) {
+  return `where qr.type = 'QualityReview'
+            and ` + Object.entries(QUALITY_CLAUSES)
+    .filter(([k]) => k !== exclude)
+    .map(([, c]) => c)
+    .join("\n            and ");
+}
+
+const QUALITY_WHERE = qualityWhere();
+
+const TUTOR_ORGS = `(select string_agg(o.name, ', ' order by o.name)
+                    from public.tutor_organizations tor
+                    join public.organizations o on o.id = tor.organization_id
+                   where tor.tutor_id = t.id)`;
 
 const QUALITY_FROM = `${QUALITY_JOINS}
           ${QUALITY_WHERE}`;
@@ -133,10 +155,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  t.status::int as tutor_status,
                  a.name as team_leader,
                  (m.name_i18n->>'en') as mentor_name,
+                 ${TUTOR_ORGS} as organizations,
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($11::int, 100) offset coalesce($12::int, 0)`,
+          limit coalesce($12::int, 100) offset coalesce($13::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -282,7 +305,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.students st on st.id = s.student_id
           ${QUALITY_WHERE}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($11::int, 100) offset coalesce($12::int, 0)`,
+          limit coalesce($12::int, 100) offset coalesce($13::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -307,11 +330,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($11::text is null or c.parent_name = $11::text)
-            and ($12::text is null or c.body ilike '%' || $12::text || '%')
-            and ($13::int is null or c.comment_type = $13::int)
+            and ($12::text is null or c.parent_name = $12::text)
+            and ($13::text is null or c.body ilike '%' || $13::text || '%')
+            and ($14::int is null or c.comment_type = $14::int)
           order by coalesce(qr.session_start_at, qr.created_at) desc, qr.id desc, c.source, c.comment_type
-          limit coalesce($14::int, 100) offset coalesce($15::int, 0)`,
+          limit coalesce($15::int, 100) offset coalesce($16::int, 0)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type", "limit", "offset"],
     limit: 2000,
   },
@@ -324,9 +347,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($11::text is null or c.parent_name = $11::text)
-            and ($12::text is null or c.body ilike '%' || $12::text || '%')
-            and ($13::int is null or c.comment_type = $13::int)`,
+            and ($12::text is null or c.parent_name = $12::text)
+            and ($13::text is null or c.body ilike '%' || $13::text || '%')
+            and ($14::int is null or c.comment_type = $14::int)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type"],
     limit: 1,
   },
@@ -481,28 +504,38 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   },
 
   quality_filter_options: {
+    // Each list is computed over the reviews matching every *other* filter,
+    // so picking "Working" narrows the team-leader list to TLs of working tutors, etc.
     sql: `select
             (select array_agg(distinct a.name order by a.name)
-               from public.tutors t join public.admins a on a.id = t.team_lead_id
-              where t.active) as team_leaders,
-            (select array_agg(distinct qr.session_type::text)
-               from public.quality_reviews qr
-              where qr.type = 'QualityReview'
-                and qr.created_at > now() - interval '180 days') as session_types,
+               ${QUALITY_JOINS}
+               ${qualityWhere("team_lead")}
+                 and a.name is not null) as team_leaders,
+            (select array_agg(distinct o.name order by o.name)
+               ${QUALITY_JOINS}
+               join public.tutor_organizations tor on tor.tutor_id = t.id
+               join public.organizations o on o.id = tor.organization_id
+               ${qualityWhere("organization")}) as organizations,
+            (select array_agg(distinct t.status::int order by t.status::int)
+               ${QUALITY_JOINS}
+               ${qualityWhere("tutor_status")}
+                 and t.status is not null) as tutor_statuses,
+            (select array_agg(distinct qr.session_type::text order by qr.session_type::text)
+               ${QUALITY_JOINS}
+               ${qualityWhere("session_type")}
+                 and qr.session_type is not null) as session_types,
             (select array_agg(distinct qr.status::text)
-               from public.quality_reviews qr
-               where qr.type = 'QualityReview'
-                 and qr.created_at > now() - interval '180 days') as statuses,
-            (select array_agg(x order by x)
-               from (select distinct qr.review_cycle::text as x
-                       from public.quality_reviews qr
-                      where qr.type = 'QualityReview'
-                        and qr.review_cycle is not null) d) as review_cycles,
+               ${QUALITY_JOINS}
+               ${qualityWhere("status")}) as statuses,
+            (select array_agg(distinct qr.review_cycle::text order by qr.review_cycle::text)
+               ${QUALITY_JOINS}
+               ${qualityWhere("review_cycle")}
+                 and qr.review_cycle is not null) as review_cycles,
             (select array_agg(x order by x)
                from (select distinct coalesce(parent.name_i18n->>'en', qc.name_i18n->>'en') as x
                        from public.quality_criteria qc
                        left join public.quality_criteria parent on parent.id = qc.parent_id) d) as criteria`,
-    params: [],
+    params: QUALITY_PARAMS,
     limit: 1,
   },
 };

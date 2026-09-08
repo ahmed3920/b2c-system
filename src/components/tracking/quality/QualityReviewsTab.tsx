@@ -111,6 +111,7 @@ export function QualityReviewsTab() {
                       <TableHead>Tutor</TableHead>
                       <TableHead>Tutor status</TableHead>
                       <TableHead>Team leader</TableHead>
+                      <TableHead>Organization</TableHead>
                       <TableHead>Lesson</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Cycle</TableHead>
@@ -122,13 +123,13 @@ export function QualityReviewsTab() {
                   <TableBody>
                     {q.loading && q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           Loading reviews…
                         </TableCell>
                       </TableRow>
                     ) : q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           No reviews match these filters.
                         </TableCell>
                       </TableRow>
@@ -154,6 +155,7 @@ export function QualityReviewsTab() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm">{r.team_leader ?? "—"}</TableCell>
+                          <TableCell className="text-sm">{r.organizations ?? "—"}</TableCell>
                           <TableCell className="text-sm max-w-[220px] truncate">
                             {r.lesson_name ?? "—"}
                           </TableCell>

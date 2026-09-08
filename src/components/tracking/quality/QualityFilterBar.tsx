@@ -91,13 +91,28 @@ export function QualityFilterBar({
             <Input placeholder="e.g. T-4602" value={filters.tutor} onChange={(e) => update({ tutor: e.target.value })} />
           </Field>
         )}
+        {show("organization") && (
+          <Field label="Organization">
+            <Select value={filters.organization || ALL} onValueChange={(v) => update({ organization: v === ALL ? "" : v })}>
+              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={ALL}>All organizations</SelectItem>
+                {(options?.organizations ?? []).map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
         {show("tutor_status") && (
           <Field label="Tutor status">
             <Select value={filters.tutor_status || ALL} onValueChange={(v) => update({ tutor_status: v === ALL ? "" : v })}>
               <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>All statuses</SelectItem>
-                {TUTOR_STATUS_OPTIONS.map((o) => (
+                {TUTOR_STATUS_OPTIONS.filter(
+                  (o) => !options?.tutor_statuses || options.tutor_statuses.includes(Number(o.value)) || o.value === filters.tutor_status,
+                ).map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
               </SelectContent>
