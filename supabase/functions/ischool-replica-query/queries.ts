@@ -34,7 +34,7 @@ const QUALITY_PARAMS = [
 const QUALITY_JOINS = `from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
-          left join public.tutors m on m.id = t.mentor_id
+          left join public.admins m on m.id = t.mentor_id
           left join public.sessions s on s.id = qr.session_id
           left join public.lessons l on l.id = s.lesson_id`;
 
@@ -66,7 +66,7 @@ const QUALITY_CLAUSES: Record<string, string> = {
               when $12::text = 'none' then ${FLAG_LEVEL} = 'none'
               when $12::text = 'any' then ${FLAG_LEVEL} <> 'none'
               else ${FLAG_LEVEL} = $12::text end)`,
-  mentor: `($13::text is null or (m.name_i18n->>'en') ilike '%' || $13::text || '%')`,
+  mentor: `($13::text is null or (btrim(m.name)) ilike '%' || $13::text || '%')`,
 };
 
 /** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
@@ -175,7 +175,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (t.name_i18n->>'en') as tutor_name,
                  t.status::int as tutor_status,
                  a.name as team_leader,
-                 (m.name_i18n->>'en') as mentor_name,
+                 (btrim(m.name)) as mentor_name,
                  ${TUTOR_ORGS} as organizations,
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
@@ -354,7 +354,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (t.name_i18n->>'en') as tutor_name,
                  t.status::int as tutor_status,
                  a.name as team_leader,
-                 (m.name_i18n->>'en') as mentor_name,
+                 (btrim(m.name)) as mentor_name,
                  (l.name_i18n->>'en') as lesson_name,
                  l.position as lesson_position,
                  st.s_id as student_sid,
@@ -382,7 +382,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (t.name_i18n->>'en') as tutor_name,
                  t.status::int as tutor_status,
                  a.name as team_leader,
-                 (m.name_i18n->>'en') as mentor_name,
+                 (btrim(m.name)) as mentor_name,
                  c.source,
                  c.body,
                  c.comment_type,
@@ -418,8 +418,8 @@ export const QUERIES: Record<string, ReplicaQuery> = {
 
   // Comments grouped by the tutor's mentor.
   quality_comments_by_mentor: {
-    sql: `select coalesce(m.name_i18n->>'en', 'No mentor') as mentor_name,
-                 m.t_id as mentor_tid,
+    sql: `select coalesce(btrim(m.name), 'No mentor') as mentor_name,
+                 m.id::text as mentor_tid,
                  count(distinct t.id)::int as tutors,
                  count(distinct qr.id)::int as reviews,
                  round(avg(qr.score)::numeric, 2) as avg_score,
@@ -445,7 +445,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
-          left join public.tutors m on m.id = t.mentor_id
+          left join public.admins m on m.id = t.mentor_id
           join public.quality_evaluations qe on qe.quality_review_id = qr.id
           join public.quality_criteria qc on qc.id = qe.quality_criterion_id
           left join public.quality_criteria parent on parent.id = qc.parent_id
@@ -454,7 +454,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
             and ($2::text is null or a.name ilike '%' || $2::text || '%')
             and ($3::text is null or t.t_id ilike '%' || $3::text || '%' or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
             and ($4::int is null or t.status::int = $4::int)
-            and ($5::text is null or (m.name_i18n->>'en') ilike '%' || $5::text || '%')
+            and ($5::text is null or (btrim(m.name)) ilike '%' || $5::text || '%')
           group by grouping sets ((1, 2, 3), (1, 2))
           order by 2, 3 nulls first, 1`,
     params: ["cycles", "team_lead", "tutor", "tutor_status", "mentor"],
@@ -472,14 +472,14 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
-          left join public.tutors m on m.id = t.mentor_id
+          left join public.admins m on m.id = t.mentor_id
           where qr.type = 'QualityReview'
             and qr.review_cycle is not null
             and ($1::text[] is null or qr.review_cycle::text = any($1::text[]))
             and ($2::text is null or a.name ilike '%' || $2::text || '%')
             and ($3::text is null or t.t_id ilike '%' || $3::text || '%' or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
             and ($4::int is null or t.status::int = $4::int)
-            and ($5::text is null or (m.name_i18n->>'en') ilike '%' || $5::text || '%')
+            and ($5::text is null or (btrim(m.name)) ilike '%' || $5::text || '%')
           group by 1
           order by 1`,
     params: ["cycles", "team_lead", "tutor", "tutor_status", "mentor"],
@@ -516,7 +516,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (t.name_i18n->>'en') as tutor_name,
                  t.status::int as tutor_status,
                  a.name as team_leader,
-                 (m.name_i18n->>'en') as mentor_name,
+                 (btrim(m.name)) as mentor_name,
                  (l.name_i18n->>'en') as lesson_name,
                  l.position as lesson_position,
                  st.s_id as student_sid,
@@ -528,7 +528,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
-          left join public.tutors m on m.id = t.mentor_id
+          left join public.admins m on m.id = t.mentor_id
           left join public.sessions s on s.id = qr.session_id
           left join public.students st on st.id = s.student_id
           left join public.lessons l on l.id = s.lesson_id
