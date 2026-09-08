@@ -1,4 +1,4 @@
-import { Bell, AlertTriangle, Clock, FileText, Megaphone, CheckCircle2, UserCheck, Volume2, VolumeX } from "lucide-react";
+import { Bell, AlertTriangle, Clock, FileText, Megaphone, CheckCircle2, UserCheck, Volume2, VolumeX, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ const iconForType = (type: string) => {
   if (type === "cs_ticket_assigned") return <UserCheck className="w-4 h-4 text-primary" />;
   if (type === "live_issue_new") return <AlertTriangle className="w-4 h-4 text-destructive" />;
   if (type === "announcement_new") return <Megaphone className="w-4 h-4 text-primary" />;
+  if (type === "quality_review_new") return <Star className="w-4 h-4 text-amber-500" />;
   return <Bell className="w-4 h-4 text-muted-foreground" />;
 };
 
