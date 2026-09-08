@@ -8,6 +8,8 @@ export type QualityScope = {
   lockedTeamLead: string | null;
   /** Force the mentor filter to this name (mentors / moderators). */
   lockedMentor: string | null;
+  /** Name shown in the read-only scope badge. */
+  displayName: string | null;
   loading: boolean;
 };
 
