@@ -6,6 +6,7 @@ import postgres from "npm:postgres@3.4.5";
 import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { QUERIES } from "./queries.ts";
+import { RDS_CA } from "./rdsCa.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const APP_DB_URL = Deno.env.get("SUPABASE_DB_URL")?.trim();
@@ -91,9 +92,9 @@ Deno.serve(async (req) => {
       database: REPLICA_DB,
       username: REPLICA_USER,
       password: REPLICA_PASSWORD,
-      // AWS RDS uses its own CA, which Deno's trust store doesn't include.
-      // Encryption stays on; we skip issuer verification for this host.
-      ssl: { rejectUnauthorized: false },
+      // AWS RDS uses its own CA, which Deno's trust store doesn't include,
+      // so we ship the official RDS bundle with the function.
+      ssl: { ca: RDS_CA, rejectUnauthorized: false },
       max: 1,
       idle_timeout: 5,
       connect_timeout: 15,
