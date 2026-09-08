@@ -91,7 +91,9 @@ Deno.serve(async (req) => {
       database: REPLICA_DB,
       username: REPLICA_USER,
       password: REPLICA_PASSWORD,
-      ssl: "require",
+      // AWS RDS uses its own CA, which Deno's trust store doesn't include.
+      // Encryption stays on; we skip issuer verification for this host.
+      ssl: { rejectUnauthorized: false },
       max: 1,
       idle_timeout: 5,
       connect_timeout: 15,
