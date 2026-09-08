@@ -12,6 +12,7 @@ export type QualityFilters = {
   max_score: string;
   review_cycle: string;
   tutor_status: string;
+  organization: string;
 };
 
 export const emptyQualityFilters: QualityFilters = {
@@ -25,6 +26,7 @@ export const emptyQualityFilters: QualityFilters = {
   max_score: "",
   review_cycle: "",
   tutor_status: "",
+  organization: "",
 };
 
 export type QualityReviewRow = {
@@ -48,6 +50,7 @@ export type QualityReviewRow = {
   tutor_status: number | null;
   team_leader: string | null;
   mentor_name: string | null;
+  organizations: string | null;
   lesson_name: string | null;
 };
 
@@ -65,6 +68,8 @@ export type QualitySummary = {
 
 export type QualityFilterOptions = {
   team_leaders: string[] | null;
+  organizations: string[] | null;
+  tutor_statuses: number[] | null;
   session_types: string[] | null;
   statuses: string[] | null;
   review_cycles: string[] | null;
@@ -91,6 +96,7 @@ export function toBaseParams(filters: QualityFilters) {
     max_score: filters.max_score || null,
     review_cycle: filters.review_cycle || null,
     tutor_status: filters.tutor_status === "" ? null : Number(filters.tutor_status),
+    organization: filters.organization || null,
   };
 }
 
@@ -99,7 +105,9 @@ export function useQualityFilters(initial: QualityFilters = emptyQualityFilters)
   const [filters, setFilters] = useState<QualityFilters>(initial);
   const [page, setPage] = useState(0);
   const baseParams = useMemo(() => toBaseParams(filters), [filters]);
-  const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options");
+  // Options depend on the current filters so every dropdown only lists
+  // values that exist among the currently matching reviews.
+  const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options", baseParams);
 
   const update = (patch: Partial<QualityFilters>) => {
     setPage(0);
