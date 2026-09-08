@@ -14,7 +14,7 @@ export type ReplicaQuery = {
 
 // Shared join + filter blocks for the quality review reports.
 // Filter params, in order: date_from, date_to, team_lead, tutor,
-// session_type, status, min_score, max_score.
+// session_type, status, min_score, max_score, review_cycle.
 const QUALITY_JOINS = `from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
@@ -29,7 +29,8 @@ const QUALITY_WHERE = `where qr.type = 'QualityReview'
             and ($5::text is null or qr.session_type::text = $5::text)
             and ($6::text is null or qr.status::text = $6::text)
             and ($7::numeric is null or qr.score >= $7::numeric)
-            and ($8::numeric is null or qr.score <= $8::numeric)`;
+            and ($8::numeric is null or qr.score <= $8::numeric)
+            and ($9::text is null or qr.review_cycle::text = $9::text)`;
 
 const QUALITY_FROM = `${QUALITY_JOINS}
           ${QUALITY_WHERE}`;
