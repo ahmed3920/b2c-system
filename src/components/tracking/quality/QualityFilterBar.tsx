@@ -41,7 +41,9 @@ export function QualityFilterBar({
   hide = [],
   children,
 }: Props) {
-  const show = (k: keyof QualityFilters) => !hide.includes(k);
+  const scope = useQualityScope();
+  const locked = scope.lockedTeamLead || scope.lockedMentor;
+  const show = (k: keyof QualityFilters) => !hide.includes(k) && !(k === "team_lead" && !!locked);
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
