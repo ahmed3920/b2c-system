@@ -62,7 +62,7 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
       select role::text as role from public.user_roles where user_id = ${userId}
     `;
     if (!roles.some((r) => ALLOWED_ROLES.has(r.role))) {
-      return { error: json({ error: "Admin or team leader access required" }, 403) };
+      return { error: json({ error: "Access required" }, 403) };
     }
   } finally {
     await app.end({ timeout: 5 });
