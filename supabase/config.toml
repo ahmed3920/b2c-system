@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.submit-session-incident]
 verify_jwt = false
+
+[functions.ischool-replica-query]
+verify_jwt = false
