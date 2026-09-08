@@ -174,6 +174,24 @@ export function QualityReviewsTab() {
               </SelectContent>
             </Select>
           </Field>
+          <Field label="Review cycle">
+            <Select
+              value={q.filters.review_cycle || ALL}
+              onValueChange={(v) => q.update({ review_cycle: v === ALL ? "" : v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={ALL}>All cycles</SelectItem>
+                {(q.options?.review_cycles ?? []).map((c) => (
+                  <SelectItem key={c} value={c}>
+                    Cycle {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Status">
             <Select
               value={q.filters.status || ALL}
@@ -238,6 +256,7 @@ export function QualityReviewsTab() {
                       <TableHead>Team leader</TableHead>
                       <TableHead>Lesson</TableHead>
                       <TableHead>Type</TableHead>
+                      <TableHead>Cycle</TableHead>
                       <TableHead className="text-right">Score</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Flags</TableHead>
