@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +78,7 @@ export function QualityMentorCommentsTab() {
   const [exporting, setExporting] = useState(false);
 
   // Small debounce so we don't hit the replica on every keystroke
-  useMemo(() => {
+  useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 400);
     return () => clearTimeout(t);
   }, [search]);
