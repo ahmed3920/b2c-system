@@ -108,6 +108,7 @@ export function toBaseParams(filters: QualityFilters) {
     tutor_status: filters.tutor_status === "" ? null : Number(filters.tutor_status),
     organization: filters.organization || null,
     flag: filters.flag || null,
+    mentor: null as string | null,
   };
 }
 
@@ -116,7 +117,15 @@ export function toBaseParams(filters: QualityFilters) {
 export function useQualityFilters(initial: QualityFilters = emptyQualityFilters) {
   const [filters, setFilters] = useState<QualityFilters>(initial);
   const [page, setPage] = useState(0);
-  const baseParams = useMemo(() => toBaseParams(filters), [filters]);
+  const scope = useQualityScope();
+  const baseParams = useMemo(() => {
+    const p = toBaseParams(filters);
+    // While the scope is resolving, block data instead of showing everything.
+    if (scope.loading) return { ...p, team_lead: "__loading__" };
+    if (scope.lockedTeamLead) p.team_lead = scope.lockedTeamLead;
+    if (scope.lockedMentor) p.mentor = scope.lockedMentor;
+    return p;
+  }, [filters, scope.loading, scope.lockedTeamLead, scope.lockedMentor]);
   // Options depend on the current filters so every dropdown only lists
   // values that exist among the currently matching reviews.
   const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options", baseParams);
@@ -130,7 +139,7 @@ export function useQualityFilters(initial: QualityFilters = emptyQualityFilters)
     setFilters(initial);
   };
 
-  return { filters, update, reset, page, setPage, baseParams, options: options.rows[0] };
+  return { filters, update, reset, page, setPage, baseParams, options: options.rows[0], scope };
 }
 
 export function useQualityReviews() {
