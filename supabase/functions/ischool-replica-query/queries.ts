@@ -354,7 +354,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   quality_cycle_criteria_matrix: {
     sql: `select qr.review_cycle::text as cycle,
                  coalesce(parent.name_i18n->>'en', qc.name_i18n->>'en') as category,
-                 case when parent.id is null then null else (qc.name_i18n->>'en') end as criterion,
+                 (qc.name_i18n->>'en') as criterion,
                  round(avg(qe.score)::numeric, 2) as avg_score,
                  count(*)::int as evaluations
           from public.quality_reviews qr
@@ -368,7 +368,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
             and ($2::text is null or a.name ilike '%' || $2::text || '%')
             and ($3::text is null or t.t_id ilike '%' || $3::text || '%' or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
             and ($4::int is null or t.status::int = $4::int)
-          group by 1, 2, 3
+          group by grouping sets ((1, 2, 3), (1, 2))
           order by 2, 3 nulls first, 1`,
     params: ["cycles", "team_lead", "tutor", "tutor_status"],
     limit: 2000,
@@ -392,7 +392,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
             and ($3::text is null or t.t_id ilike '%' || $3::text || '%' or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
             and ($4::int is null or t.status::int = $4::int)
           group by 1
-          order by min(coalesce(qr.session_start_at, qr.created_at))`,
+          order by 1`,
     params: ["cycles", "team_lead", "tutor", "tutor_status"],
     limit: 200,
   },
@@ -493,13 +493,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                from public.quality_reviews qr
                where qr.type = 'QualityReview'
                  and qr.created_at > now() - interval '180 days') as statuses,
-            (select array_agg(x order by first_at)
-               from (select qr.review_cycle::text as x,
-                            min(coalesce(qr.session_start_at, qr.created_at)) as first_at
+            (select array_agg(x order by x)
+               from (select distinct qr.review_cycle::text as x
                        from public.quality_reviews qr
                       where qr.type = 'QualityReview'
-                        and qr.review_cycle is not null
-                      group by 1) d) as review_cycles,
+                        and qr.review_cycle is not null) d) as review_cycles,
             (select array_agg(x order by x)
                from (select distinct coalesce(parent.name_i18n->>'en', qc.name_i18n->>'en') as x
                        from public.quality_criteria qc
