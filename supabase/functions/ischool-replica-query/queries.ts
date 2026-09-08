@@ -180,7 +180,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($13::int, 100) offset coalesce($14::int, 0)`,
+          limit coalesce($14::int, 100) offset coalesce($15::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -367,7 +367,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.students st on st.id = s.student_id
           ${QUALITY_WHERE}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($13::int, 100) offset coalesce($14::int, 0)`,
+          limit coalesce($14::int, 100) offset coalesce($15::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -392,11 +392,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($13::text is null or c.parent_name = $13::text)
-            and ($14::text is null or c.body ilike '%' || $14::text || '%')
-            and ($15::int is null or c.comment_type = $15::int)
+            and ($14::text is null or c.parent_name = $14::text)
+            and ($15::text is null or c.body ilike '%' || $15::text || '%')
+            and ($16::int is null or c.comment_type = $16::int)
           order by coalesce(qr.session_start_at, qr.created_at) desc, qr.id desc, c.source, c.comment_type
-          limit coalesce($16::int, 100) offset coalesce($17::int, 0)`,
+          limit coalesce($17::int, 100) offset coalesce($18::int, 0)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type", "limit", "offset"],
     limit: 2000,
   },
@@ -409,9 +409,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($13::text is null or c.parent_name = $13::text)
-            and ($14::text is null or c.body ilike '%' || $14::text || '%')
-            and ($15::int is null or c.comment_type = $15::int)`,
+            and ($14::text is null or c.parent_name = $14::text)
+            and ($15::text is null or c.body ilike '%' || $15::text || '%')
+            and ($16::int is null or c.comment_type = $16::int)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type"],
     limit: 1,
   },
@@ -445,6 +445,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
+          left join public.tutors m on m.id = t.mentor_id
           join public.quality_evaluations qe on qe.quality_review_id = qr.id
           join public.quality_criteria qc on qc.id = qe.quality_criterion_id
           left join public.quality_criteria parent on parent.id = qc.parent_id
@@ -453,9 +454,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
             and ($2::text is null or a.name ilike '%' || $2::text || '%')
             and ($3::text is null or t.t_id ilike '%' || $3::text || '%' or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
             and ($4::int is null or t.status::int = $4::int)
+            and ($5::text is null or (m.name_i18n->>'en') ilike '%' || $5::text || '%')
           group by grouping sets ((1, 2, 3), (1, 2))
           order by 2, 3 nulls first, 1`,
-    params: ["cycles", "team_lead", "tutor", "tutor_status"],
+    params: ["cycles", "team_lead", "tutor", "tutor_status", "mentor"],
     limit: 2000,
   },
 
@@ -470,15 +472,17 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           from public.quality_reviews qr
           join public.tutors t on t.id = qr.tutor_id
           left join public.admins a on a.id = t.team_lead_id
+          left join public.tutors m on m.id = t.mentor_id
           where qr.type = 'QualityReview'
             and qr.review_cycle is not null
             and ($1::text[] is null or qr.review_cycle::text = any($1::text[]))
             and ($2::text is null or a.name ilike '%' || $2::text || '%')
             and ($3::text is null or t.t_id ilike '%' || $3::text || '%' or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
             and ($4::int is null or t.status::int = $4::int)
+            and ($5::text is null or (m.name_i18n->>'en') ilike '%' || $5::text || '%')
           group by 1
           order by 1`,
-    params: ["cycles", "team_lead", "tutor", "tutor_status"],
+    params: ["cycles", "team_lead", "tutor", "tutor_status", "mentor"],
     limit: 200,
   },
 
