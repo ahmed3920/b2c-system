@@ -49,7 +49,14 @@ export function QualityFilterBar({
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">Filters</CardTitle>
+        <div className="flex items-center gap-2 flex-wrap">
+          <CardTitle className="text-base">Filters</CardTitle>
+          {locked && (
+            <Badge variant="secondary" className="font-normal">
+              {scope.lockedTeamLead ? "Team" : "Mentor"}: {scope.displayName ?? locked}
+            </Badge>
+          )}
+        </div>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button size="sm" variant="ghost" onClick={reset}>
             <X className="w-3.5 h-3.5 mr-1.5" /> Clear
