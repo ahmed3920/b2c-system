@@ -123,13 +123,13 @@ export function QualityReviewsTab() {
                   <TableBody>
                     {q.loading && q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           Loading reviews…
                         </TableCell>
                       </TableRow>
                     ) : q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           No reviews match these filters.
                         </TableCell>
                       </TableRow>
