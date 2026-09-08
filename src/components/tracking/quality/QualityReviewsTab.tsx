@@ -17,7 +17,7 @@ import { QualityReviewsInsights } from "./QualityReviewsInsights";
 import { QualityFilterBar, Kpi, downloadCsv } from "./QualityFilterBar";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { toast } from "@/hooks/use-toast";
-import { tutorStatusLabel } from "@/lib/tutorStatus";
+import { tutorStatusLabel, cycleLabel } from "@/lib/tutorStatus";
 
 export function QualityReviewsTab() {
   const q = useQualityReviews();
@@ -159,7 +159,7 @@ export function QualityReviewsTab() {
                           </TableCell>
                           <TableCell className="text-sm">{r.session_type}</TableCell>
                           <TableCell className="text-sm">
-                            {r.review_cycle != null ? `Cycle ${r.review_cycle}` : "—"}
+                            {cycleLabel(r.review_cycle)}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {r.score != null ? Number(r.score).toFixed(2) : "—"}

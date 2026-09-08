@@ -25,7 +25,7 @@ import { runReplicaQuery, useReplicaQuery } from "@/hooks/useReplicaQuery";
 import { QualityReviewDetailDialog } from "./QualityReviewDetailDialog";
 import { QualityFilterBar, Field, Kpi, downloadCsv } from "./QualityFilterBar";
 import { toast } from "@/hooks/use-toast";
-import { tutorStatusLabel } from "@/lib/tutorStatus";
+import { tutorStatusLabel, cycleLabel } from "@/lib/tutorStatus";
 
 const ALL = "all";
 
@@ -226,7 +226,7 @@ export function QualityMentorCommentsTab() {
                           <TableRow key={`${r.review_id}-${i}`} className="cursor-pointer" onClick={() => setSelected(r.review_id)}>
                             <TableCell className="whitespace-nowrap text-sm">
                               {r.session_start_at ? new Date(r.session_start_at).toLocaleDateString() : "—"}
-                              {r.review_cycle != null && <span className="block text-xs text-muted-foreground">Cycle {r.review_cycle}</span>}
+                              {r.review_cycle != null && <span className="block text-xs text-muted-foreground">{cycleLabel(r.review_cycle)}</span>}
                             </TableCell>
                             <TableCell>
                               {r.tutor_name}

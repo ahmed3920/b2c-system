@@ -32,7 +32,7 @@ import { AlertTriangle, Download, Loader2, X } from "lucide-react";
 import { useReplicaQuery, runReplicaQuery } from "@/hooks/useReplicaQuery";
 import type { QualityFilterOptions } from "@/hooks/useQualityReviews";
 import { Field, downloadCsv } from "./QualityFilterBar";
-import { TUTOR_STATUS_OPTIONS } from "@/lib/tutorStatus";
+import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -108,13 +108,13 @@ export function QualityCycleComparisonTab() {
     return m;
   }, [overall.rows]);
 
-  const trendData = overall.rows.map((r) => ({ cycle: `Cycle ${r.cycle}`, score: r.avg_score == null ? null : Number(r.avg_score), reviews: r.reviews }));
+  const trendData = overall.rows.map((r) => ({ cycle: cycleLabel(r.cycle), score: r.avg_score == null ? null : Number(r.avg_score), reviews: r.reviews }));
 
   // Trend per main category across selected cycles
   const categoryTrend = useMemo(() => {
     const mains = rows.filter((r) => r.criterion == null);
     return ordered.map((c) => {
-      const point: Record<string, string | number | null> = { cycle: `Cycle ${c}` };
+      const point: Record<string, string | number | null> = { cycle: cycleLabel(c) };
       for (const m of mains) point[m.category] = m.scores[c] ?? null;
       return point;
     });
@@ -178,7 +178,7 @@ export function QualityCycleComparisonTab() {
                 const on = cycles.includes(c);
                 return (
                   <Button key={c} size="sm" variant={on ? "default" : "outline"} onClick={() => toggleCycle(c)}>
-                    Cycle {c}
+                    {cycleLabel(c)}
                   </Button>
                 );
               })}
@@ -219,7 +219,7 @@ export function QualityCycleComparisonTab() {
           return (
             <Card key={c}>
               <CardContent className="pt-4">
-                <p className="text-xs text-muted-foreground">Cycle {c}</p>
+                <p className="text-xs text-muted-foreground">{cycleLabel(c)}</p>
                 <p className="text-2xl font-semibold flex items-baseline gap-2">
                   {o?.avg_score != null ? Number(o.avg_score).toFixed(2) : "—"}
                   {i > 0 && <Delta value={d} />}
@@ -286,7 +286,7 @@ export function QualityCycleComparisonTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Criterion</TableHead>
-                    {ordered.map((c) => <TableHead key={c} className="text-right">Cycle {c}</TableHead>)}
+                    {ordered.map((c) => <TableHead key={c} className="text-right">{cycleLabel(c)}</TableHead>)}
                     <TableHead className="text-right">Change (first → last)</TableHead>
                   </TableRow>
                 </TableHeader>

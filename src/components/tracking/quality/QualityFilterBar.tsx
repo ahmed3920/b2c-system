@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, RefreshCw, X } from "lucide-react";
 import type { QualityFilters, QualityFilterOptions } from "@/hooks/useQualityReviews";
-import { TUTOR_STATUS_OPTIONS } from "@/lib/tutorStatus";
+import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
 
 const ALL = "all";
 
@@ -124,7 +124,7 @@ export function QualityFilterBar({
               <SelectContent className="max-h-72">
                 <SelectItem value={ALL}>All cycles</SelectItem>
                 {(options?.review_cycles ?? []).map((c) => (
-                  <SelectItem key={c} value={c}>Cycle {c}</SelectItem>
+                  <SelectItem key={c} value={c}>{cycleLabel(c)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

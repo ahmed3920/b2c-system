@@ -16,7 +16,7 @@ import { runReplicaQuery, useReplicaQuery } from "@/hooks/useReplicaQuery";
 import { QualityReviewDetailDialog } from "./QualityReviewDetailDialog";
 import { QualityFilterBar, Kpi, downloadCsv } from "./QualityFilterBar";
 import { toast } from "@/hooks/use-toast";
-import { tutorStatusLabel } from "@/lib/tutorStatus";
+import { tutorStatusLabel, cycleLabel } from "@/lib/tutorStatus";
 
 type SessionRow = {
   id: string;
@@ -201,7 +201,7 @@ export function QualitySessionDetailsTab({
                               <span className="block text-xs text-muted-foreground truncate">{r.student_feedback_comment}</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm">{r.review_cycle != null ? `Cycle ${r.review_cycle}` : "—"}</TableCell>
+                          <TableCell className="text-sm">{cycleLabel(r.review_cycle)}</TableCell>
                           <TableCell className="text-right font-medium">{r.score != null ? Number(r.score).toFixed(2) : "—"}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
