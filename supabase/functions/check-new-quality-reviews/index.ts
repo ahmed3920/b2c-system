@@ -4,7 +4,7 @@
 // (last seen review id / time) in app_settings.
 import postgres from "npm:postgres@3.4.5";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { RDS_CA } from "../ischool-replica-query/rdsCa.ts";
+import { RDS_CA } from "../_shared/rdsCa.ts";
 
 const APP_DB_URL = Deno.env.get("SUPABASE_DB_URL")?.trim();
 const REPLICA_HOST = Deno.env.get("ISCHOOL_REPLICA_HOST")?.trim();
