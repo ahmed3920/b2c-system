@@ -296,6 +296,9 @@ export function QualityReviewsTab() {
                             {r.lesson_name ?? "—"}
                           </TableCell>
                           <TableCell className="text-sm">{r.session_type}</TableCell>
+                          <TableCell className="text-sm">
+                            {r.review_cycle != null ? `Cycle ${r.review_cycle}` : "—"}
+                          </TableCell>
                           <TableCell className="text-right font-medium">
                             {r.score != null ? Number(r.score).toFixed(2) : "—"}
                           </TableCell>
