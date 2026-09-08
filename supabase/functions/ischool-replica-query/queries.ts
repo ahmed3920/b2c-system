@@ -77,6 +77,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  qr.submission_date,
                  qr.duration,
                  qr.phase_number,
+                 qr.review_cycle,
                  qr.has_flags,
                  qr.remarkable_session,
                  qr.needs_coaching,
@@ -99,6 +100,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
       "status",
       "min_score",
       "max_score",
+      "review_cycle",
       "limit",
       "offset",
     ],
@@ -122,6 +124,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
       "status",
       "min_score",
       "max_score",
+      "review_cycle",
     ],
     limit: 1,
   },
@@ -146,6 +149,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
       "status",
       "min_score",
       "max_score",
+      "review_cycle",
     ],
     limit: 50,
   },
@@ -166,6 +170,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
       "status",
       "min_score",
       "max_score",
+      "review_cycle",
     ],
     limit: 100,
   },
@@ -189,6 +194,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
       "status",
       "min_score",
       "max_score",
+      "review_cycle",
     ],
     limit: 1000,
   },
@@ -284,8 +290,12 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                 and qr.created_at > now() - interval '180 days') as session_types,
             (select array_agg(distinct qr.status::text)
                from public.quality_reviews qr
-              where qr.type = 'QualityReview'
-                and qr.created_at > now() - interval '180 days') as statuses`,
+               where qr.type = 'QualityReview'
+                 and qr.created_at > now() - interval '180 days') as statuses,
+            (select array_agg(distinct qr.review_cycle::text order by qr.review_cycle::text)
+               from public.quality_reviews qr
+               where qr.type = 'QualityReview'
+                 and qr.review_cycle is not null) as review_cycles`,
     params: [],
     limit: 1,
   },
