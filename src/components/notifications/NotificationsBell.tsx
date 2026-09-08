@@ -1,4 +1,4 @@
-import { Bell, AlertTriangle, Clock, FileText, Megaphone, CheckCircle2, UserCheck, Volume2, VolumeX } from "lucide-react";
+import { Bell, AlertTriangle, Clock, FileText, Megaphone, CheckCircle2, UserCheck, Volume2, VolumeX, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
