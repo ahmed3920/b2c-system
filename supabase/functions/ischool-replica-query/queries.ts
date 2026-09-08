@@ -292,10 +292,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                from public.quality_reviews qr
                where qr.type = 'QualityReview'
                  and qr.created_at > now() - interval '180 days') as statuses,
-            (select array_agg(distinct qr.review_cycle::text order by qr.review_cycle::text)
-               from public.quality_reviews qr
-               where qr.type = 'QualityReview'
-                 and qr.review_cycle is not null) as review_cycles`,
+            (select array_agg(x order by x::numeric)
+               from (select distinct qr.review_cycle::text as x
+                       from public.quality_reviews qr
+                      where qr.type = 'QualityReview'
+                        and qr.review_cycle is not null) d) as review_cycles`,
     params: [],
     limit: 1,
   },

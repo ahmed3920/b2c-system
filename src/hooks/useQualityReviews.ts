@@ -10,6 +10,7 @@ export type QualityFilters = {
   status: string;
   min_score: string;
   max_score: string;
+  review_cycle: string;
 };
 
 export const emptyQualityFilters: QualityFilters = {
@@ -21,6 +22,7 @@ export const emptyQualityFilters: QualityFilters = {
   status: "1",
   min_score: "",
   max_score: "",
+  review_cycle: "",
 };
 
 export type QualityReviewRow = {
@@ -32,6 +34,7 @@ export type QualityReviewRow = {
   submission_date: string | null;
   duration: number | null;
   phase_number: number | null;
+  review_cycle: number | null;
   has_flags: boolean;
   remarkable_session: boolean;
   needs_coaching: boolean;
@@ -75,6 +78,7 @@ export function useQualityReviews() {
       status: filters.status || null,
       min_score: filters.min_score || null,
       max_score: filters.max_score || null,
+      review_cycle: filters.review_cycle || null,
     }),
     [filters],
   );
@@ -90,6 +94,7 @@ export function useQualityReviews() {
     team_leaders: string[] | null;
     session_types: string[] | null;
     statuses: string[] | null;
+    review_cycles: string[] | null;
   }>("quality_filter_options");
 
   const update = (patch: Partial<QualityFilters>) => {
