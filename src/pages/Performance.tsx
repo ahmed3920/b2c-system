@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
-import { QualityTab } from "@/components/tracking/QualityTab";
+import { QualitySection } from "@/components/tracking/quality/QualitySection";
 
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -67,7 +67,7 @@ export default function Performance() {
           </TabsList>
 
           <TabsContent value="quality" className="mt-4">
-            <QualityTab />
+            <QualitySection />
           </TabsContent>
 
           <TabsContent value="live-issues" className="mt-4">
