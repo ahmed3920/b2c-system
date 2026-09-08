@@ -1,3 +1,5 @@
+// AWS RDS eu-central-1 CA bundle (public certificates).
+export const RDS_CA = `
 -----BEGIN CERTIFICATE-----
 MIICtDCCAjmgAwIBAgIQenQbcP/Zbj9JxvZ+jXbRnTAKBggqhkjOPQQDAzCBmTEL
 MAkGA1UEBhMCVVMxIjAgBgNVBAoMGUFtYXpvbiBXZWIgU2VydmljZXMsIEluYy4x
@@ -74,3 +76,4 @@ U5F41rQaFEpEeUQ7sQvqUoISfTUVRNDn6GK6YaccEhCji14APLFIvhRQUDyYMIiM
 4vll0F/xgVRHTgDVQ8b8sxdhSYlqB4Wc2Ym41YRz+X2yPqk3typEZBpc4P5Tt1/N
 89cEIGdbjsA=
 -----END CERTIFICATE-----
+`;
