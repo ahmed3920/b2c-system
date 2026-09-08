@@ -28,6 +28,7 @@ const QUALITY_PARAMS = [
   "tutor_status",
   "organization",
   "flag",
+  "mentor",
 ];
 
 const QUALITY_JOINS = `from public.quality_reviews qr
