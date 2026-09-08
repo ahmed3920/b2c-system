@@ -11,6 +11,7 @@ export type QualityFilters = {
   min_score: string;
   max_score: string;
   review_cycle: string;
+  tutor_status: string;
 };
 
 export const emptyQualityFilters: QualityFilters = {
@@ -23,6 +24,7 @@ export const emptyQualityFilters: QualityFilters = {
   min_score: "",
   max_score: "",
   review_cycle: "",
+  tutor_status: "",
 };
 
 export type QualityReviewRow = {
@@ -34,7 +36,7 @@ export type QualityReviewRow = {
   submission_date: string | null;
   duration: number | null;
   phase_number: number | null;
-  review_cycle: number | null;
+  review_cycle: number | string | null;
   has_flags: boolean;
   remarkable_session: boolean;
   needs_coaching: boolean;
@@ -43,7 +45,9 @@ export type QualityReviewRow = {
   quality_objections_count: number | null;
   tutor_tid: string | null;
   tutor_name: string | null;
+  tutor_status: number | null;
   team_leader: string | null;
+  mentor_name: string | null;
   lesson_name: string | null;
 };
 
@@ -53,7 +57,18 @@ export type QualitySummary = {
   needs_coaching: number;
   needs_immediate_action: number;
   remarkable: number;
+  flagged: number;
+  pending_objections: number;
   tutors: number;
+  team_leaders: number;
+};
+
+export type QualityFilterOptions = {
+  team_leaders: string[] | null;
+  session_types: string[] | null;
+  statuses: string[] | null;
+  review_cycles: string[] | null;
+  criteria: string[] | null;
 };
 
 export const PAGE_SIZE = 50;
@@ -64,56 +79,53 @@ export function statusLabel(status: string | null | undefined) {
   return status ?? "—";
 }
 
-export function useQualityReviews() {
-  const [filters, setFilters] = useState<QualityFilters>(emptyQualityFilters);
+export function toBaseParams(filters: QualityFilters) {
+  return {
+    date_from: filters.date_from || null,
+    date_to: filters.date_to || null,
+    team_lead: filters.team_lead || null,
+    tutor: filters.tutor || null,
+    session_type: filters.session_type || null,
+    status: filters.status || null,
+    min_score: filters.min_score || null,
+    max_score: filters.max_score || null,
+    review_cycle: filters.review_cycle || null,
+    tutor_status: filters.tutor_status === "" ? null : Number(filters.tutor_status),
+  };
+}
+
+/** Shared filter state + options, without any list query attached. */
+export function useQualityFilters(initial: QualityFilters = emptyQualityFilters) {
+  const [filters, setFilters] = useState<QualityFilters>(initial);
   const [page, setPage] = useState(0);
-
-  const baseParams = useMemo(
-    () => ({
-      date_from: filters.date_from || null,
-      date_to: filters.date_to || null,
-      team_lead: filters.team_lead || null,
-      tutor: filters.tutor || null,
-      session_type: filters.session_type || null,
-      status: filters.status || null,
-      min_score: filters.min_score || null,
-      max_score: filters.max_score || null,
-      review_cycle: filters.review_cycle || null,
-    }),
-    [filters],
-  );
-
-  const listParams = useMemo(
-    () => ({ ...baseParams, limit: PAGE_SIZE, offset: page * PAGE_SIZE }),
-    [baseParams, page],
-  );
-
-  const list = useReplicaQuery<QualityReviewRow>("quality_reviews_list", listParams);
-  const summary = useReplicaQuery<QualitySummary>("quality_reviews_count", baseParams);
-  const options = useReplicaQuery<{
-    team_leaders: string[] | null;
-    session_types: string[] | null;
-    statuses: string[] | null;
-    review_cycles: string[] | null;
-  }>("quality_filter_options");
+  const baseParams = useMemo(() => toBaseParams(filters), [filters]);
+  const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options");
 
   const update = (patch: Partial<QualityFilters>) => {
     setPage(0);
     setFilters((f) => ({ ...f, ...patch }));
   };
-
   const reset = () => {
     setPage(0);
-    setFilters(emptyQualityFilters);
+    setFilters(initial);
   };
 
+  return { filters, update, reset, page, setPage, baseParams, options: options.rows[0] };
+}
+
+export function useQualityReviews() {
+  const f = useQualityFilters();
+
+  const listParams = useMemo(
+    () => ({ ...f.baseParams, limit: PAGE_SIZE, offset: f.page * PAGE_SIZE }),
+    [f.baseParams, f.page],
+  );
+
+  const list = useReplicaQuery<QualityReviewRow>("quality_reviews_list", listParams);
+  const summary = useReplicaQuery<QualitySummary>("quality_reviews_count", f.baseParams);
+
   return {
-    filters,
-    update,
-    reset,
-    page,
-    setPage,
-    baseParams,
+    ...f,
     rows: list.rows,
     loading: list.loading,
     error: list.error,
@@ -123,6 +135,5 @@ export function useQualityReviews() {
     },
     summary: summary.rows[0],
     summaryLoading: summary.loading,
-    options: options.rows[0],
   };
 }

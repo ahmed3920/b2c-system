@@ -1,16 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -19,14 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, RefreshCw, AlertTriangle, Download, X } from "lucide-react";
+import { Loader2, AlertTriangle, Download } from "lucide-react";
 import { useQualityReviews, statusLabel, PAGE_SIZE } from "@/hooks/useQualityReviews";
 import { QualityReviewDetailDialog } from "./QualityReviewDetailDialog";
 import { QualityReviewsInsights } from "./QualityReviewsInsights";
+import { QualityFilterBar, Kpi, downloadCsv } from "./QualityFilterBar";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { toast } from "@/hooks/use-toast";
-
-const ALL = "all";
+import { tutorStatusLabel } from "@/lib/tutorStatus";
 
 export function QualityReviewsTab() {
   const q = useQualityReviews();
@@ -44,25 +35,10 @@ export function QualityReviewsTab() {
         limit: 2000,
         offset: 0,
       });
-      if (!rows.length) {
+      const mapped = rows.map((r) => ({ ...r, tutor_status: tutorStatusLabel(r.tutor_status as number) }));
+      if (!downloadCsv(`quality-reviews-${new Date().toISOString().slice(0, 10)}.csv`, mapped)) {
         toast({ title: "Nothing to export" });
-        return;
       }
-      const headers = Object.keys(rows[0]);
-      const csv = [
-        headers.join(","),
-        ...rows.map((r) =>
-          headers
-            .map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`)
-            .join(","),
-        ),
-      ].join("\n");
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `quality-reviews-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
     } catch (e) {
       toast({
         title: "Export failed",
@@ -91,144 +67,24 @@ export function QualityReviewsTab() {
         <Kpi label="Tutors reviewed" value={(q.summary?.tutors ?? 0).toLocaleString()} loading={q.summaryLoading} />
       </div>
 
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Filters</CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={q.reset}>
-              <X className="w-3.5 h-3.5 mr-1.5" /> Clear
-            </Button>
-            <Button size="sm" variant="outline" onClick={q.refetch} disabled={q.loading}>
-              {q.loading ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              Refresh
-            </Button>
-            <Button size="sm" onClick={handleExport} disabled={exporting}>
-              {exporting ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              Export CSV
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="From">
-            <Input
-              type="date"
-              value={q.filters.date_from}
-              onChange={(e) => q.update({ date_from: e.target.value })}
-            />
-          </Field>
-          <Field label="To">
-            <Input
-              type="date"
-              value={q.filters.date_to}
-              onChange={(e) => q.update({ date_to: e.target.value })}
-            />
-          </Field>
-          <Field label="Team leader">
-            <Select
-              value={q.filters.team_lead || ALL}
-              onValueChange={(v) => q.update({ team_lead: v === ALL ? "" : v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All team leaders</SelectItem>
-                {(q.options?.team_leaders ?? []).map((tl) => (
-                  <SelectItem key={tl} value={tl}>
-                    {tl}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Tutor name or T-ID">
-            <Input
-              placeholder="e.g. T-4602"
-              value={q.filters.tutor}
-              onChange={(e) => q.update({ tutor: e.target.value })}
-            />
-          </Field>
-          <Field label="Session type">
-            <Select
-              value={q.filters.session_type || ALL}
-              onValueChange={(v) => q.update({ session_type: v === ALL ? "" : v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All types</SelectItem>
-                {(q.options?.session_types ?? []).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Review cycle">
-            <Select
-              value={q.filters.review_cycle || ALL}
-              onValueChange={(v) => q.update({ review_cycle: v === ALL ? "" : v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All cycles</SelectItem>
-                {(q.options?.review_cycles ?? []).map((c) => (
-                  <SelectItem key={c} value={c}>
-                    Cycle {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Status">
-            <Select
-              value={q.filters.status || ALL}
-              onValueChange={(v) => q.update({ status: v === ALL ? "" : v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All statuses</SelectItem>
-                <SelectItem value="1">Submitted</SelectItem>
-                <SelectItem value="0">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Min score">
-            <Input
-              type="number"
-              step="0.1"
-              min={0}
-              max={5}
-              value={q.filters.min_score}
-              onChange={(e) => q.update({ min_score: e.target.value })}
-            />
-          </Field>
-          <Field label="Max score">
-            <Input
-              type="number"
-              step="0.1"
-              min={0}
-              max={5}
-              value={q.filters.max_score}
-              onChange={(e) => q.update({ max_score: e.target.value })}
-            />
-          </Field>
-        </CardContent>
-      </Card>
+      <QualityFilterBar
+        filters={q.filters}
+        update={q.update}
+        reset={q.reset}
+        options={q.options}
+        onRefresh={q.refetch}
+        loading={q.loading}
+        actions={
+          <Button size="sm" onClick={handleExport} disabled={exporting}>
+            {exporting ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Export CSV
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader className="pb-2">
@@ -253,6 +109,7 @@ export function QualityReviewsTab() {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Tutor</TableHead>
+                      <TableHead>Tutor status</TableHead>
                       <TableHead>Team leader</TableHead>
                       <TableHead>Lesson</TableHead>
                       <TableHead>Type</TableHead>
@@ -265,13 +122,13 @@ export function QualityReviewsTab() {
                   <TableBody>
                     {q.loading && q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                           Loading reviews…
                         </TableCell>
                       </TableRow>
                     ) : q.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                           No reviews match these filters.
                         </TableCell>
                       </TableRow>
@@ -290,6 +147,11 @@ export function QualityReviewsTab() {
                           <TableCell>
                             {r.tutor_name}
                             <span className="block text-xs text-muted-foreground">{r.tutor_tid}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={r.tutor_status === 0 ? "secondary" : "outline"}>
+                              {tutorStatusLabel(r.tutor_status)}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-sm">{r.team_leader ?? "—"}</TableCell>
                           <TableCell className="text-sm max-w-[220px] truncate">
@@ -358,26 +220,6 @@ export function QualityReviewsTab() {
         reviewId={selected}
         onOpenChange={(open) => !open && setSelected(null)}
       />
-    </div>
-  );
-}
-
-function Kpi({ label, value, loading }: { label: string; value: string; loading: boolean }) {
-  return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold">{loading ? "…" : value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
-      {children}
     </div>
   );
 }
