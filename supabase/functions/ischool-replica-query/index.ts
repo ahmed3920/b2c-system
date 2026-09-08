@@ -17,7 +17,7 @@ const REPLICA_PASSWORD = Deno.env.get("ISCHOOL_REPLICA_PASSWORD") ?? "";
 const REPLICA_DB = Deno.env.get("ISCHOOL_REPLICA_DB")?.trim();
 const REPLICA_PORT = Number(Deno.env.get("ISCHOOL_REPLICA_PORT") ?? "5432");
 
-const ALLOWED_ROLES = new Set(["admin", "team_leader", "super_team_leader"]);
+const ALLOWED_ROLES = new Set(["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"]);
 const MAX_ROWS = 5000;
 
 const json = (body: unknown, status = 200) =>
@@ -62,7 +62,7 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
       select role::text as role from public.user_roles where user_id = ${userId}
     `;
     if (!roles.some((r) => ALLOWED_ROLES.has(r.role))) {
-      return { error: json({ error: "Admin or team leader access required" }, 403) };
+      return { error: json({ error: "Access required" }, 403) };
     }
   } finally {
     await app.end({ timeout: 5 });
