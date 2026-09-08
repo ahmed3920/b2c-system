@@ -1,124 +1,361 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, Database, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useReplicaQuery } from "@/hooks/useReplicaQuery";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Loader2, RefreshCw, AlertTriangle, Download, X } from "lucide-react";
+import { useQualityReviews, statusLabel, PAGE_SIZE } from "@/hooks/useQualityReviews";
+import { QualityReviewDetailDialog } from "./QualityReviewDetailDialog";
+import { QualityReviewsInsights } from "./QualityReviewsInsights";
+import { runReplicaQuery } from "@/hooks/useReplicaQuery";
+import { toast } from "@/hooks/use-toast";
 
-type CheckRow = {
-  database: string;
-  db_user: string;
-  server_version: string;
-  server_time: string;
-};
+const ALL = "all";
 
-type TableRow = { table_schema: string; table_name: string };
-
-/**
- * Reviews tab — currently shows the live connection status to the iSchool
- * replica and what it exposes. Real review reports plug in here as soon as
- * their queries are registered in the gateway.
- */
 export function QualityReviewsTab() {
-  const [showTables, setShowTables] = useState(false);
-  const check = useReplicaQuery<CheckRow>("connection_check");
-  const tables = useReplicaQuery<TableRow>("list_tables", {}, { enabled: showTables });
+  const q = useQualityReviews();
+  const [selected, setSelected] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  const info = check.rows[0];
+  const total = q.summary?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const rows = await runReplicaQuery<Record<string, unknown>>("quality_reviews_list", {
+        ...q.baseParams,
+        limit: 2000,
+        offset: 0,
+      });
+      if (!rows.length) {
+        toast({ title: "Nothing to export" });
+        return;
+      }
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(","),
+        ...rows.map((r) =>
+          headers
+            .map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`)
+            .join(","),
+        ),
+      ].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quality-reviews-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast({
+        title: "Export failed",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi label="Reviews" value={total.toLocaleString()} loading={q.summaryLoading} />
+        <Kpi
+          label="Average score"
+          value={q.summary?.avg_score ? `${Number(q.summary.avg_score).toFixed(2)} / 5` : "—"}
+          loading={q.summaryLoading}
+        />
+        <Kpi
+          label="Immediate action"
+          value={(q.summary?.needs_immediate_action ?? 0).toLocaleString()}
+          loading={q.summaryLoading}
+        />
+        <Kpi label="Tutors reviewed" value={(q.summary?.tutors ?? 0).toLocaleString()} loading={q.summaryLoading} />
+      </div>
+
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            iSchool data connection
-          </CardTitle>
-          <Button size="sm" variant="outline" onClick={check.refetch} disabled={check.loading}>
-            {check.loading ? (
-              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-            )}
-            Check again
-          </Button>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">Filters</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={q.reset}>
+              <X className="w-3.5 h-3.5 mr-1.5" /> Clear
+            </Button>
+            <Button size="sm" variant="outline" onClick={q.refetch} disabled={q.loading}>
+              {q.loading ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Refresh
+            </Button>
+            <Button size="sm" onClick={handleExport} disabled={exporting}>
+              {exporting ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="text-sm space-y-3">
-          {check.loading && !info ? (
-            <p className="text-muted-foreground">Checking the connection…</p>
-          ) : check.error ? (
-            <p className="text-destructive flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              {check.error}
-            </p>
-          ) : info ? (
-            <>
-              <p className="text-green-600 dark:text-green-500 flex items-center gap-2 font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                Connected — read-only
-              </p>
-              <div className="grid gap-1 text-muted-foreground">
-                <div>
-                  Database: <span className="text-foreground font-mono">{info.database}</span>
-                </div>
-                <div>
-                  Server time:{" "}
-                  <span className="text-foreground font-mono">
-                    {new Date(info.server_time).toLocaleString()}
-                  </span>
-                </div>
-                <div className="truncate">Version: {info.server_version}</div>
-              </div>
-            </>
-          ) : null}
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="From">
+            <Input
+              type="date"
+              value={q.filters.date_from}
+              onChange={(e) => q.update({ date_from: e.target.value })}
+            />
+          </Field>
+          <Field label="To">
+            <Input
+              type="date"
+              value={q.filters.date_to}
+              onChange={(e) => q.update({ date_to: e.target.value })}
+            />
+          </Field>
+          <Field label="Team leader">
+            <Select
+              value={q.filters.team_lead || ALL}
+              onValueChange={(v) => q.update({ team_lead: v === ALL ? "" : v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={ALL}>All team leaders</SelectItem>
+                {(q.options?.team_leaders ?? []).map((tl) => (
+                  <SelectItem key={tl} value={tl}>
+                    {tl}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Tutor name or T-ID">
+            <Input
+              placeholder="e.g. T-4602"
+              value={q.filters.tutor}
+              onChange={(e) => q.update({ tutor: e.target.value })}
+            />
+          </Field>
+          <Field label="Session type">
+            <Select
+              value={q.filters.session_type || ALL}
+              onValueChange={(v) => q.update({ session_type: v === ALL ? "" : v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All types</SelectItem>
+                {(q.options?.session_types ?? []).map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Status">
+            <Select
+              value={q.filters.status || ALL}
+              onValueChange={(v) => q.update({ status: v === ALL ? "" : v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All statuses</SelectItem>
+                <SelectItem value="1">Submitted</SelectItem>
+                <SelectItem value="0">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Min score">
+            <Input
+              type="number"
+              step="0.1"
+              min={0}
+              max={5}
+              value={q.filters.min_score}
+              onChange={(e) => q.update({ min_score: e.target.value })}
+            />
+          </Field>
+          <Field label="Max score">
+            <Input
+              type="number"
+              step="0.1"
+              min={0}
+              max={5}
+              value={q.filters.max_score}
+              onChange={(e) => q.update({ max_score: e.target.value })}
+            />
+          </Field>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Available data</CardTitle>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => (showTables ? tables.refetch() : setShowTables(true))}
-            disabled={tables.loading}
-          >
-            {tables.loading ? (
-              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-            )}
-            {showTables ? "Reload" : "Load list"}
-          </Button>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">
+            Session reviews{" "}
+            <span className="text-sm font-normal text-muted-foreground">
+              showing {q.rows.length} of {total.toLocaleString()}
+            </span>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm">
-          {!showTables ? (
-            <p className="text-muted-foreground">
-              Quality review reports will appear here. Load the list to see what the connection
-              exposes.
+        <CardContent>
+          {q.error ? (
+            <p className="text-destructive text-sm flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5" />
+              {q.error}
             </p>
-          ) : tables.error ? (
-            <p className="text-destructive">{tables.error}</p>
-          ) : tables.loading ? (
-            <p className="text-muted-foreground">Loading…</p>
           ) : (
             <>
-              <p className="text-muted-foreground mb-2">{tables.rows.length} tables found.</p>
-              <div className="flex flex-wrap gap-1.5 max-h-72 overflow-y-auto">
-                {tables.rows.map((t) => (
-                  <Badge
-                    key={`${t.table_schema}.${t.table_name}`}
-                    variant="secondary"
-                    className="font-mono text-[11px]"
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Tutor</TableHead>
+                      <TableHead>Team leader</TableHead>
+                      <TableHead>Lesson</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Score</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Flags</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {q.loading && q.rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          Loading reviews…
+                        </TableCell>
+                      </TableRow>
+                    ) : q.rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          No reviews match these filters.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      q.rows.map((r) => (
+                        <TableRow
+                          key={r.id}
+                          className="cursor-pointer"
+                          onClick={() => setSelected(r.id)}
+                        >
+                          <TableCell className="whitespace-nowrap">
+                            {r.session_start_at
+                              ? new Date(r.session_start_at).toLocaleDateString()
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {r.tutor_name}
+                            <span className="block text-xs text-muted-foreground">{r.tutor_tid}</span>
+                          </TableCell>
+                          <TableCell className="text-sm">{r.team_leader ?? "—"}</TableCell>
+                          <TableCell className="text-sm max-w-[220px] truncate">
+                            {r.lesson_name ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-sm">{r.session_type}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {r.score != null ? Number(r.score).toFixed(2) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={r.status === "1" ? "secondary" : "outline"}>
+                              {statusLabel(r.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {r.needs_immediate_action && (
+                                <Badge variant="destructive">Action</Badge>
+                              )}
+                              {r.needs_coaching && <Badge variant="destructive">Coaching</Badge>}
+                              {r.has_pending_objections && <Badge variant="outline">Objection</Badge>}
+                              {r.remarkable_session && <Badge>Remarkable</Badge>}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 text-sm">
+                <span className="text-muted-foreground">
+                  Page {q.page + 1} of {pages}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={q.page === 0 || q.loading}
+                    onClick={() => q.setPage(q.page - 1)}
                   >
-                    {t.table_schema === "public" ? t.table_name : `${t.table_schema}.${t.table_name}`}
-                  </Badge>
-                ))}
+                    Previous
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={q.page + 1 >= pages || q.loading}
+                    onClick={() => q.setPage(q.page + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             </>
           )}
         </CardContent>
       </Card>
+
+      <QualityReviewsInsights params={q.baseParams} />
+
+      <QualityReviewDetailDialog
+        reviewId={selected}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
+    </div>
+  );
+}
+
+function Kpi({ label, value, loading }: { label: string; value: string; loading: boolean }) {
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-2xl font-semibold">{loading ? "…" : value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      {children}
     </div>
   );
 }
