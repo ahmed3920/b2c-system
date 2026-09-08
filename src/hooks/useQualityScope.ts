@@ -48,14 +48,27 @@ export function useQualityScope(): QualityScope {
 
   const loading = roleLoading || nameLoading;
   if (loading || isAdmin) {
-    return { lockedTeamLead: null, lockedMentor: null, loading };
+    return { lockedTeamLead: null, lockedMentor: null, loading, displayName: null };
   }
+  // The replica may store a shorter form of the name ("Ahmed Hesham" vs
+  // "Ahmed Hesham Helmy"), so match on the first two name parts.
+  const shortName = (v: string | null) => {
+    const parts = (v ?? "").replace(/\s+/g, " ").trim().split(" ");
+    return parts.filter(Boolean).slice(0, 2).join(" ");
+  };
   if (isTeamLeader) {
+    const full = normalizeTeamLeaderName(name) ?? name ?? "";
     return {
-      lockedTeamLead: normalizeTeamLeaderName(name) ?? name ?? "__none__",
+      lockedTeamLead: shortName(full) || "__none__",
       lockedMentor: null,
       loading: false,
+      displayName: full || null,
     };
   }
-  return { lockedTeamLead: null, lockedMentor: name ?? "__none__", loading: false };
+  return {
+    lockedTeamLead: null,
+    lockedMentor: shortName(name) || "__none__",
+    loading: false,
+    displayName: name,
+  };
 }
