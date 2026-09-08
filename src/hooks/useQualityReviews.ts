@@ -13,6 +13,7 @@ export type QualityFilters = {
   review_cycle: string;
   tutor_status: string;
   organization: string;
+  flag: string;
 };
 
 export const emptyQualityFilters: QualityFilters = {
@@ -27,11 +28,13 @@ export const emptyQualityFilters: QualityFilters = {
   review_cycle: "",
   tutor_status: "",
   organization: "",
+  flag: "",
 };
 
 export type QualityReviewRow = {
   id: string;
   score: string | null;
+  score_pct: string | null;
   status: string | null;
   session_type: string | null;
   session_start_at: string | null;
@@ -40,6 +43,9 @@ export type QualityReviewRow = {
   phase_number: number | null;
   review_cycle: number | string | null;
   has_flags: boolean;
+  red_flags: number;
+  yellow_flags: number;
+  flag_level: string | null;
   remarkable_session: boolean;
   needs_coaching: boolean;
   needs_immediate_action: boolean;
@@ -57,10 +63,13 @@ export type QualityReviewRow = {
 export type QualitySummary = {
   total: number;
   avg_score: string | null;
+  avg_score_pct: string | null;
   needs_coaching: number;
   needs_immediate_action: number;
   remarkable: number;
   flagged: number;
+  red_flagged: number;
+  yellow_flagged: number;
   pending_objections: number;
   tutors: number;
   team_leaders: number;
@@ -97,8 +106,10 @@ export function toBaseParams(filters: QualityFilters) {
     review_cycle: filters.review_cycle || null,
     tutor_status: filters.tutor_status === "" ? null : Number(filters.tutor_status),
     organization: filters.organization || null,
+    flag: filters.flag || null,
   };
 }
+
 
 /** Shared filter state + options, without any list query attached. */
 export function useQualityFilters(initial: QualityFilters = emptyQualityFilters) {

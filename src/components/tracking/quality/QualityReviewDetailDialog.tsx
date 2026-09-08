@@ -1,9 +1,18 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Flag } from "lucide-react";
 import { useReplicaQuery } from "@/hooks/useReplicaQuery";
 import { statusLabel } from "@/hooks/useQualityReviews";
+import { flagBadgeClass, flagLevelLabel, flagTypeLabel, scorePct } from "@/lib/qualityFlags";
+
+type ReviewFlag = {
+  id: string;
+  flag_type: number | null;
+  description: string | null;
+  criterion_name: string | null;
+  parent_name: string | null;
+};
 
 type Detail = Record<string, unknown> & {
   id: string;
@@ -61,6 +70,7 @@ export function QualityReviewDetailDialog({
   const detail = useReplicaQuery<Detail>("quality_review_detail", params, { enabled });
   const criteria = useReplicaQuery<Criterion>("quality_review_criteria", params, { enabled });
   const comments = useReplicaQuery<Comment>("quality_review_comments", params, { enabled });
+  const flags = useReplicaQuery<ReviewFlag>("quality_review_flags", params, { enabled });
 
   const d = detail.rows[0];
   const loading = detail.loading || criteria.loading || comments.loading;
@@ -113,13 +123,47 @@ export function QualityReviewDetailDialog({
             <div className="flex flex-wrap gap-1.5">
               {d.needs_immediate_action && <Badge variant="destructive">Immediate action</Badge>}
               {d.needs_coaching && <Badge variant="destructive">Needs coaching</Badge>}
-              {d.has_flags && <Badge variant="outline">Flagged</Badge>}
               {d.remarkable_session && <Badge>Remarkable</Badge>}
               {d.is_student_absent && <Badge variant="outline">Student absent</Badge>}
+              <Badge variant="outline">{scorePct(d.score)}</Badge>
+              {(d.flag_level as string) && d.flag_level !== "none" ? (
+                <Badge className={flagBadgeClass(d.flag_level as string)}>
+                  {flagLevelLabel(d.flag_level as string)} flag
+                </Badge>
+              ) : null}
             </div>
             {d.immediate_action_reason ? (
               <p className="text-sm text-destructive">{d.immediate_action_reason}</p>
             ) : null}
+
+            {flags.rows.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Flag className="w-4 h-4" /> Flags ({flags.rows.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {flags.rows.map((f) => (
+                    <div key={f.id} className="flex items-start gap-2">
+                      <Badge className={flagBadgeClass(Number(f.flag_type) === 2 ? "red" : Number(f.flag_type) === 1 ? "yellow" : "none")}>
+                        {flagTypeLabel(f.flag_type)}
+                      </Badge>
+                      <div>
+                        {f.criterion_name ? (
+                          <span className="text-xs text-muted-foreground block">
+                            {f.parent_name ? `${f.parent_name} · ` : ""}
+                            {f.criterion_name}
+                          </span>
+                        ) : null}
+                        <span>{f.description ?? "—"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
 
             <Card>
               <CardHeader className="pb-2">

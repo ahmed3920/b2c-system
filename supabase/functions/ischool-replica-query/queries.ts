@@ -27,6 +27,7 @@ const QUALITY_PARAMS = [
   "review_cycle",
   "tutor_status",
   "organization",
+  "flag",
 ];
 
 const QUALITY_JOINS = `from public.quality_reviews qr
@@ -35,6 +36,15 @@ const QUALITY_JOINS = `from public.quality_reviews qr
           left join public.tutors m on m.id = t.mentor_id
           left join public.sessions s on s.id = qr.session_id
           left join public.lessons l on l.id = s.lesson_id`;
+
+// Flags live in quality_review_flags: flag_type 1 = yellow, 2 = red.
+const RED_FLAGS = `(select count(*)::int from public.quality_review_flags f
+                     where f.quality_review_id = qr.id and f.deleted_at is null and f.flag_type = 2)`;
+const YELLOW_FLAGS = `(select count(*)::int from public.quality_review_flags f
+                        where f.quality_review_id = qr.id and f.deleted_at is null and f.flag_type = 1)`;
+const FLAG_LEVEL = `(case when ${RED_FLAGS} > 0 then 'red'
+                          when ${YELLOW_FLAGS} > 0 then 'yellow'
+                          else 'none' end)`;
 
 const QUALITY_CLAUSES: Record<string, string> = {
   date_from: `($1::timestamptz is null or coalesce(qr.session_start_at, qr.created_at) >= $1::timestamptz)`,
@@ -51,6 +61,10 @@ const QUALITY_CLAUSES: Record<string, string> = {
               select 1 from public.tutor_organizations tor
               join public.organizations o on o.id = tor.organization_id
               where tor.tutor_id = t.id and o.name = $11::text))`,
+  flag: `($12::text is null or case
+              when $12::text = 'none' then ${FLAG_LEVEL} = 'none'
+              when $12::text = 'any' then ${FLAG_LEVEL} <> 'none'
+              else ${FLAG_LEVEL} = $12::text end)`,
 };
 
 /** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
@@ -71,6 +85,7 @@ const TUTOR_ORGS = `(select string_agg(o.name, ', ' order by o.name)
 
 const QUALITY_FROM = `${QUALITY_JOINS}
           ${QUALITY_WHERE}`;
+
 
 // Written comments: criterion-level notes typed by the reviewer plus
 // tagged (positive / negative) comments attached to the review.
@@ -145,6 +160,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  qr.phase_number,
                  qr.review_cycle::text as review_cycle,
                  qr.has_flags,
+                 ${RED_FLAGS} as red_flags,
+                 ${YELLOW_FLAGS} as yellow_flags,
+                 ${FLAG_LEVEL} as flag_level,
+                 round((qr.score / 5.0 * 100)::numeric, 1) as score_pct,
                  qr.remarkable_session,
                  qr.needs_coaching,
                  qr.needs_immediate_action,
@@ -159,7 +178,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($12::int, 100) offset coalesce($13::int, 0)`,
+          limit coalesce($13::int, 100) offset coalesce($14::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -167,10 +186,13 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   quality_reviews_count: {
     sql: `select count(*)::int as total,
                  round(avg(qr.score)::numeric, 2) as avg_score,
+                 round((avg(qr.score) / 5.0 * 100)::numeric, 1) as avg_score_pct,
                  count(*) filter (where qr.needs_coaching)::int as needs_coaching,
                  count(*) filter (where qr.needs_immediate_action)::int as needs_immediate_action,
                  count(*) filter (where qr.remarkable_session)::int as remarkable,
                  count(*) filter (where qr.has_flags)::int as flagged,
+                 count(*) filter (where ${RED_FLAGS} > 0)::int as red_flagged,
+                 count(*) filter (where ${RED_FLAGS} = 0 and ${YELLOW_FLAGS} > 0)::int as yellow_flagged,
                  count(*) filter (where qr.has_pending_objections)::int as pending_objections,
                  count(distinct t.id)::int as tutors,
                  count(distinct a.id)::int as team_leaders
@@ -178,6 +200,37 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: QUALITY_PARAMS,
     limit: 1,
   },
+
+  // Flag counts per team leader (red vs yellow), for the overview charts.
+  quality_flag_breakdown: {
+    sql: `select coalesce(a.name, 'Unassigned') as team_leader,
+                 count(*)::int as reviews,
+                 sum(${RED_FLAGS})::int as red_flags,
+                 sum(${YELLOW_FLAGS})::int as yellow_flags,
+                 count(*) filter (where ${RED_FLAGS} > 0)::int as red_reviews,
+                 count(*) filter (where ${RED_FLAGS} = 0 and ${YELLOW_FLAGS} > 0)::int as yellow_reviews
+          ${QUALITY_FROM}
+          group by 1
+          order by red_flags desc, yellow_flags desc`,
+    params: QUALITY_PARAMS,
+    limit: 100,
+  },
+
+  // Raw flag type distribution (diagnostics + label verification).
+  quality_flag_types: {
+    sql: `select f.flag_type,
+                 count(*)::int as flags,
+                 count(distinct qr.id)::int as reviews
+          ${QUALITY_JOINS}
+          join public.quality_review_flags f
+            on f.quality_review_id = qr.id and f.deleted_at is null
+          ${QUALITY_WHERE}
+          group by 1
+          order by 1`,
+    params: QUALITY_PARAMS,
+    limit: 20,
+  },
+
 
   quality_category_averages: {
     sql: `select coalesce(parent.name_i18n->>'en', qc.name_i18n->>'en') as category,
@@ -231,6 +284,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  coalesce(a.name, 'Unassigned') as team_leader,
                  count(*)::int as reviews,
                  round(avg(qr.score)::numeric, 2) as avg_score,
+                 round((avg(qr.score) / 5.0 * 100)::numeric, 1) as avg_score_pct,
+                 sum(${RED_FLAGS})::int as red_flags,
+                 sum(${YELLOW_FLAGS})::int as yellow_flags,
                  count(*) filter (where qr.needs_coaching)::int as needs_coaching
           ${QUALITY_FROM}
           group by 1, 2, 3, 4
@@ -288,6 +344,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  qr.needs_immediate_action,
                  qr.remarkable_session,
                  qr.has_flags,
+                 ${RED_FLAGS} as red_flags,
+                 ${YELLOW_FLAGS} as yellow_flags,
+                 ${FLAG_LEVEL} as flag_level,
+                 round((qr.score / 5.0 * 100)::numeric, 1) as score_pct,
                  t.t_id as tutor_tid,
                  (t.name_i18n->>'en') as tutor_name,
                  t.status::int as tutor_status,
@@ -305,7 +365,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.students st on st.id = s.student_id
           ${QUALITY_WHERE}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($12::int, 100) offset coalesce($13::int, 0)`,
+          limit coalesce($13::int, 100) offset coalesce($14::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -330,11 +390,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($12::text is null or c.parent_name = $12::text)
-            and ($13::text is null or c.body ilike '%' || $13::text || '%')
-            and ($14::int is null or c.comment_type = $14::int)
+            and ($13::text is null or c.parent_name = $13::text)
+            and ($14::text is null or c.body ilike '%' || $14::text || '%')
+            and ($15::int is null or c.comment_type = $15::int)
           order by coalesce(qr.session_start_at, qr.created_at) desc, qr.id desc, c.source, c.comment_type
-          limit coalesce($15::int, 100) offset coalesce($16::int, 0)`,
+          limit coalesce($16::int, 100) offset coalesce($17::int, 0)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type", "limit", "offset"],
     limit: 2000,
   },
@@ -347,9 +407,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($12::text is null or c.parent_name = $12::text)
-            and ($13::text is null or c.body ilike '%' || $13::text || '%')
-            and ($14::int is null or c.comment_type = $14::int)`,
+            and ($13::text is null or c.parent_name = $13::text)
+            and ($14::text is null or c.body ilike '%' || $14::text || '%')
+            and ($15::int is null or c.comment_type = $15::int)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type"],
     limit: 1,
   },
@@ -434,6 +494,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  qr.review_cycle::text as review_cycle,
                  qr.has_flags,
                  qr.flags_stats,
+                 ${RED_FLAGS} as red_flags,
+                 ${YELLOW_FLAGS} as yellow_flags,
+                 ${FLAG_LEVEL} as flag_level,
+                 round((qr.score / 5.0 * 100)::numeric, 1) as score_pct,
                  qr.remarkable_session,
                  qr.needs_coaching,
                  qr.needs_immediate_action,
@@ -502,6 +566,26 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: ["review_id"],
     limit: 300,
   },
+
+  quality_review_flags: {
+    sql: `select f.id,
+                 f.flag_type,
+                 f.description,
+                 f.status,
+                 f.created_at,
+                 (qc.name_i18n->>'en') as criterion_name,
+                 (parent.name_i18n->>'en') as parent_name
+          from public.quality_review_flags f
+          left join public.quality_criteria qc on qc.id = f.quality_criterion_id
+          left join public.quality_criteria parent on parent.id = qc.parent_id
+          where f.quality_review_id = $1::bigint
+            and f.deleted_at is null
+          order by f.flag_type desc, f.id`,
+    params: ["review_id"],
+    limit: 100,
+  },
+
+
 
   quality_filter_options: {
     // Each list is computed over the reviews matching every *other* filter,
