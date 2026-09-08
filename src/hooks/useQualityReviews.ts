@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useReplicaQuery } from "@/hooks/useReplicaQuery";
+import { useQualityScope } from "@/hooks/useQualityScope";
 
 export type QualityFilters = {
   date_from: string;
