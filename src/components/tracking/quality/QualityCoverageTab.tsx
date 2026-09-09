@@ -232,6 +232,7 @@ export function QualityCoverageTab() {
                       <TableHead>Mentor</TableHead>
                       <TableHead>Organization</TableHead>
                       <TableHead className="text-right">Sessions</TableHead>
+                      <TableHead className="text-right">Students</TableHead>
                       <TableHead className="text-right">Reviews</TableHead>
                       <TableHead>State</TableHead>
                     </TableRow>
