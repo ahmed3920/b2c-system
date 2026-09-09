@@ -144,29 +144,29 @@ const COVERAGE_CTE = `with cyc as (
                    coalesce(a.name, 'Unassigned') as team_leader,
                    coalesce(btrim(m.name), 'No mentor') as mentor_name,
                    ${TUTOR_ORGS} as organizations,
-                   (select (count(distinct s.group_session_id)
-                              filter (where s.group_session_id is not null)
-                            + count(*) filter (where s.group_session_id is null))::int
-                      from public.sessions s
-                     where s.tutor_id = t.id
-                       and s.start_at >= (select d from cyc)
-                       and s.start_at < (select d from cyc) + interval '1 month'
-                       and s.start_at < now()
-                       and coalesce(s.status, 0) <> 2) as sessions,
-                   (select (count(distinct s.group_session_id)
-                              filter (where s.group_session_id is not null)
-                            + count(*) filter (where s.group_session_id is null))::int
-                      from public.sessions s
-                     where s.tutor_id = t.id
-                       and s.start_at >= (select d from cyc)
-                       and s.start_at < (select d from cyc) + interval '1 month'
-                       and s.start_at >= now()
-                       and coalesce(s.status, 0) <> 2) as sessions_upcoming,
-                   (select count(*)::int from public.sessions s
-                     where s.tutor_id = t.id
-                       and s.start_at >= (select d from cyc)
-                       and s.start_at < (select d from cyc) + interval '1 month'
-                       and coalesce(s.status, 0) <> 2) as student_sessions,
+                    (select (count(distinct s.group_session_id)
+                               filter (where s.group_session_id is not null)
+                             + count(*) filter (where s.group_session_id is null))::int
+                       from public.sessions s
+                      where s.tutor_id = t.id
+                        and s.start_at >= (select d from cyc)
+                        and s.start_at < (select d from cyc) + interval '1 month'
+                        and s.start_at < now()
+                        and coalesce(s.status, 0) = 0) as sessions,
+                    (select (count(distinct s.group_session_id)
+                               filter (where s.group_session_id is not null)
+                             + count(*) filter (where s.group_session_id is null))::int
+                       from public.sessions s
+                      where s.tutor_id = t.id
+                        and s.start_at >= (select d from cyc)
+                        and s.start_at < (select d from cyc) + interval '1 month'
+                        and s.start_at >= now()
+                        and coalesce(s.status, 0) = 0) as sessions_upcoming,
+                    (select count(*)::int from public.sessions s
+                      where s.tutor_id = t.id
+                        and s.start_at >= (select d from cyc)
+                        and s.start_at < (select d from cyc) + interval '1 month'
+                        and coalesce(s.status, 0) = 0) as student_sessions,
                    (select count(*)::int from public.quality_reviews qr
                      where qr.tutor_id = t.id
                        and qr.type = 'QualityReview'
