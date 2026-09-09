@@ -135,15 +135,12 @@ export function QualityFilterBar({
         )}
         {show("team_lead") && (
           <Field label="Team leader">
-            <Select value={filters.team_lead || ALL} onValueChange={(v) => update({ team_lead: v === ALL ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All team leaders</SelectItem>
-                {(options?.team_leaders ?? []).map((tl) => (
-                  <SelectItem key={tl} value={tl}>{tl}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={filters.team_lead}
+              onChange={(v) => update({ team_lead: v })}
+              options={options?.team_leaders ?? []}
+              allLabel="All team leaders"
+            />
           </Field>
         )}
         {show("tutor") && (
@@ -158,15 +155,12 @@ export function QualityFilterBar({
         )}
         {show("organization") && (
           <Field label="Organization">
-            <Select value={filters.organization || ALL} onValueChange={(v) => update({ organization: v === ALL ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All organizations</SelectItem>
-                {(options?.organizations ?? []).map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={filters.organization}
+              onChange={(v) => update({ organization: v })}
+              options={options?.organizations ?? []}
+              allLabel="All organizations"
+            />
           </Field>
         )}
         {show("tutor_status") && (
@@ -199,15 +193,13 @@ export function QualityFilterBar({
         )}
         {show("review_cycle") && (
           <Field label="Review cycle">
-            <Select value={filters.review_cycle || ALL} onValueChange={(v) => update({ review_cycle: v === ALL ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All cycles</SelectItem>
-                {(options?.review_cycles ?? []).map((c) => (
-                  <SelectItem key={c} value={c}>{cycleLabel(c)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={filters.review_cycle}
+              onChange={(v) => update({ review_cycle: v })}
+              options={(options?.review_cycles ?? []).map(String)}
+              allLabel="All cycles"
+              labelFn={cycleLabel}
+            />
           </Field>
         )}
         {show("status") && (
