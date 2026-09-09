@@ -225,6 +225,17 @@ export function QualityCoverageTab() {
         </CardContent>
       </Card>
 
+      {!locked && (
+        <QualityCoverageByTeamLeader
+          rows={c.byTeamLeader}
+          loading={c.byTeamLeaderLoading}
+          cycle={c.filters.cycle}
+          onSelect={(tl) => c.update({ team_lead: tl, coverage: "missing" })}
+        />
+      )}
+
+
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2 flex-wrap">
