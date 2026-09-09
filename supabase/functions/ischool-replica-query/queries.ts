@@ -202,6 +202,80 @@ const COVERAGE_CTE = `with cyc as (
               from base
           )`;
 
+// --- Analytics ----------------------------------------------------------
+// Shared roster base: organization 1 only.
+// $1 tutor_status (int, null = all), $2 team_lead (text, null = all)
+const ANALYTICS_BASE_PARAMS = ["tutor_status", "team_lead"];
+
+const ANALYTICS_BASE = `with base as (
+            select t.id,
+                   t.t_id,
+                   coalesce(nullif(btrim(t.name_i18n->>'en'), ''), t.name_temp) as name,
+                   coalesce(btrim(a.name), 'Unassigned') as team_leader,
+                   coalesce(t.is_mentor, false) as is_mentor,
+                   coalesce(t.employment_type, 0)::int as employment_type,
+                   t.status::int as tutor_status,
+                   coalesce(t.weekend_days, '{}') as weekend_days
+              from public.tutors t
+              left join public.admins a on a.id = t.team_lead_id
+             where exists (select 1 from public.tutor_organizations tor
+                            where tor.tutor_id = t.id and tor.organization_id = 1)
+               and ($1::int is null or t.status::int = $1::int)
+               and ($2::text is null or a.name ilike '%' || $2::text || '%')
+          )`;
+
+// $3 date_from, $4 date_to (inclusive), $5 role ('tutor' | 'mentor'), $6 search
+const OCCUPATION_PARAMS = [...ANALYTICS_BASE_PARAMS, "date_from", "date_to", "role", "search"];
+
+const OCCUPATION_CTE = `${ANALYTICS_BASE},
+          period as (
+            select coalesce($3::date, date_trunc('month', now())::date) as d_from,
+                   coalesce($4::date, now()::date) as d_to
+          ),
+          people as (
+            select * from base
+             where ($5::text is null
+                    or ($5::text = 'mentor' and is_mentor)
+                    or ($5::text = 'tutor' and not is_mentor))
+               and ($6::text is null or t_id ilike '%' || $6::text || '%'
+                    or name ilike '%' || $6::text || '%')
+          ),
+          wdays as (
+            select p.id,
+                   count(*)::int as working_days
+              from people p, period pr,
+                   lateral generate_series(pr.d_from, pr.d_to, interval '1 day') g
+             where lower(btrim(to_char(g, 'day'))) <> all
+                   (select lower(btrim(x)) from unnest(p.weekend_days) x)
+             group by p.id
+          ),
+          sess as (
+            select s.tutor_id, count(*)::int as delivered
+              from public.sessions s, period pr
+             where s.group_session_id is null
+               and coalesce(s.status, 0) = 0
+               and s.start_at >= pr.d_from
+               and s.start_at < pr.d_to + interval '1 day'
+               and s.start_at < now()
+             group by s.tutor_id
+          ),
+          occ as (
+            select p.t_id,
+                   p.name,
+                   p.team_leader,
+                   p.is_mentor,
+                   p.employment_type,
+                   p.tutor_status,
+                   coalesce(w.working_days, 0) as working_days,
+                   coalesce(w.working_days, 0) * 5 as target,
+                   coalesce(s.delivered, 0) as delivered,
+                   round(coalesce(s.delivered, 0)::numeric
+                         / nullif(coalesce(w.working_days, 0) * 5, 0) * 100, 1) as occupation
+              from people p
+              left join wdays w on w.id = p.id
+              left join sess s on s.tutor_id = p.id
+          )`;
+
 export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Diagnostics -----------------------------------------------------
   connection_check: {
