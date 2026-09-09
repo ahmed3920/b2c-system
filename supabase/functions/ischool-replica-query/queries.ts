@@ -202,6 +202,80 @@ const COVERAGE_CTE = `with cyc as (
               from base
           )`;
 
+// --- Analytics ----------------------------------------------------------
+// Shared roster base: organization 1 only.
+// $1 tutor_status (int, null = all), $2 team_lead (text, null = all)
+const ANALYTICS_BASE_PARAMS = ["tutor_status", "team_lead"];
+
+const ANALYTICS_BASE = `with base as (
+            select t.id,
+                   t.t_id,
+                   coalesce(nullif(btrim(t.name_i18n->>'en'), ''), t.name_temp) as name,
+                   coalesce(btrim(a.name), 'Unassigned') as team_leader,
+                   coalesce(t.is_mentor, false) as is_mentor,
+                   coalesce(t.employment_type, 0)::int as employment_type,
+                   t.status::int as tutor_status,
+                   coalesce(t.weekend_days, '{}') as weekend_days
+              from public.tutors t
+              left join public.admins a on a.id = t.team_lead_id
+             where exists (select 1 from public.tutor_organizations tor
+                            where tor.tutor_id = t.id and tor.organization_id = 1)
+               and ($1::int is null or t.status::int = $1::int)
+               and ($2::text is null or a.name ilike '%' || $2::text || '%')
+          )`;
+
+// $3 date_from, $4 date_to (inclusive), $5 role ('tutor' | 'mentor'), $6 search
+const OCCUPATION_PARAMS = [...ANALYTICS_BASE_PARAMS, "date_from", "date_to", "role", "search"];
+
+const OCCUPATION_CTE = `${ANALYTICS_BASE},
+          period as (
+            select coalesce($3::date, date_trunc('month', now())::date) as d_from,
+                   coalesce($4::date, now()::date) as d_to
+          ),
+          people as (
+            select * from base
+             where ($5::text is null
+                    or ($5::text = 'mentor' and is_mentor)
+                    or ($5::text = 'tutor' and not is_mentor))
+               and ($6::text is null or t_id ilike '%' || $6::text || '%'
+                    or name ilike '%' || $6::text || '%')
+          ),
+          wdays as (
+            select p.id,
+                   count(*)::int as working_days
+              from people p, period pr,
+                   lateral generate_series(pr.d_from, pr.d_to, interval '1 day') g
+             where lower(btrim(to_char(g, 'day'))) <> all
+                   (select lower(btrim(x)) from unnest(p.weekend_days) x)
+             group by p.id
+          ),
+          sess as (
+            select s.tutor_id, count(*)::int as delivered
+              from public.sessions s, period pr
+             where s.group_session_id is null
+               and coalesce(s.status, 0) = 0
+               and s.start_at >= pr.d_from
+               and s.start_at < pr.d_to + interval '1 day'
+               and s.start_at < now()
+             group by s.tutor_id
+          ),
+          occ as (
+            select p.t_id,
+                   p.name,
+                   p.team_leader,
+                   p.is_mentor,
+                   p.employment_type,
+                   p.tutor_status,
+                   coalesce(w.working_days, 0) as working_days,
+                   coalesce(w.working_days, 0) * 5 as target,
+                   coalesce(s.delivered, 0) as delivered,
+                   round(coalesce(s.delivered, 0)::numeric
+                         / nullif(coalesce(w.working_days, 0) * 5, 0) * 100, 1) as occupation
+              from people p
+              left join wdays w on w.id = p.id
+              left join sess s on s.tutor_id = p.id
+          )`;
+
 export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Diagnostics -----------------------------------------------------
   connection_check: {
@@ -852,5 +926,68 @@ export const QUERIES: Record<string, ReplicaQuery> = {
             and ($16::int is null or f.flag_type = $16::int)`,
     params: [...QUALITY_PARAMS, "flag_type"],
     limit: 1,
+  },
+
+  // --- Analytics: team composition --------------------------------------
+  // Organization 1 only. employment_type: 0 = full time, 1 = part time.
+  // is_mentor: true = mentor, false = tutor.
+  analytics_team_composition: {
+    sql: `${ANALYTICS_BASE}
+          select team_leader,
+                 count(*)::int as total,
+                 count(*) filter (where not is_mentor)::int as tutors,
+                 count(*) filter (where is_mentor)::int as mentors,
+                 count(*) filter (where employment_type = 0)::int as full_time,
+                 count(*) filter (where employment_type = 1)::int as part_time,
+                 count(*) filter (where not is_mentor and employment_type = 0)::int as tutors_full_time,
+                 count(*) filter (where not is_mentor and employment_type = 1)::int as tutors_part_time,
+                 count(*) filter (where is_mentor and employment_type = 0)::int as mentors_full_time,
+                 count(*) filter (where is_mentor and employment_type = 1)::int as mentors_part_time
+          from base
+          group by team_leader
+          order by total desc, team_leader`,
+    params: ANALYTICS_BASE_PARAMS,
+    limit: 200,
+  },
+
+  // --- Analytics: one-to-one occupation ---------------------------------
+  // $3 date_from, $4 date_to (inclusive), $5 role ('tutor' | 'mentor'), $6 search
+  analytics_occupation_list: {
+    sql: `${OCCUPATION_CTE}
+          select t_id as tutor_tid,
+                 name,
+                 team_leader,
+                 is_mentor,
+                 employment_type,
+                 tutor_status,
+                 working_days,
+                 target,
+                 delivered,
+                 occupation
+          from occ
+          order by occupation desc nulls last, delivered desc
+          limit coalesce($7::int, 200) offset coalesce($8::int, 0)`,
+    params: [...OCCUPATION_PARAMS, "limit", "offset"],
+    limit: 5000,
+  },
+
+  analytics_occupation_summary: {
+    sql: `${OCCUPATION_CTE}
+          select count(*)::int as people,
+                 sum(delivered)::int as delivered,
+                 sum(target)::int as target,
+                 round(avg(occupation) filter (where occupation is not null), 1)::numeric as avg_occupation,
+                 count(*) filter (where occupation >= 100)::int as at_target,
+                 count(*) filter (where occupation is not null and occupation < 100)::int as below_target
+          from occ`,
+    params: OCCUPATION_PARAMS,
+    limit: 1,
+  },
+
+  analytics_team_leaders: {
+    sql: `${ANALYTICS_BASE}
+          select distinct team_leader from base order by 1`,
+    params: ANALYTICS_BASE_PARAMS,
+    limit: 200,
   },
 };
