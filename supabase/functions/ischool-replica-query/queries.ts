@@ -69,6 +69,10 @@ const QUALITY_CLAUSES: Record<string, string> = {
               when $12::text = 'any' then ${FLAG_LEVEL} <> 'none'
               else ${FLAG_LEVEL} = $12::text end)`,
   mentor: `($13::text is null or (btrim(m.name)) ilike '%' || $13::text || '%')`,
+  student: `($14::text is null or st.s_id ilike '%' || $14::text || '%'
+              or st.id::text = btrim($14::text)
+              or st.name_en ilike '%' || $14::text || '%'
+              or st.name ilike '%' || $14::text || '%')`,
 };
 
 /** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
