@@ -89,6 +89,9 @@ export function QualityCoverageTab() {
         ...r,
         tutor_status: tutorStatusLabel(r.tutor_status as number),
         coverage_state: coverageStateLabel[r.coverage_state as CoverageState],
+        review_progress_pct: Number(r.sessions)
+          ? Math.min(100, Math.round((Number(r.reviews) / Number(r.sessions)) * 100))
+          : 0,
       }));
       if (!downloadCsv(`quality-coverage-${new Date().toISOString().slice(0, 10)}.csv`, mapped)) {
         toast({ title: "Nothing to export" });
