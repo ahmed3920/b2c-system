@@ -87,6 +87,9 @@ export function QualitySection() {
       <TabsContent value="coverage" className="mt-0">
         <QualityCoverageTab />
       </TabsContent>
+      <TabsContent value="followup" className="mt-0">
+        <QualityFlagFollowupTab />
+      </TabsContent>
     </Tabs>
   );
 }
