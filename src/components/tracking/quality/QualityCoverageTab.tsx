@@ -240,13 +240,13 @@ export function QualityCoverageTab() {
                   <TableBody>
                     {c.loading && c.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           Loading tutors…
                         </TableCell>
                       </TableRow>
                     ) : c.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           No tutors match these filters.
                         </TableCell>
                       </TableRow>
