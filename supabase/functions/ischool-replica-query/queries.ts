@@ -125,6 +125,56 @@ const QUALITY_COMMENTS_UNION = `(
              where qrc.deleted_at is null
           ) c`;
 
+// --- Coverage (tutors with / without a review in a cycle) ---------------
+// $1 cycle, $2 team_lead, $3 tutor, $4 tutor_status, $5 mentor, $6 organization
+const COVERAGE_PARAMS = ["cycle", "team_lead", "tutor", "tutor_status", "mentor", "organization"];
+
+const COVERAGE_CTE = `with cyc as (
+            select coalesce(
+                     nullif($1::text, '')::date,
+                     (select max(review_cycle)::date from public.quality_reviews
+                       where type = 'QualityReview')
+                   ) as d
+          ),
+          base as (
+            select t.id,
+                   t.t_id,
+                   (t.name_i18n->>'en') as tutor_name,
+                   t.status::int as tutor_status,
+                   coalesce(a.name, 'Unassigned') as team_leader,
+                   coalesce(btrim(m.name), 'No mentor') as mentor_name,
+                   ${TUTOR_ORGS} as organizations,
+                   (select count(*)::int from public.sessions s
+                     where s.tutor_id = t.id
+                       and s.start_at >= (select d from cyc)
+                       and s.start_at < (select d from cyc) + interval '1 month'
+                       and coalesce(s.status, 0) <> 2) as sessions,
+                   (select count(*)::int from public.quality_reviews qr
+                     where qr.tutor_id = t.id
+                       and qr.type = 'QualityReview'
+                       and qr.review_cycle::date = (select d from cyc)) as reviews,
+                   (select d from cyc) as cycle
+              from public.tutors t
+              left join public.admins a on a.id = t.team_lead_id
+              left join public.admins m on m.id = t.mentor_id
+             where ($2::text is null or a.name ilike '%' || $2::text || '%')
+               and ($3::text is null or t.t_id ilike '%' || $3::text || '%'
+                    or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
+               and ($4::int is null or t.status::int = $4::int)
+               and ($5::text is null or (btrim(m.name)) ilike '%' || $5::text || '%')
+               and ($6::text is null or exists (
+                     select 1 from public.tutor_organizations tor
+                     join public.organizations o on o.id = tor.organization_id
+                     where tor.tutor_id = t.id and o.name = $6::text))
+          ),
+          classified as (
+            select base.*,
+                   case when reviews > 0 then 'reviewed'
+                        when sessions > 0 then 'missing'
+                        else 'no_sessions' end as coverage_state
+              from base
+          )`;
+
 export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Diagnostics -----------------------------------------------------
   connection_check: {
