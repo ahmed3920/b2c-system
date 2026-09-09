@@ -45,7 +45,25 @@ const stateBadge = (s: CoverageState) =>
 export function QualityCoverageTab() {
   const c = useQualityCoverage();
   const [exporting, setExporting] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const s = c.summary;
+
+  // Deep link from the team-leader dashboard: ?coverage_tl=…&coverage_cycle=…
+  const deepTl = searchParams.get("coverage_tl");
+  const deepCycle = searchParams.get("coverage_cycle");
+  useEffect(() => {
+    if (!deepTl && !deepCycle) return;
+    c.update({
+      ...(deepTl ? { team_lead: deepTl, coverage: "missing" as CoverageState } : {}),
+      ...(deepCycle ? { cycle: deepCycle } : {}),
+    });
+    const next = new URLSearchParams(searchParams);
+    next.delete("coverage_tl");
+    next.delete("coverage_cycle");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepTl, deepCycle]);
+
   const shown =
     c.filters.coverage === "all"
       ? (s?.total ?? 0)
