@@ -8,8 +8,9 @@ import { QualityMentorCommentsTab } from "./QualityMentorCommentsTab";
 import { QualitySummaryTab } from "./QualitySummaryTab";
 import { QualityCycleComparisonTab } from "./QualityCycleComparisonTab";
 import { QualityCoverageTab } from "./QualityCoverageTab";
+import { QualityFlagFollowupTab } from "./QualityFlagFollowupTab";
 
-const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage"] as const;
+const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage", "followup"] as const;
 type SubTab = (typeof SUB_TABS)[number];
 
 /**
