@@ -151,7 +151,17 @@ const COVERAGE_CTE = `with cyc as (
                      where s.tutor_id = t.id
                        and s.start_at >= (select d from cyc)
                        and s.start_at < (select d from cyc) + interval '1 month'
+                       and s.start_at < now()
                        and coalesce(s.status, 0) <> 2) as sessions,
+                   (select (count(distinct s.group_session_id)
+                              filter (where s.group_session_id is not null)
+                            + count(*) filter (where s.group_session_id is null))::int
+                      from public.sessions s
+                     where s.tutor_id = t.id
+                       and s.start_at >= (select d from cyc)
+                       and s.start_at < (select d from cyc) + interval '1 month'
+                       and s.start_at >= now()
+                       and coalesce(s.status, 0) <> 2) as sessions_upcoming,
                    (select count(*)::int from public.sessions s
                      where s.tutor_id = t.id
                        and s.start_at >= (select d from cyc)
