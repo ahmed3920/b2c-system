@@ -12,6 +12,7 @@ export type CoverageRow = {
   mentor_name: string | null;
   organizations: string | null;
   sessions: number;
+  student_sessions: number;
   reviews: number;
   coverage_state: CoverageState;
   cycle: string | null;

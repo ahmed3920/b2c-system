@@ -232,6 +232,7 @@ export function QualityCoverageTab() {
                       <TableHead>Mentor</TableHead>
                       <TableHead>Organization</TableHead>
                       <TableHead className="text-right">Sessions</TableHead>
+                      <TableHead className="text-right">Students</TableHead>
                       <TableHead className="text-right">Reviews</TableHead>
                       <TableHead>State</TableHead>
                     </TableRow>
@@ -239,13 +240,13 @@ export function QualityCoverageTab() {
                   <TableBody>
                     {c.loading && c.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           Loading tutors…
                         </TableCell>
                       </TableRow>
                     ) : c.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           No tutors match these filters.
                         </TableCell>
                       </TableRow>
@@ -267,6 +268,9 @@ export function QualityCoverageTab() {
                             {r.organizations ?? "—"}
                           </TableCell>
                           <TableCell className="text-right">{r.sessions.toLocaleString()}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {(r.student_sessions ?? 0).toLocaleString()}
+                          </TableCell>
                           <TableCell className="text-right">{r.reviews.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge className={stateBadge(r.coverage_state)}>
