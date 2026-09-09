@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -18,8 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, Download, Loader2, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
 import { Field, Kpi, SearchableSelect, downloadCsv } from "./QualityFilterBar";
+import { QualityCoverageByTeamLeader } from "./QualityCoverageByTeamLeader";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { toast } from "@/hooks/use-toast";
 import { tutorStatusLabel, cycleLabel, TUTOR_STATUS_OPTIONS } from "@/lib/tutorStatus";
