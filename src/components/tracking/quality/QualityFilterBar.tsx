@@ -19,6 +19,53 @@ import { Badge } from "@/components/ui/badge";
 
 const ALL = "all";
 
+/** Select dropdown with a search box to filter long option lists. */
+export function SearchableSelect({
+  value,
+  onChange,
+  options,
+  allLabel,
+  placeholder = "All",
+  labelFn,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  allLabel: string;
+  placeholder?: string;
+  labelFn?: (v: string) => string;
+}) {
+  const [search, setSearch] = useState("");
+  const label = labelFn ?? ((v: string) => v);
+  const filtered = options.filter((o) => label(o).toLowerCase().includes(search.trim().toLowerCase()));
+  // Keep the currently selected value visible even if it doesn't match the search.
+  const items = value && !filtered.includes(value) ? [value, ...filtered] : filtered;
+  return (
+    <Select value={value || ALL} onValueChange={(v) => { onChange(v === ALL ? "" : v); setSearch(""); }}>
+      <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+      <SelectContent className="max-h-72">
+        <div className="p-1 sticky top-0 bg-popover z-10">
+          <Input
+            autoFocus
+            placeholder="Search…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="h-8"
+          />
+        </div>
+        <SelectItem value={ALL}>{allLabel}</SelectItem>
+        {items.map((o) => (
+          <SelectItem key={o} value={o}>{label(o)}</SelectItem>
+        ))}
+        {items.length === 0 && (
+          <p className="px-2 py-3 text-xs text-muted-foreground text-center">No matches</p>
+        )}
+      </SelectContent>
+    </Select>
+  );
+}
+
 type Props = {
   filters: QualityFilters;
   update: (patch: Partial<QualityFilters>) => void;
