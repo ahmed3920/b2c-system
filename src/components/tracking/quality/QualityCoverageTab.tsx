@@ -268,6 +268,9 @@ export function QualityCoverageTab() {
                             {r.organizations ?? "—"}
                           </TableCell>
                           <TableCell className="text-right">{r.sessions.toLocaleString()}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {(r.student_sessions ?? 0).toLocaleString()}
+                          </TableCell>
                           <TableCell className="text-right">{r.reviews.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge className={stateBadge(r.coverage_state)}>
