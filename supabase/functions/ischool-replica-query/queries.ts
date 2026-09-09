@@ -29,6 +29,7 @@ const QUALITY_PARAMS = [
   "organization",
   "flag",
   "mentor",
+  "student",
 ];
 
 const QUALITY_JOINS = `from public.quality_reviews qr
@@ -36,6 +37,7 @@ const QUALITY_JOINS = `from public.quality_reviews qr
           left join public.admins a on a.id = t.team_lead_id
           left join public.admins m on m.id = t.mentor_id
           left join public.sessions s on s.id = qr.session_id
+          left join public.students st on st.id = s.student_id
           left join public.lessons l on l.id = s.lesson_id`;
 
 // Flags live in quality_review_flags: flag_type 1 = yellow, 2 = red.
@@ -67,6 +69,10 @@ const QUALITY_CLAUSES: Record<string, string> = {
               when $12::text = 'any' then ${FLAG_LEVEL} <> 'none'
               else ${FLAG_LEVEL} = $12::text end)`,
   mentor: `($13::text is null or (btrim(m.name)) ilike '%' || $13::text || '%')`,
+  student: `($14::text is null or st.s_id ilike '%' || $14::text || '%'
+              or st.id::text = btrim($14::text)
+              or st.name_en ilike '%' || $14::text || '%'
+              or st.name ilike '%' || $14::text || '%')`,
 };
 
 /** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
@@ -118,6 +124,56 @@ const QUALITY_COMMENTS_UNION = `(
               left join public.quality_criteria parent on parent.id = qc.parent_id
              where qrc.deleted_at is null
           ) c`;
+
+// --- Coverage (tutors with / without a review in a cycle) ---------------
+// $1 cycle, $2 team_lead, $3 tutor, $4 tutor_status, $5 mentor, $6 organization
+const COVERAGE_PARAMS = ["cycle", "team_lead", "tutor", "tutor_status", "mentor", "organization"];
+
+const COVERAGE_CTE = `with cyc as (
+            select coalesce(
+                     nullif($1::text, '')::date,
+                     (select max(review_cycle)::date from public.quality_reviews
+                       where type = 'QualityReview')
+                   ) as d
+          ),
+          base as (
+            select t.id,
+                   t.t_id,
+                   (t.name_i18n->>'en') as tutor_name,
+                   t.status::int as tutor_status,
+                   coalesce(a.name, 'Unassigned') as team_leader,
+                   coalesce(btrim(m.name), 'No mentor') as mentor_name,
+                   ${TUTOR_ORGS} as organizations,
+                   (select count(*)::int from public.sessions s
+                     where s.tutor_id = t.id
+                       and s.start_at >= (select d from cyc)
+                       and s.start_at < (select d from cyc) + interval '1 month'
+                       and coalesce(s.status, 0) <> 2) as sessions,
+                   (select count(*)::int from public.quality_reviews qr
+                     where qr.tutor_id = t.id
+                       and qr.type = 'QualityReview'
+                       and qr.review_cycle::date = (select d from cyc)) as reviews,
+                   (select d from cyc) as cycle
+              from public.tutors t
+              left join public.admins a on a.id = t.team_lead_id
+              left join public.admins m on m.id = t.mentor_id
+             where ($2::text is null or a.name ilike '%' || $2::text || '%')
+               and ($3::text is null or t.t_id ilike '%' || $3::text || '%'
+                    or (t.name_i18n->>'en') ilike '%' || $3::text || '%')
+               and ($4::int is null or t.status::int = $4::int)
+               and ($5::text is null or (btrim(m.name)) ilike '%' || $5::text || '%')
+               and ($6::text is null or exists (
+                     select 1 from public.tutor_organizations tor
+                     join public.organizations o on o.id = tor.organization_id
+                     where tor.tutor_id = t.id and o.name = $6::text))
+          ),
+          classified as (
+            select base.*,
+                   case when reviews > 0 then 'reviewed'
+                        when sessions > 0 then 'missing'
+                        else 'no_sessions' end as coverage_state
+              from base
+          )`;
 
 export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Diagnostics -----------------------------------------------------
@@ -177,10 +233,13 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  a.name as team_leader,
                  (btrim(m.name)) as mentor_name,
                  ${TUTOR_ORGS} as organizations,
+                 st.s_id as student_sid,
+                 st.id::text as student_id,
+                 coalesce(st.name_en, st.name) as student_name,
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($14::int, 100) offset coalesce($15::int, 0)`,
+          limit coalesce($15::int, 100) offset coalesce($16::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -358,16 +417,17 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (l.name_i18n->>'en') as lesson_name,
                  l.position as lesson_position,
                  st.s_id as student_sid,
+                 st.id::text as student_id,
+                 coalesce(st.name_en, st.name) as student_name,
                  s.tutor_join_time,
                  s.student_join_time,
                  s.student_feedback,
                  s.student_feedback_comment,
                  s.is_student_absent
           ${QUALITY_JOINS}
-          left join public.students st on st.id = s.student_id
           ${QUALITY_WHERE}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($14::int, 100) offset coalesce($15::int, 0)`,
+          limit coalesce($15::int, 100) offset coalesce($16::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -392,11 +452,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($14::text is null or c.parent_name = $14::text)
-            and ($15::text is null or c.body ilike '%' || $15::text || '%')
-            and ($16::int is null or c.comment_type = $16::int)
+            and ($15::text is null or c.parent_name = $15::text)
+            and ($16::text is null or c.body ilike '%' || $16::text || '%')
+            and ($17::int is null or c.comment_type = $17::int)
           order by coalesce(qr.session_start_at, qr.created_at) desc, qr.id desc, c.source, c.comment_type
-          limit coalesce($17::int, 100) offset coalesce($18::int, 0)`,
+          limit coalesce($18::int, 100) offset coalesce($19::int, 0)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type", "limit", "offset"],
     limit: 2000,
   },
@@ -409,9 +469,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($14::text is null or c.parent_name = $14::text)
-            and ($15::text is null or c.body ilike '%' || $15::text || '%')
-            and ($16::int is null or c.comment_type = $16::int)`,
+            and ($15::text is null or c.parent_name = $15::text)
+            and ($16::text is null or c.body ilike '%' || $16::text || '%')
+            and ($17::int is null or c.comment_type = $17::int)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type"],
     limit: 1,
   },
@@ -520,6 +580,8 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (l.name_i18n->>'en') as lesson_name,
                  l.position as lesson_position,
                  st.s_id as student_sid,
+                 st.id::text as student_id,
+                 coalesce(st.name_en, st.name) as student_name,
                  s.tutor_join_time,
                  s.student_join_time,
                  s.student_feedback,
@@ -626,6 +688,50 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                        from public.quality_criteria qc
                        left join public.quality_criteria parent on parent.id = qc.parent_id) d) as criteria`,
     params: QUALITY_PARAMS,
+    limit: 1,
+  },
+
+  // --- Review coverage per cycle ---------------------------------------
+  // Which tutors already have a review in the selected cycle, which are
+  // still missing one, and which had no active session (so none is due).
+  quality_cycles_list: {
+    sql: `select distinct review_cycle::text as cycle
+          from public.quality_reviews
+          where type = 'QualityReview' and review_cycle is not null
+          order by 1 desc`,
+    params: [],
+    limit: 100,
+  },
+
+  quality_coverage_list: {
+    sql: `${COVERAGE_CTE}
+          select t_id as tutor_tid,
+                 tutor_name,
+                 tutor_status,
+                 team_leader,
+                 mentor_name,
+                 organizations,
+                 sessions,
+                 reviews,
+                 coverage_state,
+                 cycle::text as cycle
+          from classified
+          where ($7::text is null or coverage_state = $7::text)
+          order by (coverage_state = 'missing') desc, sessions desc, tutor_name
+          limit coalesce($8::int, 100) offset coalesce($9::int, 0)`,
+    params: COVERAGE_PARAMS.concat(["coverage", "limit", "offset"]),
+    limit: 5000,
+  },
+
+  quality_coverage_summary: {
+    sql: `${COVERAGE_CTE}
+          select count(*)::int as total,
+                 count(*) filter (where coverage_state = 'reviewed')::int as reviewed,
+                 count(*) filter (where coverage_state = 'missing')::int as missing,
+                 count(*) filter (where coverage_state = 'no_sessions')::int as no_sessions,
+                 max(cycle)::text as cycle
+          from classified`,
+    params: COVERAGE_PARAMS,
     limit: 1,
   },
 };

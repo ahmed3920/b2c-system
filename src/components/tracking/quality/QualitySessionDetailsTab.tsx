@@ -38,6 +38,8 @@ type SessionRow = {
   lesson_name: string | null;
   lesson_position: number | null;
   student_sid: string | null;
+  student_id: string | null;
+  student_name: string | null;
   tutor_join_time: string | null;
   student_join_time: string | null;
   student_feedback: number | null;
@@ -189,8 +191,11 @@ export function QualitySessionDetailsTab({
                             )}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {r.student_sid ?? "—"}
+                            {r.student_name ?? r.student_sid ?? "—"}
                             {r.is_student_absent && <Badge variant="outline" className="ml-1">Absent</Badge>}
+                            {r.student_name && (
+                              <span className="block text-xs text-muted-foreground">{r.student_sid ?? ""}</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-sm whitespace-nowrap">
                             {time(r.tutor_join_time)} / {time(r.student_join_time)}
