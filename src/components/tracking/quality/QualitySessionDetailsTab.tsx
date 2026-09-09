@@ -38,6 +38,8 @@ type SessionRow = {
   lesson_name: string | null;
   lesson_position: number | null;
   student_sid: string | null;
+  student_id: string | null;
+  student_name: string | null;
   tutor_join_time: string | null;
   student_join_time: string | null;
   student_feedback: number | null;

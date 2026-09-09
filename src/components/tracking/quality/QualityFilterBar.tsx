@@ -103,6 +103,11 @@ export function QualityFilterBar({
             <Input placeholder="e.g. T-4602" value={filters.tutor} onChange={(e) => update({ tutor: e.target.value })} />
           </Field>
         )}
+        {show("student") && (
+          <Field label="Student ID or name">
+            <Input placeholder="e.g. S-84438" value={filters.student} onChange={(e) => update({ student: e.target.value })} />
+          </Field>
+        )}
         {show("organization") && (
           <Field label="Organization">
             <Select value={filters.organization || ALL} onValueChange={(v) => update({ organization: v === ALL ? "" : v })}>

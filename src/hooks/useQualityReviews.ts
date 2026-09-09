@@ -15,6 +15,7 @@ export type QualityFilters = {
   tutor_status: string;
   organization: string;
   flag: string;
+  student: string;
 };
 
 export const emptyQualityFilters: QualityFilters = {
@@ -30,6 +31,7 @@ export const emptyQualityFilters: QualityFilters = {
   tutor_status: "",
   organization: "",
   flag: "",
+  student: "",
 };
 
 export type QualityReviewRow = {
@@ -58,6 +60,9 @@ export type QualityReviewRow = {
   team_leader: string | null;
   mentor_name: string | null;
   organizations: string | null;
+  student_sid: string | null;
+  student_id: string | null;
+  student_name: string | null;
   lesson_name: string | null;
 };
 
@@ -108,6 +113,7 @@ export function toBaseParams(filters: QualityFilters) {
     tutor_status: filters.tutor_status === "" ? null : Number(filters.tutor_status),
     organization: filters.organization || null,
     flag: filters.flag || null,
+    student: filters.student || null,
     mentor: null as string | null,
   };
 }
