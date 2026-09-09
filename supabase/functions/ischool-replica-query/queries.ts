@@ -171,6 +171,12 @@ const COVERAGE_CTE = `with cyc as (
                      where qr.tutor_id = t.id
                        and qr.type = 'QualityReview'
                        and qr.review_cycle::date = (select d from cyc)) as reviews,
+                   (select qr.id::text from public.quality_reviews qr
+                     where qr.tutor_id = t.id
+                       and qr.type = 'QualityReview'
+                       and qr.review_cycle::date = (select d from cyc)
+                     order by coalesce(qr.session_start_at, qr.created_at) desc
+                     limit 1) as last_review_id,
                    (select d from cyc) as cycle
               from public.tutors t
               left join public.admins a on a.id = t.team_lead_id
@@ -733,6 +739,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  sessions_upcoming,
                  student_sessions,
                  reviews,
+                 last_review_id,
                  coverage_state,
                  cycle::text as cycle
           from classified
@@ -752,6 +759,85 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  max(cycle)::text as cycle
           from classified`,
     params: COVERAGE_PARAMS,
+    limit: 1,
+  },
+
+  // Missing / reviewed counts grouped per team leader, for the coverage dashboard.
+  quality_coverage_by_team_leader: {
+    sql: `${COVERAGE_CTE}
+          select team_leader,
+                 count(*)::int as tutors,
+                 count(*) filter (where coverage_state = 'reviewed')::int as reviewed,
+                 count(*) filter (where coverage_state = 'missing')::int as missing,
+                 count(*) filter (where coverage_state = 'no_sessions')::int as no_sessions,
+                 sum(sessions)::int as sessions,
+                 sum(reviews)::int as reviews,
+                 max(cycle)::text as cycle
+          from classified
+          group by team_leader
+          order by missing desc, tutors desc, team_leader`,
+    params: COVERAGE_PARAMS,
+    limit: 200,
+  },
+
+  // --- Flag follow-up ---------------------------------------------------
+  // One row per red / yellow flag, with its review and tutor context.
+  quality_flags_list: {
+    sql: `select f.id::text as flag_id,
+                 qr.id::text as review_id,
+                 f.flag_type,
+                 case f.flag_type when 2 then 'red' when 1 then 'yellow' else 'other' end as flag_color,
+                 f.description,
+                 f.status::text as flag_status,
+                 f.created_at,
+                 (qc.name_i18n->>'en') as criterion_name,
+                 (parent.name_i18n->>'en') as parent_name,
+                 qr.score,
+                 round((qr.score / 5.0 * 100)::numeric, 1) as score_pct,
+                 qr.session_start_at,
+                 qr.review_cycle::text as review_cycle,
+                 t.t_id as tutor_tid,
+                 (t.name_i18n->>'en') as tutor_name,
+                 t.status::int as tutor_status,
+                 a.name as team_leader,
+                 (btrim(m.name)) as mentor_name,
+                 ${TUTOR_ORGS} as organizations
+          from public.quality_review_flags f
+          join public.quality_reviews qr on qr.id = f.quality_review_id
+          join public.tutors t on t.id = qr.tutor_id
+          left join public.admins a on a.id = t.team_lead_id
+          left join public.admins m on m.id = t.mentor_id
+          left join public.sessions s on s.id = qr.session_id
+          left join public.students st on st.id = s.student_id
+          left join public.lessons l on l.id = s.lesson_id
+          left join public.quality_criteria qc on qc.id = f.quality_criterion_id
+          left join public.quality_criteria parent on parent.id = qc.parent_id
+          ${QUALITY_WHERE}
+            and f.deleted_at is null
+            and ($15::int is null or f.flag_type = $15::int)
+          order by f.flag_type desc, coalesce(qr.session_start_at, qr.created_at) desc
+          limit coalesce($16::int, 100) offset coalesce($17::int, 0)`,
+    params: [...QUALITY_PARAMS, "flag_type", "limit", "offset"],
+    limit: 2000,
+  },
+
+  quality_flags_count: {
+    sql: `select count(*)::int as total,
+                 count(*) filter (where f.flag_type = 2)::int as red,
+                 count(*) filter (where f.flag_type = 1)::int as yellow,
+                 count(distinct t.id)::int as tutors
+          from public.quality_review_flags f
+          join public.quality_reviews qr on qr.id = f.quality_review_id
+          join public.tutors t on t.id = qr.tutor_id
+          left join public.admins a on a.id = t.team_lead_id
+          left join public.admins m on m.id = t.mentor_id
+          left join public.sessions s on s.id = qr.session_id
+          left join public.students st on st.id = s.student_id
+          left join public.lessons l on l.id = s.lesson_id
+          ${QUALITY_WHERE}
+            and f.deleted_at is null
+            and ($15::int is null or f.flag_type = $15::int)`,
+    params: [...QUALITY_PARAMS, "flag_type"],
     limit: 1,
   },
 };

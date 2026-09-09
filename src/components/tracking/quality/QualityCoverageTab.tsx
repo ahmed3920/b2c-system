@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -18,8 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, Download, Loader2, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
 import { Field, Kpi, SearchableSelect, downloadCsv } from "./QualityFilterBar";
+import { QualityCoverageByTeamLeader } from "./QualityCoverageByTeamLeader";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { toast } from "@/hooks/use-toast";
 import { tutorStatusLabel, cycleLabel, TUTOR_STATUS_OPTIONS } from "@/lib/tutorStatus";
@@ -42,7 +45,25 @@ const stateBadge = (s: CoverageState) =>
 export function QualityCoverageTab() {
   const c = useQualityCoverage();
   const [exporting, setExporting] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const s = c.summary;
+
+  // Deep link from the team-leader dashboard: ?coverage_tl=…&coverage_cycle=…
+  const deepTl = searchParams.get("coverage_tl");
+  const deepCycle = searchParams.get("coverage_cycle");
+  useEffect(() => {
+    if (!deepTl && !deepCycle) return;
+    c.update({
+      ...(deepTl ? { team_lead: deepTl, coverage: "missing" as CoverageState } : {}),
+      ...(deepCycle ? { cycle: deepCycle } : {}),
+    });
+    const next = new URLSearchParams(searchParams);
+    next.delete("coverage_tl");
+    next.delete("coverage_cycle");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepTl, deepCycle]);
+
   const shown =
     c.filters.coverage === "all"
       ? (s?.total ?? 0)
@@ -68,6 +89,9 @@ export function QualityCoverageTab() {
         ...r,
         tutor_status: tutorStatusLabel(r.tutor_status as number),
         coverage_state: coverageStateLabel[r.coverage_state as CoverageState],
+        review_progress_pct: Number(r.sessions)
+          ? Math.min(100, Math.round((Number(r.reviews) / Number(r.sessions)) * 100))
+          : 0,
       }));
       if (!downloadCsv(`quality-coverage-${new Date().toISOString().slice(0, 10)}.csv`, mapped)) {
         toast({ title: "Nothing to export" });
@@ -204,6 +228,17 @@ export function QualityCoverageTab() {
         </CardContent>
       </Card>
 
+      {!locked && (
+        <QualityCoverageByTeamLeader
+          rows={c.byTeamLeader}
+          loading={c.byTeamLeaderLoading}
+          cycle={c.filters.cycle}
+          onSelect={(tl) => c.update({ team_lead: tl, coverage: "missing" })}
+        />
+      )}
+
+
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2 flex-wrap">
@@ -237,24 +272,29 @@ export function QualityCoverageTab() {
                       <TableHead className="text-right">Upcoming</TableHead>
                       <TableHead className="text-right">Students</TableHead>
                       <TableHead className="text-right">Reviews</TableHead>
+                      <TableHead className="w-[170px]">Review progress</TableHead>
                       <TableHead>State</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {c.loading && c.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           Loading tutors…
                         </TableCell>
                       </TableRow>
                     ) : c.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                           No tutors match these filters.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      c.rows.map((r) => (
+                      c.rows.map((r) => {
+                        const pct = r.sessions
+                          ? Math.min(100, Math.round((r.reviews / r.sessions) * 100))
+                          : 0;
+                        return (
                         <TableRow key={`${r.tutor_tid}-${r.cycle}`}>
                           <TableCell>
                             {r.tutor_name}
@@ -279,12 +319,31 @@ export function QualityCoverageTab() {
                           </TableCell>
                           <TableCell className="text-right">{r.reviews.toLocaleString()}</TableCell>
                           <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress value={pct} className="h-2" />
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {r.reviews}/{r.sessions}
+                              </span>
+                              {r.last_review_id && (
+                                <Button size="icon" variant="ghost" className="h-6 w-6" asChild>
+                                  <a
+                                    href={`/performance?tab=quality&review=${r.last_review_id}`}
+                                    title="Open latest review"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <Badge className={stateBadge(r.coverage_state)}>
                               {coverageStateLabel[r.coverage_state]}
                             </Badge>
                           </TableCell>
                         </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

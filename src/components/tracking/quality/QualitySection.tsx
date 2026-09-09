@@ -8,8 +8,9 @@ import { QualityMentorCommentsTab } from "./QualityMentorCommentsTab";
 import { QualitySummaryTab } from "./QualitySummaryTab";
 import { QualityCycleComparisonTab } from "./QualityCycleComparisonTab";
 import { QualityCoverageTab } from "./QualityCoverageTab";
+import { QualityFlagFollowupTab } from "./QualityFlagFollowupTab";
 
-const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage"] as const;
+const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage", "followup"] as const;
 type SubTab = (typeof SUB_TABS)[number];
 
 /**
@@ -62,6 +63,7 @@ export function QualitySection() {
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="cycles">Cycle Comparison</TabsTrigger>
         <TabsTrigger value="coverage">Review Coverage</TabsTrigger>
+        <TabsTrigger value="followup">Flag Follow-up</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="mt-0">
@@ -84,6 +86,9 @@ export function QualitySection() {
       </TabsContent>
       <TabsContent value="coverage" className="mt-0">
         <QualityCoverageTab />
+      </TabsContent>
+      <TabsContent value="followup" className="mt-0">
+        <QualityFlagFollowupTab />
       </TabsContent>
     </Tabs>
   );

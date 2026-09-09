@@ -16,7 +16,19 @@ export type CoverageRow = {
   sessions_upcoming: number;
   student_sessions: number;
   reviews: number;
+  last_review_id: string | null;
   coverage_state: CoverageState;
+  cycle: string | null;
+};
+
+export type CoverageByTeamLeader = {
+  team_leader: string | null;
+  tutors: number;
+  reviewed: number;
+  missing: number;
+  no_sessions: number;
+  sessions: number;
+  reviews: number;
   cycle: string | null;
 };
 
@@ -95,6 +107,10 @@ export function useQualityCoverage() {
 
   const list = useReplicaQuery<CoverageRow>("quality_coverage_list", listParams);
   const summary = useReplicaQuery<CoverageSummary>("quality_coverage_summary", baseParams);
+  const byTeamLeader = useReplicaQuery<CoverageByTeamLeader>(
+    "quality_coverage_by_team_leader",
+    baseParams,
+  );
 
   // Team leader / organization dropdown lists, scoped like the rest of Quality.
   const optionsParams = useMemo(() => {
@@ -133,11 +149,14 @@ export function useQualityCoverage() {
     error: list.error,
     summary: summary.rows[0],
     summaryLoading: summary.loading,
+    byTeamLeader: byTeamLeader.rows,
+    byTeamLeaderLoading: byTeamLeader.loading,
     options: options.rows[0],
     scope,
     refetch: () => {
       list.refetch();
       summary.refetch();
+      byTeamLeader.refetch();
     },
   };
 }
