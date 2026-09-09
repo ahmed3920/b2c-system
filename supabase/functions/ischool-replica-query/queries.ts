@@ -853,4 +853,67 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: [...QUALITY_PARAMS, "flag_type"],
     limit: 1,
   },
+
+  // --- Analytics: team composition --------------------------------------
+  // Organization 1 only. employment_type: 0 = full time, 1 = part time.
+  // is_mentor: true = mentor, false = tutor.
+  analytics_team_composition: {
+    sql: `${ANALYTICS_BASE}
+          select team_leader,
+                 count(*)::int as total,
+                 count(*) filter (where not is_mentor)::int as tutors,
+                 count(*) filter (where is_mentor)::int as mentors,
+                 count(*) filter (where employment_type = 0)::int as full_time,
+                 count(*) filter (where employment_type = 1)::int as part_time,
+                 count(*) filter (where not is_mentor and employment_type = 0)::int as tutors_full_time,
+                 count(*) filter (where not is_mentor and employment_type = 1)::int as tutors_part_time,
+                 count(*) filter (where is_mentor and employment_type = 0)::int as mentors_full_time,
+                 count(*) filter (where is_mentor and employment_type = 1)::int as mentors_part_time
+          from base
+          group by team_leader
+          order by total desc, team_leader`,
+    params: ANALYTICS_BASE_PARAMS,
+    limit: 200,
+  },
+
+  // --- Analytics: one-to-one occupation ---------------------------------
+  // $3 date_from, $4 date_to (inclusive), $5 role ('tutor' | 'mentor'), $6 search
+  analytics_occupation_list: {
+    sql: `${OCCUPATION_CTE}
+          select t_id as tutor_tid,
+                 name,
+                 team_leader,
+                 is_mentor,
+                 employment_type,
+                 tutor_status,
+                 working_days,
+                 target,
+                 delivered,
+                 occupation
+          from occ
+          order by occupation desc nulls last, delivered desc
+          limit coalesce($7::int, 200) offset coalesce($8::int, 0)`,
+    params: [...OCCUPATION_PARAMS, "limit", "offset"],
+    limit: 5000,
+  },
+
+  analytics_occupation_summary: {
+    sql: `${OCCUPATION_CTE}
+          select count(*)::int as people,
+                 sum(delivered)::int as delivered,
+                 sum(target)::int as target,
+                 round(avg(occupation) filter (where occupation is not null), 1)::numeric as avg_occupation,
+                 count(*) filter (where occupation >= 100)::int as at_target,
+                 count(*) filter (where occupation is not null and occupation < 100)::int as below_target
+          from occ`,
+    params: OCCUPATION_PARAMS,
+    limit: 1,
+  },
+
+  analytics_team_leaders: {
+    sql: `${ANALYTICS_BASE}
+          select distinct team_leader from base order by 1`,
+    params: ANALYTICS_BASE_PARAMS,
+    limit: 200,
+  },
 };
