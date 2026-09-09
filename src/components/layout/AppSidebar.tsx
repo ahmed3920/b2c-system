@@ -55,6 +55,7 @@ const overview: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, featureKey: "dashboard" },
   { title: "Home", url: "/home", icon: LayoutDashboard, featureKey: "home" },
   { title: "Attendance", url: "/attendance", icon: CalendarCheck, roles: ["admin", "team_leader", "super_team_leader"] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin"] },
   { title: "Vision Board", url: "/admin/vision-board", icon: Target, roles: ["admin"] },
 ];
 
