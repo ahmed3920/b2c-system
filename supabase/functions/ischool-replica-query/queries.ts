@@ -674,7 +674,6 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (qc.name_i18n->>'en') as criterion_name,
                  (parent.name_i18n->>'en') as parent_name
           from public.quality_review_flags f
-          left join public.admins qa on qa.id = qr.admin_id
           left join public.quality_criteria qc on qc.id = f.quality_criterion_id
           left join public.quality_criteria parent on parent.id = qc.parent_id
           where f.quality_review_id = $1::bigint
