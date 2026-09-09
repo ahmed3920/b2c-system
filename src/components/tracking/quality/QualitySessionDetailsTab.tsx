@@ -191,8 +191,11 @@ export function QualitySessionDetailsTab({
                             )}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {r.student_sid ?? "—"}
+                            {r.student_name ?? r.student_sid ?? "—"}
                             {r.is_student_absent && <Badge variant="outline" className="ml-1">Absent</Badge>}
+                            {r.student_name && (
+                              <span className="block text-xs text-muted-foreground">{r.student_sid ?? ""}</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-sm whitespace-nowrap">
                             {time(r.tutor_join_time)} / {time(r.student_join_time)}
