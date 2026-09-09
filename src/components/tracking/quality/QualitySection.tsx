@@ -63,6 +63,7 @@ export function QualitySection() {
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="cycles">Cycle Comparison</TabsTrigger>
         <TabsTrigger value="coverage">Review Coverage</TabsTrigger>
+        <TabsTrigger value="followup">Flag Follow-up</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="mt-0">
