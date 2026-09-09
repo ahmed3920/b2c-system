@@ -16,7 +16,19 @@ export type CoverageRow = {
   sessions_upcoming: number;
   student_sessions: number;
   reviews: number;
+  last_review_id: string | null;
   coverage_state: CoverageState;
+  cycle: string | null;
+};
+
+export type CoverageByTeamLeader = {
+  team_leader: string | null;
+  tutors: number;
+  reviewed: number;
+  missing: number;
+  no_sessions: number;
+  sessions: number;
+  reviews: number;
   cycle: string | null;
 };
 
