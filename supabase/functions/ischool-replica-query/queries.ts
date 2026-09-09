@@ -29,6 +29,7 @@ const QUALITY_PARAMS = [
   "organization",
   "flag",
   "mentor",
+  "student",
 ];
 
 const QUALITY_JOINS = `from public.quality_reviews qr
@@ -36,6 +37,7 @@ const QUALITY_JOINS = `from public.quality_reviews qr
           left join public.admins a on a.id = t.team_lead_id
           left join public.admins m on m.id = t.mentor_id
           left join public.sessions s on s.id = qr.session_id
+          left join public.students st on st.id = s.student_id
           left join public.lessons l on l.id = s.lesson_id`;
 
 // Flags live in quality_review_flags: flag_type 1 = yellow, 2 = red.
