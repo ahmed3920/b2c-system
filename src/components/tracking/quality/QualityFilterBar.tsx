@@ -153,6 +153,16 @@ export function QualityFilterBar({
             <Input placeholder="e.g. S-84438" value={filters.student} onChange={(e) => update({ student: e.target.value })} />
           </Field>
         )}
+        {show("reviewer") && (
+          <Field label="QC reviewer">
+            <SearchableSelect
+              value={filters.reviewer}
+              onChange={(v) => update({ reviewer: v })}
+              options={options?.reviewers ?? []}
+              allLabel="All QC reviewers"
+            />
+          </Field>
+        )}
         {show("organization") && (
           <Field label="Organization">
             <SearchableSelect

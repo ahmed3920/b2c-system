@@ -16,6 +16,7 @@ export type QualityFilters = {
   organization: string;
   flag: string;
   student: string;
+  reviewer: string;
 };
 
 export const emptyQualityFilters: QualityFilters = {
@@ -32,6 +33,7 @@ export const emptyQualityFilters: QualityFilters = {
   organization: "",
   flag: "",
   student: "",
+  reviewer: "",
 };
 
 export type QualityReviewRow = {
@@ -59,6 +61,7 @@ export type QualityReviewRow = {
   tutor_status: number | null;
   team_leader: string | null;
   mentor_name: string | null;
+  reviewer_name: string | null;
   organizations: string | null;
   student_sid: string | null;
   student_id: string | null;
@@ -88,6 +91,7 @@ export type QualityFilterOptions = {
   session_types: string[] | null;
   statuses: string[] | null;
   review_cycles: string[] | null;
+  reviewers: string[] | null;
   criteria: string[] | null;
 };
 
@@ -115,6 +119,7 @@ export function toBaseParams(filters: QualityFilters) {
     flag: filters.flag || null,
     student: filters.student || null,
     mentor: null as string | null,
+    reviewer: filters.reviewer || null,
   };
 }
 

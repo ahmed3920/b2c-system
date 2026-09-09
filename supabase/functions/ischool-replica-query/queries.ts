@@ -30,6 +30,7 @@ const QUALITY_PARAMS = [
   "flag",
   "mentor",
   "student",
+  "reviewer",
 ];
 
 const QUALITY_JOINS = `from public.quality_reviews qr
@@ -38,7 +39,8 @@ const QUALITY_JOINS = `from public.quality_reviews qr
           left join public.admins m on m.id = t.mentor_id
           left join public.sessions s on s.id = qr.session_id
           left join public.students st on st.id = s.student_id
-          left join public.lessons l on l.id = s.lesson_id`;
+          left join public.lessons l on l.id = s.lesson_id
+          left join public.admins qa on qa.id = qr.admin_id`;
 
 // Flags live in quality_review_flags: flag_type 1 = yellow, 2 = red.
 const RED_FLAGS = `(select count(*)::int from public.quality_review_flags f
@@ -73,6 +75,7 @@ const QUALITY_CLAUSES: Record<string, string> = {
               or st.id::text = btrim($14::text)
               or st.name_en ilike '%' || $14::text || '%'
               or st.name ilike '%' || $14::text || '%')`,
+  reviewer: `($15::text is null or btrim(qa.name) ilike '%' || $15::text || '%')`,
 };
 
 /** Full WHERE, optionally leaving one filter out (used for dependent dropdowns). */
@@ -256,6 +259,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  t.status::int as tutor_status,
                  a.name as team_leader,
                  (btrim(m.name)) as mentor_name,
+                 (btrim(qa.name)) as reviewer_name,
                  ${TUTOR_ORGS} as organizations,
                  st.s_id as student_sid,
                  st.id::text as student_id,
@@ -263,7 +267,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (l.name_i18n->>'en') as lesson_name
           ${QUALITY_FROM}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($15::int, 100) offset coalesce($16::int, 0)`,
+          limit coalesce($16::int, 100) offset coalesce($17::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -438,6 +442,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  t.status::int as tutor_status,
                  a.name as team_leader,
                  (btrim(m.name)) as mentor_name,
+                 (btrim(qa.name)) as reviewer_name,
                  (l.name_i18n->>'en') as lesson_name,
                  l.position as lesson_position,
                  st.s_id as student_sid,
@@ -451,7 +456,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           ${QUALITY_WHERE}
           order by coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($15::int, 100) offset coalesce($16::int, 0)`,
+          limit coalesce($16::int, 100) offset coalesce($17::int, 0)`,
     params: [...QUALITY_PARAMS, "limit", "offset"],
     limit: 2000,
   },
@@ -467,6 +472,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  t.status::int as tutor_status,
                  a.name as team_leader,
                  (btrim(m.name)) as mentor_name,
+                 (btrim(qa.name)) as reviewer_name,
                  c.source,
                  c.body,
                  c.comment_type,
@@ -476,11 +482,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($15::text is null or c.parent_name = $15::text)
-            and ($16::text is null or c.body ilike '%' || $16::text || '%')
-            and ($17::int is null or c.comment_type = $17::int)
+            and ($16::text is null or c.parent_name = $16::text)
+            and ($17::text is null or c.body ilike '%' || $17::text || '%')
+            and ($18::int is null or c.comment_type = $18::int)
           order by coalesce(qr.session_start_at, qr.created_at) desc, qr.id desc, c.source, c.comment_type
-          limit coalesce($18::int, 100) offset coalesce($19::int, 0)`,
+          limit coalesce($19::int, 100) offset coalesce($20::int, 0)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type", "limit", "offset"],
     limit: 2000,
   },
@@ -493,9 +499,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           ${QUALITY_JOINS}
           join ${QUALITY_COMMENTS_UNION} on c.quality_review_id = qr.id
           ${QUALITY_WHERE}
-            and ($15::text is null or c.parent_name = $15::text)
-            and ($16::text is null or c.body ilike '%' || $16::text || '%')
-            and ($17::int is null or c.comment_type = $17::int)`,
+            and ($16::text is null or c.parent_name = $16::text)
+            and ($17::text is null or c.body ilike '%' || $17::text || '%')
+            and ($18::int is null or c.comment_type = $18::int)`,
     params: [...QUALITY_PARAMS, "criterion", "search", "comment_type"],
     limit: 1,
   },
@@ -707,6 +713,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                ${QUALITY_JOINS}
                ${qualityWhere("review_cycle")}
                  and qr.review_cycle is not null) as review_cycles,
+            (select array_agg(distinct btrim(qa.name) order by btrim(qa.name))
+               ${QUALITY_JOINS}
+               ${qualityWhere("reviewer")}
+                 and qa.name is not null) as reviewers,
             (select array_agg(x order by x)
                from (select distinct coalesce(parent.name_i18n->>'en', qc.name_i18n->>'en') as x
                        from public.quality_criteria qc
@@ -801,6 +811,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  t.status::int as tutor_status,
                  a.name as team_leader,
                  (btrim(m.name)) as mentor_name,
+                 (btrim(qa.name)) as reviewer_name,
                  ${TUTOR_ORGS} as organizations
           from public.quality_review_flags f
           join public.quality_reviews qr on qr.id = f.quality_review_id
@@ -810,13 +821,14 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.sessions s on s.id = qr.session_id
           left join public.students st on st.id = s.student_id
           left join public.lessons l on l.id = s.lesson_id
+          left join public.admins qa on qa.id = qr.admin_id
           left join public.quality_criteria qc on qc.id = f.quality_criterion_id
           left join public.quality_criteria parent on parent.id = qc.parent_id
           ${QUALITY_WHERE}
             and f.deleted_at is null
-            and ($15::int is null or f.flag_type = $15::int)
+            and ($16::int is null or f.flag_type = $16::int)
           order by f.flag_type desc, coalesce(qr.session_start_at, qr.created_at) desc
-          limit coalesce($16::int, 100) offset coalesce($17::int, 0)`,
+          limit coalesce($17::int, 100) offset coalesce($18::int, 0)`,
     params: [...QUALITY_PARAMS, "flag_type", "limit", "offset"],
     limit: 2000,
   },
@@ -834,9 +846,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.sessions s on s.id = qr.session_id
           left join public.students st on st.id = s.student_id
           left join public.lessons l on l.id = s.lesson_id
+          left join public.admins qa on qa.id = qr.admin_id
           ${QUALITY_WHERE}
             and f.deleted_at is null
-            and ($15::int is null or f.flag_type = $15::int)`,
+            and ($16::int is null or f.flag_type = $16::int)`,
     params: [...QUALITY_PARAMS, "flag_type"],
     limit: 1,
   },
