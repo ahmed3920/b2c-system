@@ -88,6 +88,7 @@ export function useQualityCoverage() {
       tutor_status: filters.tutor_status === "" ? null : Number(filters.tutor_status),
       organization: filters.organization || null,
       mentor: null,
+      reviewer: null,
     };
     if (scope.loading) return { ...p, team_lead: "__loading__" };
     if (scope.lockedTeamLead) p.team_lead = scope.lockedTeamLead;
@@ -118,7 +119,7 @@ export function useQualityCoverage() {
       date_from: null, date_to: null, team_lead: null, tutor: null,
       session_type: null, status: null, min_score: null, max_score: null,
       review_cycle: null, tutor_status: null, organization: null, flag: null,
-      student: null, mentor: null,
+      student: null, mentor: null, reviewer: null,
     };
     if (scope.loading) return { ...p, team_lead: "__loading__" };
     if (scope.lockedTeamLead) p.team_lead = scope.lockedTeamLead;
