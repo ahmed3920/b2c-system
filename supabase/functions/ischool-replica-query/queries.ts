@@ -640,4 +640,48 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: QUALITY_PARAMS,
     limit: 1,
   },
+
+  // --- Review coverage per cycle ---------------------------------------
+  // Which tutors already have a review in the selected cycle, which are
+  // still missing one, and which had no active session (so none is due).
+  quality_cycles_list: {
+    sql: `select distinct review_cycle::text as cycle
+          from public.quality_reviews
+          where type = 'QualityReview' and review_cycle is not null
+          order by 1 desc`,
+    params: [],
+    limit: 100,
+  },
+
+  quality_coverage_list: {
+    sql: `${COVERAGE_CTE}
+          select t_id as tutor_tid,
+                 tutor_name,
+                 tutor_status,
+                 team_leader,
+                 mentor_name,
+                 organizations,
+                 sessions,
+                 reviews,
+                 coverage_state,
+                 cycle::text as cycle
+          from classified
+          where ($7::text is null or coverage_state = $7::text)
+          order by (coverage_state = 'missing') desc, sessions desc, tutor_name
+          limit coalesce($8::int, 100) offset coalesce($9::int, 0)`,
+    params: COVERAGE_PARAMS.concat(["coverage", "limit", "offset"]),
+    limit: 5000,
+  },
+
+  quality_coverage_summary: {
+    sql: `${COVERAGE_CTE}
+          select count(*)::int as total,
+                 count(*) filter (where coverage_state = 'reviewed')::int as reviewed,
+                 count(*) filter (where coverage_state = 'missing')::int as missing,
+                 count(*) filter (where coverage_state = 'no_sessions')::int as no_sessions,
+                 max(cycle)::text as cycle
+          from classified`,
+    params: COVERAGE_PARAMS,
+    limit: 1,
+  },
 };
