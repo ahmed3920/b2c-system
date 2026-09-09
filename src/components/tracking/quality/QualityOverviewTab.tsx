@@ -14,6 +14,7 @@ import { useQualityReviews } from "@/hooks/useQualityReviews";
 import { useReplicaQuery } from "@/hooks/useReplicaQuery";
 import { QualityFilterBar, Kpi } from "./QualityFilterBar";
 import { QualityReviewsInsights } from "./QualityReviewsInsights";
+import { QualityCoverageByTeamLeaderCard } from "./QualityCoverageByTeamLeader";
 import { scorePct } from "@/lib/qualityFlags";
 
 type FlagRow = {
