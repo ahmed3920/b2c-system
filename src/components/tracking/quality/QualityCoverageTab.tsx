@@ -287,7 +287,11 @@ export function QualityCoverageTab() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      c.rows.map((r) => (
+                      c.rows.map((r) => {
+                        const pct = r.sessions
+                          ? Math.min(100, Math.round((r.reviews / r.sessions) * 100))
+                          : 0;
+                        return (
                         <TableRow key={`${r.tutor_tid}-${r.cycle}`}>
                           <TableCell>
                             {r.tutor_name}
@@ -312,12 +316,31 @@ export function QualityCoverageTab() {
                           </TableCell>
                           <TableCell className="text-right">{r.reviews.toLocaleString()}</TableCell>
                           <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress value={pct} className="h-2" />
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {r.reviews}/{r.sessions}
+                              </span>
+                              {r.last_review_id && (
+                                <Button size="icon" variant="ghost" className="h-6 w-6" asChild>
+                                  <a
+                                    href={`/performance?tab=quality&review=${r.last_review_id}`}
+                                    title="Open latest review"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <Badge className={stateBadge(r.coverage_state)}>
                               {coverageStateLabel[r.coverage_state]}
                             </Badge>
                           </TableCell>
                         </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
