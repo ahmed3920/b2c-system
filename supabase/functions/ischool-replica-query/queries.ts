@@ -730,6 +730,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  mentor_name,
                  organizations,
                  sessions,
+                 sessions_upcoming,
                  student_sessions,
                  reviews,
                  coverage_state,
