@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useReplicaQuery } from "@/hooks/useReplicaQuery";
 import { useQualityScope } from "@/hooks/useQualityScope";
+import type { QualityFilterOptions } from "@/hooks/useQualityReviews";
 
 export type CoverageState = "missing" | "reviewed" | "no_sessions";
 
@@ -95,6 +96,21 @@ export function useQualityCoverage() {
   const list = useReplicaQuery<CoverageRow>("quality_coverage_list", listParams);
   const summary = useReplicaQuery<CoverageSummary>("quality_coverage_summary", baseParams);
 
+  // Team leader / organization dropdown lists, scoped like the rest of Quality.
+  const optionsParams = useMemo(() => {
+    const p: Record<string, unknown> = {
+      date_from: null, date_to: null, team_lead: null, tutor: null,
+      session_type: null, status: null, min_score: null, max_score: null,
+      review_cycle: null, tutor_status: null, organization: null, flag: null,
+      student: null, mentor: null,
+    };
+    if (scope.loading) return { ...p, team_lead: "__loading__" };
+    if (scope.lockedTeamLead) p.team_lead = scope.lockedTeamLead;
+    if (scope.lockedMentor) p.mentor = scope.lockedMentor;
+    return p;
+  }, [scope.loading, scope.lockedTeamLead, scope.lockedMentor]);
+  const options = useReplicaQuery<QualityFilterOptions>("quality_filter_options", optionsParams);
+
   const update = (patch: Partial<CoverageFilters>) => {
     setPage(0);
     setFilters((f) => ({ ...f, ...patch }));
@@ -117,6 +133,7 @@ export function useQualityCoverage() {
     error: list.error,
     summary: summary.rows[0],
     summaryLoading: summary.loading,
+    options: options.rows[0],
     scope,
     refetch: () => {
       list.refetch();
