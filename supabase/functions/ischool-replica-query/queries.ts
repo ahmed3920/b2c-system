@@ -720,6 +720,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  mentor_name,
                  organizations,
                  sessions,
+                 student_sessions,
                  reviews,
                  coverage_state,
                  cycle::text as cycle
