@@ -148,6 +148,8 @@ export function QualityOverviewTab() {
       </div>
 
       <QualityReviewsInsights params={q.baseParams} />
+
+      <QualityCoverageByTeamLeaderCard />
     </div>
   );
 }
