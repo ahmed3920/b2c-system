@@ -107,6 +107,10 @@ export function useQualityCoverage() {
 
   const list = useReplicaQuery<CoverageRow>("quality_coverage_list", listParams);
   const summary = useReplicaQuery<CoverageSummary>("quality_coverage_summary", baseParams);
+  const byTeamLeader = useReplicaQuery<CoverageByTeamLeader>(
+    "quality_coverage_by_team_leader",
+    baseParams,
+  );
 
   // Team leader / organization dropdown lists, scoped like the rest of Quality.
   const optionsParams = useMemo(() => {
