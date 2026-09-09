@@ -149,11 +149,14 @@ export function useQualityCoverage() {
     error: list.error,
     summary: summary.rows[0],
     summaryLoading: summary.loading,
+    byTeamLeader: byTeamLeader.rows,
+    byTeamLeaderLoading: byTeamLeader.loading,
     options: options.rows[0],
     scope,
     refetch: () => {
       list.refetch();
       summary.refetch();
+      byTeamLeader.refetch();
     },
   };
 }
