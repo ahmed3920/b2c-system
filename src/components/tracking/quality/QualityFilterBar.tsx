@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,53 @@ import { useQualityScope } from "@/hooks/useQualityScope";
 import { Badge } from "@/components/ui/badge";
 
 const ALL = "all";
+
+/** Select dropdown with a search box to filter long option lists. */
+export function SearchableSelect({
+  value,
+  onChange,
+  options,
+  allLabel,
+  placeholder = "All",
+  labelFn,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  allLabel: string;
+  placeholder?: string;
+  labelFn?: (v: string) => string;
+}) {
+  const [search, setSearch] = useState("");
+  const label = labelFn ?? ((v: string) => v);
+  const filtered = options.filter((o) => label(o).toLowerCase().includes(search.trim().toLowerCase()));
+  // Keep the currently selected value visible even if it doesn't match the search.
+  const items = value && !filtered.includes(value) ? [value, ...filtered] : filtered;
+  return (
+    <Select value={value || ALL} onValueChange={(v) => { onChange(v === ALL ? "" : v); setSearch(""); }}>
+      <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+      <SelectContent className="max-h-72">
+        <div className="p-1 sticky top-0 bg-popover z-10">
+          <Input
+            autoFocus
+            placeholder="Search…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="h-8"
+          />
+        </div>
+        <SelectItem value={ALL}>{allLabel}</SelectItem>
+        {items.map((o) => (
+          <SelectItem key={o} value={o}>{label(o)}</SelectItem>
+        ))}
+        {items.length === 0 && (
+          <p className="px-2 py-3 text-xs text-muted-foreground text-center">No matches</p>
+        )}
+      </SelectContent>
+    </Select>
+  );
+}
 
 type Props = {
   filters: QualityFilters;
@@ -87,15 +135,12 @@ export function QualityFilterBar({
         )}
         {show("team_lead") && (
           <Field label="Team leader">
-            <Select value={filters.team_lead || ALL} onValueChange={(v) => update({ team_lead: v === ALL ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All team leaders</SelectItem>
-                {(options?.team_leaders ?? []).map((tl) => (
-                  <SelectItem key={tl} value={tl}>{tl}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={filters.team_lead}
+              onChange={(v) => update({ team_lead: v })}
+              options={options?.team_leaders ?? []}
+              allLabel="All team leaders"
+            />
           </Field>
         )}
         {show("tutor") && (
@@ -110,15 +155,12 @@ export function QualityFilterBar({
         )}
         {show("organization") && (
           <Field label="Organization">
-            <Select value={filters.organization || ALL} onValueChange={(v) => update({ organization: v === ALL ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All organizations</SelectItem>
-                {(options?.organizations ?? []).map((o) => (
-                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={filters.organization}
+              onChange={(v) => update({ organization: v })}
+              options={options?.organizations ?? []}
+              allLabel="All organizations"
+            />
           </Field>
         )}
         {show("tutor_status") && (
@@ -151,15 +193,13 @@ export function QualityFilterBar({
         )}
         {show("review_cycle") && (
           <Field label="Review cycle">
-            <Select value={filters.review_cycle || ALL} onValueChange={(v) => update({ review_cycle: v === ALL ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value={ALL}>All cycles</SelectItem>
-                {(options?.review_cycles ?? []).map((c) => (
-                  <SelectItem key={c} value={c}>{cycleLabel(c)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={filters.review_cycle}
+              onChange={(v) => update({ review_cycle: v })}
+              options={(options?.review_cycles ?? []).map(String)}
+              allLabel="All cycles"
+              labelFn={cycleLabel}
+            />
           </Field>
         )}
         {show("status") && (

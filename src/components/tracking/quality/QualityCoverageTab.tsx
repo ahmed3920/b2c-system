@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, Download, Loader2, RefreshCw, X } from "lucide-react";
-import { Field, Kpi, downloadCsv } from "./QualityFilterBar";
+import { Field, Kpi, SearchableSelect, downloadCsv } from "./QualityFilterBar";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { toast } from "@/hooks/use-toast";
 import { tutorStatusLabel, cycleLabel, TUTOR_STATUS_OPTIONS } from "@/lib/tutorStatus";
@@ -185,18 +185,20 @@ export function QualityCoverageTab() {
           </Field>
           {!locked && (
             <Field label="Team leader">
-              <Input
-                placeholder="All"
+              <SearchableSelect
                 value={c.filters.team_lead}
-                onChange={(e) => c.update({ team_lead: e.target.value })}
+                onChange={(v) => c.update({ team_lead: v })}
+                options={c.options?.team_leaders ?? []}
+                allLabel="All team leaders"
               />
             </Field>
           )}
           <Field label="Organization">
-            <Input
-              placeholder="All"
+            <SearchableSelect
               value={c.filters.organization}
-              onChange={(e) => c.update({ organization: e.target.value })}
+              onChange={(v) => c.update({ organization: v })}
+              options={c.options?.organizations ?? []}
+              allLabel="All organizations"
             />
           </Field>
         </CardContent>
