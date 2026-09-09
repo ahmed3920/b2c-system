@@ -269,6 +269,7 @@ export function QualityCoverageTab() {
                       <TableHead className="text-right">Upcoming</TableHead>
                       <TableHead className="text-right">Students</TableHead>
                       <TableHead className="text-right">Reviews</TableHead>
+                      <TableHead className="w-[170px]">Review progress</TableHead>
                       <TableHead>State</TableHead>
                     </TableRow>
                   </TableHeader>
