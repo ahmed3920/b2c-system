@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { runReplicaQuery } from "@/hooks/useReplicaQuery";
 import { supabase } from "@/integrations/supabase/client";
 
-export const PROJECTS_BASELINE = { date: "2026-09-09", zero: 1820 };
+export const PROJECTS_BASELINE = { date: "2026-09-09", zero: 1615 };
 
 export type ProjectsSummary = {
   students: number;
@@ -40,6 +40,7 @@ export type SnapshotRow = {
   zero_students: number;
   total_students: number;
 };
+export type UploadsDayRow = { day: string; projects: number; students: number };
 
 const p = (v: string) => (v && v !== "" ? v : null);
 
