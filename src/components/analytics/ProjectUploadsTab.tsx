@@ -144,7 +144,7 @@ export function ProjectUploadsTab() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         {[
           ["Students with 0 projects", String(zero)],
           [`Change vs baseline (${PROJECTS_BASELINE.zero} on ${PROJECTS_BASELINE.date})`, fmtDelta(vsBaseline)],
