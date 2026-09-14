@@ -990,4 +990,80 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: ANALYTICS_BASE_PARAMS,
     limit: 200,
   },
+
+  // --- Analytics: student project uploads --------------------------------
+  analytics_projects_summary: {
+    sql: `${PROJECTS_BASE}
+          select count(*)::int as students,
+                 count(*) filter (where projects_count = 0)::int as zero_students,
+                 sum(projects_count)::int as projects,
+                 round(avg(projects_count)::numeric, 2) as avg_projects
+          from base`,
+    params: PROJECTS_PARAMS,
+    limit: 1,
+  },
+
+  analytics_projects_by_grade: {
+    sql: `${PROJECTS_BASE}
+          select coalesce(grade, 'Unknown') as grade,
+                 count(*) filter (where projects_count = 0)::int as zero_students,
+                 count(*)::int as students
+          from base
+          group by 1
+          order by zero_students desc, grade`,
+    params: PROJECTS_PARAMS,
+    limit: 100,
+  },
+
+  analytics_projects_by_team_leader: {
+    sql: `${PROJECTS_BASE}
+          select team_leader,
+                 count(*) filter (where projects_count = 0)::int as zero_students,
+                 count(*)::int as students
+          from base
+          group by 1
+          order by zero_students desc, team_leader`,
+    params: PROJECTS_PARAMS,
+    limit: 100,
+  },
+
+  analytics_projects_distribution: {
+    sql: `${PROJECTS_BASE}
+          select case when projects_count >= 12 then '12+' else projects_count::text end as bucket,
+                 least(projects_count, 12)::int as bucket_order,
+                 count(*)::int as students
+          from base
+          group by 1, 2
+          order by bucket_order`,
+    params: PROJECTS_PARAMS,
+    limit: 50,
+  },
+
+  analytics_projects_students: {
+    sql: `${PROJECTS_BASE}
+          select s_id,
+                 student_name,
+                 grade,
+                 tutor_name,
+                 tutor_tid,
+                 team_leader,
+                 projects_count,
+                 attended_sessions
+          from base
+          where projects_count = 0
+          order by attended_sessions desc, s_id
+          limit coalesce($4::int, 200) offset coalesce($5::int, 0)`,
+    params: [...PROJECTS_PARAMS, "limit", "offset"],
+    limit: 5000,
+  },
+
+  analytics_projects_options: {
+    sql: `${PROJECTS_BASE}
+          select 'team_leader' as kind, team_leader as value from base
+          union
+          select 'grade', coalesce(grade, 'Unknown') from base
+          order by 1, 2`,
+    params: PROJECTS_PARAMS,
+    limit: 400,
+  },
 };
