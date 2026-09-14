@@ -2,6 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamCompositionTab } from "@/components/analytics/TeamCompositionTab";
 import { OccupationTab } from "@/components/analytics/OccupationTab";
+import { ProjectUploadsTab } from "@/components/analytics/ProjectUploadsTab";
 
 export default function Analytics() {
   return (
