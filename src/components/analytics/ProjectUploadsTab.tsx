@@ -33,6 +33,7 @@ export function ProjectUploadsTab() {
     byTeamLeader,
     distribution,
     students,
+    notStarted,
     options,
     trend,
     loading,
@@ -75,6 +76,14 @@ export function ProjectUploadsTab() {
       };
     });
   }, [trendData]);
+
+  const exportNotStartedCsv = () => {
+    downloadCsv(
+      "not-started-zero-project-students",
+      ["Student ID", "Student", "Grade", "Tutor", "T-ID", "Team leader"],
+      notStarted.map((s) => [s.s_id, s.student_name, s.grade, s.tutor_name, s.tutor_tid, s.team_leader]),
+    );
+  };
 
   const exportCsv = () => {
     downloadCsv(
@@ -158,6 +167,10 @@ export function ProjectUploadsTab() {
             decreasePctVsPrevious === null ? "—" : `${decreasePctVsPrevious.toFixed(2)}%`,
           ],
           ["Students tracked", String(summary?.students ?? 0)],
+          [
+            "Not started yet (0 sessions, 0 projects)",
+            String(summary?.not_started_students ?? 0),
+          ],
         ].map(([label, value]) => (
           <Card key={label}>
             <CardContent className="p-4">
@@ -306,6 +319,47 @@ export function ProjectUploadsTab() {
                     <TableCell>{s.tutor_name ?? "—"}{s.tutor_tid ? ` (${s.tutor_tid})` : ""}</TableCell>
                     <TableCell>{s.team_leader}</TableCell>
                     <TableCell className="text-right">{s.attended_sessions}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base">
+            Not started yet — upcoming session but 0 attended sessions, 0 projects ({summary?.not_started_students ?? notStarted.length})
+          </CardTitle>
+          <Button variant="outline" size="sm" onClick={exportNotStartedCsv} disabled={!notStarted.length}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student ID</TableHead>
+                <TableHead>Student</TableHead>
+                <TableHead>Grade</TableHead>
+                <TableHead>Tutor</TableHead>
+                <TableHead>Team leader</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && !notStarted.length ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              ) : notStarted.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No students</TableCell></TableRow>
+              ) : (
+                notStarted.map((s) => (
+                  <TableRow key={s.s_id}>
+                    <TableCell className="font-medium">{s.s_id}</TableCell>
+                    <TableCell>{s.student_name ?? "—"}</TableCell>
+                    <TableCell>{s.grade ?? "—"}</TableCell>
+                    <TableCell>{s.tutor_name ?? "—"}{s.tutor_tid ? ` (${s.tutor_tid})` : ""}</TableCell>
+                    <TableCell>{s.team_leader}</TableCell>
                   </TableRow>
                 ))
               )}
