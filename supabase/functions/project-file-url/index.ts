@@ -5,7 +5,7 @@ import postgres from "npm:postgres@3.4.5";
 import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
 import { AwsClient } from "npm:aws4fetch@1.0.20";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { RDS_CA } from "../ischool-replica-query/rdsCa.ts";
+import { RDS_CA } from "../_shared/rdsCa.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const APP_DB_URL = Deno.env.get("SUPABASE_DB_URL")?.trim();
