@@ -185,6 +185,41 @@ export function ProjectUploadsTab() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Decrease trend (% of students with 0 projects)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={decreaseTrendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis
+                tickFormatter={(v: number) => `${v}%`}
+                domain={["auto", "auto"]}
+              />
+              <Tooltip formatter={(value: number | null) => (value === null ? "—" : `${value}%`)} />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="daily"
+                name="Daily decrease %"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="cumulative"
+                name="Cumulative decrease vs baseline %"
+                stroke="hsl(var(--destructive))"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
