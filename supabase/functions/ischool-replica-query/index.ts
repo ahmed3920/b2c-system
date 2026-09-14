@@ -99,6 +99,12 @@ Deno.serve(async (req) => {
 
     if (key === "__keys") return json({ keys: Object.keys(QUERIES) });
 
+    // The projects audit area is limited to admins and the allow-list.
+    if ((key.startsWith("project_audit_") || key.startsWith("project_engagement_") ||
+         key.startsWith("project_student")) && !projectAudit) {
+      return json({ error: "Projects audit access required" }, 403);
+    }
+
     const entry = QUERIES[key];
     if (!entry) {
       return json({ error: `Unknown query "${key}"`, available: Object.keys(QUERIES) }, 400);
