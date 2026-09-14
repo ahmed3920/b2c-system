@@ -9,6 +9,16 @@ export type ProjectsSummary = {
   zero_students: number;
   projects: number | null;
   avg_projects: string | number | null;
+  not_started_students: number;
+};
+
+export type NotStartedRow = {
+  s_id: string;
+  student_name: string | null;
+  grade: string | null;
+  tutor_name: string | null;
+  tutor_tid: string | null;
+  team_leader: string;
 };
 
 export type GradeRow = { grade: string; zero_students: number; students: number };
@@ -39,6 +49,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
   const [byTeamLeader, setByTeamLeader] = useState<TeamLeaderRow[]>([]);
   const [distribution, setDistribution] = useState<DistributionRow[]>([]);
   const [students, setStudents] = useState<ZeroStudentRow[]>([]);
+  const [notStarted, setNotStarted] = useState<NotStartedRow[]>([]);
   const [options, setOptions] = useState<{ teamLeaders: string[]; grades: string[] }>({
     teamLeaders: [],
     grades: [],
@@ -52,12 +63,17 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, list, opts, snaps] = await Promise.all([
+      const [sum, grades, tls, dist, list, notStartedList, opts, snaps] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
         runReplicaQuery<DistributionRow>("analytics_projects_distribution", params),
         runReplicaQuery<ZeroStudentRow>("analytics_projects_students", {
+          ...params,
+          limit: 1000,
+          offset: 0,
+        }),
+        runReplicaQuery<NotStartedRow>("analytics_projects_not_started", {
           ...params,
           limit: 1000,
           offset: 0,
@@ -78,6 +94,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
       setByTeamLeader(tls);
       setDistribution(dist);
       setStudents(list);
+      setNotStarted(notStartedList);
       setOptions({
         teamLeaders: opts.filter((o) => o.kind === "team_leader").map((o) => o.value),
         grades: opts.filter((o) => o.kind === "grade").map((o) => o.value),
@@ -94,5 +111,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, students, options, trend, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, students, notStarted, options, trend, loading, error, refetch: load };
 }
