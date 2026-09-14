@@ -84,10 +84,6 @@ export default function Performance() {
             ))}
           </TabsList>
 
-          <TabsContent value="quality" className="mt-4">
-            <QualitySection />
-          </TabsContent>
-
           <TabsContent value="live-issues" className="mt-4">
             <LiveIssuesTable />
           </TabsContent>
