@@ -57,6 +57,7 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
 
   if (!APP_DB_URL) return { error: json({ error: "App database not configured" }, 500) };
   const app = postgres(APP_DB_URL, { prepare: false, max: 1, idle_timeout: 5 });
+  let projectAudit = false;
   try {
     const roles = await app<{ role: string }[]>`
       select role::text as role from public.user_roles where user_id = ${userId}
@@ -64,11 +65,19 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
     if (!roles.some((r) => ALLOWED_ROLES.has(r.role))) {
       return { error: json({ error: "Access required" }, 403) };
     }
+    if (roles.some((r) => r.role === "admin")) {
+      projectAudit = true;
+    } else {
+      const grants = await app<{ id: string }[]>`
+        select id::text as id from public.project_audit_access where user_id = ${userId} limit 1
+      `;
+      projectAudit = grants.length > 0;
+    }
   } finally {
     await app.end({ timeout: 5 });
   }
 
-  return { error: null, userId };
+  return { error: null, userId, projectAudit };
 }
 
 Deno.serve(async (req) => {
