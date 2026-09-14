@@ -284,7 +284,7 @@ const PROJECTS_PARAMS = ["team_lead", "grade", "search"];
 const PROJECTS_BASE = `with base as (
             select s.s_id,
                    coalesce(nullif(btrim(s.name_en), ''), s.name) as student_name,
-                   coalesce(s.projects_count, 0)::int as projects_count,
+                   (select count(*) from public.projects p where p.student_id = s.id)::int as projects_count,
                    coalesce(s.total_attended_sessions_count, 0)::int as attended_sessions,
                    coalesce(g.name_i18n->>'en', g.name) as grade,
                    btrim(coalesce(a.name, 'Unassigned')) as team_leader,
@@ -328,7 +328,7 @@ const PROJECTS_NOT_STARTED_BASE = `with base as (
              where s.organization_id = 1
                and s.next_session_id is not null
                and coalesce(s.total_attended_sessions_count, 0) = 0
-               and coalesce(s.projects_count, 0) = 0
+               and not exists (select 1 from public.projects p where p.student_id = s.id)
                and ($1::text is null or btrim(coalesce(a.name, 'Unassigned')) = $1::text)
                and ($2::text is null or coalesce(g.name_i18n->>'en', g.name) = $2::text)
                and ($3::text is null
@@ -1063,7 +1063,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                    where s.organization_id = 1
                      and s.next_session_id is not null
                      and coalesce(s.total_attended_sessions_count, 0) = 0
-                     and coalesce(s.projects_count, 0) = 0
+                     and not exists (select 1 from public.projects p where p.student_id = s.id)
                      and ($1::text is null or btrim(coalesce((select a.name from public.tutors tt join public.admins a on a.id = tt.team_lead_id where tt.id = s.next_session_tutor_id), 'Unassigned')) = $1::text)
                      and ($2::text is null or coalesce((select coalesce(g.name_i18n->>'en', g.name) from public.grades g where g.id = coalesce(s.next_session_grade_id, s.grade_id)), 'x') = $2::text)
                      and ($3::text is null
@@ -1171,6 +1171,22 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           select 'grade', coalesce(grade, 'Unknown') from base
           order by 1, 2`,
     params: PROJECTS_PARAMS,
+    limit: 400,
+  },
+
+  // Projects uploaded per day by organization-1 students (respects the
+  // team leader / grade / search filters through the tracked base).
+  analytics_projects_uploads_by_day: {
+    sql: `${PROJECTS_BASE_WITH_ID}
+          select to_char(date(p.created_at), 'YYYY-MM-DD') as day,
+                 count(*)::int as projects,
+                 count(distinct p.student_id)::int as students
+            from public.projects p
+            join base on base.student_id = p.student_id
+           where p.created_at >= coalesce($4::date, current_date - 30)
+           group by 1
+           order by 1`,
+    params: [...PROJECTS_PARAMS, "since"],
     limit: 400,
   },
 };

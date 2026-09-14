@@ -33,6 +33,7 @@ export function ProjectUploadsTab() {
     byTeamLeader,
     distribution,
     bySessionType,
+    uploadsByDay,
     students,
     notStarted,
     options,
@@ -206,6 +207,25 @@ export function ProjectUploadsTab() {
               <Tooltip />
               <Line type="monotone" dataKey="zero" name="0-project students" stroke="hsl(var(--primary))" strokeWidth={2} />
             </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Projects uploaded per day</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={uploadsByDay}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="projects" name="Projects uploaded" fill="hsl(var(--primary))" />
+              <Bar dataKey="students" name="Students uploading" fill="hsl(var(--destructive))" />
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
