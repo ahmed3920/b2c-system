@@ -34,6 +34,7 @@ export function ProjectUploadsTab() {
     distribution,
     bySessionType,
     uploadsByDay,
+    uploadsByDayType,
     students,
     notStarted,
     options,
