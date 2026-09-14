@@ -24,6 +24,7 @@ export type NotStartedRow = {
 export type GradeRow = { grade: string; zero_students: number; students: number };
 export type TeamLeaderRow = { team_leader: string; zero_students: number; students: number };
 export type DistributionRow = { bucket: string; bucket_order: number; students: number };
+export type SessionTypeRow = { session_type: string; students: number; zero_students: number };
 export type ZeroStudentRow = {
   s_id: string;
   student_name: string | null;
@@ -50,6 +51,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
   const [distribution, setDistribution] = useState<DistributionRow[]>([]);
   const [students, setStudents] = useState<ZeroStudentRow[]>([]);
   const [notStarted, setNotStarted] = useState<NotStartedRow[]>([]);
+  const [bySessionType, setBySessionType] = useState<SessionTypeRow[]>([]);
   const [options, setOptions] = useState<{ teamLeaders: string[]; grades: string[] }>({
     teamLeaders: [],
     grades: [],
@@ -63,11 +65,12 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, list, notStartedList, opts, snaps] = await Promise.all([
+      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
         runReplicaQuery<DistributionRow>("analytics_projects_distribution", params),
+        runReplicaQuery<SessionTypeRow>("analytics_projects_by_session_type", params),
         runReplicaQuery<ZeroStudentRow>("analytics_projects_students", {
           ...params,
           limit: 1000,
@@ -93,6 +96,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
       setByGrade(grades);
       setByTeamLeader(tls);
       setDistribution(dist);
+      setBySessionType(sessTypes);
       setStudents(list);
       setNotStarted(notStartedList);
       setOptions({
@@ -111,5 +115,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, students, notStarted, options, trend, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, loading, error, refetch: load };
 }

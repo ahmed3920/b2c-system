@@ -32,6 +32,7 @@ export function ProjectUploadsTab() {
     byGrade,
     byTeamLeader,
     distribution,
+    bySessionType,
     students,
     notStarted,
     options,
@@ -53,6 +54,9 @@ export function ProjectUploadsTab() {
   const vsBaseline = zero - PROJECTS_BASELINE.zero;
   const previous = trendData.length > 1 ? trendData[trendData.length - 2].zero : null;
   const vsPrevious = previous === null ? null : zero - previous;
+
+  const groupRow = bySessionType.find((r) => r.session_type === "Group");
+  const oneToOneRow = bySessionType.find((r) => r.session_type === "One-to-one");
 
   const decreasePctVsBaseline =
     PROJECTS_BASELINE.zero > 0
@@ -171,6 +175,14 @@ export function ProjectUploadsTab() {
             "Not started yet (0 sessions, 0 projects)",
             String(summary?.not_started_students ?? 0),
           ],
+          [
+            "Group-session students",
+            `${groupRow?.students ?? 0} (${groupRow?.zero_students ?? 0} with 0 projects)`,
+          ],
+          [
+            "One-to-one students",
+            `${oneToOneRow?.students ?? 0} (${oneToOneRow?.zero_students ?? 0} with 0 projects)`,
+          ],
         ].map(([label, value]) => (
           <Card key={label}>
             <CardContent className="p-4">
@@ -229,6 +241,25 @@ export function ProjectUploadsTab() {
                 strokeDasharray="5 5"
               />
             </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Group sessions vs one-to-one students</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={bySessionType}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="session_type" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="students" name="All tracked students" fill="hsl(var(--primary))" />
+              <Bar dataKey="zero_students" name="Students with 0 projects" fill="hsl(var(--destructive))" />
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
