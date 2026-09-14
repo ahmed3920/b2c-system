@@ -32,6 +32,7 @@ export function ProjectUploadsTab() {
     byGrade,
     byTeamLeader,
     distribution,
+    bySessionType,
     students,
     notStarted,
     options,
