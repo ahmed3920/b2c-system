@@ -53,6 +53,29 @@ export function ProjectUploadsTab() {
   const previous = trendData.length > 1 ? trendData[trendData.length - 2].zero : null;
   const vsPrevious = previous === null ? null : zero - previous;
 
+  const decreasePctVsBaseline =
+    PROJECTS_BASELINE.zero > 0
+      ? ((PROJECTS_BASELINE.zero - zero) / PROJECTS_BASELINE.zero) * 100
+      : null;
+  const decreasePctVsPrevious =
+    previous && previous > 0 ? ((previous - zero) / previous) * 100 : null;
+
+  const decreaseTrendData = useMemo(() => {
+    return trendData.map((r, i) => {
+      const prev = i > 0 ? trendData[i - 1].zero : null;
+      const daily = prev && prev > 0 ? ((prev - r.zero) / prev) * 100 : 0;
+      const cumulative =
+        PROJECTS_BASELINE.zero > 0
+          ? ((PROJECTS_BASELINE.zero - r.zero) / PROJECTS_BASELINE.zero) * 100
+          : null;
+      return {
+        date: r.date,
+        daily: Math.round(daily * 100) / 100,
+        cumulative: cumulative === null ? null : Math.round(cumulative * 100) / 100,
+      };
+    });
+  }, [trendData]);
+
   const exportCsv = () => {
     downloadCsv(
       "zero-project-students",
@@ -121,11 +144,19 @@ export function ProjectUploadsTab() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         {[
           ["Students with 0 projects", String(zero)],
           [`Change vs baseline (${PROJECTS_BASELINE.zero} on ${PROJECTS_BASELINE.date})`, fmtDelta(vsBaseline)],
           ["Change vs previous day", fmtDelta(vsPrevious)],
+          [
+            "Decrease % vs baseline",
+            decreasePctVsBaseline === null ? "—" : `${decreasePctVsBaseline.toFixed(2)}%`,
+          ],
+          [
+            "Decrease % vs previous day",
+            decreasePctVsPrevious === null ? "—" : `${decreasePctVsPrevious.toFixed(2)}%`,
+          ],
           ["Students tracked", String(summary?.students ?? 0)],
         ].map(([label, value]) => (
           <Card key={label}>
@@ -149,6 +180,41 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Line type="monotone" dataKey="zero" name="0-project students" stroke="hsl(var(--primary))" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Decrease trend (% of students with 0 projects)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={decreaseTrendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis
+                tickFormatter={(v: number) => `${v}%`}
+                domain={["auto", "auto"]}
+              />
+              <Tooltip formatter={(value: number | null) => (value === null ? "—" : `${value}%`)} />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="daily"
+                name="Daily decrease %"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="cumulative"
+                name="Cumulative decrease vs baseline %"
+                stroke="hsl(var(--destructive))"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
