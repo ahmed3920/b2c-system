@@ -1209,4 +1209,160 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: [...PROJECTS_PARAMS, "since"],
     limit: 800,
   },
+
+  // --- Projects audit (Quality > Projects) --------------------------------
+  project_audit_list: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select * from base
+          order by created_at desc
+          limit coalesce($7::int, 50) offset coalesce($8::int, 0)`,
+    params: [...PROJECT_AUDIT_PARAMS, "limit", "offset"],
+    limit: 5000,
+  },
+
+  project_audit_summary: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select count(*)::int as projects,
+                 count(distinct student_id)::int as students,
+                 count(*) filter (where published)::int as published,
+                 count(*) filter (where archived)::int as archived,
+                 sum(views_count)::int as views,
+                 sum(likes_count)::int as likes,
+                 sum(comments_count)::int as comments
+          from base`,
+    params: PROJECT_AUDIT_PARAMS,
+    limit: 1,
+  },
+
+  project_audit_options: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select distinct 'team_leader' as kind, team_leader as value from base
+          union
+          select distinct 'grade', coalesce(grade, 'Unknown') from base
+          order by 1, 2`,
+    params: PROJECT_AUDIT_PARAMS,
+    limit: 400,
+  },
+
+  // --- Projects engagement ------------------------------------------------
+  project_engagement_students: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select s_id,
+                 student_name,
+                 grade,
+                 team_leader,
+                 tutor_name,
+                 count(*)::int as projects,
+                 sum(views_count)::int as views,
+                 sum(likes_count)::int as likes,
+                 sum(comments_count)::int as comments
+          from base
+          group by 1, 2, 3, 4, 5
+          order by views desc nulls last
+          limit coalesce($7::int, 100) offset coalesce($8::int, 0)`,
+    params: [...PROJECT_AUDIT_PARAMS, "limit", "offset"],
+    limit: 5000,
+  },
+
+  project_engagement_by_grade: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select coalesce(grade, 'Unknown') as grade,
+                 count(*)::int as projects,
+                 count(distinct student_id)::int as students,
+                 sum(views_count)::int as views,
+                 sum(likes_count)::int as likes,
+                 sum(comments_count)::int as comments
+          from base group by 1 order by views desc nulls last`,
+    params: PROJECT_AUDIT_PARAMS,
+    limit: 100,
+  },
+
+  project_engagement_by_team_leader: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select team_leader,
+                 count(*)::int as projects,
+                 count(distinct student_id)::int as students,
+                 sum(views_count)::int as views,
+                 sum(likes_count)::int as likes,
+                 sum(comments_count)::int as comments
+          from base group by 1 order by views desc nulls last`,
+    params: PROJECT_AUDIT_PARAMS,
+    limit: 100,
+  },
+
+  // --- Student project dashboard -----------------------------------------
+  // Stalled = has attended sessions and last upload is 14+ days old (or none).
+  project_students_list: {
+    sql: `${PROJECT_STUDENTS_BASE}
+          select *,
+                 (attended_sessions > 0
+                  and (last_upload is null
+                       or last_upload < (now() - interval '14 days'))) as stalled
+          from base
+          order by (case when last_upload is null then 0 else 1 end),
+                   last_upload nulls first
+          limit coalesce($5::int, 50) offset coalesce($6::int, 0)`,
+    params: [...PROJECT_STUDENT_PARAMS, "limit", "offset"],
+    limit: 5000,
+  },
+
+  project_students_summary: {
+    sql: `${PROJECT_STUDENTS_BASE}
+          select count(*)::int as students,
+                 sum(projects)::int as projects,
+                 count(*) filter (where projects = 0)::int as zero_projects,
+                 count(*) filter (where attended_sessions > 0
+                                    and (last_upload is null
+                                         or last_upload < (now() - interval '14 days')))::int as stalled
+          from base`,
+    params: PROJECT_STUDENT_PARAMS,
+    limit: 1,
+  },
+
+  // $1 = student database id
+  project_student_projects: {
+    sql: `select p.id as project_id,
+                 p.title,
+                 p.description,
+                 p.url,
+                 p.created_at,
+                 p.published,
+                 p.archived,
+                 p.project_status,
+                 p.final_score,
+                 p.views_count,
+                 p.likes_count,
+                 p.comments_count,
+                 coalesce(lv.name_i18n->>'en', lv.name) as module,
+                 coalesce(l.name_i18n->>'en', l.name) as lesson
+            from public.projects p
+            left join public.sessions s on s.id = p.session_id
+            left join public.lessons l on l.id = s.lesson_id
+            left join public.levels lv on lv.id = coalesce(p.level_id, l.level_id)
+           where p.student_id = $1::bigint
+           order by p.created_at desc`,
+    params: ["student_id"],
+    limit: 500,
+  },
+
+  project_student_sessions: {
+    sql: `select s.id as session_id,
+                 s.start_at,
+                 s.status,
+                 s.is_student_absent,
+                 s.group_session_id,
+                 t.t_id as tutor_tid,
+                 coalesce(t.name_i18n->>'en', t.name_temp) as tutor_name,
+                 coalesce(l.name_i18n->>'en', l.name) as lesson,
+                 coalesce(lv.name_i18n->>'en', lv.name) as module,
+                 (select count(*)::int from public.projects p where p.session_id = s.id) as projects
+            from public.sessions s
+            left join public.tutors t on t.id = s.tutor_id
+            left join public.lessons l on l.id = s.lesson_id
+            left join public.levels lv on lv.id = l.level_id
+           where s.student_id = $1::bigint
+           order by s.start_at desc`,
+    params: ["student_id"],
+    limit: 500,
+  },
 };
