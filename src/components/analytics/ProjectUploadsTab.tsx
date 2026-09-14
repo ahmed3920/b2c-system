@@ -149,6 +149,14 @@ export function ProjectUploadsTab() {
           ["Students with 0 projects", String(zero)],
           [`Change vs baseline (${PROJECTS_BASELINE.zero} on ${PROJECTS_BASELINE.date})`, fmtDelta(vsBaseline)],
           ["Change vs previous day", fmtDelta(vsPrevious)],
+          [
+            "Decrease % vs baseline",
+            decreasePctVsBaseline === null ? "—" : `${decreasePctVsBaseline.toFixed(2)}%`,
+          ],
+          [
+            "Decrease % vs previous day",
+            decreasePctVsPrevious === null ? "—" : `${decreasePctVsPrevious.toFixed(2)}%`,
+          ],
           ["Students tracked", String(summary?.students ?? 0)],
         ].map(([label, value]) => (
           <Card key={label}>
