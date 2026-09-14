@@ -1,10 +1,9 @@
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveIssuesTable } from "@/components/live-issues/LiveIssuesTable";
 import { CSTicketsTable } from "@/components/cs-tickets/CSTicketsTable";
-import { QualitySection } from "@/components/tracking/quality/QualitySection";
 
 import { AssignedCSEvaluations } from "@/components/cs-tickets/AssignedCSEvaluations";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -12,7 +11,6 @@ import { useCsFullAccess } from "@/hooks/useCsFullAccess";
 
 
 const sections = [
-  { v: "quality", l: "Quality", desc: "Quality scoring breakdown by team and tutor." },
   { v: "live-issues", l: "Live Issues" },
   { v: "lateness", l: "Lateness", desc: "Late starts and end-of-shift overruns." },
   { v: "cs-tickets", l: "CS Tickets" },
@@ -27,10 +25,17 @@ export default function Performance() {
   const mentorOnly = isMentor && !isAdmin && !isTeamLeader && !csFullAccess;
   const csOnly = isMentor && !isAdmin && !isTeamLeader && csFullAccess;
 
+  // Quality moved to its own page: keep old deep links (notifications) working.
+  if (tabParam === "quality") {
+    const next = new URLSearchParams(searchParams);
+    next.delete("tab");
+    const qs = next.toString();
+    return <Navigate to={`/quality${qs ? `?${qs}` : ""}`} replace />;
+  }
+
 
   if (mentorOnly || csOnly) {
     const mentorTabs = [
-      { v: "quality", l: "Quality" },
       { v: "cs-tickets", l: csOnly ? "CS Tickets" : "CS Evaluations" },
     ];
     const mentorActive = mentorTabs.some((s) => s.v === tabParam) ? (tabParam as string) : "cs-tickets";
@@ -50,10 +55,6 @@ export default function Performance() {
                 <TabsTrigger key={s.v} value={s.v}>{s.l}</TabsTrigger>
               ))}
             </TabsList>
-
-            <TabsContent value="quality" className="mt-4">
-              <QualitySection />
-            </TabsContent>
 
             <TabsContent value="cs-tickets" className="mt-4">
               {csOnly ? <CSTicketsTable /> : <AssignedCSEvaluations />}
@@ -82,10 +83,6 @@ export default function Performance() {
               <TabsTrigger key={s.v} value={s.v}>{s.l}</TabsTrigger>
             ))}
           </TabsList>
-
-          <TabsContent value="quality" className="mt-4">
-            <QualitySection />
-          </TabsContent>
 
           <TabsContent value="live-issues" className="mt-4">
             <LiveIssuesTable />

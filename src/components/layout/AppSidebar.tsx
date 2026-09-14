@@ -63,6 +63,7 @@ const operations: NavItem[] = [
   { title: "Tutors", url: "/tutors", icon: Users, featureKey: "tutors" },
   { title: "Teams", url: "/teams", icon: UsersRound, featureKey: "teams" },
   { title: "Performance", url: "/performance", icon: Activity, featureKey: "performance" },
+  { title: "Quality", url: "/quality", icon: ShieldCheck, roles: ["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"] },
   { title: "Session Incidents", url: "/session-incidents", icon: ShieldAlert, featureKey: "session_incidents", roles: ["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"] },
 ];
 
