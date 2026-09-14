@@ -310,8 +310,10 @@ const PROJECT_AUDIT_BASE = `with base as (
                  coalesce(lv.name_i18n->>'en', lv.name) as module,
                  coalesce(l.name_i18n->>'en', l.name) as lesson,
                  s.id as session_id,
-                 s.start_at as session_start_at
-            from public.projects p
+                 s.start_at as session_start_at,
+                 cov.key as cover_key,
+                 cov.content_type as cover_content_type,
+                 cov.filename as cover_filename
             join public.students st on st.id = p.student_id
             left join public.grades g on g.id = st.grade_id
             left join public.sessions s on s.id = p.session_id
