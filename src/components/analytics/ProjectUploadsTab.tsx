@@ -53,6 +53,29 @@ export function ProjectUploadsTab() {
   const previous = trendData.length > 1 ? trendData[trendData.length - 2].zero : null;
   const vsPrevious = previous === null ? null : zero - previous;
 
+  const decreasePctVsBaseline =
+    PROJECTS_BASELINE.zero > 0
+      ? ((PROJECTS_BASELINE.zero - zero) / PROJECTS_BASELINE.zero) * 100
+      : null;
+  const decreasePctVsPrevious =
+    previous && previous > 0 ? ((previous - zero) / previous) * 100 : null;
+
+  const decreaseTrendData = useMemo(() => {
+    return trendData.map((r, i) => {
+      const prev = i > 0 ? trendData[i - 1].zero : null;
+      const daily = prev && prev > 0 ? ((prev - r.zero) / prev) * 100 : 0;
+      const cumulative =
+        PROJECTS_BASELINE.zero > 0
+          ? ((PROJECTS_BASELINE.zero - r.zero) / PROJECTS_BASELINE.zero) * 100
+          : null;
+      return {
+        date: r.date,
+        daily: Math.round(daily * 100) / 100,
+        cumulative: cumulative === null ? null : Math.round(cumulative * 100) / 100,
+      };
+    });
+  }, [trendData]);
+
   const exportCsv = () => {
     downloadCsv(
       "zero-project-students",
