@@ -304,6 +304,13 @@ const PROJECTS_BASE = `with base as (
                     or coalesce(s.name_en, s.name) ilike '%' || $3::text || '%')
            )`;
 
+// Same tracked population as PROJECTS_BASE but with the student id, used to
+// classify students by whether any of their sessions belong to a group.
+const PROJECTS_BASE_WITH_ID = PROJECTS_BASE.replace(
+  "select s.s_id,",
+  "select s.id as student_id, s.s_id,",
+);
+
 // Students with an upcoming session who have never attended a session yet
 // (and have zero projects). Same joins/filters as PROJECTS_BASE minus the
 // attended > 0 requirement.
@@ -1093,6 +1100,26 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           order by zero_students desc, grade`,
     params: PROJECTS_PARAMS,
     limit: 100,
+  },
+
+  // Group vs one-to-one split of the tracked students (and of zero-project
+  // students). A student counts as "group" when any of their sessions has a
+  // group_session_id.
+  analytics_projects_by_session_type: {
+    sql: `${PROJECTS_BASE_WITH_ID}
+          select case
+                   when exists (select 1
+                                  from public.sessions se
+                                 where se.student_id = base.student_id
+                                   and se.group_session_id is not null)
+                   then 'Group' else 'One-to-one' end as session_type,
+                 count(*)::int as students,
+                 count(*) filter (where projects_count = 0)::int as zero_students
+            from base
+           group by 1
+           order by 1`,
+    params: PROJECTS_PARAMS,
+    limit: 10,
   },
 
   analytics_projects_by_team_leader: {
