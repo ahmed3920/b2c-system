@@ -19,7 +19,7 @@ const json = (body: unknown, status = 200) =>
   });
 
 const BASE = `with base as (
-    select coalesce(s.projects_count, 0)::int as projects_count,
+    select (select count(*) from public.projects p where p.student_id = s.id)::int as projects_count,
            coalesce(g.name_i18n->>'en', g.name) as grade,
            btrim(coalesce(a.name, 'Unassigned')) as team_leader
       from public.students s
