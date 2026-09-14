@@ -23,6 +23,7 @@ import TutorProfile from "./pages/TutorProfile";
 import TeamsPage from "./pages/Teams";
 import TeamDetail from "./pages/TeamDetail";
 import Performance from "./pages/Performance";
+import Quality from "./pages/Quality";
 import Tracking from "./pages/Tracking";
 import TutorSegmentation from "./pages/TutorSegmentation";
 import StudyPlan from "./pages/StudyPlan";
@@ -87,6 +88,7 @@ const App = () => (
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:id" element={<TeamDetail />} />
           <Route path="/performance" element={<Performance />} />
+          <Route path="/quality" element={<Quality />} />
           <Route path="/tracking" element={<Tracking />} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/analytics" element={<Analytics />} />
