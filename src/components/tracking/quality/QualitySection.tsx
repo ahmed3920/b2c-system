@@ -9,8 +9,10 @@ import { QualitySummaryTab } from "./QualitySummaryTab";
 import { QualityCycleComparisonTab } from "./QualityCycleComparisonTab";
 import { QualityCoverageTab } from "./QualityCoverageTab";
 import { QualityFlagFollowupTab } from "./QualityFlagFollowupTab";
+import { ProjectsSection } from "@/components/quality/projects/ProjectsSection";
+import { useProjectAuditAccess } from "@/hooks/useProjectAuditAccess";
 
-const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage", "followup"] as const;
+const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage", "followup", "projects"] as const;
 type SubTab = (typeof SUB_TABS)[number];
 
 /**
@@ -26,6 +28,7 @@ export function QualitySection() {
     reviewParam ? "sessions" : SUB_TABS.includes(subParam as SubTab) ? (subParam as SubTab) : "overview",
   );
   const [openReview, setOpenReview] = useState<string | null>(reviewParam);
+  const { allowed: canAuditProjects } = useProjectAuditAccess();
 
   // React to later notification clicks while already on this page
   useEffect(() => {
@@ -64,6 +67,7 @@ export function QualitySection() {
         <TabsTrigger value="cycles">Cycle Comparison</TabsTrigger>
         <TabsTrigger value="coverage">Review Coverage</TabsTrigger>
         <TabsTrigger value="followup">Flag Follow-up</TabsTrigger>
+        {canAuditProjects && <TabsTrigger value="projects">Projects</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="overview" className="mt-0">
@@ -90,6 +94,11 @@ export function QualitySection() {
       <TabsContent value="followup" className="mt-0">
         <QualityFlagFollowupTab />
       </TabsContent>
+      {canAuditProjects && (
+        <TabsContent value="projects" className="mt-0">
+          <ProjectsSection />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
