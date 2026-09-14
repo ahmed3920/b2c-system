@@ -9,6 +9,16 @@ export type ProjectsSummary = {
   zero_students: number;
   projects: number | null;
   avg_projects: string | number | null;
+  not_started_students: number;
+};
+
+export type NotStartedRow = {
+  s_id: string;
+  student_name: string | null;
+  grade: string | null;
+  tutor_name: string | null;
+  tutor_tid: string | null;
+  team_leader: string;
 };
 
 export type GradeRow = { grade: string; zero_students: number; students: number };
