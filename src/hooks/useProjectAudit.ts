@@ -54,8 +54,8 @@ export async function signProjectFiles(
   const { data, error } = await supabase.functions.invoke("project-file-url", {
     body: { items, download },
   });
-  if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
+  if (error) throw new Error("Project files are unavailable right now.");
   return (data?.files ?? {}) as Record<string, SignedFile>;
 }
 
@@ -87,7 +87,8 @@ export function useProjectFiles(projectId: number | null) {
             );
             if (active) setUrls(signed);
           } catch (e) {
-            if (active) setError(e instanceof Error ? e.message : "Could not load previews");
+            const msg = e instanceof Error ? e.message : "Could not load previews";
+            if (active) setError(msg.includes("credentials") ? "File storage is not connected yet" : msg);
           }
         } else if (active) {
           setUrls({});
