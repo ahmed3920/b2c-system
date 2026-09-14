@@ -26,7 +26,9 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function authorize(req: Request): Promise<{ error: Response | null; userId?: string }> {
+async function authorize(
+  req: Request,
+): Promise<{ error: Response | null; userId?: string; projectAudit?: boolean }> {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return { error: json({ error: "Unauthorized" }, 401) };
 
@@ -84,8 +86,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { error } = await authorize(req);
+    const { error, projectAudit } = await authorize(req);
     if (error) return error;
+
 
     if (!REPLICA_HOST || !REPLICA_USER || !REPLICA_DB) {
       return json({ error: "Replica connection is not configured" }, 500);
