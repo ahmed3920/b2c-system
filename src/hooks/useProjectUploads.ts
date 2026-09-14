@@ -41,6 +41,7 @@ export type SnapshotRow = {
   total_students: number;
 };
 export type UploadsDayRow = { day: string; projects: number; students: number };
+export type UploadsDayTypeRow = UploadsDayRow & { session_type: string };
 
 const p = (v: string) => (v && v !== "" ? v : null);
 
@@ -59,6 +60,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
   });
   const [trend, setTrend] = useState<SnapshotRow[]>([]);
   const [uploadsByDay, setUploadsByDay] = useState<UploadsDayRow[]>([]);
+  const [uploadsByDayType, setUploadsByDayType] = useState<UploadsDayTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +69,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads] = await Promise.all([
+      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads, uploadsTyped] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
@@ -97,6 +99,10 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
           ...params,
           since: PROJECTS_BASELINE.date,
         }),
+        runReplicaQuery<UploadsDayTypeRow>("analytics_projects_uploads_by_day_type", {
+          ...params,
+          since: PROJECTS_BASELINE.date,
+        }),
       ]);
       setSummary(sum[0] ?? null);
       setByGrade(grades);
@@ -111,6 +117,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
       });
       setTrend(((snaps as { data?: SnapshotRow[] })?.data ?? []) as SnapshotRow[]);
       setUploadsByDay(uploads);
+      setUploadsByDayType(uploadsTyped);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
     } finally {
@@ -122,5 +129,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, uploadsByDayType, loading, error, refetch: load };
 }

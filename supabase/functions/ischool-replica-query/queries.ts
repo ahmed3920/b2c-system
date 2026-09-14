@@ -1189,4 +1189,24 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: [...PROJECTS_PARAMS, "since"],
     limit: 400,
   },
+
+  analytics_projects_uploads_by_day_type: {
+    sql: `${PROJECTS_BASE_WITH_ID}
+          select to_char(date(p.created_at), 'YYYY-MM-DD') as day,
+                 case
+                   when exists (select 1
+                                  from public.sessions se
+                                 where se.student_id = base.student_id
+                                   and se.group_session_id is not null)
+                   then 'Group' else 'One-to-one' end as session_type,
+                 count(*)::int as projects,
+                 count(distinct p.student_id)::int as students
+            from public.projects p
+            join base on base.student_id = p.student_id
+           where p.created_at >= coalesce($4::date, current_date - 30)
+           group by 1, 2
+           order by 1, 2`,
+    params: [...PROJECTS_PARAMS, "since"],
+    limit: 800,
+  },
 };

@@ -34,6 +34,7 @@ export function ProjectUploadsTab() {
     distribution,
     bySessionType,
     uploadsByDay,
+    uploadsByDayType,
     students,
     notStarted,
     options,
@@ -55,6 +56,27 @@ export function ProjectUploadsTab() {
   const vsBaseline = zero - PROJECTS_BASELINE.zero;
   const previous = trendData.length > 1 ? trendData[trendData.length - 2].zero : null;
   const vsPrevious = previous === null ? null : zero - previous;
+
+  const uploadsByDayTypeData = useMemo(() => {
+    const map = new Map<
+      string,
+      { day: string; groupProjects: number; groupStudents: number; oneProjects: number; oneStudents: number }
+    >();
+    for (const r of uploadsByDayType) {
+      const row =
+        map.get(r.day) ??
+        { day: r.day, groupProjects: 0, groupStudents: 0, oneProjects: 0, oneStudents: 0 };
+      if (r.session_type === "Group") {
+        row.groupProjects += r.projects;
+        row.groupStudents += r.students;
+      } else {
+        row.oneProjects += r.projects;
+        row.oneStudents += r.students;
+      }
+      map.set(r.day, row);
+    }
+    return Array.from(map.values()).sort((a, b) => a.day.localeCompare(b.day));
+  }, [uploadsByDayType]);
 
   const groupRow = bySessionType.find((r) => r.session_type === "Group");
   const oneToOneRow = bySessionType.find((r) => r.session_type === "One-to-one");
@@ -225,6 +247,29 @@ export function ProjectUploadsTab() {
               <Legend />
               <Bar dataKey="projects" name="Projects uploaded" fill="hsl(var(--primary))" />
               <Bar dataKey="students" name="Students uploading" fill="hsl(var(--destructive))" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">
+            Day by day uploads — group vs one-to-one
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={uploadsByDayTypeData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="groupProjects" name="Group — projects" stackId="p" fill="hsl(var(--primary))" />
+              <Bar dataKey="oneProjects" name="One-to-one — projects" stackId="p" fill="hsl(var(--primary) / 0.45)" />
+              <Bar dataKey="groupStudents" name="Group — students" stackId="s" fill="hsl(var(--destructive))" />
+              <Bar dataKey="oneStudents" name="One-to-one — students" stackId="s" fill="hsl(var(--destructive) / 0.45)" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
