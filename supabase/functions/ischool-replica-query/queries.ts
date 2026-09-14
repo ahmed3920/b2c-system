@@ -281,6 +281,90 @@ const OCCUPATION_CTE = `${ANALYTICS_BASE},
 // least one session (students with no session yet can't have uploaded work).
 const PROJECTS_PARAMS = ["team_lead", "grade", "search"];
 
+// --- Projects audit shared blocks ---------------------------------------
+// $1 date_from, $2 date_to, $3 team_lead, $4 grade, $5 search, $6 published
+const PROJECT_AUDIT_PARAMS = ["date_from", "date_to", "team_lead", "grade", "search", "published"];
+
+const PROJECT_AUDIT_BASE = `with base as (
+          select p.id as project_id,
+                 p.title,
+                 p.description,
+                 p.url,
+                 p.created_at,
+                 p.published,
+                 coalesce(p.archived, false) as archived,
+                 p.project_status,
+                 p.project_type,
+                 p.final_score,
+                 coalesce(p.views_count, 0) as views_count,
+                 coalesce(p.likes_count, 0) as likes_count,
+                 coalesce(p.comments_count, 0) as comments_count,
+                 p.tutor_comment,
+                 st.id as student_id,
+                 st.s_id,
+                 coalesce(st.name_en, st.name) as student_name,
+                 coalesce(g.name_i18n->>'en', g.name) as grade,
+                 t.t_id as tutor_tid,
+                 coalesce(t.name_i18n->>'en', t.name_temp) as tutor_name,
+                 btrim(coalesce(a.name, 'Unassigned')) as team_leader,
+                 coalesce(lv.name_i18n->>'en', lv.name) as module,
+                 coalesce(l.name_i18n->>'en', l.name) as lesson,
+                 s.id as session_id,
+                 s.start_at as session_start_at
+            from public.projects p
+            join public.students st on st.id = p.student_id
+            left join public.grades g on g.id = st.grade_id
+            left join public.sessions s on s.id = p.session_id
+            left join public.tutors t on t.id = s.tutor_id
+            left join public.admins a on a.id = t.team_lead_id
+            left join public.lessons l on l.id = s.lesson_id
+            left join public.levels lv on lv.id = coalesce(p.level_id, l.level_id)
+           where st.organization_id = 1
+             and ($1::date is null or p.created_at >= $1::date)
+             and ($2::date is null or p.created_at < ($2::date + 1))
+             and ($3::text is null or btrim(coalesce(a.name, 'Unassigned')) = $3::text)
+             and ($4::text is null or coalesce(g.name_i18n->>'en', g.name) = $4::text)
+             and ($5::text is null
+                  or st.s_id ilike '%' || $5::text || '%'
+                  or coalesce(st.name_en, st.name) ilike '%' || $5::text || '%'
+                  or p.title ilike '%' || $5::text || '%'
+                  or t.t_id ilike '%' || $5::text || '%')
+             and ($6::text is null
+                  or ($6::text = 'yes' and coalesce(p.published, false))
+                  or ($6::text = 'no' and not coalesce(p.published, false)))
+        )`;
+
+// Student-level project dashboard. $1 team_lead, $2 grade, $3 search, $4 stalled_only
+const PROJECT_STUDENT_PARAMS = ["team_lead", "grade", "search", "stalled_only"];
+
+const PROJECT_STUDENTS_BASE = `with base as (
+          select st.id as student_id,
+                 st.s_id,
+                 coalesce(st.name_en, st.name) as student_name,
+                 coalesce(g.name_i18n->>'en', g.name) as grade,
+                 btrim(coalesce(a.name, 'Unassigned')) as team_leader,
+                 coalesce(t.name_i18n->>'en', t.name_temp) as tutor_name,
+                 t.t_id as tutor_tid,
+                 coalesce(st.total_attended_sessions_count, 0) as attended_sessions,
+                 (select count(*)::int from public.projects p where p.student_id = st.id) as projects,
+                 (select max(p.created_at) from public.projects p where p.student_id = st.id) as last_upload
+            from public.students st
+            left join public.grades g on g.id = coalesce(st.next_session_grade_id, st.grade_id)
+            left join public.tutors t on t.id = st.next_session_tutor_id
+            left join public.admins a on a.id = t.team_lead_id
+           where st.organization_id = 1
+             and st.next_session_id is not null
+             and ($1::text is null or btrim(coalesce(a.name, 'Unassigned')) = $1::text)
+             and ($2::text is null or coalesce(g.name_i18n->>'en', g.name) = $2::text)
+             and ($3::text is null
+                  or st.s_id ilike '%' || $3::text || '%'
+                  or coalesce(st.name_en, st.name) ilike '%' || $3::text || '%')
+             and ($4::text is null or $4::text <> 'yes'
+                  or (coalesce(st.total_attended_sessions_count, 0) > 0
+                      and coalesce((select max(p.created_at) from public.projects p where p.student_id = st.id),
+                                   'epoch'::timestamp) < (now() - interval '14 days')))
+        )`;
+
 const PROJECTS_BASE = `with base as (
             select s.s_id,
                    coalesce(nullif(btrim(s.name_en), ''), s.name) as student_name,
