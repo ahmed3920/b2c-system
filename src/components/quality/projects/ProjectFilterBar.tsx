@@ -56,8 +56,7 @@ export function ProjectFilterBar({
           value={filters.teamLeader}
           onChange={(v) => onChange({ teamLeader: v })}
           options={teamLeaders}
-          placeholder="All team leaders"
-          className="w-[200px]"
+          allLabel="All team leaders"
         />
       </div>
 
@@ -67,8 +66,7 @@ export function ProjectFilterBar({
           value={filters.grade}
           onChange={(v) => onChange({ grade: v })}
           options={grades}
-          placeholder="All grades"
-          className="w-[170px]"
+          allLabel="All grades"
         />
       </div>
 
