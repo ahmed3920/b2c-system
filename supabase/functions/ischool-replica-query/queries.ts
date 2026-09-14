@@ -276,6 +276,34 @@ const OCCUPATION_CTE = `${ANALYTICS_BASE},
               left join sess s on s.tutor_id = p.id
           )`;
 
+// --- Student project uploads ------------------------------------------
+// Organization 1, students with an upcoming session, who already attended at
+// least one session (students with no session yet can't have uploaded work).
+const PROJECTS_PARAMS = ["team_lead", "grade", "search"];
+
+const PROJECTS_BASE = `with base as (
+            select s.s_id,
+                   coalesce(nullif(btrim(s.name_en), ''), s.name) as student_name,
+                   coalesce(s.projects_count, 0)::int as projects_count,
+                   coalesce(s.total_attended_sessions_count, 0)::int as attended_sessions,
+                   coalesce(g.name_i18n->>'en', g.name) as grade,
+                   btrim(coalesce(a.name, 'Unassigned')) as team_leader,
+                   coalesce(tt.name_i18n->>'en', tt.name_temp) as tutor_name,
+                   tt.t_id as tutor_tid
+              from public.students s
+              left join public.tutors tt on tt.id = s.next_session_tutor_id
+              left join public.admins a on a.id = tt.team_lead_id
+              left join public.grades g on g.id = coalesce(s.next_session_grade_id, s.grade_id)
+             where s.organization_id = 1
+               and s.next_session_id is not null
+               and coalesce(s.total_attended_sessions_count, 0) > 0
+               and ($1::text is null or btrim(coalesce(a.name, 'Unassigned')) = $1::text)
+               and ($2::text is null or coalesce(g.name_i18n->>'en', g.name) = $2::text)
+               and ($3::text is null
+                    or s.s_id ilike '%' || $3::text || '%'
+                    or coalesce(s.name_en, s.name) ilike '%' || $3::text || '%')
+          )`;
+
 export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Diagnostics -----------------------------------------------------
   connection_check: {
