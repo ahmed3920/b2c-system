@@ -60,6 +60,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
   });
   const [trend, setTrend] = useState<SnapshotRow[]>([]);
   const [uploadsByDay, setUploadsByDay] = useState<UploadsDayRow[]>([]);
+  const [uploadsByDayType, setUploadsByDayType] = useState<UploadsDayTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +69,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads] = await Promise.all([
+      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads, uploadsTyped] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
