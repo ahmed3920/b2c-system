@@ -58,6 +58,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     grades: [],
   });
   const [trend, setTrend] = useState<SnapshotRow[]>([]);
+  const [uploadsByDay, setUploadsByDay] = useState<UploadsDayRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +67,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps] = await Promise.all([
+      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
@@ -92,6 +93,10 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
           .from("project_upload_snapshots")
           .select("snapshot_date, zero_students, total_students")
           .order("snapshot_date", { ascending: true }),
+        runReplicaQuery<UploadsDayRow>("analytics_projects_uploads_by_day", {
+          ...params,
+          since: PROJECTS_BASELINE.date,
+        }),
       ]);
       setSummary(sum[0] ?? null);
       setByGrade(grades);
@@ -105,6 +110,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
         grades: opts.filter((o) => o.kind === "grade").map((o) => o.value),
       });
       setTrend(((snaps as { data?: SnapshotRow[] })?.data ?? []) as SnapshotRow[]);
+      setUploadsByDay(uploads);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
     } finally {
@@ -116,5 +122,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, loading, error, refetch: load };
 }
