@@ -56,10 +56,6 @@ export default function Performance() {
               ))}
             </TabsList>
 
-            <TabsContent value="quality" className="mt-4">
-              <QualitySection />
-            </TabsContent>
-
             <TabsContent value="cs-tickets" className="mt-4">
               {csOnly ? <CSTicketsTable /> : <AssignedCSEvaluations />}
             </TabsContent>
