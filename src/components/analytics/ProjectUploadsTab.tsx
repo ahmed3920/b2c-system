@@ -57,6 +57,27 @@ export function ProjectUploadsTab() {
   const previous = trendData.length > 1 ? trendData[trendData.length - 2].zero : null;
   const vsPrevious = previous === null ? null : zero - previous;
 
+  const uploadsByDayTypeData = useMemo(() => {
+    const map = new Map<
+      string,
+      { day: string; groupProjects: number; groupStudents: number; oneProjects: number; oneStudents: number }
+    >();
+    for (const r of uploadsByDayType) {
+      const row =
+        map.get(r.day) ??
+        { day: r.day, groupProjects: 0, groupStudents: 0, oneProjects: 0, oneStudents: 0 };
+      if (r.session_type === "Group") {
+        row.groupProjects += r.projects;
+        row.groupStudents += r.students;
+      } else {
+        row.oneProjects += r.projects;
+        row.oneStudents += r.students;
+      }
+      map.set(r.day, row);
+    }
+    return Array.from(map.values()).sort((a, b) => a.day.localeCompare(b.day));
+  }, [uploadsByDayType]);
+
   const groupRow = bySessionType.find((r) => r.session_type === "Group");
   const oneToOneRow = bySessionType.find((r) => r.session_type === "One-to-one");
 
