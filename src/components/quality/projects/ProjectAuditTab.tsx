@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ import { ProjectDetailDialog } from "./ProjectDetailDialog";
 import {
   EMPTY_FILTERS,
   PAGE_SIZE,
+  signProjectFiles,
   useProjectAudit,
   type ProjectFilters,
   type ProjectRow,
+  type SignedFile,
 } from "@/hooks/useProjectAudit";
 
 export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean }) {
@@ -24,6 +26,26 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
     filters,
     page,
   );
+
+  const [thumbs, setThumbs] = useState<Record<string, SignedFile>>({});
+
+  useEffect(() => {
+    let active = true;
+    const items = rows
+      .filter((r) => r.cover_key)
+      .slice(0, 60)
+      .map((r) => ({ project_id: Number(r.project_id), key: r.cover_key as string }));
+    if (!items.length) {
+      setThumbs({});
+      return;
+    }
+    signProjectFiles(items)
+      .then((signed) => active && setThumbs(signed))
+      .catch(() => active && setThumbs({}));
+    return () => {
+      active = false;
+    };
+  }, [rows]);
 
   const visible = pendingOnly ? rows.filter((r) => !decisions[Number(r.project_id)]) : rows;
 
@@ -132,6 +154,7 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[64px]">Cover</TableHead>
                   <TableHead>Project</TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Grade</TableHead>
@@ -153,6 +176,18 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
                       className="cursor-pointer"
                       onClick={() => setOpen(r)}
                     >
+                      <TableCell>
+                        {r.cover_key && thumbs[r.cover_key] ? (
+                          <img
+                            src={thumbs[r.cover_key].url}
+                            alt=""
+                            className="h-10 w-14 object-cover rounded border"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-10 w-14 rounded border bg-muted" />
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium max-w-[200px] truncate">{r.title || "Untitled"}</TableCell>
                       <TableCell>
                         {r.student_name}
@@ -188,7 +223,7 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
                 })}
                 {!loading && visible.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                       No projects match these filters.
                     </TableCell>
                   </TableRow>
