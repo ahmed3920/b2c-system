@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
     // The projects audit area is limited to admins and the allow-list.
     if ((key.startsWith("project_audit_") || key.startsWith("project_engagement_") ||
-         key.startsWith("project_student")) && !projectAudit) {
+         key.startsWith("project_student") || key === "project_attachments") && !projectAudit) {
       return json({ error: "Projects audit access required" }, 403);
     }
 
