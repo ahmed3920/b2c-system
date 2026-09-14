@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShieldCheck, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectAuditAccessList } from "@/hooks/useProjectAuditAccess";
+import { SearchableSelect } from "@/components/tracking/quality/QualityFilterBar";
 
 export function ProjectAccessDialog() {
   const { toast } = useToast();
@@ -55,20 +55,21 @@ export function ProjectAccessDialog() {
           Admins always have access. Add anyone else who should see the Projects area.
         </p>
         <div className="flex gap-2">
-          <Select value={selected} onValueChange={setSelected}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Choose a person" />
-            </SelectTrigger>
-            <SelectContent>
-              {people
+          <div className="flex-1">
+            <SearchableSelect
+              value={selected}
+              onChange={setSelected}
+              options={people
                 .filter((p) => !rows.some((r) => r.user_id === p.user_id))
-                .map((p) => (
-                  <SelectItem key={p.user_id} value={p.user_id}>
-                    {p.full_name || p.email || p.user_id}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+                .map((p) => p.user_id)}
+              allLabel="Choose a person"
+              placeholder="Choose a person"
+              labelFn={(id) => {
+                const p = people.find((x) => x.user_id === id);
+                return p?.full_name || p?.email || id;
+              }}
+            />
+          </div>
           <Button onClick={add} disabled={!selected}>
             Add
           </Button>
