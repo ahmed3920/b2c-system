@@ -18,9 +18,11 @@ export default function Analytics() {
           <TabsList>
             <TabsTrigger value="composition">Team Composition</TabsTrigger>
             <TabsTrigger value="occupation">One to One Occupation Sessions</TabsTrigger>
+            <TabsTrigger value="projects">Project Uploads</TabsTrigger>
           </TabsList>
           <TabsContent value="composition"><TeamCompositionTab /></TabsContent>
           <TabsContent value="occupation"><OccupationTab /></TabsContent>
+          <TabsContent value="projects"><ProjectUploadsTab /></TabsContent>
         </Tabs>
       </div>
     </AppLayout>
