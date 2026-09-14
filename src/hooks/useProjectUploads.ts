@@ -41,6 +41,7 @@ export type SnapshotRow = {
   total_students: number;
 };
 export type UploadsDayRow = { day: string; projects: number; students: number };
+export type UploadsDayTypeRow = UploadsDayRow & { session_type: string };
 
 const p = (v: string) => (v && v !== "" ? v : null);
 
