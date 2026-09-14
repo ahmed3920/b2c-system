@@ -85,14 +85,23 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const projectId = Number(body?.project_id);
-    const fileKey = String(body?.key ?? "");
     const download = body?.download === true;
-    if (!Number.isFinite(projectId) || projectId <= 0 || !/^[A-Za-z0-9._-]{8,128}$/.test(fileKey)) {
-      return json({ error: "Invalid request" }, 400);
+    const rawItems = Array.isArray(body?.items)
+      ? body.items
+      : [{ project_id: body?.project_id, key: body?.key }];
+    if (rawItems.length === 0 || rawItems.length > 80) return json({ error: "Invalid request" }, 400);
+
+    const items: { projectId: number; key: string }[] = [];
+    for (const it of rawItems) {
+      const projectId = Number(it?.project_id);
+      const fileKey = String(it?.key ?? "");
+      if (!Number.isFinite(projectId) || projectId <= 0 || !/^[A-Za-z0-9._-]{8,128}$/.test(fileKey)) {
+        return json({ error: "Invalid request" }, 400);
+      }
+      items.push({ projectId, key: fileKey });
     }
 
-    // The key must belong to this project — no fishing for other files.
+    // Every key must really belong to the project it is requested for.
     const replica = postgres({
       host: REPLICA_HOST,
       port: REPLICA_PORT,
@@ -106,23 +115,19 @@ Deno.serve(async (req) => {
       connection: { statement_timeout: 15000 },
     });
 
-    let blob: { filename: string; content_type: string | null } | undefined;
+    let blobs: { key: string; record_id: string; filename: string; content_type: string | null }[] = [];
     try {
-      const rows = await replica<{ filename: string; content_type: string | null }[]>`
-        select b.filename, b.content_type
+      blobs = await replica<{ key: string; record_id: string; filename: string; content_type: string | null }[]>`
+        select b.key, att.record_id::text as record_id, b.filename, b.content_type
           from public.active_storage_attachments att
           join public.active_storage_blobs b on b.id = att.blob_id
          where att.record_type = 'Project'
-           and att.record_id = ${projectId}
-           and b.key = ${fileKey}
-         limit 1
+           and att.record_id in ${replica(items.map((i) => i.projectId))}
+           and b.key in ${replica(items.map((i) => i.key))}
       `;
-      blob = rows[0];
     } finally {
       await replica.end({ timeout: 5 });
     }
-
-    if (!blob) return json({ error: "File not found for this project" }, 404);
 
     const aws = new AwsClient({
       accessKeyId: S3_KEY_ID,
@@ -131,25 +136,25 @@ Deno.serve(async (req) => {
       region: S3_REGION,
     });
 
-    const target = new URL(`https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${fileKey}`);
-    target.searchParams.set("X-Amz-Expires", String(EXPIRES));
-    if (blob.content_type) target.searchParams.set("response-content-type", blob.content_type);
-    target.searchParams.set(
-      "response-content-disposition",
-      `${download ? "attachment" : "inline"}; filename="${blob.filename.replace(/"/g, "")}"`,
-    );
+    const files: Record<string, { url: string; filename: string; content_type: string | null }> = {};
+    for (const item of items) {
+      const blob = blobs.find((b) => b.key === item.key && Number(b.record_id) === item.projectId);
+      if (!blob) continue;
+      const target = new URL(`https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${item.key}`);
+      target.searchParams.set("X-Amz-Expires", String(EXPIRES));
+      if (blob.content_type) target.searchParams.set("response-content-type", blob.content_type);
+      target.searchParams.set(
+        "response-content-disposition",
+        `${download ? "attachment" : "inline"}; filename="${blob.filename.replace(/"/g, "")}"`,
+      );
+      const signed = await aws.sign(target.toString(), { method: "GET", aws: { signQuery: true } });
+      files[item.key] = { url: signed.url, filename: blob.filename, content_type: blob.content_type };
+    }
 
-    const signed = await aws.sign(target.toString(), {
-      method: "GET",
-      aws: { signQuery: true },
-    });
+    if (Object.keys(files).length === 0) return json({ error: "File not found for this project" }, 404);
 
-    return json({
-      url: signed.url,
-      expires_in: EXPIRES,
-      filename: blob.filename,
-      content_type: blob.content_type,
-    });
+    const single = files[items[0].key];
+    return json({ files, expires_in: EXPIRES, ...(single ? single : {}) });
   } catch (e) {
     console.error("project-file-url failed", e);
     return json({ error: e instanceof Error ? e.message : "Unexpected error" }, 500);
