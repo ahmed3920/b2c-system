@@ -1460,4 +1460,23 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     params: ["student_id"],
     limit: 500,
   },
+
+  // Files attached to one project (cover image, code file, gallery images, deck).
+  // $1 = project id
+  project_attachments: {
+    sql: `select att.id as attachment_id,
+                 att.name as kind,
+                 b.key,
+                 b.filename,
+                 b.content_type,
+                 b.byte_size,
+                 b.created_at
+            from public.active_storage_attachments att
+            join public.active_storage_blobs b on b.id = att.blob_id
+           where att.record_type = 'Project' and att.record_id = $1::bigint
+           order by case att.name when 'cover' then 0 when 'file' then 1
+                                  when 'presentation' then 2 else 3 end, att.id`,
+    params: ["project_id"],
+    limit: 100,
+  },
 };
