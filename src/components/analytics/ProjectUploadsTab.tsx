@@ -254,6 +254,29 @@ export function ProjectUploadsTab() {
 
       <Card>
         <CardHeader className="pb-2">
+          <CardTitle className="text-base">
+            Day by day uploads — group vs one-to-one
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={uploadsByDayTypeData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="groupProjects" name="Group — projects" stackId="p" fill="hsl(var(--primary))" />
+              <Bar dataKey="oneProjects" name="One-to-one — projects" stackId="p" fill="hsl(var(--primary) / 0.45)" />
+              <Bar dataKey="groupStudents" name="Group — students" stackId="s" fill="hsl(var(--destructive))" />
+              <Bar dataKey="oneStudents" name="One-to-one — students" stackId="s" fill="hsl(var(--destructive) / 0.45)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">Decrease trend (% of students with 0 projects)</CardTitle>
         </CardHeader>
         <CardContent className="h-72">
