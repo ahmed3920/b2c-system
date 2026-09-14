@@ -302,6 +302,31 @@ const PROJECTS_BASE = `with base as (
                and ($3::text is null
                     or s.s_id ilike '%' || $3::text || '%'
                     or coalesce(s.name_en, s.name) ilike '%' || $3::text || '%')
+           )`;
+
+// Students with an upcoming session who have never attended a session yet
+// (and have zero projects). Same joins/filters as PROJECTS_BASE minus the
+// attended > 0 requirement.
+const PROJECTS_NOT_STARTED_BASE = `with base as (
+            select s.s_id,
+                   coalesce(nullif(btrim(s.name_en), ''), s.name) as student_name,
+                   coalesce(g.name_i18n->>'en', g.name) as grade,
+                   btrim(coalesce(a.name, 'Unassigned')) as team_leader,
+                   coalesce(tt.name_i18n->>'en', tt.name_temp) as tutor_name,
+                   tt.t_id as tutor_tid
+              from public.students s
+              left join public.tutors tt on tt.id = s.next_session_tutor_id
+              left join public.admins a on a.id = tt.team_lead_id
+              left join public.grades g on g.id = coalesce(s.next_session_grade_id, s.grade_id)
+             where s.organization_id = 1
+               and s.next_session_id is not null
+               and coalesce(s.total_attended_sessions_count, 0) = 0
+               and coalesce(s.projects_count, 0) = 0
+               and ($1::text is null or btrim(coalesce(a.name, 'Unassigned')) = $1::text)
+               and ($2::text is null or coalesce(g.name_i18n->>'en', g.name) = $2::text)
+               and ($3::text is null
+                    or s.s_id ilike '%' || $3::text || '%'
+                    or coalesce(s.name_en, s.name) ilike '%' || $3::text || '%')
           )`;
 
 export const QUERIES: Record<string, ReplicaQuery> = {
