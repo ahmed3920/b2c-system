@@ -28,7 +28,80 @@ export type ProjectRow = {
   lesson: string | null;
   session_id: number | null;
   session_start_at: string | null;
+  cover_key: string | null;
+  cover_content_type: string | null;
+  cover_filename: string | null;
 };
+
+export type ProjectAttachment = {
+  attachment_id: number;
+  kind: string;
+  key: string;
+  filename: string;
+  content_type: string | null;
+  byte_size: number;
+  created_at: string;
+};
+
+export type SignedFile = { url: string; filename: string; content_type: string | null };
+
+/** Asks the backend for short-lived signed links to files (images, code file, deck). */
+export async function signProjectFiles(
+  items: { project_id: number; key: string }[],
+  download = false,
+): Promise<Record<string, SignedFile>> {
+  if (!items.length) return {};
+  const { data, error } = await supabase.functions.invoke("project-file-url", {
+    body: { items, download },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+  return (data?.files ?? {}) as Record<string, SignedFile>;
+}
+
+/** Files attached to one project, with signed preview links for the images. */
+export function useProjectFiles(projectId: number | null) {
+  const [files, setFiles] = useState<ProjectAttachment[]>([]);
+  const [urls, setUrls] = useState<Record<string, SignedFile>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!projectId) {
+      setFiles([]);
+      setUrls({});
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    runReplicaQuery<ProjectAttachment>("project_attachments", { project_id: projectId })
+      .then(async (rows) => {
+        if (!active) return;
+        setFiles(rows);
+        const images = rows.filter((r) => (r.content_type ?? "").startsWith("image/"));
+        if (images.length) {
+          try {
+            const signed = await signProjectFiles(
+              images.map((r) => ({ project_id: projectId, key: r.key })),
+            );
+            if (active) setUrls(signed);
+          } catch (e) {
+            if (active) setError(e instanceof Error ? e.message : "Could not load previews");
+          }
+        } else if (active) {
+          setUrls({});
+        }
+      })
+      .catch((e) => active && setError(e instanceof Error ? e.message : "Could not load files"))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [projectId]);
+
+  return { files, urls, loading, error };
+}
 
 export type ProjectSummary = {
   projects: number;
