@@ -26,7 +26,9 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function authorize(req: Request): Promise<{ error: Response | null; userId?: string }> {
+async function authorize(
+  req: Request,
+): Promise<{ error: Response | null; userId?: string; projectAudit?: boolean }> {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return { error: json({ error: "Unauthorized" }, 401) };
 
@@ -57,6 +59,7 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
 
   if (!APP_DB_URL) return { error: json({ error: "App database not configured" }, 500) };
   const app = postgres(APP_DB_URL, { prepare: false, max: 1, idle_timeout: 5 });
+  let projectAudit = false;
   try {
     const roles = await app<{ role: string }[]>`
       select role::text as role from public.user_roles where user_id = ${userId}
@@ -64,19 +67,28 @@ async function authorize(req: Request): Promise<{ error: Response | null; userId
     if (!roles.some((r) => ALLOWED_ROLES.has(r.role))) {
       return { error: json({ error: "Access required" }, 403) };
     }
+    if (roles.some((r) => r.role === "admin")) {
+      projectAudit = true;
+    } else {
+      const grants = await app<{ id: string }[]>`
+        select id::text as id from public.project_audit_access where user_id = ${userId} limit 1
+      `;
+      projectAudit = grants.length > 0;
+    }
   } finally {
     await app.end({ timeout: 5 });
   }
 
-  return { error: null, userId };
+  return { error: null, userId, projectAudit };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { error } = await authorize(req);
+    const { error, projectAudit } = await authorize(req);
     if (error) return error;
+
 
     if (!REPLICA_HOST || !REPLICA_USER || !REPLICA_DB) {
       return json({ error: "Replica connection is not configured" }, 500);
@@ -86,6 +98,12 @@ Deno.serve(async (req) => {
     const key = String(body?.query ?? "");
 
     if (key === "__keys") return json({ keys: Object.keys(QUERIES) });
+
+    // The projects audit area is limited to admins and the allow-list.
+    if ((key.startsWith("project_audit_") || key.startsWith("project_engagement_") ||
+         key.startsWith("project_student")) && !projectAudit) {
+      return json({ error: "Projects audit access required" }, 403);
+    }
 
     const entry = QUERIES[key];
     if (!entry) {
