@@ -99,6 +99,10 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
           ...params,
           since: PROJECTS_BASELINE.date,
         }),
+        runReplicaQuery<UploadsDayTypeRow>("analytics_projects_uploads_by_day_type", {
+          ...params,
+          since: PROJECTS_BASELINE.date,
+        }),
       ]);
       setSummary(sum[0] ?? null);
       setByGrade(grades);
@@ -113,6 +117,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
       });
       setTrend(((snaps as { data?: SnapshotRow[] })?.data ?? []) as SnapshotRow[]);
       setUploadsByDay(uploads);
+      setUploadsByDayType(uploadsTyped);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
     } finally {
@@ -124,5 +129,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, uploadsByDayType, loading, error, refetch: load };
 }
