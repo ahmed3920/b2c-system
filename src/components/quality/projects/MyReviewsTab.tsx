@@ -21,21 +21,13 @@ export function MyReviewsTab() {
   const openProject = async (projectId: number) => {
     setOpening(projectId);
     try {
-      const found = await runReplicaQuery<ProjectRow>("project_audit_list", {
-        search: String(projectId),
-        limit: 1,
-        offset: 0,
-      });
-      const byId = await runReplicaQuery<ProjectRow>("project_student_projects", { student_id: -1 }).catch(
-        () => [],
-      );
-      void byId;
+      const found = await runReplicaQuery<ProjectRow>("project_audit_by_id", { project_id: projectId });
       setDetail(found[0] ?? null);
-      if (!found[0]) setDetail(null);
     } finally {
       setOpening(null);
     }
   };
+
 
   return (
     <div className="space-y-4">
