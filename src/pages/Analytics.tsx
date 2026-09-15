@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TeamCompositionTab } from "@/components/analytics/TeamCompositionTab";
 import { OccupationTab } from "@/components/analytics/OccupationTab";
 import { ProjectUploadsTab } from "@/components/analytics/ProjectUploadsTab";
+import { CsTicketsAnalyticsTab } from "@/components/analytics/CsTicketsAnalyticsTab";
 
 export default function Analytics() {
   return (
@@ -19,10 +20,12 @@ export default function Analytics() {
             <TabsTrigger value="composition">Team Composition</TabsTrigger>
             <TabsTrigger value="occupation">One to One Occupation Sessions</TabsTrigger>
             <TabsTrigger value="projects">Project Uploads</TabsTrigger>
+            <TabsTrigger value="cs-tickets">CS Tickets</TabsTrigger>
           </TabsList>
           <TabsContent value="composition"><TeamCompositionTab /></TabsContent>
           <TabsContent value="occupation"><OccupationTab /></TabsContent>
           <TabsContent value="projects"><ProjectUploadsTab /></TabsContent>
+          <TabsContent value="cs-tickets"><CsTicketsAnalyticsTab /></TabsContent>
         </Tabs>
       </div>
     </AppLayout>
