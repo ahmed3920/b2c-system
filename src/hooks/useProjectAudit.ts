@@ -112,6 +112,7 @@ export type ProjectSummary = {
   views: number | null;
   likes: number | null;
   comments: number | null;
+  with_url: number | null;
 };
 
 export type EngagementStudentRow = {
@@ -196,6 +197,7 @@ export type ProjectFilters = {
   grade: string;
   search: string;
   published: string;
+  hasUrl: string;
   sort: "created_desc" | "created_asc";
 };
 
@@ -206,6 +208,7 @@ export const EMPTY_FILTERS: ProjectFilters = {
   grade: "",
   search: "",
   published: "",
+  hasUrl: "",
   sort: "created_desc",
 };
 
@@ -219,9 +222,11 @@ function toParams(f: ProjectFilters) {
     grade: n(f.grade),
     search: n(f.search),
     published: n(f.published),
+    has_url: n(f.hasUrl),
     sort: f.sort ?? "created_desc",
   };
 }
+
 
 export const PAGE_SIZE = 50;
 

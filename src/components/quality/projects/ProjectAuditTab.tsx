@@ -131,6 +131,7 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
             { label: "Students", value: summary.students },
             { label: "Published", value: summary.published },
             { label: "Archived", value: summary.archived },
+            { label: "With a link", value: summary.with_url ?? 0 },
           ].map((k) => (
             <Card key={k.label}>
               <CardHeader className="pb-2">

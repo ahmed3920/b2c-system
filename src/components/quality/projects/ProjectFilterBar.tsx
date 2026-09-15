@@ -90,6 +90,23 @@ export function ProjectFilterBar({
       )}
 
       <div className="space-y-1">
+        <Label className="text-xs">Project link</Label>
+        <Select
+          value={filters.hasUrl || "all"}
+          onValueChange={(v) => onChange({ hasUrl: v === "all" ? "" : v })}
+        >
+          <SelectTrigger className="h-9 w-[170px]">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All projects</SelectItem>
+            <SelectItem value="yes">Has a link</SelectItem>
+            <SelectItem value="no">No link</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1">
         <Label className="text-xs">Sort by upload date</Label>
         <Select
           value={filters.sort ?? "created_desc"}
