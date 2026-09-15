@@ -282,8 +282,8 @@ const OCCUPATION_CTE = `${ANALYTICS_BASE},
 const PROJECTS_PARAMS = ["team_lead", "grade", "search"];
 
 // --- Projects audit shared blocks ---------------------------------------
-// $1 date_from, $2 date_to, $3 team_lead, $4 grade, $5 search, $6 published
-const PROJECT_AUDIT_PARAMS = ["date_from", "date_to", "team_lead", "grade", "search", "published"];
+// $1 date_from, $2 date_to, $3 team_lead, $4 grade, $5 search, $6 published, $7 has_url
+const PROJECT_AUDIT_PARAMS = ["date_from", "date_to", "team_lead", "grade", "search", "published", "has_url"];
 
 const PROJECT_AUDIT_BASE = `with base as (
           select p.id as project_id,
@@ -344,6 +344,9 @@ const PROJECT_AUDIT_BASE = `with base as (
              and ($6::text is null
                   or ($6::text = 'yes' and coalesce(p.published, false))
                   or ($6::text = 'no' and not coalesce(p.published, false)))
+             and ($7::text is null
+                  or ($7::text = 'yes' and coalesce(btrim(p.url), '') <> '')
+                  or ($7::text = 'no' and coalesce(btrim(p.url), '') = ''))
         )`;
 
 // Student-level project dashboard. $1 team_lead, $2 grade, $3 search, $4 stalled_only
