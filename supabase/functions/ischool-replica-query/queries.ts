@@ -1318,6 +1318,14 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   },
 
   // Candidate pool for the daily reviewer assignment engine.
+  // One project by its id, in the same shape as the audit list.
+  project_audit_by_id: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select * from base where project_id = $7::bigint limit 1`,
+    params: [...PROJECT_AUDIT_PARAMS, "project_id"],
+    limit: 1,
+  },
+
   project_assignment_pool: {
     sql: `${PROJECT_AUDIT_BASE}
           select project_id, title, created_at, s_id, student_name, grade,
