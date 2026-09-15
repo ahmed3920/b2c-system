@@ -480,16 +480,18 @@ export function CsTicketsAnalyticsTab() {
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Top categories</CardTitle></CardHeader>
-        <CardContent className="h-[420px]" data-chart="Top categories">
+        <CardContent className="h-[520px]" data-chart="Top categories">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topCategories} layout="vertical" margin={{ left: 140 }}>
+            <BarChart data={topCategories} layout="vertical" margin={{ left: 140, right: 32 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" allowDecimals={false} />
-              <YAxis type="category" dataKey="name" width={200} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={200} tick={{ fontSize: 11 }} interval={0} />
               <Tooltip />
               <Legend />
               <Bar dataKey="cs" name="CS" stackId="c" fill="hsl(var(--primary))" />
-              <Bar dataKey="edu" name="Edu" stackId="c" fill="hsl(var(--muted-foreground))" />
+              <Bar dataKey="edu" name="Edu" stackId="c" fill="hsl(var(--muted-foreground))">
+                <LabelList dataKey="total" position="right" fontSize={10} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -498,14 +500,16 @@ export function CsTicketsAnalyticsTab() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top 15 tutors by tickets</CardTitle></CardHeader>
-          <CardContent className="h-[420px]" data-chart="Top 15 tutors by tickets">
+          <CardContent className="h-[560px]" data-chart="Top 15 tutors by tickets">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={byTutor.slice(0, 15)} layout="vertical" margin={{ left: 120 }}>
+              <BarChart data={byTutor.slice(0, 15)} layout="vertical" margin={{ left: 120, right: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" allowDecimals={false} />
-                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} interval={0} />
                 <Tooltip />
-                <Bar dataKey="total" name="Tickets" fill="hsl(var(--primary))" />
+                <Bar dataKey="total" name="Tickets" fill="hsl(var(--primary))">
+                  <LabelList dataKey="total" position="right" fontSize={10} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
