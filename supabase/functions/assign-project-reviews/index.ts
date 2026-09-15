@@ -178,7 +178,8 @@ Deno.serve(async (req) => {
                t.t_id as tutor_tid,
                coalesce(t.name_i18n->>'en', t.name_temp) as tutor_name,
                btrim(coalesce(a.name, 'Unassigned')) as team_leader,
-               s.group_session_id
+               s.group_session_id,
+               (coalesce(btrim(p.url), '') <> '') as has_url
           from public.projects p
           join public.students st on st.id = p.student_id
           left join public.grades g on g.id = st.grade_id
@@ -194,7 +195,13 @@ Deno.serve(async (req) => {
       await replica.end({ timeout: 5 });
     }
 
-    const candidates = spreadByGroup(pool.filter((r) => !excluded.has(String(r.project_id))));
+    // Projects that carry a shareable link come first — they can actually be opened.
+    const usable = pool.filter((r) => !excluded.has(String(r.project_id)));
+    const candidates = [
+      ...spreadByGroup(usable.filter((r) => r.has_url)),
+      ...spreadByGroup(usable.filter((r) => !r.has_url)),
+    ];
+
     if (!candidates.length) {
       return json({ assigned: 0, reviewers: reviewers.length, daily_limit: dailyLimit, message: "No new projects to assign" });
     }
