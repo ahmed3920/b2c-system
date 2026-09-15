@@ -78,11 +78,12 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
         "Views",
         "Likes",
         "Comments",
-        "Decision",
-        "Reason",
+        "Evaluation",
+        "Points",
+        "Note",
       ],
       visible.map((r) => {
-        const d = decisions[Number(r.project_id)];
+        const e = evaluations[Number(r.project_id)];
         return [
           r.project_id,
           r.title,
@@ -100,10 +101,12 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
           r.views_count,
           r.likes_count,
           r.comments_count,
-          d?.status ?? "pending",
-          d?.reason ?? "",
+          statusShortLabel(e?.status),
+          e ? e.points : "",
+          e?.note ?? "",
         ];
       }),
+
     );
   };
 
