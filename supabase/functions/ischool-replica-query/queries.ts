@@ -338,6 +338,22 @@ const PROJECT_AUDIT_BASE = `with base as (
                   or ($7::text = 'no' and coalesce(btrim(p.url), '') = ''))
         )`;
 
+// Cover image lookup. Applied only after rows are limited — running it inside
+// the base CTE scans attachments for every matching project and times out.
+const COVER_LATERAL_COLS =
+  `cov.key as cover_key, cov.content_type as cover_content_type, cov.filename as cover_filename`;
+
+const COVER_LATERAL = (idExpr: string) => `left join lateral (
+            select b.key, b.content_type, b.filename
+              from public.active_storage_attachments att
+              join public.active_storage_blobs b on b.id = att.blob_id
+             where att.record_type = 'Project' and att.record_id = ${idExpr} and att.name = 'cover'
+             order by att.id desc
+             limit 1
+          ) cov on true`;
+
+
+
 // Student-level project dashboard. $1 team_lead, $2 grade, $3 search, $4 stalled_only
 const PROJECT_STUDENT_PARAMS = ["team_lead", "grade", "search", "stalled_only"];
 
