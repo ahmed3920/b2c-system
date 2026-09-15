@@ -176,7 +176,7 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
               </TableHeader>
               <TableBody>
                 {visible.map((r) => {
-                  const d = decisions[Number(r.project_id)];
+                  const e = evaluations[Number(r.project_id)];
                   return (
                     <TableRow
                       key={r.project_id}
@@ -215,16 +215,19 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
                       <TableCell>
                         <Badge
                           variant={
-                            d?.status === "approved"
+                            e?.status === "fully_working"
                               ? "default"
-                              : d?.status === "rejected"
+                              : e?.status === "not_working" || e?.status === "invalid_submission"
                                 ? "destructive"
-                                : "outline"
+                                : e
+                                  ? "secondary"
+                                  : "outline"
                           }
                         >
-                          {d?.status ?? "pending"}
+                          {statusShortLabel(e?.status)}
                         </Badge>
                       </TableCell>
+
                     </TableRow>
                   );
                 })}
