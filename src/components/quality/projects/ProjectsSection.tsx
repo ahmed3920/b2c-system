@@ -6,6 +6,9 @@ import { ProjectAuditTab } from "./ProjectAuditTab";
 import { ProjectEngagementTab } from "./ProjectEngagementTab";
 import { ProjectStudentsTab } from "./ProjectStudentsTab";
 import { ProjectAccessDialog } from "./ProjectAccessDialog";
+import { MyReviewsTab } from "./MyReviewsTab";
+import { Phase1SummaryTab } from "./Phase1SummaryTab";
+import { ReviewAssignmentsAdmin } from "./ReviewAssignmentsAdmin";
 
 export function ProjectsSection() {
   const { allowed, isAdmin, loading } = useProjectAuditAccess();
@@ -35,18 +38,27 @@ export function ProjectsSection() {
           <ProjectAccessDialog />
         </div>
       )}
-      <Tabs defaultValue="audit" className="space-y-4">
+      <Tabs defaultValue="mine" className="space-y-4">
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="mine">My Reviews</TabsTrigger>
           <TabsTrigger value="audit">Projects Audit</TabsTrigger>
-          <TabsTrigger value="approval">Approval</TabsTrigger>
+          <TabsTrigger value="approval">Pending</TabsTrigger>
+          <TabsTrigger value="phase1">Phase 1 Score</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
+          {isAdmin && <TabsTrigger value="assignments">Assignments</TabsTrigger>}
         </TabsList>
+        <TabsContent value="mine" className="mt-0">
+          <MyReviewsTab />
+        </TabsContent>
         <TabsContent value="audit" className="mt-0">
           <ProjectAuditTab />
         </TabsContent>
         <TabsContent value="approval" className="mt-0">
           <ProjectAuditTab pendingOnly />
+        </TabsContent>
+        <TabsContent value="phase1" className="mt-0">
+          <Phase1SummaryTab />
         </TabsContent>
         <TabsContent value="engagement" className="mt-0">
           <ProjectEngagementTab />
@@ -54,7 +66,13 @@ export function ProjectsSection() {
         <TabsContent value="students" className="mt-0">
           <ProjectStudentsTab />
         </TabsContent>
+        {isAdmin && (
+          <TabsContent value="assignments" className="mt-0">
+            <ReviewAssignmentsAdmin />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
 }
+
