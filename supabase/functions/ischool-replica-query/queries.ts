@@ -1313,9 +1313,9 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   project_audit_list: {
     sql: `${PROJECT_AUDIT_BASE}
           select * from base
-          order by case when $9::text = 'created_asc' then created_at end asc,
-                   case when coalesce($9::text, 'created_desc') = 'created_desc' then created_at end desc
-          limit coalesce($7::int, 50) offset coalesce($8::int, 0)`,
+          order by case when $10::text = 'created_asc' then created_at end asc,
+                   case when coalesce($10::text, 'created_desc') = 'created_desc' then created_at end desc
+          limit coalesce($8::int, 50) offset coalesce($9::int, 0)`,
     params: [...PROJECT_AUDIT_PARAMS, "limit", "offset", "sort"],
     limit: 5000,
   },
@@ -1324,7 +1324,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   // One project by its id, in the same shape as the audit list.
   project_audit_by_id: {
     sql: `${PROJECT_AUDIT_BASE}
-          select * from base where project_id = $7::bigint limit 1`,
+          select * from base where project_id = $8::bigint limit 1`,
     params: [...PROJECT_AUDIT_PARAMS, "project_id"],
     limit: 1,
   },
@@ -1335,7 +1335,8 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  tutor_tid, tutor_name, team_leader, group_session_id
             from base
            order by created_at desc
-           limit coalesce($7::int, 2000)`,
+           limit coalesce($8::int, 2000)`,
+
     params: [...PROJECT_AUDIT_PARAMS, "limit"],
     limit: 5000,
   },
