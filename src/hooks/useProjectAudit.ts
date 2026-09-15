@@ -196,6 +196,7 @@ export type ProjectFilters = {
   grade: string;
   search: string;
   published: string;
+  sort: "created_desc" | "created_asc";
 };
 
 export const EMPTY_FILTERS: ProjectFilters = {
@@ -205,6 +206,7 @@ export const EMPTY_FILTERS: ProjectFilters = {
   grade: "",
   search: "",
   published: "",
+  sort: "created_desc",
 };
 
 const n = (v: string) => (v && v !== "" && v !== "all" ? v : null);
@@ -217,6 +219,7 @@ function toParams(f: ProjectFilters) {
     grade: n(f.grade),
     search: n(f.search),
     published: n(f.published),
+    sort: f.sort ?? "created_desc",
   };
 }
 

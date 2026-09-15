@@ -90,6 +90,22 @@ export function ProjectFilterBar({
       )}
 
       <div className="space-y-1">
+        <Label className="text-xs">Sort by upload date</Label>
+        <Select
+          value={filters.sort ?? "created_desc"}
+          onValueChange={(v) => onChange({ sort: v as ProjectFilters["sort"] })}
+        >
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="created_desc">Newest first</SelectItem>
+            <SelectItem value="created_asc">Oldest first</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1">
         <Label className="text-xs">Search</Label>
         <Input
           className="h-9 w-[230px]"
@@ -101,6 +117,7 @@ export function ProjectFilterBar({
           onBlur={(e) => onChange({ search: e.target.value })}
         />
       </div>
+
 
       <Button variant="outline" size="sm" onClick={onRefresh} className="h-9">
         <RefreshCw className="h-4 w-4 mr-1" />
