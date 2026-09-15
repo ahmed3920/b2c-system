@@ -11,6 +11,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Line,
   LineChart,
@@ -28,6 +29,9 @@ import { exportCsTicketsToPdf } from "@/utils/exportCsTicketsToPdf";
 import { toast } from "@/hooks/use-toast";
 
 const STATUSES = ["Valid", "Not Valid", "Not a Complain", "Pending"] as const;
+
+/** Hide zero values so stacked bar labels stay readable. */
+const hideZero = (v: number | string) => (Number(v) > 0 ? String(v) : "");
 type Status = (typeof STATUSES)[number];
 
 const STATUS_COLORS: Record<Status, string> = {
