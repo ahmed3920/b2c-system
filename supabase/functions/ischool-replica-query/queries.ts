@@ -311,10 +311,7 @@ const PROJECT_AUDIT_BASE = `with base as (
                  coalesce(l.name_i18n->>'en', l.name) as lesson,
                  s.id as session_id,
                  s.group_session_id,
-                 s.start_at as session_start_at,
-                 cov.key as cover_key,
-                 cov.content_type as cover_content_type,
-                 cov.filename as cover_filename
+                 s.start_at as session_start_at
             from public.projects p
             join public.students st on st.id = p.student_id
             left join public.grades g on g.id = st.grade_id
@@ -323,14 +320,6 @@ const PROJECT_AUDIT_BASE = `with base as (
             left join public.admins a on a.id = t.team_lead_id
             left join public.lessons l on l.id = s.lesson_id
             left join public.levels lv on lv.id = coalesce(p.level_id, l.level_id)
-            left join lateral (
-              select b.key, b.content_type, b.filename
-                from public.active_storage_attachments att
-                join public.active_storage_blobs b on b.id = att.blob_id
-               where att.record_type = 'Project' and att.record_id = p.id and att.name = 'cover'
-               order by att.id desc
-               limit 1
-            ) cov on true
            where st.organization_id = 1
              and ($1::date is null or p.created_at >= $1::date)
              and ($2::date is null or p.created_at < ($2::date + 1))
