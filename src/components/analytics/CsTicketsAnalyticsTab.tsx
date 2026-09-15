@@ -448,8 +448,12 @@ export function CsTicketsAnalyticsTab() {
                 <YAxis allowDecimals={false} />
                 <Tooltip />
                 <Legend />
-                {STATUSES.map((s) => (
-                  <Bar key={s} dataKey={s} name={s} stackId="a" fill={STATUS_COLORS[s]} />
+                {STATUSES.map((s, i) => (
+                  <Bar key={s} dataKey={s} name={s} stackId="a" fill={STATUS_COLORS[s]}>
+                    {i === STATUSES.length - 1 && (
+                      <LabelList dataKey="total" position="top" fontSize={10} formatter={hideZero} />
+                    )}
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
@@ -465,7 +469,9 @@ export function CsTicketsAnalyticsTab() {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="value" name="Tickets" fill="hsl(var(--primary))" />
+                <Bar dataKey="value" name="Tickets" fill="hsl(var(--primary))">
+                  <LabelList dataKey="value" position="top" fontSize={11} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
