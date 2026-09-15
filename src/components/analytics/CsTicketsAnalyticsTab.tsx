@@ -517,14 +517,16 @@ export function CsTicketsAnalyticsTab() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top 15 tutors by valid tickets</CardTitle></CardHeader>
-          <CardContent className="h-[420px]" data-chart="Top 15 tutors by valid tickets">
+          <CardContent className="h-[560px]" data-chart="Top 15 tutors by valid tickets">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTutorsValid} layout="vertical" margin={{ left: 120 }}>
+              <BarChart data={topTutorsValid} layout="vertical" margin={{ left: 120, right: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" allowDecimals={false} />
-                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} interval={0} />
                 <Tooltip />
-                <Bar dataKey="valid" name="Valid tickets" fill="hsl(var(--destructive))" />
+                <Bar dataKey="valid" name="Valid tickets" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="valid" position="right" fontSize={10} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -544,7 +546,9 @@ export function CsTicketsAnalyticsTab() {
                 <Legend />
                 <Bar dataKey="valid" name="Validated" stackId="m" fill="hsl(var(--primary))" />
                 <Bar dataKey="notValid" name="Not valid" stackId="m" fill="hsl(var(--muted-foreground))" />
-                <Bar dataKey="pending" name="No evaluation yet" stackId="m" fill="hsl(var(--destructive))" />
+                <Bar dataKey="pending" name="No evaluation yet" stackId="m" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="total" position="top" fontSize={10} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
