@@ -266,10 +266,11 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
 
       <ProjectDetailDialog
         project={open}
-        decision={open ? decisions[Number(open.project_id)] : undefined}
+        evaluation={open ? evaluations[Number(open.project_id)] : undefined}
         onClose={() => setOpen(null)}
-        onDecide={saveDecision}
+        onEvaluated={refetchEvaluations}
       />
+
     </div>
   );
 }
