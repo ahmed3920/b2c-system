@@ -1383,7 +1383,8 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  count(*) filter (where archived)::int as archived,
                  sum(views_count)::int as views,
                  sum(likes_count)::int as likes,
-                 sum(comments_count)::int as comments
+                 sum(comments_count)::int as comments,
+                 count(*) filter (where coalesce(btrim(url), '') <> '')::int as with_url
           from base`,
     params: PROJECT_AUDIT_PARAMS,
     limit: 1,
@@ -1414,7 +1415,7 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           from base
           group by 1, 2, 3, 4, 5
           order by views desc nulls last
-          limit coalesce($7::int, 100) offset coalesce($8::int, 0)`,
+          limit coalesce($8::int, 100) offset coalesce($9::int, 0)`,
     params: [...PROJECT_AUDIT_PARAMS, "limit", "offset"],
     limit: 5000,
   },
