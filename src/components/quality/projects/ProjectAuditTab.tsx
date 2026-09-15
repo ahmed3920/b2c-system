@@ -7,6 +7,8 @@ import { Download, Loader2 } from "lucide-react";
 import { downloadCsv } from "@/lib/exportCsv";
 import { ProjectFilterBar } from "./ProjectFilterBar";
 import { ProjectDetailDialog } from "./ProjectDetailDialog";
+import { useEvaluations } from "@/hooks/useProjectReviews";
+import { statusShortLabel } from "@/lib/projectEvaluation";
 import {
   EMPTY_FILTERS,
   PAGE_SIZE,
@@ -17,14 +19,15 @@ import {
   type SignedFile,
 } from "@/hooks/useProjectAudit";
 
+
 export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean }) {
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<ProjectRow | null>(null);
 
-  const { rows, summary, options, decisions, loading, error, refetch, saveDecision } = useProjectAudit(
-    filters,
-    page,
+  const { rows, summary, options, loading, error, refetch } = useProjectAudit(filters, page);
+  const { evaluations, refetch: refetchEvaluations } = useEvaluations(
+    rows.map((r) => Number(r.project_id)),
   );
 
   const [thumbs, setThumbs] = useState<Record<string, SignedFile>>({});
@@ -47,7 +50,8 @@ export function ProjectAuditTab({ pendingOnly = false }: { pendingOnly?: boolean
     };
   }, [rows]);
 
-  const visible = pendingOnly ? rows.filter((r) => !decisions[Number(r.project_id)]) : rows;
+  const visible = pendingOnly ? rows.filter((r) => !evaluations[Number(r.project_id)]) : rows;
+
 
   const update = (next: Partial<ProjectFilters>) => {
     setPage(0);
