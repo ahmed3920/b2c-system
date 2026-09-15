@@ -112,6 +112,7 @@ export type ProjectSummary = {
   views: number | null;
   likes: number | null;
   comments: number | null;
+  with_url: number | null;
 };
 
 export type EngagementStudentRow = {
