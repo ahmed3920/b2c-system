@@ -1301,10 +1301,13 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Projects audit (Quality > Projects) --------------------------------
   project_audit_list: {
     sql: `${PROJECT_AUDIT_BASE}
-          select * from base
-          order by case when $10::text = 'created_asc' then created_at end asc,
-                   case when coalesce($10::text, 'created_desc') = 'created_desc' then created_at end desc
-          limit coalesce($8::int, 50) offset coalesce($9::int, 0)`,
+          , page as (
+            select * from base
+            order by case when $10::text = 'created_asc' then created_at end asc,
+                     case when coalesce($10::text, 'created_desc') = 'created_desc' then created_at end desc
+            limit coalesce($8::int, 50) offset coalesce($9::int, 0)
+          )
+          select page.*, ${COVER_LATERAL_COLS} from page ${COVER_LATERAL("page.project_id")}`,
     params: [...PROJECT_AUDIT_PARAMS, "limit", "offset", "sort"],
     limit: 5000,
   },
@@ -1313,7 +1316,8 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   // One project by its id, in the same shape as the audit list.
   project_audit_by_id: {
     sql: `${PROJECT_AUDIT_BASE}
-          select * from base where project_id = $8::bigint limit 1`,
+          , page as (select * from base where project_id = $8::bigint limit 1)
+          select page.*, ${COVER_LATERAL_COLS} from page ${COVER_LATERAL("page.project_id")}`,
     params: [...PROJECT_AUDIT_PARAMS, "project_id"],
     limit: 1,
   },
