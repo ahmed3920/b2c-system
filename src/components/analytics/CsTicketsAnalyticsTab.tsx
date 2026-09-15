@@ -11,6 +11,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Line,
   LineChart,
@@ -28,6 +29,9 @@ import { exportCsTicketsToPdf } from "@/utils/exportCsTicketsToPdf";
 import { toast } from "@/hooks/use-toast";
 
 const STATUSES = ["Valid", "Not Valid", "Not a Complain", "Pending"] as const;
+
+/** Hide zero values so stacked bar labels stay readable. */
+const hideZero = (v: number | string) => (Number(v) > 0 ? String(v) : "");
 type Status = (typeof STATUSES)[number];
 
 const STATUS_COLORS: Record<Status, string> = {
@@ -444,8 +448,12 @@ export function CsTicketsAnalyticsTab() {
                 <YAxis allowDecimals={false} />
                 <Tooltip />
                 <Legend />
-                {STATUSES.map((s) => (
-                  <Bar key={s} dataKey={s} name={s} stackId="a" fill={STATUS_COLORS[s]} />
+                {STATUSES.map((s, i) => (
+                  <Bar key={s} dataKey={s} name={s} stackId="a" fill={STATUS_COLORS[s]}>
+                    {i === STATUSES.length - 1 && (
+                      <LabelList dataKey="total" position="top" fontSize={10} formatter={hideZero} />
+                    )}
+                  </Bar>
                 ))}
               </BarChart>
             </ResponsiveContainer>
@@ -461,7 +469,9 @@ export function CsTicketsAnalyticsTab() {
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="value" name="Tickets" fill="hsl(var(--primary))" />
+                <Bar dataKey="value" name="Tickets" fill="hsl(var(--primary))">
+                  <LabelList dataKey="value" position="top" fontSize={11} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -470,16 +480,18 @@ export function CsTicketsAnalyticsTab() {
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Top categories</CardTitle></CardHeader>
-        <CardContent className="h-[420px]" data-chart="Top categories">
+        <CardContent className="h-[520px]" data-chart="Top categories">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topCategories} layout="vertical" margin={{ left: 140 }}>
+            <BarChart data={topCategories} layout="vertical" margin={{ left: 140, right: 32 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" allowDecimals={false} />
-              <YAxis type="category" dataKey="name" width={200} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={200} tick={{ fontSize: 11 }} interval={0} />
               <Tooltip />
               <Legend />
               <Bar dataKey="cs" name="CS" stackId="c" fill="hsl(var(--primary))" />
-              <Bar dataKey="edu" name="Edu" stackId="c" fill="hsl(var(--muted-foreground))" />
+              <Bar dataKey="edu" name="Edu" stackId="c" fill="hsl(var(--muted-foreground))">
+                <LabelList dataKey="total" position="right" fontSize={10} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -488,14 +500,16 @@ export function CsTicketsAnalyticsTab() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top 15 tutors by tickets</CardTitle></CardHeader>
-          <CardContent className="h-[420px]" data-chart="Top 15 tutors by tickets">
+          <CardContent className="h-[560px]" data-chart="Top 15 tutors by tickets">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={byTutor.slice(0, 15)} layout="vertical" margin={{ left: 120 }}>
+              <BarChart data={byTutor.slice(0, 15)} layout="vertical" margin={{ left: 120, right: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" allowDecimals={false} />
-                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} interval={0} />
                 <Tooltip />
-                <Bar dataKey="total" name="Tickets" fill="hsl(var(--primary))" />
+                <Bar dataKey="total" name="Tickets" fill="hsl(var(--primary))">
+                  <LabelList dataKey="total" position="right" fontSize={10} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -503,14 +517,16 @@ export function CsTicketsAnalyticsTab() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top 15 tutors by valid tickets</CardTitle></CardHeader>
-          <CardContent className="h-[420px]" data-chart="Top 15 tutors by valid tickets">
+          <CardContent className="h-[560px]" data-chart="Top 15 tutors by valid tickets">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTutorsValid} layout="vertical" margin={{ left: 120 }}>
+              <BarChart data={topTutorsValid} layout="vertical" margin={{ left: 120, right: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" allowDecimals={false} />
-                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="tutor" width={180} tick={{ fontSize: 10 }} interval={0} />
                 <Tooltip />
-                <Bar dataKey="valid" name="Valid tickets" fill="hsl(var(--destructive))" />
+                <Bar dataKey="valid" name="Valid tickets" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="valid" position="right" fontSize={10} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -530,7 +546,9 @@ export function CsTicketsAnalyticsTab() {
                 <Legend />
                 <Bar dataKey="valid" name="Validated" stackId="m" fill="hsl(var(--primary))" />
                 <Bar dataKey="notValid" name="Not valid" stackId="m" fill="hsl(var(--muted-foreground))" />
-                <Bar dataKey="pending" name="No evaluation yet" stackId="m" fill="hsl(var(--destructive))" />
+                <Bar dataKey="pending" name="No evaluation yet" stackId="m" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="total" position="top" fontSize={10} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
