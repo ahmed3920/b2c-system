@@ -58,6 +58,7 @@ type PoolRow = {
   tutor_name: string | null;
   team_leader: string;
   group_session_id: number | null;
+  has_url: boolean;
 };
 
 function shuffle<T>(items: T[]): T[] {
