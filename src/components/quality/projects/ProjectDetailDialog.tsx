@@ -223,29 +223,8 @@ export function ProjectDetailDialog({ project, decision, onClose, onDecide }: Pr
               </Button>
             )}
 
-            <div className="rounded-lg border bg-muted/40 p-4">
-              <p className="font-medium mb-2">Audit decision</p>
-              {decision?.decided_at && (
-                <p className="text-xs text-muted-foreground mb-2">
-                  {decision.status} by {decision.decided_by_name || "—"} on{" "}
-                  {new Date(decision.decided_at).toLocaleString()}
-                </p>
-              )}
-              <Textarea
-                placeholder="Reason / notes (required when rejecting)"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={5}
-              />
-              <div className="flex gap-2 mt-3">
-                <Button disabled={saving} onClick={() => decide("approved")}>
-                  Approve
-                </Button>
-                <Button disabled={saving} variant="destructive" onClick={() => decide("rejected")}>
-                  Reject
-                </Button>
-              </div>
-            </div>
+            <ProjectEvaluationPanel project={project} evaluation={evaluation} onSaved={onEvaluated} />
+
 
             {project.session_start_at && (
               <p className="text-sm text-muted-foreground">
