@@ -178,13 +178,13 @@ export async function exportCsTicketsToPdf(container: HTMLElement, opts: CsPdfOp
   // Two charts per row, each scaled to its column width.
   const colGap = 6;
   const colW = (pageW - M * 2 - colGap) / 2;
-  const MAX_CHART_H = 72;
+  const MAX_CHART_H = 84;
   let col = 0;
   let rowH = 0;
   for (const c of charts) {
     const aspect = c.h / c.w;
     // Tall charts (long category / tutor lists) get the full page width so labels stay readable.
-    const full = aspect >= 0.7;
+    const full = false;
     if (full && col === 1) {
       y += rowH + 4;
       rowH = 0;
