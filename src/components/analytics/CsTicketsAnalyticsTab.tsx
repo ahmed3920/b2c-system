@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, FileDown, Loader2, RefreshCw } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -24,6 +24,8 @@ import {
 import { SearchableSelect } from "@/components/tracking/quality/QualityFilterBar";
 import { downloadCsv } from "@/lib/exportCsv";
 import { useCsTicketAnalytics, type CsAnalyticsTicket } from "@/hooks/useCsTicketAnalytics";
+import { exportCsTicketsToPdf } from "@/utils/exportCsTicketsToPdf";
+import { toast } from "@/hooks/use-toast";
 
 const STATUSES = ["Valid", "Not Valid", "Not a Complain", "Pending"] as const;
 type Status = (typeof STATUSES)[number];
@@ -31,7 +33,7 @@ type Status = (typeof STATUSES)[number];
 const STATUS_COLORS: Record<Status, string> = {
   Valid: "hsl(var(--primary))",
   "Not Valid": "hsl(var(--muted-foreground))",
-  "Not a Complain": "hsl(var(--accent-foreground))",
+  "Not a Complain": "hsl(var(--accent))",
   Pending: "hsl(var(--destructive))",
 };
 
@@ -72,6 +74,8 @@ export function CsTicketsAnalyticsTab() {
   const [category, setCategory] = useState("");
   const [tutor, setTutor] = useState("");
   const [grain, setGrain] = useState<"day" | "week">("day");
+  const [exporting, setExporting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const teamLeaders = useMemo(
     () => Array.from(new Set(tickets.map((t) => (t.team_leader || "").trim()).filter(Boolean))).sort(),
@@ -231,8 +235,58 @@ export function CsTicketsAnalyticsTab() {
     else { setFrom(""); setTo(""); }
   };
 
+  const handleExportPdf = async () => {
+    if (!containerRef.current) return;
+    setExporting(true);
+    try {
+      const rangeLabel = from || to ? `${from || "start"}_${to || "today"}` : "all-time";
+      await exportCsTicketsToPdf(containerRef.current, {
+        fileName: `cs-tickets-analysis_${rangeLabel}.pdf`,
+        showing: `Showing ${rows.length} of ${tickets.length} tickets`,
+        filters: [
+          { label: "From", value: from || "Earliest" },
+          { label: "To", value: to || "Today" },
+          { label: "Team leader", value: teamLeader || "All" },
+          { label: "Case type", value: caseType || "All" },
+          { label: "Status", value: status || "All" },
+          { label: "Category", value: category || "All" },
+          { label: "Tutor / ticket", value: tutor || "All" },
+        ],
+        kpis: [
+          { label: "Total tickets", value: String(kpis.total) },
+          { label: "Valid", value: String(kpis.counts.Valid), sub: `${pct(kpis.counts.Valid, kpis.total)}%` },
+          { label: "Not Valid", value: String(kpis.counts["Not Valid"]), sub: `${pct(kpis.counts["Not Valid"], kpis.total)}%` },
+          { label: "Not a Complain", value: String(kpis.counts["Not a Complain"]), sub: `${pct(kpis.counts["Not a Complain"], kpis.total)}%` },
+          { label: "Pending", value: String(kpis.counts.Pending), sub: `${kpis.overdue} past deadline` },
+          { label: "Validity rate", value: `${kpis.validityRate}%`, sub: "of decided" },
+          { label: "Avg. closing", value: kpis.avgClosingDays === null ? "—" : `${kpis.avgClosingDays}d`, sub: "creation to close" },
+        ],
+        tables: [
+          {
+            title: "Team leader summary",
+            head: ["Team leader", "Total", "Valid", "Not Valid", "Not a Complain", "Pending", "Validity %", "Avg closing (days)"],
+            body: byTeamLeader.map((r) => [r.team_leader, r.total, r.Valid, r["Not Valid"], r["Not a Complain"], r.Pending, `${r.validityPct}%`, r.avgClosing ?? "—"]),
+          },
+          {
+            title: "Tutor summary (top 50)",
+            head: ["Tutor", "Total", "Valid", "Categories"],
+            body: byTutor.slice(0, 50).map((r) => [r.tutor, r.total, r.valid, r.cats.size]),
+          },
+        ],
+      });
+    } catch (e) {
+      toast({
+        title: "Could not create the PDF",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={containerRef}>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filters</CardTitle>
@@ -303,6 +357,10 @@ export function CsTicketsAnalyticsTab() {
             >
               Clear filters
             </Button>
+            <Button onClick={handleExportPdf} disabled={exporting || loading || rows.length === 0}>
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+              <span className="ml-2">{exporting ? "Preparing PDF…" : "Export PDF"}</span>
+            </Button>
             <span className="text-sm text-muted-foreground ml-auto">
               Showing {rows.length} of {tickets.length} tickets
             </span>
@@ -344,7 +402,7 @@ export function CsTicketsAnalyticsTab() {
               </SelectContent>
             </Select>
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-72" data-chart="Tickets over time">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trend}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -361,7 +419,7 @@ export function CsTicketsAnalyticsTab() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Status split</CardTitle></CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-72" data-chart="Status split">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={statusSplit} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} label>
@@ -378,7 +436,7 @@ export function CsTicketsAnalyticsTab() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-base">Tickets by team leader</CardTitle></CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-80" data-chart="Tickets by team leader">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byTeamLeader}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -396,7 +454,7 @@ export function CsTicketsAnalyticsTab() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Case type</CardTitle></CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-80" data-chart="Case type">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={caseTypeSplit}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -412,7 +470,7 @@ export function CsTicketsAnalyticsTab() {
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Top categories</CardTitle></CardHeader>
-        <CardContent className="h-[420px]">
+        <CardContent className="h-[420px]" data-chart="Top categories">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={topCategories} layout="vertical" margin={{ left: 140 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -430,7 +488,7 @@ export function CsTicketsAnalyticsTab() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top 15 tutors by tickets</CardTitle></CardHeader>
-          <CardContent className="h-[420px]">
+          <CardContent className="h-[420px]" data-chart="Top 15 tutors by tickets">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byTutor.slice(0, 15)} layout="vertical" margin={{ left: 120 }}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -445,7 +503,7 @@ export function CsTicketsAnalyticsTab() {
 
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Top 15 tutors by valid tickets</CardTitle></CardHeader>
-          <CardContent className="h-[420px]">
+          <CardContent className="h-[420px]" data-chart="Top 15 tutors by valid tickets">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topTutorsValid} layout="vertical" margin={{ left: 120 }}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -462,7 +520,7 @@ export function CsTicketsAnalyticsTab() {
       {byMentor.length > 0 && (
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Mentor evaluation workload</CardTitle></CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-80" data-chart="Mentor evaluation workload">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byMentor}>
                 <CartesianGrid strokeDasharray="3 3" />
