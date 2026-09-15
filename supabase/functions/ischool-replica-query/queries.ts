@@ -311,10 +311,7 @@ const PROJECT_AUDIT_BASE = `with base as (
                  coalesce(l.name_i18n->>'en', l.name) as lesson,
                  s.id as session_id,
                  s.group_session_id,
-                 s.start_at as session_start_at,
-                 cov.key as cover_key,
-                 cov.content_type as cover_content_type,
-                 cov.filename as cover_filename
+                 s.start_at as session_start_at
             from public.projects p
             join public.students st on st.id = p.student_id
             left join public.grades g on g.id = st.grade_id
@@ -323,14 +320,6 @@ const PROJECT_AUDIT_BASE = `with base as (
             left join public.admins a on a.id = t.team_lead_id
             left join public.lessons l on l.id = s.lesson_id
             left join public.levels lv on lv.id = coalesce(p.level_id, l.level_id)
-            left join lateral (
-              select b.key, b.content_type, b.filename
-                from public.active_storage_attachments att
-                join public.active_storage_blobs b on b.id = att.blob_id
-               where att.record_type = 'Project' and att.record_id = p.id and att.name = 'cover'
-               order by att.id desc
-               limit 1
-            ) cov on true
            where st.organization_id = 1
              and ($1::date is null or p.created_at >= $1::date)
              and ($2::date is null or p.created_at < ($2::date + 1))
@@ -348,6 +337,22 @@ const PROJECT_AUDIT_BASE = `with base as (
                   or ($7::text = 'yes' and coalesce(btrim(p.url), '') <> '')
                   or ($7::text = 'no' and coalesce(btrim(p.url), '') = ''))
         )`;
+
+// Cover image lookup. Applied only after rows are limited — running it inside
+// the base CTE scans attachments for every matching project and times out.
+const COVER_LATERAL_COLS =
+  `cov.key as cover_key, cov.content_type as cover_content_type, cov.filename as cover_filename`;
+
+const COVER_LATERAL = (idExpr: string) => `left join lateral (
+            select b.key, b.content_type, b.filename
+              from public.active_storage_attachments att
+              join public.active_storage_blobs b on b.id = att.blob_id
+             where att.record_type = 'Project' and att.record_id = ${idExpr} and att.name = 'cover'
+             order by att.id desc
+             limit 1
+          ) cov on true`;
+
+
 
 // Student-level project dashboard. $1 team_lead, $2 grade, $3 search, $4 stalled_only
 const PROJECT_STUDENT_PARAMS = ["team_lead", "grade", "search", "stalled_only"];
@@ -1312,10 +1317,13 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   // --- Projects audit (Quality > Projects) --------------------------------
   project_audit_list: {
     sql: `${PROJECT_AUDIT_BASE}
-          select * from base
-          order by case when $10::text = 'created_asc' then created_at end asc,
-                   case when coalesce($10::text, 'created_desc') = 'created_desc' then created_at end desc
-          limit coalesce($8::int, 50) offset coalesce($9::int, 0)`,
+          , page as (
+            select * from base
+            order by case when $10::text = 'created_asc' then created_at end asc,
+                     case when coalesce($10::text, 'created_desc') = 'created_desc' then created_at end desc
+            limit coalesce($8::int, 50) offset coalesce($9::int, 0)
+          )
+          select page.*, ${COVER_LATERAL_COLS} from page ${COVER_LATERAL("page.project_id")}`,
     params: [...PROJECT_AUDIT_PARAMS, "limit", "offset", "sort"],
     limit: 5000,
   },
@@ -1324,7 +1332,8 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   // One project by its id, in the same shape as the audit list.
   project_audit_by_id: {
     sql: `${PROJECT_AUDIT_BASE}
-          select * from base where project_id = $8::bigint limit 1`,
+          , page as (select * from base where project_id = $8::bigint limit 1)
+          select page.*, ${COVER_LATERAL_COLS} from page ${COVER_LATERAL("page.project_id")}`,
     params: [...PROJECT_AUDIT_PARAMS, "project_id"],
     limit: 1,
   },
