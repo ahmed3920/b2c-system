@@ -175,36 +175,46 @@ export async function exportCsTicketsToPdf(container: HTMLElement, opts: CsPdfOp
 
   // ---- Charts
   const charts = await collectCharts(container);
-  const MAX_CHART_H = 78; // two charts per page
+  // Two charts per row, each scaled to its column width.
+  const colGap = 6;
+  const colW = (pageW - M * 2 - colGap) / 2;
+  const MAX_CHART_H = 72;
+  let col = 0;
+  let rowH = 0;
   for (const c of charts) {
-    const maxW = pageW - M * 2;
     const aspect = c.h / c.w;
-    let drawH = Math.min(aspect * maxW, MAX_CHART_H);
-    let drawW = drawH / aspect;
-    if (drawW > maxW) {
-      drawW = maxW;
-      drawH = aspect * drawW;
+    let drawW = colW;
+    let drawH = aspect * drawW;
+    if (drawH > MAX_CHART_H) {
+      drawH = MAX_CHART_H;
+      drawW = drawH / aspect;
     }
     const blockH = drawH + (c.legend ? 5 : 0) + 11;
-    if (y + blockH > pageH - 12) {
+    if (col === 0 && y + blockH > pageH - 14) {
       doc.addPage();
       y = M + 6;
+      rowH = 0;
     }
+    const x = M + col * (colW + colGap);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...INK);
-    doc.text(c.title, M, y);
-    y += 3;
-    doc.addImage(c.png, "PNG", M, y, drawW, drawH, undefined, "FAST");
-    y += drawH;
+    doc.text(c.title, x, y);
+    doc.addImage(c.png, "PNG", x, y + 3, drawW, drawH, undefined, "FAST");
     if (c.legend) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(...SUBINK);
-      doc.text(c.legend, M, y + 4);
-      y += 5;
+      doc.text(c.legend.slice(0, 120), x, y + drawH + 7);
     }
-    y += 8;
+    rowH = Math.max(rowH, blockH);
+    if (col === 1) {
+      y += rowH + 4;
+      rowH = 0;
+      col = 0;
+    } else {
+      col = 1;
+    }
   }
 
   // ---- Tables

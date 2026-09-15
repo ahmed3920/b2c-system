@@ -33,7 +33,7 @@ type Status = (typeof STATUSES)[number];
 const STATUS_COLORS: Record<Status, string> = {
   Valid: "hsl(var(--primary))",
   "Not Valid": "hsl(var(--muted-foreground))",
-  "Not a Complain": "hsl(var(--accent-foreground))",
+  "Not a Complain": "hsl(var(--accent))",
   Pending: "hsl(var(--destructive))",
 };
 
