@@ -66,11 +66,8 @@ export function ProjectDetailDialog({ project, evaluation, onClose, onEvaluated 
           </span>
           {project.published ? <Badge variant="secondary">Published</Badge> : <Badge variant="outline">Draft</Badge>}
           {project.archived && <Badge variant="destructive">Archived</Badge>}
-          {decision && (
-            <Badge variant={decision.status === "approved" ? "default" : decision.status === "rejected" ? "destructive" : "outline"}>
-              {decision.status}
-            </Badge>
-          )}
+          {evaluation && <Badge>{statusShortLabel(evaluation.status as EvalStatus)}</Badge>}
+
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
