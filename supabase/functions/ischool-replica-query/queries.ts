@@ -310,6 +310,7 @@ const PROJECT_AUDIT_BASE = `with base as (
                  coalesce(lv.name_i18n->>'en', lv.name) as module,
                  coalesce(l.name_i18n->>'en', l.name) as lesson,
                  s.id as session_id,
+                 s.group_session_id,
                  s.start_at as session_start_at,
                  cov.key as cover_key,
                  cov.content_type as cover_content_type,
@@ -1309,11 +1310,66 @@ export const QUERIES: Record<string, ReplicaQuery> = {
   project_audit_list: {
     sql: `${PROJECT_AUDIT_BASE}
           select * from base
-          order by created_at desc
+          order by case when $9::text = 'created_asc' then created_at end asc,
+                   case when coalesce($9::text, 'created_desc') = 'created_desc' then created_at end desc
           limit coalesce($7::int, 50) offset coalesce($8::int, 0)`,
-    params: [...PROJECT_AUDIT_PARAMS, "limit", "offset"],
+    params: [...PROJECT_AUDIT_PARAMS, "limit", "offset", "sort"],
     limit: 5000,
   },
+
+  // Candidate pool for the daily reviewer assignment engine.
+  // One project by its id, in the same shape as the audit list.
+  project_audit_by_id: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select * from base where project_id = $7::bigint limit 1`,
+    params: [...PROJECT_AUDIT_PARAMS, "project_id"],
+    limit: 1,
+  },
+
+  project_assignment_pool: {
+    sql: `${PROJECT_AUDIT_BASE}
+          select project_id, title, created_at, s_id, student_name, grade,
+                 tutor_tid, tutor_name, team_leader, group_session_id
+            from base
+           order by created_at desc
+           limit coalesce($7::int, 2000)`,
+    params: [...PROJECT_AUDIT_PARAMS, "limit"],
+    limit: 5000,
+  },
+
+  // Phase 1 coverage: eligible students vs students who uploaded, per full-time tutor.
+  project_phase1_coverage: {
+    sql: `with pairs as (
+            select t.t_id as tutor_tid,
+                   coalesce(t.name_i18n->>'en', t.name_temp) as tutor_name,
+                   btrim(coalesce(a.name, 'Unassigned')) as team_leader,
+                   s.student_id
+              from public.sessions s
+              join public.tutors t on t.id = s.tutor_id
+              join public.students st on st.id = s.student_id
+              left join public.admins a on a.id = t.team_lead_id
+             where coalesce(s.status, 0) = 0
+               and st.organization_id = 1
+               and coalesce(t.employment_type, 0) = 0
+               and s.start_at >= $1::date
+               and s.start_at < ($2::date + 1)
+               and ($3::text is null or btrim(coalesce(a.name, 'Unassigned')) = $3::text)
+             group by 1, 2, 3, 4
+          )
+          select tutor_tid, tutor_name, team_leader,
+                 count(*)::int as eligible_students,
+                 count(*) filter (where exists (
+                   select 1 from public.projects p
+                    where p.student_id = pairs.student_id
+                      and p.created_at >= $1::date
+                      and p.created_at < ($2::date + 1)))::int as uploaded_students
+            from pairs
+           group by 1, 2, 3
+           order by tutor_name`,
+    params: ["date_from", "date_to", "team_lead"],
+    limit: 3000,
+  },
+
 
   project_audit_summary: {
     sql: `${PROJECT_AUDIT_BASE}

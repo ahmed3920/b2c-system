@@ -41,3 +41,7 @@ verify_jwt = false
 
 [functions.ischool-replica-query]
 verify_jwt = false
+
+[functions.assign-project-reviews]
+verify_jwt = false
+

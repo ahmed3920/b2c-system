@@ -1,53 +1,29 @@
-import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDays, Download, Eye, FileText, GraduationCap, Heart, ImageOff, Loader2, MessageSquare, PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { signProjectFiles, useProjectFiles, type Decision, type ProjectRow } from "@/hooks/useProjectAudit";
+import { signProjectFiles, useProjectFiles, type ProjectRow } from "@/hooks/useProjectAudit";
+import { ProjectEvaluationPanel } from "./ProjectEvaluationPanel";
+import { statusShortLabel, type EvalStatus } from "@/lib/projectEvaluation";
+import type { ProjectEvaluation } from "@/hooks/useProjectReviews";
 
 type Props = {
   project: ProjectRow | null;
-  decision?: Decision;
+  evaluation?: ProjectEvaluation;
   onClose: () => void;
-  onDecide: (project: ProjectRow, status: "approved" | "rejected", reason: string) => Promise<void>;
+  onEvaluated?: () => void;
 };
 
-export function ProjectDetailDialog({ project, decision, onClose, onDecide }: Props) {
+export function ProjectDetailDialog({ project, evaluation, onClose, onEvaluated }: Props) {
   const { toast } = useToast();
-  const [reason, setReason] = useState("");
-  const [saving, setSaving] = useState(false);
   const { files, urls, loading: filesLoading, error: filesError } = useProjectFiles(
     project?.project_id ?? null,
   );
 
-  useEffect(() => {
-    setReason(decision?.reason ?? "");
-  }, [decision, project?.project_id]);
-
   if (!project) return null;
 
-  const decide = async (status: "approved" | "rejected") => {
-    if (status === "rejected" && !reason.trim()) {
-      toast({ title: "A reason is required to reject", variant: "destructive" });
-      return;
-    }
-    setSaving(true);
-    try {
-      await onDecide(project, status, reason.trim());
-      toast({ title: status === "approved" ? "Project approved" : "Project rejected" });
-    } catch (e) {
-      toast({
-        title: "Could not save",
-        description: e instanceof Error ? e.message : "Unknown error",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const images = files.filter((f) => (f.content_type ?? "").startsWith("image/"));
   const cover = images.find((f) => f.kind === "cover") ?? images[0];
@@ -90,11 +66,8 @@ export function ProjectDetailDialog({ project, decision, onClose, onDecide }: Pr
           </span>
           {project.published ? <Badge variant="secondary">Published</Badge> : <Badge variant="outline">Draft</Badge>}
           {project.archived && <Badge variant="destructive">Archived</Badge>}
-          {decision && (
-            <Badge variant={decision.status === "approved" ? "default" : decision.status === "rejected" ? "destructive" : "outline"}>
-              {decision.status}
-            </Badge>
-          )}
+          {evaluation && <Badge>{statusShortLabel(evaluation.status as EvalStatus)}</Badge>}
+
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -223,29 +196,8 @@ export function ProjectDetailDialog({ project, decision, onClose, onDecide }: Pr
               </Button>
             )}
 
-            <div className="rounded-lg border bg-muted/40 p-4">
-              <p className="font-medium mb-2">Audit decision</p>
-              {decision?.decided_at && (
-                <p className="text-xs text-muted-foreground mb-2">
-                  {decision.status} by {decision.decided_by_name || "—"} on{" "}
-                  {new Date(decision.decided_at).toLocaleString()}
-                </p>
-              )}
-              <Textarea
-                placeholder="Reason / notes (required when rejecting)"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={5}
-              />
-              <div className="flex gap-2 mt-3">
-                <Button disabled={saving} onClick={() => decide("approved")}>
-                  Approve
-                </Button>
-                <Button disabled={saving} variant="destructive" onClick={() => decide("rejected")}>
-                  Reject
-                </Button>
-              </div>
-            </div>
+            <ProjectEvaluationPanel project={project} evaluation={evaluation} onSaved={onEvaluated} />
+
 
             {project.session_start_at && (
               <p className="text-sm text-muted-foreground">
