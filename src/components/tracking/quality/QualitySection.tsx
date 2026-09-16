@@ -9,10 +9,11 @@ import { QualitySummaryTab } from "./QualitySummaryTab";
 import { QualityCycleComparisonTab } from "./QualityCycleComparisonTab";
 import { QualityCoverageTab } from "./QualityCoverageTab";
 import { QualityFlagFollowupTab } from "./QualityFlagFollowupTab";
+import { QualityObjectionsTab } from "./QualityObjectionsTab";
 import { ProjectsSection } from "@/components/quality/projects/ProjectsSection";
 import { useProjectAuditAccess } from "@/hooks/useProjectAuditAccess";
 
-const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage", "followup", "projects"] as const;
+const SUB_TABS = ["overview", "reviews", "sessions", "comments", "objections", "summary", "cycles", "coverage", "followup", "projects"] as const;
 type SubTab = (typeof SUB_TABS)[number];
 
 /**
@@ -63,6 +64,7 @@ export function QualitySection() {
         <TabsTrigger value="reviews">Reviews</TabsTrigger>
         <TabsTrigger value="sessions">Session Details</TabsTrigger>
         <TabsTrigger value="comments">Mentor Comments</TabsTrigger>
+        <TabsTrigger value="objections">Objections</TabsTrigger>
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="cycles">Cycle Comparison</TabsTrigger>
         <TabsTrigger value="coverage">Review Coverage</TabsTrigger>
@@ -81,6 +83,9 @@ export function QualitySection() {
       </TabsContent>
       <TabsContent value="comments" className="mt-0">
         <QualityMentorCommentsTab />
+      </TabsContent>
+      <TabsContent value="objections" className="mt-0">
+        <QualityObjectionsTab />
       </TabsContent>
       <TabsContent value="summary" className="mt-0">
         <QualitySummaryTab />
