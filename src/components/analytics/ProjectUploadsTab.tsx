@@ -136,6 +136,20 @@ export function ProjectUploadsTab() {
   const fmtDelta = (v: number | null) =>
     v === null ? "—" : v > 0 ? `+${v}` : String(v);
 
+  const exportCompareCsv = () => {
+    downloadCsv(
+      "projects-count-baseline-vs-today",
+      ["Projects uploaded", `Students on ${PROJECTS_BASELINE.date}`, "Students today", "Change"],
+      distributionCompare.map((r) => [
+        r.bucket,
+        r.baseline_students,
+        r.current_students,
+        r.current_students - r.baseline_students,
+      ]),
+    );
+  };
+
+
   return (
     <div className="space-y-4">
       <Card>
