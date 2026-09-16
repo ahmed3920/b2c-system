@@ -24,6 +24,12 @@ export type NotStartedRow = {
 export type GradeRow = { grade: string; zero_students: number; students: number };
 export type TeamLeaderRow = { team_leader: string; zero_students: number; students: number };
 export type DistributionRow = { bucket: string; bucket_order: number; students: number };
+export type DistributionCompareRow = {
+  bucket: string;
+  bucket_order: number;
+  baseline_students: number;
+  current_students: number;
+};
 export type SessionTypeRow = { session_type: string; students: number; zero_students: number };
 export type ZeroStudentRow = {
   s_id: string;
@@ -51,6 +57,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
   const [byGrade, setByGrade] = useState<GradeRow[]>([]);
   const [byTeamLeader, setByTeamLeader] = useState<TeamLeaderRow[]>([]);
   const [distribution, setDistribution] = useState<DistributionRow[]>([]);
+  const [distributionCompare, setDistributionCompare] = useState<DistributionCompareRow[]>([]);
   const [students, setStudents] = useState<ZeroStudentRow[]>([]);
   const [notStarted, setNotStarted] = useState<NotStartedRow[]>([]);
   const [bySessionType, setBySessionType] = useState<SessionTypeRow[]>([]);
@@ -69,11 +76,15 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads, uploadsTyped] = await Promise.all([
+      const [sum, grades, tls, dist, distCmp, sessTypes, list, notStartedList, opts, snaps, uploads, uploadsTyped] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
         runReplicaQuery<DistributionRow>("analytics_projects_distribution", params),
+        runReplicaQuery<DistributionCompareRow>("analytics_projects_distribution_compare", {
+          ...params,
+          baseline: PROJECTS_BASELINE.date,
+        }),
         runReplicaQuery<SessionTypeRow>("analytics_projects_by_session_type", params),
         runReplicaQuery<ZeroStudentRow>("analytics_projects_students", {
           ...params,
@@ -108,6 +119,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
       setByGrade(grades);
       setByTeamLeader(tls);
       setDistribution(dist);
+      setDistributionCompare(distCmp);
       setBySessionType(sessTypes);
       setStudents(list);
       setNotStarted(notStartedList);
@@ -129,5 +141,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, uploadsByDayType, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, distributionCompare, bySessionType, students, notStarted, options, trend, uploadsByDay, uploadsByDayType, loading, error, refetch: load };
 }

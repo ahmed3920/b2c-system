@@ -1332,6 +1332,31 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     limit: 50,
   },
 
+  // Students by project count: baseline date vs today. Baseline counts are
+  // reconstructed from project upload timestamps for today's tracked students.
+  analytics_projects_distribution_compare: {
+    sql: `${PROJECTS_BASE_WITH_ID}
+          , counts as (
+            select base.student_id,
+                   base.projects_count as now_count,
+                   (select count(*)
+                      from public.projects p
+                     where p.student_id = base.student_id
+                       and p.created_at < coalesce($4::date, current_date))::int as base_count
+              from base
+          ), buckets as (select generate_series(0, 12) as bucket_order)
+          select case when b.bucket_order >= 12 then '12+' else b.bucket_order::text end as bucket,
+                 b.bucket_order,
+                 (select count(*) from counts c where least(c.base_count, 12) = b.bucket_order)::int as baseline_students,
+                 (select count(*) from counts c where least(c.now_count, 12) = b.bucket_order)::int as current_students
+            from buckets b
+           order by b.bucket_order`,
+    params: [...PROJECTS_PARAMS, "baseline"],
+    limit: 50,
+  },
+
+
+
   analytics_projects_students: {
     sql: `${PROJECTS_BASE}
           select s_id,
