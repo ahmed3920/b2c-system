@@ -119,6 +119,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
       setByGrade(grades);
       setByTeamLeader(tls);
       setDistribution(dist);
+      setDistributionCompare(distCmp);
       setBySessionType(sessTypes);
       setStudents(list);
       setNotStarted(notStartedList);
