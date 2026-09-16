@@ -84,6 +84,9 @@ export function QualitySection() {
       <TabsContent value="comments" className="mt-0">
         <QualityMentorCommentsTab />
       </TabsContent>
+      <TabsContent value="objections" className="mt-0">
+        <QualityObjectionsTab />
+      </TabsContent>
       <TabsContent value="summary" className="mt-0">
         <QualitySummaryTab />
       </TabsContent>
