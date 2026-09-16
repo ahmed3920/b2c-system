@@ -16,12 +16,13 @@ export interface FeatureControl {
   display_order: number;
 }
 
-export const ROLE_FIELD: Record<AppRole, keyof FeatureControl> = {
+export const ROLE_FIELD: Partial<Record<AppRole, keyof FeatureControl>> = {
   admin: "enabled_admin",
   super_team_leader: "enabled_super_team_leader",
   team_leader: "enabled_team_leader",
   mentor: "enabled_mentor",
   community_moderator: "enabled_community_moderator",
+  // quality_team has a fixed, read-only scope and is not feature-toggled.
 };
 
 export function useFeatureControls() {
@@ -55,9 +56,11 @@ export function isFeatureEnabled(
   role: AppRole | null,
 ): boolean {
   if (!role) return true;
+  const field = ROLE_FIELD[role];
+  if (!field) return true;
   const f = features.find(
     (x) => x.feature_key === featureKeyOrPath || x.route_path === featureKeyOrPath,
   );
   if (!f) return true;
-  return Boolean(f[ROLE_FIELD[role]]);
+  return Boolean(f[field]);
 }

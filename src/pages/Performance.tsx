@@ -17,7 +17,7 @@ const sections = [
 ];
 
 export default function Performance() {
-  const { isMentor, isAdmin, isTeamLeader } = useUserRole();
+  const { isMentor, isAdmin, isTeamLeader, isQualityTeam } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -33,6 +33,17 @@ export default function Performance() {
     return <Navigate to={`/quality${qs ? `?${qs}` : ""}`} replace />;
   }
 
+
+  // Quality Team: CS tickets only (read-only, all teams).
+  if (isQualityTeam) {
+    return (
+      <AppLayout title="CS Tickets" allowedRoles={["admin", "team_leader", "mentor", "community_moderator", "quality_team"]}>
+        <div className="p-6 max-w-[1600px] mx-auto">
+          <CSTicketsTable />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (mentorOnly || csOnly) {
     const mentorTabs = [

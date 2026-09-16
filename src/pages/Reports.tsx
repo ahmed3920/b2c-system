@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useUserRole, type AppRole } from "@/hooks/useUserRole";
 import { useAdminView } from "@/hooks/useAdminView";
 import { AdminViewSelector } from "@/components/admin/AdminViewSelector";
 import {
@@ -24,7 +24,7 @@ interface ReportType {
   title: string;
   description: string;
   icon: React.ReactNode;
-  roles: ("admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator")[];
+  roles: AppRole[];
 }
 
 const reportTypes: ReportType[] = [

@@ -19,7 +19,7 @@ export type QualityScope = {
  * the tutors they mentor.
  */
 export function useQualityScope(): QualityScope {
-  const { isAdmin, isTeamLeader, isLoading: roleLoading } = useUserRole();
+  const { isAdmin, isTeamLeader, isQualityTeam, isLoading: roleLoading } = useUserRole();
   const [name, setName] = useState<string | null>(null);
   const [nameLoading, setNameLoading] = useState(true);
 
@@ -49,7 +49,8 @@ export function useQualityScope(): QualityScope {
   }, []);
 
   const loading = roleLoading || nameLoading;
-  if (loading || isAdmin) {
+  // Quality Team sees every team, like an admin.
+  if (loading || isAdmin || isQualityTeam) {
     return { lockedTeamLead: null, lockedMentor: null, loading, displayName: null };
   }
   // The replica may store a shorter form of the name ("Ahmed Hesham" vs

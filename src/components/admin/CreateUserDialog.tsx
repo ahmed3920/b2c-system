@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import type { CreateUserData } from "@/hooks/useAdminUsers";
 import type { AppRole } from "@/hooks/useUserRole";
 
-type UserType = "admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator";
+type UserType = "admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator" | "quality_team";
 
 interface UserTypeOption {
   value: UserType;
@@ -62,6 +62,12 @@ const userTypes: UserTypeOption[] = [
     label: "New Community Moderator",
     description: "Moderate community and track tasks like a mentor",
     icon: <Globe className="w-6 h-6" />,
+  },
+  {
+    value: "quality_team",
+    label: "New Quality Team Member",
+    description: "View-only access to all CS tickets and the whole Quality area",
+    icon: <Shield className="w-6 h-6" />,
   },
 ];
 
@@ -155,6 +161,7 @@ export function CreateUserDialog({
 
     switch (selectedType) {
       case "admin":
+      case "quality_team":
         schema = adminSchema;
         dataToValidate = {
           email: formData.email,
@@ -217,14 +224,15 @@ export function CreateUserDialog({
 
     switch (selectedType) {
       case "admin":
+      case "quality_team":
         createData = {
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
           mentorId: finalMentorId,
           mentorName: formData.fullName,
-          teamLeader: "System Admin",
-          role: "admin",
+          teamLeader: selectedType === "admin" ? "System Admin" : "Quality Team",
+          role: selectedType,
         };
         break;
       case "team_leader":

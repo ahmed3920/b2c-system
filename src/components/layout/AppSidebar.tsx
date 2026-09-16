@@ -145,6 +145,12 @@ export function AppSidebar() {
     );
   };
 
+  // Quality Team: read-only access to CS tickets and the whole Quality area.
+  const qualityTeamNav: NavItem[] = [
+    { title: "CS Tickets", url: "/performance", icon: Activity },
+    { title: "Quality", url: "/quality", icon: ShieldCheck },
+  ];
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -160,12 +166,18 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {renderGroup("Overview", overview)}
-        {renderGroup("Operations", operations)}
-        {renderGroup("Tracking", tracking)}
-        {renderGroup("Growth & Risk", growthRisk)}
-        {renderGroup("Task Tracker", taskTracker)}
-        {renderGroup("Admin", admin)}
+        {role === "quality_team" ? (
+          renderGroup("Quality", qualityTeamNav)
+        ) : (
+          <>
+            {renderGroup("Overview", overview)}
+            {renderGroup("Operations", operations)}
+            {renderGroup("Tracking", tracking)}
+            {renderGroup("Growth & Risk", growthRisk)}
+            {renderGroup("Task Tracker", taskTracker)}
+            {renderGroup("Admin", admin)}
+          </>
+        )}
       </SidebarContent>
     </Sidebar>
   );
