@@ -69,6 +69,10 @@ export function QualityObjectionsTab() {
         <Kpi label="Waiting on Quality Team Leader" value={(s?.pending_qtl ?? 0).toLocaleString()} loading={f.summaryLoading} />
         <Kpi label="Comments / flags removed" value={(s?.items_removed ?? 0).toLocaleString()} loading={f.summaryLoading} />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi label="Reviews with objections" value={(s?.reviews ?? 0).toLocaleString()} loading={f.summaryLoading} />
+        <Kpi label="Tutors with objections" value={(s?.tutors ?? 0).toLocaleString()} loading={f.summaryLoading} />
+      </div>
 
       <QualityFilterBar
         filters={f.filters}
