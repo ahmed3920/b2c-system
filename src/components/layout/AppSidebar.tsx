@@ -145,6 +145,12 @@ export function AppSidebar() {
     );
   };
 
+  // Quality Team: read-only access to CS tickets and the whole Quality area.
+  const qualityTeamNav: NavItem[] = [
+    { title: "CS Tickets", url: "/performance", icon: Activity },
+    { title: "Quality", url: "/quality", icon: ShieldCheck },
+  ];
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
