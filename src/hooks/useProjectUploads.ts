@@ -24,6 +24,12 @@ export type NotStartedRow = {
 export type GradeRow = { grade: string; zero_students: number; students: number };
 export type TeamLeaderRow = { team_leader: string; zero_students: number; students: number };
 export type DistributionRow = { bucket: string; bucket_order: number; students: number };
+export type DistributionCompareRow = {
+  bucket: string;
+  bucket_order: number;
+  baseline_students: number;
+  current_students: number;
+};
 export type SessionTypeRow = { session_type: string; students: number; zero_students: number };
 export type ZeroStudentRow = {
   s_id: string;
