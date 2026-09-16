@@ -57,6 +57,7 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
   const [byGrade, setByGrade] = useState<GradeRow[]>([]);
   const [byTeamLeader, setByTeamLeader] = useState<TeamLeaderRow[]>([]);
   const [distribution, setDistribution] = useState<DistributionRow[]>([]);
+  const [distributionCompare, setDistributionCompare] = useState<DistributionCompareRow[]>([]);
   const [students, setStudents] = useState<ZeroStudentRow[]>([]);
   const [notStarted, setNotStarted] = useState<NotStartedRow[]>([]);
   const [bySessionType, setBySessionType] = useState<SessionTypeRow[]>([]);
