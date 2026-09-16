@@ -68,21 +68,22 @@ export function QualityObjectionsTab() {
           label="Waiting on Team Leader"
           value={(s?.pending_tl ?? 0).toLocaleString()}
           loading={f.summaryLoading}
-          hint={s ? `From ${s.pending_tl_tutors.toLocaleString()} tutors · ${s.pending_tl_reviews.toLocaleString()} reviews` : undefined}
+          hint={s ? `From ${(s.pending_tl_tutors ?? 0).toLocaleString()} tutors · ${(s.pending_tl_reviews ?? 0).toLocaleString()} reviews` : undefined}
         />
         <Kpi
           label="Waiting on Quality Coordinator"
           value={(s?.pending_qc ?? 0).toLocaleString()}
           loading={f.summaryLoading}
-          hint={s ? `From ${s.pending_qc_tutors.toLocaleString()} tutors · ${s.pending_qc_reviews.toLocaleString()} reviews` : undefined}
+          hint={s ? `From ${(s.pending_qc_tutors ?? 0).toLocaleString()} tutors · ${(s.pending_qc_reviews ?? 0).toLocaleString()} reviews` : undefined}
         />
         <Kpi
           label="Waiting on Quality Team Leader"
           value={(s?.pending_qtl ?? 0).toLocaleString()}
           loading={f.summaryLoading}
-          hint={s ? `From ${s.pending_qtl_tutors.toLocaleString()} tutors · ${s.pending_qtl_reviews.toLocaleString()} reviews` : undefined}
+          hint={s ? `From ${(s.pending_qtl_tutors ?? 0).toLocaleString()} tutors · ${(s.pending_qtl_reviews ?? 0).toLocaleString()} reviews` : undefined}
         />
         <Kpi label="Comments / flags removed" value={(s?.items_removed ?? 0).toLocaleString()} loading={f.summaryLoading} />
+
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Reviews with objections" value={(s?.reviews ?? 0).toLocaleString()} loading={f.summaryLoading} />
