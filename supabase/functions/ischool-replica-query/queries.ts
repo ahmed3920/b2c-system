@@ -1743,7 +1743,13 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} = 'pending_qc')::numeric, 1) as pending_qc_avg_days,
                  count(*) filter (where ${OBJ_STAGE} = 'pending_qc' and o.qc_deadline is not null and o.qc_deadline < now())::int as pending_qc_overdue,
                  round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::numeric, 1) as pending_qtl_avg_days,
-                 count(*) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm') and o.qlead_deadline is not null and o.qlead_deadline < now())::int as pending_qtl_overdue
+                 count(*) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm') and o.qlead_deadline is not null and o.qlead_deadline < now())::int as pending_qtl_overdue,
+                 ${objDecision([41])} as tl_accepted,
+                 ${objDecision([48])} as tl_rejected,
+                 ${objDecision([51])} as qc_accepted,
+                 ${objDecision([52])} as qc_rejected,
+                 ${objDecision([53, 56])} as qtl_accepted,
+                 ${objDecision([42])} as qtl_rejected
           ${OBJ_FROM}`,
     params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
     limit: 1,
