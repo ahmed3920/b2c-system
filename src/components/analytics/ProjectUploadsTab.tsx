@@ -415,6 +415,81 @@ export function ProjectUploadsTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
+            Students by project count — baseline ({PROJECTS_BASELINE.date}) vs today
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={distributionCompare}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="baseline_students" name={`Baseline (${PROJECTS_BASELINE.date})`} fill="hsl(var(--muted-foreground))">
+                <LabelList dataKey="baseline_students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
+              <Bar dataKey="current_students" name="Today" fill="hsl(var(--primary))">
+                <LabelList dataKey="current_students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Project count comparison — before vs after</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCompareCsv}
+            disabled={!distributionCompare.length}
+          >
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Projects uploaded</TableHead>
+                <TableHead className="text-right">Students on {PROJECTS_BASELINE.date}</TableHead>
+                <TableHead className="text-right">Students today</TableHead>
+                <TableHead className="text-right">Change</TableHead>
+                <TableHead className="text-right">Change %</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {distributionCompare.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{loading ? "Loading…" : "No data"}</TableCell></TableRow>
+              ) : (
+                distributionCompare.map((r) => {
+                  const diff = r.current_students - r.baseline_students;
+                  const pct = r.baseline_students > 0 ? (diff / r.baseline_students) * 100 : null;
+                  return (
+                    <TableRow key={r.bucket}>
+                      <TableCell className="font-medium">{r.bucket}</TableCell>
+                      <TableCell className="text-right">{r.baseline_students}</TableCell>
+                      <TableCell className="text-right">{r.current_students}</TableCell>
+                      <TableCell className={`text-right ${diff > 0 ? "text-primary" : diff < 0 ? "text-destructive" : ""}`}>
+                        {fmtDelta(diff)}
+                      </TableCell>
+                      <TableCell className="text-right">{pct === null ? "—" : `${pct.toFixed(1)}%`}</TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">
             Students with 0 projects ({students.length})
           </CardTitle>
         </CardHeader>
