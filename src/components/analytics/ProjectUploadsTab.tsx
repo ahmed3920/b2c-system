@@ -363,7 +363,9 @@ export function ProjectUploadsTab() {
                 <XAxis dataKey="grade" tick={{ fontSize: 10 }} interval={0} angle={-20} height={70} textAnchor="end" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="zero_students" name="Students" fill="hsl(var(--primary))" />
+                <Bar dataKey="zero_students" name="Students" fill="hsl(var(--primary))">
+                  <LabelList dataKey="zero_students" position="top" fontSize={9} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
