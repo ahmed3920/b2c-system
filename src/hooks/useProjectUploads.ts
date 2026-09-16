@@ -141,5 +141,5 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     load();
   }, [load]);
 
-  return { summary, byGrade, byTeamLeader, distribution, bySessionType, students, notStarted, options, trend, uploadsByDay, uploadsByDayType, loading, error, refetch: load };
+  return { summary, byGrade, byTeamLeader, distribution, distributionCompare, bySessionType, students, notStarted, options, trend, uploadsByDay, uploadsByDayType, loading, error, refetch: load };
 }
