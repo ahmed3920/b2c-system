@@ -310,7 +310,9 @@ export function ProjectUploadsTab() {
                 name="Daily decrease %"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
-              />
+              >
+                <LabelList dataKey="daily" position="top" fontSize={9} formatter={(v: number | null) => (v === null ? "" : `${v}%`)} />
+              </Line>
               <Line
                 type="monotone"
                 dataKey="cumulative"
@@ -318,7 +320,9 @@ export function ProjectUploadsTab() {
                 stroke="hsl(var(--destructive))"
                 strokeWidth={2}
                 strokeDasharray="5 5"
-              />
+              >
+                <LabelList dataKey="cumulative" position="top" fontSize={9} formatter={(v: number | null) => (v === null ? "" : `${v}%`)} />
+              </Line>
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
