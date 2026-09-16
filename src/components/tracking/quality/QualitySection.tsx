@@ -64,6 +64,7 @@ export function QualitySection() {
         <TabsTrigger value="reviews">Reviews</TabsTrigger>
         <TabsTrigger value="sessions">Session Details</TabsTrigger>
         <TabsTrigger value="comments">Mentor Comments</TabsTrigger>
+        <TabsTrigger value="objections">Objections</TabsTrigger>
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="cycles">Cycle Comparison</TabsTrigger>
         <TabsTrigger value="coverage">Review Coverage</TabsTrigger>
