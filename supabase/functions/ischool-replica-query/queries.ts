@@ -1719,7 +1719,13 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  count(distinct t.id) filter (where ${OBJ_STAGE} = 'pending_qc')::int as pending_qc_tutors,
                  count(distinct qr.id) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::int as pending_qtl_reviews,
                  count(distinct t.id) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::int as pending_qtl_tutors,
-                 round(avg(extract(epoch from (coalesce(o.resolution_date, now()) - o.created_at)) / 86400.0)::numeric, 1) as avg_days
+                 round(avg(extract(epoch from (coalesce(o.resolution_date, now()) - o.created_at)) / 86400.0)::numeric, 1) as avg_days,
+                 round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} = 'pending_tl')::numeric, 1) as pending_tl_avg_days,
+                 count(*) filter (where ${OBJ_STAGE} = 'pending_tl' and o.edu_deadline is not null and o.edu_deadline < now())::int as pending_tl_overdue,
+                 round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} = 'pending_qc')::numeric, 1) as pending_qc_avg_days,
+                 count(*) filter (where ${OBJ_STAGE} = 'pending_qc' and o.qc_deadline is not null and o.qc_deadline < now())::int as pending_qc_overdue,
+                 round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::numeric, 1) as pending_qtl_avg_days,
+                 count(*) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm') and o.qlead_deadline is not null and o.qlead_deadline < now())::int as pending_qtl_overdue
           ${OBJ_FROM}`,
     params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
     limit: 1,
