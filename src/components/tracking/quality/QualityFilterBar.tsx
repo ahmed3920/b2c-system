@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, RefreshCw, X } from "lucide-react";
+import { Loader2, RefreshCw, X, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { QualityFilters, QualityFilterOptions } from "@/hooks/useQualityReviews";
 import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
 import { FLAG_FILTER_OPTIONS } from "@/lib/qualityFlags";
