@@ -36,6 +36,7 @@ export function ProjectUploadsTab() {
     byGrade,
     byTeamLeader,
     distribution,
+    distributionCompare,
     bySessionType,
     uploadsByDay,
     uploadsByDayType,
