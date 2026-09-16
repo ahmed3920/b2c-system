@@ -74,7 +74,7 @@ export function ReviewedProjectsTab() {
         r.project_id,
         r.project_title ?? "",
         r.student_name ?? "",
-        (r as any).student_external_id ?? "",
+        r.student_external_id ?? "",
         r.tutor_name ?? "",
         r.tutor_external_id ?? "",
         r.team_leader ?? "",
@@ -158,7 +158,7 @@ export function ReviewedProjectsTab() {
                     <TableCell>
                       {r.student_name ?? "—"}
                       <span className="block text-xs text-muted-foreground">
-                        {(r as any).student_external_id ?? ""}
+                        {r.student_external_id ?? ""}
                       </span>
                     </TableCell>
                     <TableCell>
