@@ -17,7 +17,7 @@ const REPLICA_PASSWORD = Deno.env.get("ISCHOOL_REPLICA_PASSWORD") ?? "";
 const REPLICA_DB = Deno.env.get("ISCHOOL_REPLICA_DB")?.trim();
 const REPLICA_PORT = Number(Deno.env.get("ISCHOOL_REPLICA_PORT") ?? "5432");
 
-const ALLOWED_ROLES = new Set(["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"]);
+const ALLOWED_ROLES = new Set(["admin", "team_leader", "super_team_leader", "mentor", "community_moderator", "quality_team"]);
 const MAX_ROWS = 5000;
 
 const json = (body: unknown, status = 200) =>
@@ -67,7 +67,7 @@ async function authorize(
     if (!roles.some((r) => ALLOWED_ROLES.has(r.role))) {
       return { error: json({ error: "Access required" }, 403) };
     }
-    if (roles.some((r) => r.role === "admin")) {
+    if (roles.some((r) => r.role === "admin" || r.role === "quality_team")) {
       projectAudit = true;
     } else {
       const grants = await app<{ id: string }[]>`
