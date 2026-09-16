@@ -9,6 +9,8 @@ import { ProjectAccessDialog } from "./ProjectAccessDialog";
 import { MyReviewsTab } from "./MyReviewsTab";
 import { Phase1SummaryTab } from "./Phase1SummaryTab";
 import { ReviewAssignmentsAdmin } from "./ReviewAssignmentsAdmin";
+import { ReviewedProjectsTab } from "./ReviewedProjectsTab";
+import { ReviewedProjectsAnalysisTab } from "./ReviewedProjectsAnalysisTab";
 
 export function ProjectsSection() {
   const { allowed, isAdmin, loading } = useProjectAuditAccess();
