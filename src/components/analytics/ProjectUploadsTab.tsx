@@ -340,8 +340,12 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="students" name="All tracked students" fill="hsl(var(--primary))" />
-              <Bar dataKey="zero_students" name="Students with 0 projects" fill="hsl(var(--destructive))" />
+              <Bar dataKey="students" name="All tracked students" fill="hsl(var(--primary))">
+                <LabelList dataKey="students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
+              <Bar dataKey="zero_students" name="Students with 0 projects" fill="hsl(var(--destructive))">
+                <LabelList dataKey="zero_students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
