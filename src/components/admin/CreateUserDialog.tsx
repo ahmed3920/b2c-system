@@ -161,6 +161,7 @@ export function CreateUserDialog({
 
     switch (selectedType) {
       case "admin":
+      case "quality_team":
         schema = adminSchema;
         dataToValidate = {
           email: formData.email,
