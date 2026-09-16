@@ -13,7 +13,7 @@ import { QualityObjectionsTab } from "./QualityObjectionsTab";
 import { ProjectsSection } from "@/components/quality/projects/ProjectsSection";
 import { useProjectAuditAccess } from "@/hooks/useProjectAuditAccess";
 
-const SUB_TABS = ["overview", "reviews", "sessions", "comments", "summary", "cycles", "coverage", "followup", "projects"] as const;
+const SUB_TABS = ["overview", "reviews", "sessions", "comments", "objections", "summary", "cycles", "coverage", "followup", "projects"] as const;
 type SubTab = (typeof SUB_TABS)[number];
 
 /**
