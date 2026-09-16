@@ -1731,6 +1731,19 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     limit: 1,
   },
 
+  objection_probe_actions: {
+    sql: `select act.action,
+                 count(*)::int as n,
+                 min(act.log) as sample_log,
+                 max(act.owner_type) as owner_type
+            from public.activities act
+           where act.trackable_type = 'QualityObjection'
+           group by 1
+           order by 1`,
+    params: [],
+    limit: 100,
+  },
+
   quality_objections_by_team_leader: {
     sql: `select coalesce(a.name, '—') as team_leader,
                  count(*)::int as total,
