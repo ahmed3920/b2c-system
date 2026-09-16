@@ -1713,6 +1713,12 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  count(*) filter (where ${OBJ_ITEM_REMOVED})::int as items_removed,
                  count(distinct qr.id)::int as reviews,
                  count(distinct t.id)::int as tutors,
+                 count(distinct qr.id) filter (where ${OBJ_STAGE} = 'pending_tl')::int as pending_tl_reviews,
+                 count(distinct t.id) filter (where ${OBJ_STAGE} = 'pending_tl')::int as pending_tl_tutors,
+                 count(distinct qr.id) filter (where ${OBJ_STAGE} = 'pending_qc')::int as pending_qc_reviews,
+                 count(distinct t.id) filter (where ${OBJ_STAGE} = 'pending_qc')::int as pending_qc_tutors,
+                 count(distinct qr.id) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::int as pending_qtl_reviews,
+                 count(distinct t.id) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::int as pending_qtl_tutors,
                  round(avg(extract(epoch from (coalesce(o.resolution_date, now()) - o.created_at)) / 86400.0)::numeric, 1) as avg_days
           ${OBJ_FROM}`,
     params: [...QUALITY_PARAMS, "stage", "outcome", "search"],

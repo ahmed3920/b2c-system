@@ -65,6 +65,12 @@ export type ObjectionSummary = {
   items_removed: number;
   reviews: number;
   tutors: number;
+  pending_tl_reviews: number;
+  pending_tl_tutors: number;
+  pending_qc_reviews: number;
+  pending_qc_tutors: number;
+  pending_qtl_reviews: number;
+  pending_qtl_tutors: number;
   avg_days: string | null;
 };
 
