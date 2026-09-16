@@ -277,9 +277,13 @@ export function ProjectUploadsTab() {
               <Tooltip />
               <Legend />
               <Bar dataKey="groupProjects" name="Group — projects" stackId="p" fill="hsl(var(--primary))" />
-              <Bar dataKey="oneProjects" name="One-to-one — projects" stackId="p" fill="hsl(var(--primary) / 0.45)" />
+              <Bar dataKey="oneProjects" name="One-to-one — projects" stackId="p" fill="hsl(var(--primary) / 0.45)">
+                <LabelList dataKey="oneProjects" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
               <Bar dataKey="groupStudents" name="Group — students" stackId="s" fill="hsl(var(--destructive))" />
-              <Bar dataKey="oneStudents" name="One-to-one — students" stackId="s" fill="hsl(var(--destructive) / 0.45)" />
+              <Bar dataKey="oneStudents" name="One-to-one — students" stackId="s" fill="hsl(var(--destructive) / 0.45)">
+                <LabelList dataKey="oneStudents" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
