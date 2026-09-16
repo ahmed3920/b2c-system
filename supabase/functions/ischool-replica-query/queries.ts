@@ -97,6 +97,88 @@ const TUTOR_ORGS = `(select string_agg(o.name, ', ' order by o.name)
 const QUALITY_FROM = `${QUALITY_JOINS}
           ${QUALITY_WHERE}`;
 
+// ---- Quality objections -------------------------------------------------
+// quality_objections.status codes observed in the replica:
+//   0  tutor objected, waiting on the Educational Team Leader
+//   1  TL agreed to remove -> waiting on the Quality Coordinator
+//   2  QC agreed to remove -> waiting on the Quality Team Leader
+//   3  QC rejected          -> waiting on the Quality Team Leader
+//   6  QTL accepted         -> waiting for the QC to edit the review
+//   7  QC edited the review -> waiting on the QTL to confirm
+//   4  review edit confirmed (objection accepted, item removed)
+//   5  rejected by the Quality Team Leader (final)
+//   10 rejected by the Educational Team Leader (final)
+const OBJ_STAGE = `(case o.status
+            when 0 then 'pending_tl'
+            when 1 then 'pending_qc'
+            when 2 then 'pending_qtl'
+            when 3 then 'pending_qtl'
+            when 6 then 'pending_edit'
+            when 7 then 'pending_qtl_confirm'
+            when 4 then 'accepted'
+            when 5 then 'rejected_qtl'
+            when 10 then 'rejected_tl'
+            else 'other' end)`;
+
+const OBJ_OUTCOME = `(case
+            when o.status = 4 then 'accepted'
+            when o.status in (5, 10) then 'rejected'
+            else 'pending' end)`;
+
+const OBJ_ITEM_KIND = `(case
+            when o.objectionable_type = 'QualityReviewFlag'
+              then (case qrf.flag_type when 2 then 'Red Flag' when 1 then 'Yellow Flag' else 'Flag' end)
+            when o.objectionable_type = 'QualityReviewComment'
+              then (case coalesce(qrc.comment_type, qcm.comment_type)
+                      when 0 then 'Positive Comment'
+                      else 'Need to Improve Comment' end)
+            else o.objectionable_type end)`;
+
+const OBJ_ITEM_TEXT = `coalesce(qrc.body_i18n->>'en', qcm.body_i18n->>'en', qrf.description)`;
+
+const OBJ_ITEM_REMOVED = `(qrc.deleted_at is not null or qrf.deleted_at is not null)`;
+
+const OBJ_ACTOR_ROLE = `(case
+            when act.action = 39 then 'tutor'
+            when act.action in (41, 48) then 'team_leader'
+            when act.action in (44, 51, 52, 61) then 'quality_coordinator'
+            when act.action in (42, 47, 53, 56, 65, 68) then 'quality_team_leader'
+            else 'system' end)`;
+
+const OBJ_CLAUSES = `and ($16::text is null or ${OBJ_STAGE} = $16::text)
+            and ($17::text is null or ${OBJ_OUTCOME} = $17::text)
+            and ($18::text is null
+                 or o.description ilike '%' || $18::text || '%'
+                 or ${OBJ_ITEM_TEXT} ilike '%' || $18::text || '%'
+                 or t.t_id ilike '%' || $18::text || '%'
+                 or (t.name_i18n->>'en') ilike '%' || $18::text || '%')`;
+
+const OBJ_FROM = `from public.quality_objections o
+          join public.quality_reviews qr on qr.id = o.quality_review_id
+          join public.tutors t on t.id = qr.tutor_id
+          left join public.admins a on a.id = t.team_lead_id
+          left join public.admins m on m.id = t.mentor_id
+          left join public.sessions s on s.id = qr.session_id
+          left join public.students st on st.id = s.student_id
+          left join public.lessons l on l.id = s.lesson_id
+          left join public.admins qa on qa.id = qr.admin_id
+          left join public.quality_review_comments qrc
+            on o.objectionable_type = 'QualityReviewComment' and qrc.id = o.objectionable_id
+          left join public.quality_comments qcm on qcm.id = qrc.quality_comment_id
+          left join public.quality_review_flags qrf
+            on o.objectionable_type = 'QualityReviewFlag' and qrf.id = o.objectionable_id
+          left join lateral (
+            select act.log,
+                   act.created_at,
+                   coalesce(act.meta->>'admin_name', act.meta->>'tutor_name', act.meta->>'qtl_name') as actor_name,
+                   ${OBJ_ACTOR_ROLE} as actor_role
+              from public.activities act
+             where act.trackable_type = 'QualityObjection' and act.trackable_id = o.id
+             order by act.created_at desc, act.id desc
+             limit 1) la on true
+          ${QUALITY_WHERE}
+            ${OBJ_CLAUSES}`;
+
 
 // Written comments: criterion-level notes typed by the reviewer plus
 // tagged (positive / negative) comments attached to the review.
@@ -1547,6 +1629,162 @@ export const QUERIES: Record<string, ReplicaQuery> = {
            order by case att.name when 'cover' then 0 when 'file' then 1
                                   when 'presentation' then 2 else 3 end, att.id`,
     params: ["project_id"],
+    limit: 100,
+  },
+
+  // --- Quality objections ----------------------------------------------
+  quality_objections_list: {
+    sql: `select o.id,
+                 o.status,
+                 ${OBJ_STAGE} as stage,
+                 ${OBJ_OUTCOME} as outcome,
+                 o.objectionable_type,
+                 ${OBJ_ITEM_KIND} as item_kind,
+                 ${OBJ_ITEM_TEXT} as item_text,
+                 ${OBJ_ITEM_REMOVED} as item_removed,
+                 o.description,
+                 o.response,
+                 o.created_at,
+                 o.updated_at,
+                 o.resolution_date,
+                 o.edu_deadline,
+                 o.qc_deadline,
+                 o.qlead_deadline,
+                 la.log as last_action_log,
+                 la.actor_name as last_actor_name,
+                 la.actor_role as last_actor_role,
+                 la.created_at as last_action_at,
+                 round(extract(epoch from (now() - coalesce(la.created_at, o.created_at))) / 86400.0, 1) as days_waiting,
+                 qr.id as review_id,
+                 qr.score,
+                 round((qr.score / 5.0 * 100)::numeric, 1) as score_pct,
+                 qr.session_start_at,
+                 qr.review_cycle::text as review_cycle,
+                 qr.session_type::text as session_type,
+                 t.t_id as tutor_tid,
+                 (t.name_i18n->>'en') as tutor_name,
+                 a.name as team_leader,
+                 (btrim(m.name)) as mentor_name,
+                 btrim(qa.name) as reviewer_name
+          ${OBJ_FROM}
+          order by o.created_at desc
+          limit $19::int offset $20::int`,
+    params: [...QUALITY_PARAMS, "stage", "outcome", "search", "limit", "offset"],
+    limit: 500,
+  },
+
+  quality_objections_count: {
+    sql: `select count(*)::int as total,
+                 count(*) filter (where ${OBJ_OUTCOME} = 'pending')::int as pending,
+                 count(*) filter (where ${OBJ_STAGE} = 'pending_tl')::int as pending_tl,
+                 count(*) filter (where ${OBJ_STAGE} = 'pending_qc')::int as pending_qc,
+                 count(*) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::int as pending_qtl,
+                 count(*) filter (where ${OBJ_OUTCOME} = 'accepted')::int as accepted,
+                 count(*) filter (where ${OBJ_OUTCOME} = 'rejected')::int as rejected,
+                 count(*) filter (where ${OBJ_STAGE} = 'rejected_tl')::int as rejected_tl,
+                 count(*) filter (where ${OBJ_STAGE} = 'rejected_qtl')::int as rejected_qtl,
+                 count(*) filter (where o.objectionable_type = 'QualityReviewComment')::int as comments,
+                 count(*) filter (where o.objectionable_type = 'QualityReviewFlag')::int as flags,
+                 count(*) filter (where ${OBJ_ITEM_REMOVED})::int as items_removed,
+                 count(distinct qr.id)::int as reviews,
+                 count(distinct t.id)::int as tutors,
+                 round(avg(extract(epoch from (coalesce(o.resolution_date, now()) - o.created_at)) / 86400.0)::numeric, 1) as avg_days
+          ${OBJ_FROM}`,
+    params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
+    limit: 1,
+  },
+
+  quality_objections_by_team_leader: {
+    sql: `select coalesce(a.name, '—') as team_leader,
+                 count(*)::int as total,
+                 count(*) filter (where ${OBJ_OUTCOME} = 'pending')::int as pending,
+                 count(*) filter (where ${OBJ_OUTCOME} = 'accepted')::int as accepted,
+                 count(*) filter (where ${OBJ_OUTCOME} = 'rejected')::int as rejected
+          ${OBJ_FROM}
+          group by 1
+          order by 2 desc`,
+    params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
+    limit: 200,
+  },
+
+  quality_objection_detail: {
+    sql: `select o.id,
+                 o.status,
+                 ${OBJ_STAGE} as stage,
+                 ${OBJ_OUTCOME} as outcome,
+                 o.objectionable_type,
+                 ${OBJ_ITEM_KIND} as item_kind,
+                 ${OBJ_ITEM_TEXT} as item_text,
+                 ${OBJ_ITEM_REMOVED} as item_removed,
+                 o.description,
+                 o.response,
+                 o.created_at,
+                 o.resolution_date,
+                 o.edu_deadline,
+                 o.qc_deadline,
+                 o.qlead_deadline,
+                 qr.id as review_id,
+                 qr.score,
+                 round((qr.score / 5.0 * 100)::numeric, 1) as score_pct,
+                 qr.session_start_at,
+                 qr.review_cycle::text as review_cycle,
+                 qr.quality_objections_count,
+                 t.t_id as tutor_tid,
+                 (t.name_i18n->>'en') as tutor_name,
+                 a.name as team_leader,
+                 btrim(qa.name) as reviewer_name
+            from public.quality_objections o
+            join public.quality_reviews qr on qr.id = o.quality_review_id
+            join public.tutors t on t.id = qr.tutor_id
+            left join public.admins a on a.id = t.team_lead_id
+            left join public.admins qa on qa.id = qr.admin_id
+            left join public.quality_review_comments qrc
+              on o.objectionable_type = 'QualityReviewComment' and qrc.id = o.objectionable_id
+            left join public.quality_comments qcm on qcm.id = qrc.quality_comment_id
+            left join public.quality_review_flags qrf
+              on o.objectionable_type = 'QualityReviewFlag' and qrf.id = o.objectionable_id
+           where o.id = $1::bigint`,
+    params: ["objection_id"],
+    limit: 1,
+  },
+
+  quality_objection_timeline: {
+    sql: `select act.id,
+                 act.action,
+                 act.log,
+                 act.meta,
+                 act.owner_type,
+                 act.created_at,
+                 coalesce(act.meta->>'admin_name', act.meta->>'tutor_name', act.meta->>'qtl_name') as actor_name,
+                 ${OBJ_ACTOR_ROLE} as actor_role,
+                 r.status as response_status,
+                 r.response as response_text
+            from public.activities act
+            left join public.quality_objection_responses r on r.activity_id = act.id
+           where act.trackable_type = 'QualityObjection'
+             and act.trackable_id = $1::bigint
+           order by act.created_at, act.id`,
+    params: ["objection_id"],
+    limit: 100,
+  },
+
+  // Sibling objections on the same review (shows what else changed on that score).
+  quality_objections_by_review: {
+    sql: `select o.id,
+                 ${OBJ_STAGE} as stage,
+                 ${OBJ_OUTCOME} as outcome,
+                 ${OBJ_ITEM_KIND} as item_kind,
+                 ${OBJ_ITEM_TEXT} as item_text,
+                 ${OBJ_ITEM_REMOVED} as item_removed
+            from public.quality_objections o
+            left join public.quality_review_comments qrc
+              on o.objectionable_type = 'QualityReviewComment' and qrc.id = o.objectionable_id
+            left join public.quality_comments qcm on qcm.id = qrc.quality_comment_id
+            left join public.quality_review_flags qrf
+              on o.objectionable_type = 'QualityReviewFlag' and qrf.id = o.objectionable_id
+           where o.quality_review_id = $1::bigint
+           order by o.created_at`,
+    params: ["review_id"],
     limit: 100,
   },
 };
