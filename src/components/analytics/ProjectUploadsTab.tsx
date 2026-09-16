@@ -403,7 +403,9 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="students" name="Students" fill="hsl(var(--primary))" />
+              <Bar dataKey="students" name="Students" fill="hsl(var(--primary))">
+                <LabelList dataKey="students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
