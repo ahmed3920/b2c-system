@@ -15,6 +15,10 @@ export type ProjectEvaluation = {
   points: number;
   note: string | null;
   evidence_url: string | null;
+  student_external_id: string | null;
+  student_name: string | null;
+  project_title: string | null;
+  project_created_at: string | null;
   tutor_external_id: string | null;
   tutor_name: string | null;
   team_leader: string | null;
