@@ -86,6 +86,29 @@ export type ObjectionSummary = {
   qtl_rejected: number;
 };
 
+export type ObjectionSlaRow = {
+  id: string;
+  created_at: string | null;
+  tl_days: string | null;
+  qc_days: string | null;
+  qtl_days: string | null;
+  total_days: string | null;
+  closed: boolean;
+};
+
+export type ObjectionSlaSummary = {
+  resolved: number;
+  open: number;
+  closed_tl_avg_days: string | null;
+  closed_qc_avg_days: string | null;
+  closed_qtl_avg_days: string | null;
+  closed_total_avg_days: string | null;
+  all_tl_avg_days: string | null;
+  all_qc_avg_days: string | null;
+  all_qtl_avg_days: string | null;
+  all_total_avg_days: string | null;
+};
+
 export type ObjectionByTeamLeader = {
   team_leader: string;
   total: number;
@@ -140,6 +163,14 @@ export function useQualityObjections() {
   const list = useReplicaQuery<ObjectionRow>("quality_objections_list", listParams);
   const summary = useReplicaQuery<ObjectionSummary>("quality_objections_count", objParams);
   const byTeamLeader = useReplicaQuery<ObjectionByTeamLeader>("quality_objections_by_team_leader", objParams);
+  const slaRows = useReplicaQuery<ObjectionSlaRow>("quality_objections_sla_rows", listParams);
+  const slaSummary = useReplicaQuery<ObjectionSlaSummary>("quality_objections_sla_summary", objParams);
+
+  const slaById = useMemo(() => {
+    const m = new Map<string, ObjectionSlaRow>();
+    for (const r of slaRows.rows) m.set(String(r.id), r);
+    return m;
+  }, [slaRows.rows]);
 
   return {
     ...f,
@@ -157,10 +188,16 @@ export function useQualityObjections() {
     summaryLoading: summary.loading,
     teamLeaders: byTeamLeader.rows,
     teamLeadersLoading: byTeamLeader.loading,
+    slaById,
+    slaLoading: slaRows.loading,
+    sla: slaSummary.rows[0],
+    slaSummaryLoading: slaSummary.loading,
     refetch: () => {
       list.refetch();
       summary.refetch();
       byTeamLeader.refetch();
+      slaRows.refetch();
+      slaSummary.refetch();
     },
   };
 }

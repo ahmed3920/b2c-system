@@ -198,6 +198,51 @@ const OBJ_FROM = `from public.quality_objections o
             ${OBJ_CLAUSES}`;
 
 
+// Handling time per role for every objection matching the quality filters.
+// Segments run between consecutive objection activities (tutor action 39 is
+// excluded); open objections get a trailing segment up to now, attributed to
+// the role that currently holds them.
+const OBJ_SLA_CTE = `with base as (
+            select o.id, o.created_at, o.status, o.resolution_date
+            ${OBJ_FROM}),
+          ev as (
+            select act.trackable_id as oid,
+                   act.created_at,
+                   ${OBJ_EVENT_ROLE} as role,
+                   lag(act.created_at) over (partition by act.trackable_id
+                                             order by act.created_at, act.id) as prev_at
+              from public.activities act
+             where act.trackable_type = 'QualityObjection'
+               and act.action <> 39
+               and act.trackable_id in (select id from base)),
+          seg as (
+            select b.id as oid,
+                   e.role,
+                   extract(epoch from (e.created_at - coalesce(e.prev_at, b.created_at))) as secs
+              from ev e
+              join base b on b.id = e.oid
+            union all
+            select b.id,
+                   (case when b.status = 0 then 'tl'
+                         when b.status = 1 then 'qc'
+                         when b.status in (2,3,6,7) then 'qtl'
+                         else null end),
+                   extract(epoch from (now() - coalesce(le.max_at, b.created_at)))
+              from base b
+              left join lateral (select max(created_at) as max_at from ev where ev.oid = b.id) le on true
+             where b.status not in (4,5,10)),
+          agg as (
+            select b.id,
+                   b.created_at,
+                   (b.status in (4,5,10)) as closed,
+                   round((coalesce(sum(s.secs) filter (where s.role = 'tl'), 0) / 86400.0)::numeric, 1) as tl_days,
+                   round((coalesce(sum(s.secs) filter (where s.role = 'qc'), 0) / 86400.0)::numeric, 1) as qc_days,
+                   round((coalesce(sum(s.secs) filter (where s.role = 'qtl'), 0) / 86400.0)::numeric, 1) as qtl_days,
+                   round((coalesce(sum(s.secs), 0) / 86400.0)::numeric, 1) as total_days
+              from base b
+              left join seg s on s.oid = b.id
+             group by b.id, b.created_at, b.status)`;
+
 // Written comments: criterion-level notes typed by the reviewer plus
 // tagged (positive / negative) comments attached to the review.
 const QUALITY_COMMENTS_UNION = `(
@@ -1751,6 +1796,36 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  ${objDecision([53, 56])} as qtl_accepted,
                  ${objDecision([42])} as qtl_rejected
           ${OBJ_FROM}`,
+    params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
+    limit: 1,
+  },
+
+  // Per-objection handling time for every objection matching the filters.
+  quality_objections_sla_rows: {
+    sql: `${OBJ_SLA_CTE}
+          select id, created_at, tl_days, qc_days, qtl_days, total_days, closed
+            from agg
+           order by created_at desc
+           limit $19::int offset $20::int`,
+    params: [...QUALITY_PARAMS, "stage", "outcome", "search", "limit", "offset"],
+    limit: 500,
+  },
+
+  // Average handling time per stage over RESOLVED (closed) objections only,
+  // plus the same figures over every objection for reference.
+  quality_objections_sla_summary: {
+    sql: `${OBJ_SLA_CTE}
+          select count(*) filter (where closed)::int as resolved,
+                 count(*) filter (where not closed)::int as open,
+                 round(avg(tl_days) filter (where closed)::numeric, 1) as closed_tl_avg_days,
+                 round(avg(qc_days) filter (where closed)::numeric, 1) as closed_qc_avg_days,
+                 round(avg(qtl_days) filter (where closed)::numeric, 1) as closed_qtl_avg_days,
+                 round(avg(total_days) filter (where closed)::numeric, 1) as closed_total_avg_days,
+                 round(avg(tl_days)::numeric, 1) as all_tl_avg_days,
+                 round(avg(qc_days)::numeric, 1) as all_qc_avg_days,
+                 round(avg(qtl_days)::numeric, 1) as all_qtl_avg_days,
+                 round(avg(total_days)::numeric, 1) as all_total_avg_days
+            from agg`,
     params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
     limit: 1,
   },
