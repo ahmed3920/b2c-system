@@ -263,11 +263,35 @@ export function Field({ label, children }: { label: string; children: React.Reac
   );
 }
 
-export function Kpi({ label, value, loading, hint }: { label: string; value: string; loading?: boolean; hint?: string }) {
+export function Kpi({
+  label,
+  value,
+  loading,
+  hint,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  loading?: boolean;
+  hint?: string;
+  tooltip?: string;
+}) {
   return (
     <Card>
       <CardContent className="pt-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          {label}
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" aria-label={`How ${label} is calculated`} className="text-muted-foreground/70 hover:text-foreground">
+                  <Info className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-relaxed">{tooltip}</TooltipContent>
+            </Tooltip>
+          )}
+        </p>
         <p className="text-2xl font-semibold">{loading ? "…" : value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </CardContent>
