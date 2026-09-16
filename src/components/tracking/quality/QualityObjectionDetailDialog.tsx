@@ -18,6 +18,16 @@ type TimelineRow = {
   response_text: string | null;
 };
 
+type SlaRow = {
+  tl_days: string | null;
+  qc_days: string | null;
+  qtl_days: string | null;
+  total_days: string | null;
+  closed: boolean;
+  closed_at: string | null;
+  raised_at: string | null;
+};
+
 type SiblingRow = {
   id: string;
   stage: string;
@@ -149,6 +159,38 @@ export function QualityObjectionDetailDialog({
                       </div>
                     ))}
                 </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="font-medium mb-2">Handling time</h4>
+              {sla.loading && sla.rows.length === 0 ? (
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              ) : sla.rows[0] ? (
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-xl font-semibold">{sla.rows[0].total_days ?? "0.0"} days</span>{" "}
+                    <span className="text-xs text-muted-foreground">
+                      raised {sla.rows[0].raised_at ? new Date(sla.rows[0].raised_at).toLocaleDateString() : "—"}
+                      {sla.rows[0].closed
+                        ? ` → closed ${sla.rows[0].closed_at ? new Date(sla.rows[0].closed_at).toLocaleDateString() : "—"}`
+                        : " → still open (counted up to today)"}
+                    </span>
+                  </div>
+                  <div className="grid gap-1 sm:grid-cols-3">
+                    <SlaPart label="Team Leader" days={sla.rows[0].tl_days} />
+                    <SlaPart label="Quality Coordinator" days={sla.rows[0].qc_days} />
+                    <SlaPart label="Quality Team Leader" days={sla.rows[0].qtl_days} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Each period counts towards whoever was holding the objection at that time, from when it was raised
+                    until each next action.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No timing recorded.</p>
               )}
             </div>
 
