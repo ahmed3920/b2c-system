@@ -226,6 +226,15 @@ export function QualityObjectionDetailDialog({
   );
 }
 
+function SlaPart({ label, days }: { label: string; days: string | null }) {
+  return (
+    <div className="rounded-md border px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-medium">{days ?? "0.0"} days</div>
+    </div>
+  );
+}
+
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
