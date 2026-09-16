@@ -72,6 +72,12 @@ export type ObjectionSummary = {
   pending_qtl_reviews: number;
   pending_qtl_tutors: number;
   avg_days: string | null;
+  pending_tl_avg_days: string | null;
+  pending_tl_overdue: number;
+  pending_qc_avg_days: string | null;
+  pending_qc_overdue: number;
+  pending_qtl_avg_days: string | null;
+  pending_qtl_overdue: number;
 };
 
 export type ObjectionByTeamLeader = {

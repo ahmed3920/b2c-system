@@ -89,6 +89,26 @@ export function QualityObjectionsTab() {
         <Kpi label="Reviews with objections" value={(s?.reviews ?? 0).toLocaleString()} loading={f.summaryLoading} />
         <Kpi label="Tutors with objections" value={(s?.tutors ?? 0).toLocaleString()} loading={f.summaryLoading} />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Kpi
+          label="Avg wait — Team Leader"
+          value={s?.pending_tl_avg_days != null ? `${s.pending_tl_avg_days} days` : "—"}
+          loading={f.summaryLoading}
+          hint={s ? `${(s.pending_tl_overdue ?? 0).toLocaleString()} of ${(s.pending_tl ?? 0).toLocaleString()} overdue` : undefined}
+        />
+        <Kpi
+          label="Avg wait — Quality Coordinator"
+          value={s?.pending_qc_avg_days != null ? `${s.pending_qc_avg_days} days` : "—"}
+          loading={f.summaryLoading}
+          hint={s ? `${(s.pending_qc_overdue ?? 0).toLocaleString()} of ${(s.pending_qc ?? 0).toLocaleString()} overdue` : undefined}
+        />
+        <Kpi
+          label="Avg wait — Quality Team Leader"
+          value={s?.pending_qtl_avg_days != null ? `${s.pending_qtl_avg_days} days` : "—"}
+          loading={f.summaryLoading}
+          hint={s ? `${(s.pending_qtl_overdue ?? 0).toLocaleString()} of ${(s.pending_qtl ?? 0).toLocaleString()} overdue` : undefined}
+        />
+      </div>
 
       <QualityFilterBar
         filters={f.filters}
