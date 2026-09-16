@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "team_leader" | "super_team_leader" | "mentor" | "community_moderator";
+export type AppRole =
+  | "admin"
+  | "team_leader"
+  | "super_team_leader"
+  | "mentor"
+  | "community_moderator"
+  | "quality_team";
 
 interface UserRoleData {
   role: AppRole | null;
@@ -13,6 +19,7 @@ interface UserRoleData {
   isSuperTeamLeader: boolean;
   isMentor: boolean;
   isCommunityModerator: boolean;
+  isQualityTeam: boolean;
 }
 
 export const useUserRole = (): UserRoleData => {
