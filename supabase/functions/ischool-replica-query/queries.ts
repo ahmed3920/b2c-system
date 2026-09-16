@@ -1731,17 +1731,42 @@ export const QUERIES: Record<string, ReplicaQuery> = {
     limit: 1,
   },
 
-  objection_probe_actions: {
-    sql: `select act.action,
-                 count(*)::int as n,
-                 min(act.log) as sample_log,
-                 max(act.owner_type) as owner_type
-            from public.activities act
-           where act.trackable_type = 'QualityObjection'
-           group by 1
-           order by 1`,
-    params: [],
-    limit: 100,
+  // Time each role held a single objection, from the moment it was raised
+  // until it was closed (or until now, for open ones).
+  quality_objection_sla: {
+    sql: `with obj as (
+            select id, created_at, status, resolution_date
+              from public.quality_objections
+             where id = $1::bigint),
+          ev as (
+            select act.created_at,
+                   ${OBJ_EVENT_ROLE} as role,
+                   lag(act.created_at) over (order by act.created_at, act.id) as prev_at
+              from public.activities act
+             where act.trackable_type = 'QualityObjection'
+               and act.trackable_id = (select id from obj)
+               and act.action <> 39),
+          seg as (
+            select role,
+                   extract(epoch from (created_at - coalesce(prev_at, (select created_at from obj)))) as secs
+              from ev
+            union all
+            select (case when (select status from obj) = 0 then 'tl'
+                         when (select status from obj) = 1 then 'qc'
+                         when (select status from obj) in (2,3,6,7) then 'qtl'
+                         else null end) as role,
+                   extract(epoch from (now() - coalesce((select max(created_at) from ev), (select created_at from obj)))) as secs
+             where (select status from obj) not in (4,5,10))
+          select round((coalesce(sum(secs) filter (where role = 'tl'), 0) / 86400.0)::numeric, 1) as tl_days,
+                 round((coalesce(sum(secs) filter (where role = 'qc'), 0) / 86400.0)::numeric, 1) as qc_days,
+                 round((coalesce(sum(secs) filter (where role = 'qtl'), 0) / 86400.0)::numeric, 1) as qtl_days,
+                 round((coalesce(sum(secs), 0) / 86400.0)::numeric, 1) as total_days,
+                 ((select status from obj) in (4,5,10)) as closed,
+                 coalesce((select resolution_date from obj), (select max(created_at) from ev)) as closed_at,
+                 (select created_at from obj) as raised_at
+            from seg`,
+    params: ["objection_id"],
+    limit: 1,
   },
 
   quality_objections_by_team_leader: {
