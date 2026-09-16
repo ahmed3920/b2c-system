@@ -9,6 +9,7 @@ import { QualitySummaryTab } from "./QualitySummaryTab";
 import { QualityCycleComparisonTab } from "./QualityCycleComparisonTab";
 import { QualityCoverageTab } from "./QualityCoverageTab";
 import { QualityFlagFollowupTab } from "./QualityFlagFollowupTab";
+import { QualityObjectionsTab } from "./QualityObjectionsTab";
 import { ProjectsSection } from "@/components/quality/projects/ProjectsSection";
 import { useProjectAuditAccess } from "@/hooks/useProjectAuditAccess";
 
