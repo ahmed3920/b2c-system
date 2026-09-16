@@ -58,6 +58,11 @@ export function QualityObjectionDetailDialog({
     { objection_id: id },
     { enabled: !!id },
   );
+  const sla = useReplicaQuery<SlaRow>(
+    "quality_objection_sla",
+    { objection_id: id },
+    { enabled: !!id },
+  );
   const siblings = useReplicaQuery<SiblingRow>(
     "quality_objections_by_review",
     { review_id: objection?.review_id ?? null },
