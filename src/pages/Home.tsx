@@ -167,8 +167,11 @@ const Home = () => {
 
   // Redirect Admin / Team Leader to the new B2C Dashboard
   useEffect(() => {
-    if (!roleLoading && (role === "admin" || role === "team_leader")) {
+    if (roleLoading) return;
+    if (role === "admin" || role === "team_leader") {
       navigate("/dashboard", { replace: true });
+    } else if (role === "quality_team") {
+      navigate("/quality", { replace: true });
     }
   }, [role, roleLoading, navigate]);
 
