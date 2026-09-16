@@ -145,6 +145,24 @@ const OBJ_ACTOR_ROLE = `(case
             when act.action in (42, 47, 53, 56, 65, 68) then 'quality_team_leader'
             else 'system' end)`;
 
+// Which role an activity event belongs to (used for handling-time splits).
+const OBJ_EVENT_ROLE = `(case
+            when act.action in (41, 48) then 'tl'
+            when act.action in (44, 51, 52, 61) then 'qc'
+            when act.action in (42, 47, 53, 56, 65, 68) then 'qtl'
+            else 'other' end)`;
+
+// Accept / reject decision action codes per role (confirmed from activity logs):
+//   41 TL agreed to remove          48 TL rejected to remove
+//   51 QC agreed to remove          52 QC rejected to remove
+//   53/56 QTL accepted to remove    42 QTL rejected to remove
+const objDecision = (codes: number[]) =>
+  `count(*) filter (where exists (
+      select 1 from public.activities act
+       where act.trackable_type = 'QualityObjection'
+         and act.trackable_id = o.id
+         and act.action in (${codes.join(", ")})))::int`;
+
 const OBJ_CLAUSES = `and ($16::text is null or ${OBJ_STAGE} = $16::text)
             and ($17::text is null or ${OBJ_OUTCOME} = $17::text)
             and ($18::text is null
