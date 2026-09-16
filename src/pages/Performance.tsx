@@ -17,7 +17,7 @@ const sections = [
 ];
 
 export default function Performance() {
-  const { isMentor, isAdmin, isTeamLeader } = useUserRole();
+  const { isMentor, isAdmin, isTeamLeader, isQualityTeam } = useUserRole();
   const { hasAccess: csFullAccess } = useCsFullAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
