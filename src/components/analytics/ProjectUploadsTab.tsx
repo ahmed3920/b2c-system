@@ -16,7 +16,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
+
+const hideZero = (v: number | string | null | undefined) =>
+  Number(v) > 0 ? String(v) : "";
 import { SearchableSelect } from "@/components/tracking/quality/QualityFilterBar";
 import { downloadCsv } from "@/lib/exportCsv";
 import { PROJECTS_BASELINE, useProjectUploads } from "@/hooks/useProjectUploads";
