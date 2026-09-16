@@ -224,14 +224,15 @@ export function CreateUserDialog({
 
     switch (selectedType) {
       case "admin":
+      case "quality_team":
         createData = {
           email: formData.email,
           password: formData.password,
           fullName: formData.fullName,
           mentorId: finalMentorId,
           mentorName: formData.fullName,
-          teamLeader: "System Admin",
-          role: "admin",
+          teamLeader: selectedType === "admin" ? "System Admin" : "Quality Team",
+          role: selectedType,
         };
         break;
       case "team_leader":
