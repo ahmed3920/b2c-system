@@ -9,6 +9,8 @@ import { ProjectAccessDialog } from "./ProjectAccessDialog";
 import { MyReviewsTab } from "./MyReviewsTab";
 import { Phase1SummaryTab } from "./Phase1SummaryTab";
 import { ReviewAssignmentsAdmin } from "./ReviewAssignmentsAdmin";
+import { ReviewedProjectsTab } from "./ReviewedProjectsTab";
+import { ReviewedProjectsAnalysisTab } from "./ReviewedProjectsAnalysisTab";
 
 export function ProjectsSection() {
   const { allowed, isAdmin, loading } = useProjectAuditAccess();
@@ -43,6 +45,8 @@ export function ProjectsSection() {
           <TabsTrigger value="mine">My Reviews</TabsTrigger>
           <TabsTrigger value="audit">Projects Audit</TabsTrigger>
           <TabsTrigger value="approval">Pending</TabsTrigger>
+          <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
+          <TabsTrigger value="reviewed-analysis">Reviewed Analysis</TabsTrigger>
           <TabsTrigger value="phase1">Phase 1 Score</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
@@ -56,6 +60,12 @@ export function ProjectsSection() {
         </TabsContent>
         <TabsContent value="approval" className="mt-0">
           <ProjectAuditTab pendingOnly />
+        </TabsContent>
+        <TabsContent value="reviewed" className="mt-0">
+          <ReviewedProjectsTab />
+        </TabsContent>
+        <TabsContent value="reviewed-analysis" className="mt-0">
+          <ReviewedProjectsAnalysisTab />
         </TabsContent>
         <TabsContent value="phase1" className="mt-0">
           <Phase1SummaryTab />
