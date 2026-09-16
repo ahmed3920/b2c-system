@@ -16,7 +16,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
+
+const hideZero = (v: number | string | null | undefined) =>
+  Number(v) > 0 ? String(v) : "";
 import { SearchableSelect } from "@/components/tracking/quality/QualityFilterBar";
 import { downloadCsv } from "@/lib/exportCsv";
 import { PROJECTS_BASELINE, useProjectUploads } from "@/hooks/useProjectUploads";
@@ -227,7 +231,9 @@ export function ProjectUploadsTab() {
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Line type="monotone" dataKey="zero" name="0-project students" stroke="hsl(var(--primary))" strokeWidth={2} />
+              <Line type="monotone" dataKey="zero" name="0-project students" stroke="hsl(var(--primary))" strokeWidth={2}>
+                <LabelList dataKey="zero" position="top" fontSize={9} formatter={hideZero} />
+              </Line>
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -245,8 +251,12 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="projects" name="Projects uploaded" fill="hsl(var(--primary))" />
-              <Bar dataKey="students" name="Students uploading" fill="hsl(var(--destructive))" />
+              <Bar dataKey="projects" name="Projects uploaded" fill="hsl(var(--primary))">
+                <LabelList dataKey="projects" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
+              <Bar dataKey="students" name="Students uploading" fill="hsl(var(--destructive))">
+                <LabelList dataKey="students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -267,9 +277,13 @@ export function ProjectUploadsTab() {
               <Tooltip />
               <Legend />
               <Bar dataKey="groupProjects" name="Group — projects" stackId="p" fill="hsl(var(--primary))" />
-              <Bar dataKey="oneProjects" name="One-to-one — projects" stackId="p" fill="hsl(var(--primary) / 0.45)" />
+              <Bar dataKey="oneProjects" name="One-to-one — projects" stackId="p" fill="hsl(var(--primary) / 0.45)">
+                <LabelList dataKey="oneProjects" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
               <Bar dataKey="groupStudents" name="Group — students" stackId="s" fill="hsl(var(--destructive))" />
-              <Bar dataKey="oneStudents" name="One-to-one — students" stackId="s" fill="hsl(var(--destructive) / 0.45)" />
+              <Bar dataKey="oneStudents" name="One-to-one — students" stackId="s" fill="hsl(var(--destructive) / 0.45)">
+                <LabelList dataKey="oneStudents" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -296,7 +310,9 @@ export function ProjectUploadsTab() {
                 name="Daily decrease %"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
-              />
+              >
+                <LabelList dataKey="daily" position="top" fontSize={9} formatter={(v: number | null) => (v === null ? "" : `${v}%`)} />
+              </Line>
               <Line
                 type="monotone"
                 dataKey="cumulative"
@@ -304,7 +320,9 @@ export function ProjectUploadsTab() {
                 stroke="hsl(var(--destructive))"
                 strokeWidth={2}
                 strokeDasharray="5 5"
-              />
+              >
+                <LabelList dataKey="cumulative" position="top" fontSize={9} formatter={(v: number | null) => (v === null ? "" : `${v}%`)} />
+              </Line>
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -322,8 +340,12 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="students" name="All tracked students" fill="hsl(var(--primary))" />
-              <Bar dataKey="zero_students" name="Students with 0 projects" fill="hsl(var(--destructive))" />
+              <Bar dataKey="students" name="All tracked students" fill="hsl(var(--primary))">
+                <LabelList dataKey="students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
+              <Bar dataKey="zero_students" name="Students with 0 projects" fill="hsl(var(--destructive))">
+                <LabelList dataKey="zero_students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -341,7 +363,9 @@ export function ProjectUploadsTab() {
                 <XAxis dataKey="grade" tick={{ fontSize: 10 }} interval={0} angle={-20} height={70} textAnchor="end" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="zero_students" name="Students" fill="hsl(var(--primary))" />
+                <Bar dataKey="zero_students" name="Students" fill="hsl(var(--primary))">
+                  <LabelList dataKey="zero_students" position="top" fontSize={9} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -358,7 +382,9 @@ export function ProjectUploadsTab() {
                 <XAxis type="number" allowDecimals={false} />
                 <YAxis type="category" dataKey="team_leader" width={150} tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="zero_students" name="Students" fill="hsl(var(--primary))" />
+                <Bar dataKey="zero_students" name="Students" fill="hsl(var(--primary))">
+                  <LabelList dataKey="zero_students" position="right" fontSize={9} formatter={hideZero} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -377,7 +403,9 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="students" name="Students" fill="hsl(var(--primary))" />
+              <Bar dataKey="students" name="Students" fill="hsl(var(--primary))">
+                <LabelList dataKey="students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
