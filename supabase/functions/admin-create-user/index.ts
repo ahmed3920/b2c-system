@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const validRoles = new Set(["admin", "team_leader", "super_team_leader", "mentor", "community_moderator"]);
+const validRoles = new Set(["admin", "team_leader", "super_team_leader", "mentor", "community_moderator", "quality_team"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
