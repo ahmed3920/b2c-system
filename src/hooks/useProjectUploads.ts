@@ -76,11 +76,15 @@ export function useProjectUploads(filters: { teamLeader: string; grade: string; 
     setError(null);
     try {
       const params = { team_lead: p(teamLeader), grade: p(grade), search: p(search) };
-      const [sum, grades, tls, dist, sessTypes, list, notStartedList, opts, snaps, uploads, uploadsTyped] = await Promise.all([
+      const [sum, grades, tls, dist, distCmp, sessTypes, list, notStartedList, opts, snaps, uploads, uploadsTyped] = await Promise.all([
         runReplicaQuery<ProjectsSummary>("analytics_projects_summary", params),
         runReplicaQuery<GradeRow>("analytics_projects_by_grade", params),
         runReplicaQuery<TeamLeaderRow>("analytics_projects_by_team_leader", params),
         runReplicaQuery<DistributionRow>("analytics_projects_distribution", params),
+        runReplicaQuery<DistributionCompareRow>("analytics_projects_distribution_compare", {
+          ...params,
+          baseline: PROJECTS_BASELINE.date,
+        }),
         runReplicaQuery<SessionTypeRow>("analytics_projects_by_session_type", params),
         runReplicaQuery<ZeroStudentRow>("analytics_projects_students", {
           ...params,
