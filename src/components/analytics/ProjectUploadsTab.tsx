@@ -231,7 +231,9 @@ export function ProjectUploadsTab() {
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Line type="monotone" dataKey="zero" name="0-project students" stroke="hsl(var(--primary))" strokeWidth={2} />
+              <Line type="monotone" dataKey="zero" name="0-project students" stroke="hsl(var(--primary))" strokeWidth={2}>
+                <LabelList dataKey="zero" position="top" fontSize={9} formatter={hideZero} />
+              </Line>
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
