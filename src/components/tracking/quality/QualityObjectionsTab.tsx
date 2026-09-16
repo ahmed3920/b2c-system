@@ -33,6 +33,7 @@ export function QualityObjectionsTab() {
   const [exporting, setExporting] = useState(false);
 
   const s = f.summary;
+  const sla = f.sla;
   const total = s?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -147,6 +148,36 @@ export function QualityObjectionsTab() {
           tooltip="How many objections the quality team leader accepted to remove, and how many they rejected. One objection can be decided by more than one role, so these cards are not a split of the total."
         />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi
+          label="Resolved — total time"
+          value={sla?.closed_total_avg_days != null ? `${sla.closed_total_avg_days} days` : "—"}
+          loading={f.slaSummaryLoading}
+          hint={sla ? `${(sla.resolved ?? 0).toLocaleString()} closed · ${(sla.open ?? 0).toLocaleString()} still open` : undefined}
+          tooltip="Average time from the moment the objection was raised until it was finally closed (accepted or rejected), counted only for objections that are already closed."
+        />
+        <Kpi
+          label="Resolved — Team Leader time"
+          value={sla?.closed_tl_avg_days != null ? `${sla.closed_tl_avg_days} days` : "—"}
+          loading={f.slaSummaryLoading}
+          hint={sla?.all_tl_avg_days != null ? `${sla.all_tl_avg_days} days incl. open` : undefined}
+          tooltip="Of the total resolution time of closed objections, the average share spent while the objection sat with the team leader."
+        />
+        <Kpi
+          label="Resolved — Quality Coordinator time"
+          value={sla?.closed_qc_avg_days != null ? `${sla.closed_qc_avg_days} days` : "—"}
+          loading={f.slaSummaryLoading}
+          hint={sla?.all_qc_avg_days != null ? `${sla.all_qc_avg_days} days incl. open` : undefined}
+          tooltip="Of the total resolution time of closed objections, the average share spent while the objection sat with the quality coordinator."
+        />
+        <Kpi
+          label="Resolved — Quality Team Leader time"
+          value={sla?.closed_qtl_avg_days != null ? `${sla.closed_qtl_avg_days} days` : "—"}
+          loading={f.slaSummaryLoading}
+          hint={sla?.all_qtl_avg_days != null ? `${sla.all_qtl_avg_days} days incl. open` : undefined}
+          tooltip="Of the total resolution time of closed objections, the average share spent while the objection sat with the quality team leader."
+        />
+      </div>
 
       <QualityFilterBar
         filters={f.filters}
@@ -222,14 +253,15 @@ export function QualityObjectionsTab() {
                       <TableHead>Now with</TableHead>
                       <TableHead>Outcome</TableHead>
                       <TableHead>Last action by</TableHead>
+                      <TableHead className="text-right">Handling time</TableHead>
                       <TableHead className="text-right">Score</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {f.loading && f.rows.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Loading objections…</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading objections…</TableCell></TableRow>
                     ) : f.rows.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No objections match these filters.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No objections match these filters.</TableCell></TableRow>
                     ) : (
                       f.rows.map((r) => (
                         <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
@@ -256,6 +288,21 @@ export function QualityObjectionsTab() {
                           <TableCell className="text-sm">
                             {r.last_actor_name ?? "—"}
                             <span className="block text-xs text-muted-foreground">{ROLE_LABEL[r.last_actor_role ?? "system"] ?? "—"}</span>
+                          </TableCell>
+                          <TableCell className="text-right text-sm whitespace-nowrap">
+                            {(() => {
+                              const sr = f.slaById.get(String(r.id));
+                              if (!sr) return <span className="text-muted-foreground">{f.slaLoading ? "…" : "—"}</span>;
+                              return (
+                                <>
+                                  <span className="font-medium">{Number(sr.total_days ?? 0).toFixed(1)} days</span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    TL {Number(sr.tl_days ?? 0).toFixed(1)} · QC {Number(sr.qc_days ?? 0).toFixed(1)} · QTL {Number(sr.qtl_days ?? 0).toFixed(1)}
+                                  </span>
+                                  {!sr.closed && <span className="block text-xs text-amber-600">still open</span>}
+                                </>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell className="text-right font-medium">{r.score != null ? Number(r.score).toFixed(2) : "—"}</TableCell>
                         </TableRow>
