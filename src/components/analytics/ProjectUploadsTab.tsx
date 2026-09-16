@@ -251,8 +251,12 @@ export function ProjectUploadsTab() {
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="projects" name="Projects uploaded" fill="hsl(var(--primary))" />
-              <Bar dataKey="students" name="Students uploading" fill="hsl(var(--destructive))" />
+              <Bar dataKey="projects" name="Projects uploaded" fill="hsl(var(--primary))">
+                <LabelList dataKey="projects" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
+              <Bar dataKey="students" name="Students uploading" fill="hsl(var(--destructive))">
+                <LabelList dataKey="students" position="top" fontSize={9} formatter={hideZero} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
