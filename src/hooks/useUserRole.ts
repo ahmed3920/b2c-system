@@ -54,6 +54,7 @@ export const useUserRole = (): UserRoleData => {
           const all = data.map((r) => r.role as AppRole);
           setRoles(all);
           if (all.includes("admin")) setRole("admin");
+          else if (all.includes("quality_team")) setRole("quality_team");
           // super_team_leader is an additive flag on top of team_leader.
           // Resolve primary role to team_leader so all team-leader UI/routes work.
           else if (all.includes("super_team_leader") || all.includes("team_leader")) setRole("team_leader");
@@ -90,5 +91,6 @@ export const useUserRole = (): UserRoleData => {
     isSuperTeamLeader,
     isMentor: role === "mentor" || role === "community_moderator" || role === null,
     isCommunityModerator: role === "community_moderator",
+    isQualityTeam: role === "quality_team",
   };
 };
