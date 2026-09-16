@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, RefreshCw, X } from "lucide-react";
+import { Loader2, RefreshCw, X, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { QualityFilters, QualityFilterOptions } from "@/hooks/useQualityReviews";
 import { TUTOR_STATUS_OPTIONS, cycleLabel } from "@/lib/tutorStatus";
 import { FLAG_FILTER_OPTIONS } from "@/lib/qualityFlags";
@@ -263,11 +264,35 @@ export function Field({ label, children }: { label: string; children: React.Reac
   );
 }
 
-export function Kpi({ label, value, loading, hint }: { label: string; value: string; loading?: boolean; hint?: string }) {
+export function Kpi({
+  label,
+  value,
+  loading,
+  hint,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  loading?: boolean;
+  hint?: string;
+  tooltip?: string;
+}) {
   return (
     <Card>
       <CardContent className="pt-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          {label}
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" aria-label={`How ${label} is calculated`} className="text-muted-foreground/70 hover:text-foreground">
+                  <Info className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-relaxed">{tooltip}</TooltipContent>
+            </Tooltip>
+          )}
+        </p>
         <p className="text-2xl font-semibold">{loading ? "…" : value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </CardContent>

@@ -145,6 +145,24 @@ const OBJ_ACTOR_ROLE = `(case
             when act.action in (42, 47, 53, 56, 65, 68) then 'quality_team_leader'
             else 'system' end)`;
 
+// Which role an activity event belongs to (used for handling-time splits).
+const OBJ_EVENT_ROLE = `(case
+            when act.action in (41, 48) then 'tl'
+            when act.action in (44, 51, 52, 61) then 'qc'
+            when act.action in (42, 47, 53, 56, 65, 68) then 'qtl'
+            else 'other' end)`;
+
+// Accept / reject decision action codes per role (confirmed from activity logs):
+//   41 TL agreed to remove          48 TL rejected to remove
+//   51 QC agreed to remove          52 QC rejected to remove
+//   53/56 QTL accepted to remove    42 QTL rejected to remove
+const objDecision = (codes: number[]) =>
+  `count(*) filter (where exists (
+      select 1 from public.activities act
+       where act.trackable_type = 'QualityObjection'
+         and act.trackable_id = o.id
+         and act.action in (${codes.join(", ")})))::int`;
+
 const OBJ_CLAUSES = `and ($16::text is null or ${OBJ_STAGE} = $16::text)
             and ($17::text is null or ${OBJ_OUTCOME} = $17::text)
             and ($18::text is null
@@ -1725,9 +1743,53 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} = 'pending_qc')::numeric, 1) as pending_qc_avg_days,
                  count(*) filter (where ${OBJ_STAGE} = 'pending_qc' and o.qc_deadline is not null and o.qc_deadline < now())::int as pending_qc_overdue,
                  round(avg(extract(epoch from (now() - o.created_at)) / 86400.0) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm'))::numeric, 1) as pending_qtl_avg_days,
-                 count(*) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm') and o.qlead_deadline is not null and o.qlead_deadline < now())::int as pending_qtl_overdue
+                 count(*) filter (where ${OBJ_STAGE} in ('pending_qtl','pending_edit','pending_qtl_confirm') and o.qlead_deadline is not null and o.qlead_deadline < now())::int as pending_qtl_overdue,
+                 ${objDecision([41])} as tl_accepted,
+                 ${objDecision([48])} as tl_rejected,
+                 ${objDecision([51])} as qc_accepted,
+                 ${objDecision([52])} as qc_rejected,
+                 ${objDecision([53, 56])} as qtl_accepted,
+                 ${objDecision([42])} as qtl_rejected
           ${OBJ_FROM}`,
     params: [...QUALITY_PARAMS, "stage", "outcome", "search"],
+    limit: 1,
+  },
+
+  // Time each role held a single objection, from the moment it was raised
+  // until it was closed (or until now, for open ones).
+  quality_objection_sla: {
+    sql: `with obj as (
+            select id, created_at, status, resolution_date
+              from public.quality_objections
+             where id = $1::bigint),
+          ev as (
+            select act.created_at,
+                   ${OBJ_EVENT_ROLE} as role,
+                   lag(act.created_at) over (order by act.created_at, act.id) as prev_at
+              from public.activities act
+             where act.trackable_type = 'QualityObjection'
+               and act.trackable_id = (select id from obj)
+               and act.action <> 39),
+          seg as (
+            select role,
+                   extract(epoch from (created_at - coalesce(prev_at, (select created_at from obj)))) as secs
+              from ev
+            union all
+            select (case when (select status from obj) = 0 then 'tl'
+                         when (select status from obj) = 1 then 'qc'
+                         when (select status from obj) in (2,3,6,7) then 'qtl'
+                         else null end) as role,
+                   extract(epoch from (now() - coalesce((select max(created_at) from ev), (select created_at from obj)))) as secs
+             where (select status from obj) not in (4,5,10))
+          select round((coalesce(sum(secs) filter (where role = 'tl'), 0) / 86400.0)::numeric, 1) as tl_days,
+                 round((coalesce(sum(secs) filter (where role = 'qc'), 0) / 86400.0)::numeric, 1) as qc_days,
+                 round((coalesce(sum(secs) filter (where role = 'qtl'), 0) / 86400.0)::numeric, 1) as qtl_days,
+                 round((coalesce(sum(secs), 0) / 86400.0)::numeric, 1) as total_days,
+                 ((select status from obj) in (4,5,10)) as closed,
+                 coalesce((select resolution_date from obj), (select max(created_at) from ev)) as closed_at,
+                 (select created_at from obj) as raised_at
+            from seg`,
+    params: ["objection_id"],
     limit: 1,
   },
 

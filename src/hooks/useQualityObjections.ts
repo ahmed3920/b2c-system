@@ -78,6 +78,12 @@ export type ObjectionSummary = {
   pending_qc_overdue: number;
   pending_qtl_avg_days: string | null;
   pending_qtl_overdue: number;
+  tl_accepted: number;
+  tl_rejected: number;
+  qc_accepted: number;
+  qc_rejected: number;
+  qtl_accepted: number;
+  qtl_rejected: number;
 };
 
 export type ObjectionByTeamLeader = {

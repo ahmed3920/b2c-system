@@ -94,19 +94,57 @@ export function QualityObjectionsTab() {
           label="Avg wait — Team Leader"
           value={s?.pending_tl_avg_days != null ? `${s.pending_tl_avg_days} days` : "—"}
           loading={f.summaryLoading}
-          hint={s ? `${(s.pending_tl_overdue ?? 0).toLocaleString()} of ${(s.pending_tl ?? 0).toLocaleString()} overdue` : undefined}
+          hint={
+            s
+              ? `${(s.pending_tl_overdue ?? 0).toLocaleString()} of ${(s.pending_tl ?? 0).toLocaleString()} overdue · ${(s.pending_tl_tutors ?? 0).toLocaleString()} tutors · ${(s.pending_tl_reviews ?? 0).toLocaleString()} reviews`
+              : undefined
+          }
+          tooltip="Average of (today − the date the objection was raised), counted only for objections still waiting on the team leader. Overdue = those whose team-leader deadline has already passed. Follows the filters set below."
         />
         <Kpi
           label="Avg wait — Quality Coordinator"
           value={s?.pending_qc_avg_days != null ? `${s.pending_qc_avg_days} days` : "—"}
           loading={f.summaryLoading}
-          hint={s ? `${(s.pending_qc_overdue ?? 0).toLocaleString()} of ${(s.pending_qc ?? 0).toLocaleString()} overdue` : undefined}
+          hint={
+            s
+              ? `${(s.pending_qc_overdue ?? 0).toLocaleString()} of ${(s.pending_qc ?? 0).toLocaleString()} overdue · ${(s.pending_qc_tutors ?? 0).toLocaleString()} tutors · ${(s.pending_qc_reviews ?? 0).toLocaleString()} reviews`
+              : undefined
+          }
+          tooltip="Average of (today − the date the objection was raised), counted only for objections still waiting on the quality coordinator. Overdue = those whose quality-coordinator deadline has already passed. Follows the filters set below."
         />
         <Kpi
           label="Avg wait — Quality Team Leader"
           value={s?.pending_qtl_avg_days != null ? `${s.pending_qtl_avg_days} days` : "—"}
           loading={f.summaryLoading}
-          hint={s ? `${(s.pending_qtl_overdue ?? 0).toLocaleString()} of ${(s.pending_qtl ?? 0).toLocaleString()} overdue` : undefined}
+          hint={
+            s
+              ? `${(s.pending_qtl_overdue ?? 0).toLocaleString()} of ${(s.pending_qtl ?? 0).toLocaleString()} overdue · ${(s.pending_qtl_tutors ?? 0).toLocaleString()} tutors · ${(s.pending_qtl_reviews ?? 0).toLocaleString()} reviews`
+              : undefined
+          }
+          tooltip="Average of (today − the date the objection was raised), counted only for objections still waiting on the quality team leader — including those waiting for the review edit and for the final confirmation. Overdue = those whose quality-team-leader deadline has already passed. Follows the filters set below."
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Kpi
+          label="Team Leader decisions"
+          value={s ? `${(s.tl_accepted ?? 0).toLocaleString()} accepted` : "—"}
+          loading={f.summaryLoading}
+          hint={s ? `${(s.tl_rejected ?? 0).toLocaleString()} rejected` : undefined}
+          tooltip="How many objections the educational team leader agreed to remove, and how many they turned down. One objection can be decided by more than one role, so these cards are not a split of the total."
+        />
+        <Kpi
+          label="Quality Coordinator decisions"
+          value={s ? `${(s.qc_accepted ?? 0).toLocaleString()} accepted` : "—"}
+          loading={f.summaryLoading}
+          hint={s ? `${(s.qc_rejected ?? 0).toLocaleString()} rejected` : undefined}
+          tooltip="How many objections the quality coordinator agreed to remove, and how many they turned down. One objection can be decided by more than one role, so these cards are not a split of the total."
+        />
+        <Kpi
+          label="Quality Team Leader decisions"
+          value={s ? `${(s.qtl_accepted ?? 0).toLocaleString()} accepted` : "—"}
+          loading={f.summaryLoading}
+          hint={s ? `${(s.qtl_rejected ?? 0).toLocaleString()} rejected` : undefined}
+          tooltip="How many objections the quality team leader accepted to remove, and how many they rejected. One objection can be decided by more than one role, so these cards are not a split of the total."
         />
       </div>
 
