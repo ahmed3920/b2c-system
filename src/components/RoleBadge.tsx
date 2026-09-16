@@ -26,6 +26,10 @@ const roleConfig = {
     label: "Community Moderator",
     className: "bg-purple-100 text-purple-700 border-purple-200",
   },
+  quality_team: {
+    label: "Quality Team",
+    className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  },
 };
 
 const sizeClasses = {
