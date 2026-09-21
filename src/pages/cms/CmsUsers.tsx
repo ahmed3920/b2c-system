@@ -13,7 +13,11 @@ import {
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Loader2, Pencil } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useCmsUsers, type CmsUser } from "@/hooks/useCmsUsers";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +40,26 @@ export default function CmsUsers() {
   const [editPassword, setEditPassword] = useState("");
   const [editTitle, setEditTitle] = useState<CmsJobTitle>("developer");
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Delete dialog state
+  const [deleting, setDeleting] = useState<CmsUser | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeleteSubmitting(true);
+    const { data, error } = await supabase.functions.invoke("cms-admin-delete-user", {
+      body: { userId: deleting.user_id },
+    });
+    setDeleteSubmitting(false);
+    if (error || (data as any)?.error) {
+      toast({ title: "Failed to delete", description: (data as any)?.error ?? error?.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "User deleted" });
+    setDeleting(null);
+    refresh();
+  };
 
   const handleCreate = async () => {
     if (!fullName.trim() || !email.trim() || password.length < 8) {
@@ -142,7 +166,7 @@ export default function CmsUsers() {
                   <TableHead>Job title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Active</TableHead>
-                  <TableHead className="w-[80px]">Edit</TableHead>
+                  <TableHead className="w-[110px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -168,9 +192,18 @@ export default function CmsUsers() {
                     <TableCell>
                       <Switch checked={u.active_status} onCheckedChange={(v) => setActive(u.user_id, v)} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
                       <Button size="icon" variant="ghost" onClick={() => openEdit(u)} aria-label="Edit user">
                         <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleting(u)}
+                        aria-label="Delete user"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -216,6 +249,27 @@ export default function CmsUsers() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleting?.full_name} ({deleting?.email ?? "no email"}) will be removed permanently and will no longer be able to sign in. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleDelete(); }}
+                disabled={deleteSubmitting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </CmsLayout>
   );
