@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
     const requestingUserId = claimsData.claims.sub as string;
     console.log("delete-user request by", requestingUserId);
 
-    const { data: roleRows, error: roleError } = await admin
+    // Role check uses the caller's own token (RLS allows reading own role).
+    // The service-role key can hit transient "JWT issued at future" clock skew.
+    const { data: roleRows, error: roleError } = await supabaseAuth
       .from("cms_user_roles")
       .select("role")
       .eq("user_id", requestingUserId);
@@ -51,20 +53,31 @@ Deno.serve(async (req) => {
       return json({ error: `Unauthorized: CMS Admin required (your roles: ${roles.join(", ") || "none"})` }, 403);
     }
 
-
     const body = await req.json();
     const userId = String(body.userId ?? "");
     if (!userId) return json({ error: "Missing userId" }, 400);
     if (userId === requestingUserId) return json({ error: "You cannot delete your own account" }, 400);
 
-    // Remove CMS-side records first (no FK cascade guaranteed)
-    await admin.from("cms_task_assignees").delete().eq("user_id", userId);
-    await admin.from("cms_user_roles").delete().eq("user_id", userId);
-    await admin.from("cms_profiles").delete().eq("user_id", userId);
-    await admin.from("user_systems").delete().eq("user_id", userId);
+    // Retry helper for transient clock-skew errors on the service-role key
+    const withRetry = async <T>(fn: () => Promise<{ error: { message: string } | null } & T>) => {
+      for (let i = 0; i < 4; i++) {
+        const res = await fn();
+        const msg = res.error?.message ?? "";
+        if (!res.error || !/issued at future|not valid yet|JWSInvalidSignature/i.test(msg)) return res;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      return await fn();
+    };
 
-    const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
+    // Remove CMS-side records first (no FK cascade guaranteed)
+    await withRetry(() => admin.from("cms_task_assignees").delete().eq("user_id", userId));
+    await withRetry(() => admin.from("cms_user_roles").delete().eq("user_id", userId));
+    await withRetry(() => admin.from("cms_profiles").delete().eq("user_id", userId));
+    await withRetry(() => admin.from("user_systems").delete().eq("user_id", userId));
+
+    const { error: deleteError } = await withRetry(() => admin.auth.admin.deleteUser(userId));
     if (deleteError) return json({ error: deleteError.message }, 400);
+
 
     return json({ success: true }, 200);
   } catch (e) {
