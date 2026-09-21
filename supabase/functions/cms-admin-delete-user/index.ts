@@ -35,14 +35,22 @@ Deno.serve(async (req) => {
     if (claimsError || !claimsData?.claims) return json({ error: "Invalid token" }, 401);
 
     const requestingUserId = claimsData.claims.sub as string;
+    console.log("delete-user request by", requestingUserId);
 
-    const { data: roleRow } = await admin
+    const { data: roleRows, error: roleError } = await admin
       .from("cms_user_roles")
       .select("role")
-      .eq("user_id", requestingUserId)
-      .eq("role", "cms_admin")
-      .maybeSingle();
-    if (!roleRow) return json({ error: "Unauthorized: CMS Admin required" }, 403);
+      .eq("user_id", requestingUserId);
+    if (roleError) {
+      console.error("role lookup failed", roleError);
+      return json({ error: `Role lookup failed: ${roleError.message}` }, 500);
+    }
+    const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+    console.log("roles found", JSON.stringify(roles));
+    if (!roles.includes("cms_admin")) {
+      return json({ error: `Unauthorized: CMS Admin required (your roles: ${roles.join(", ") || "none"})` }, 403);
+    }
+
 
     const body = await req.json();
     const userId = String(body.userId ?? "");
