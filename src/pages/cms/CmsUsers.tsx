@@ -41,6 +41,26 @@ export default function CmsUsers() {
   const [editTitle, setEditTitle] = useState<CmsJobTitle>("developer");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  // Delete dialog state
+  const [deleting, setDeleting] = useState<CmsUser | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeleteSubmitting(true);
+    const { data, error } = await supabase.functions.invoke("cms-admin-delete-user", {
+      body: { userId: deleting.user_id },
+    });
+    setDeleteSubmitting(false);
+    if (error || (data as any)?.error) {
+      toast({ title: "Failed to delete", description: (data as any)?.error ?? error?.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "User deleted" });
+    setDeleting(null);
+    refresh();
+  };
+
   const handleCreate = async () => {
     if (!fullName.trim() || !email.trim() || password.length < 8) {
       toast({ title: "Invalid input", description: "Name, email, and password (8+ chars) required.", variant: "destructive" });
