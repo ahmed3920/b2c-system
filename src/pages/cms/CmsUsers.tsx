@@ -166,7 +166,7 @@ export default function CmsUsers() {
                   <TableHead>Job title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Active</TableHead>
-                  <TableHead className="w-[80px]">Edit</TableHead>
+                  <TableHead className="w-[110px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,9 +192,18 @@ export default function CmsUsers() {
                     <TableCell>
                       <Switch checked={u.active_status} onCheckedChange={(v) => setActive(u.user_id, v)} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
                       <Button size="icon" variant="ghost" onClick={() => openEdit(u)} aria-label="Edit user">
                         <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleting(u)}
+                        aria-label="Delete user"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
