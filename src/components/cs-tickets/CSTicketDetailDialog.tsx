@@ -362,6 +362,38 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
 
           {!editMode ? (
             <div className="space-y-6 py-2">
+              {isAssignedMentorOnly && (
+                <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium">Ticket status:</span>
+                    <Badge
+                      variant={
+                        ticket.status === "Valid" || ticket.status === "Validated"
+                          ? "default"
+                          : ticket.status === "Not Valid" || ticket.status === "Rejected"
+                          ? "destructive"
+                          : ticket.status === "Pending"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    >
+                      {ticket.status}
+                    </Badge>
+                    {ticket.closed_at && (
+                      <span className="text-xs text-muted-foreground">
+                        Closed {format(new Date(ticket.closed_at), "PPp")}
+                        {ticket.closed_by_name ? ` by ${ticket.closed_by_name}` : ""}
+                      </span>
+                    )}
+                  </div>
+                  {ticket.team_leader_response && (
+                    <div>
+                      <div className="text-xs text-muted-foreground">Team leader response</div>
+                      <p className="text-sm whitespace-pre-wrap">{ticket.team_leader_response}</p>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Ticket Date" value={ticket.ticket_date} />
                 <Field
