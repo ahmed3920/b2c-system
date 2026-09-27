@@ -135,5 +135,37 @@ export function useCSTickets(scope: CSTicketScope = "all") {
     refresh();
   }, [refresh]);
 
+  // Keep the list in sync when a TL/admin edits a ticket elsewhere.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const quietRefresh = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        if (scope === "assigned_to_me") {
+          const { data, error } = await supabase.rpc("get_my_assigned_cs_tickets");
+          if (!error && data) setTickets(normalize(data as any[]));
+        } else if (scope === "mine") {
+          const { data, error } = await supabase.rpc("get_my_team_cs_tickets");
+          if (!error && data) setTickets(normalize(data as any[]));
+        } else {
+          refresh();
+        }
+      }, 400);
+    };
+    const channel = supabase
+      .channel(`cs_tickets_${scope}_${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cs_tickets" }, quietRefresh)
+      .subscribe();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") quietRefresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [scope, refresh]);
+
   return { tickets, loading, refresh };
 }
