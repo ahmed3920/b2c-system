@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { CSTicketCaseType, CSTicketStatus } from "./csTicketCategories";
 
@@ -96,76 +96,118 @@ const normalize = (rows: any[]): CSTicket[] =>
     parent_attachments: Array.isArray(r.parent_attachments) ? r.parent_attachments : [],
   })) as CSTicket[];
 
+async function fetchTickets(scope: CSTicketScope): Promise<CSTicket[] | null> {
+  if (scope === "mine") {
+    const { data, error } = await supabase.rpc("get_my_team_cs_tickets");
+    return !error && data ? normalize(data as any[]) : null;
+  }
+  if (scope === "assigned_to_me") {
+    const { data, error } = await supabase.rpc("get_my_assigned_cs_tickets");
+    return !error && data ? normalize(data as any[]) : null;
+  }
+  // Paginate to bypass the default 1000-row limit
+  const PAGE = 1000;
+  let from = 0;
+  const all: any[] = [];
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase
+      .from("cs_tickets")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error || !data) {
+      if (all.length === 0) return null;
+      break;
+    }
+    all.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return normalize(all);
+}
+
+const HIDDEN_REFRESH_MS = 2 * 60 * 1000;
+const REALTIME_DEBOUNCE_MS = 1500;
+const RECENT_FETCH_MS = 2000;
+
 export function useCSTickets(scope: CSTicketScope = "all") {
   const [tickets, setTickets] = useState<CSTicket[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
+  const inFlightRef = useRef(false);
+  const lastFetchRef = useRef(0);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    if (scope === "mine") {
-      const { data, error } = await supabase.rpc("get_my_team_cs_tickets");
-      setTickets(!error && data ? normalize(data as any[]) : []);
-    } else if (scope === "assigned_to_me") {
-      const { data, error } = await supabase.rpc("get_my_assigned_cs_tickets");
-      setTickets(!error && data ? normalize(data as any[]) : []);
-    } else {
-      // Paginate to bypass Supabase's default 1000-row limit
-      const PAGE = 1000;
-      let from = 0;
-      const all: any[] = [];
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { data, error } = await supabase
-          .from("cs_tickets")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error || !data) break;
-        all.push(...data);
-        if (data.length < PAGE) break;
-        from += PAGE;
+  const load = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    // Only show the loading state before the first successful load
+    if (!hasLoadedRef.current) setLoading(true);
+    try {
+      const result = await fetchTickets(scope);
+      if (result) {
+        setTickets(result);
+        hasLoadedRef.current = true;
+      } else if (!hasLoadedRef.current) {
+        setTickets([]);
       }
-      setTickets(normalize(all));
+    } finally {
+      lastFetchRef.current = Date.now();
+      inFlightRef.current = false;
+      setLoading(false);
     }
-    setLoading(false);
   }, [scope]);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const loadRef = useRef(load);
+  loadRef.current = load;
 
-  // Keep the list in sync when a TL/admin edits a ticket elsewhere.
+  // Reset + initial load when scope changes
+  useEffect(() => {
+    hasLoadedRef.current = false;
+    load();
+  }, [load]);
+
+  // Quiet background sync: realtime changes + returning after a long absence
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const quietRefresh = () => {
+    let hiddenAt: number | null = null;
+
+    const onChange = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(async () => {
-        if (scope === "assigned_to_me") {
-          const { data, error } = await supabase.rpc("get_my_assigned_cs_tickets");
-          if (!error && data) setTickets(normalize(data as any[]));
-        } else if (scope === "mine") {
-          const { data, error } = await supabase.rpc("get_my_team_cs_tickets");
-          if (!error && data) setTickets(normalize(data as any[]));
-        } else {
-          refresh();
-        }
-      }, 400);
+      timer = setTimeout(() => {
+        if (Date.now() - lastFetchRef.current < RECENT_FETCH_MS) return;
+        loadRef.current();
+      }, REALTIME_DEBOUNCE_MS);
     };
+
     const channel = supabase
       .channel(`cs_tickets_${scope}_${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "cs_tickets" }, quietRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cs_tickets" }, onChange)
       .subscribe();
-    const onVisible = () => {
-      if (document.visibilityState === "visible") quietRefresh();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+      } else if (hiddenAt && Date.now() - hiddenAt >= HIDDEN_REFRESH_MS) {
+        hiddenAt = null;
+        loadRef.current();
+      } else {
+        hiddenAt = null;
+      }
     };
-    document.addEventListener("visibilitychange", onVisible);
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       if (timer) clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisible);
+      document.removeEventListener("visibilitychange", onVisibility);
       supabase.removeChannel(channel);
     };
-  }, [scope, refresh]);
+  }, [scope]);
+
+  const refresh = useCallback(async () => {
+    await loadRef.current();
+  }, []);
 
   return { tickets, loading, refresh };
 }
