@@ -182,7 +182,7 @@ export function useCSTickets(scope: CSTicketScope = "all") {
     };
 
     const channel = supabase
-      .channel(`cs_tickets_${scope}`)
+      .channel(`cs_tickets_${scope}_${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "cs_tickets" }, onChange)
       .subscribe();
 
