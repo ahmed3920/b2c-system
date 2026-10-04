@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useReplicaQuery } from "@/hooks/useReplicaQuery";
+import { useReplicaQuery, runReplicaQuery } from "@/hooks/useReplicaQuery";
+import { downloadCsv } from "@/lib/exportCsv";
 import { useQualityScope } from "@/hooks/useQualityScope";
 import type { QualityFilterOptions } from "@/hooks/useQualityReviews";
 
@@ -24,7 +25,22 @@ export type FlagRow = {
   team_leader: string | null;
   mentor_name: string | null;
   organizations: string | null;
+  reviewer_name?: string | null;
+  objection_id: string | null;
+  objection_stage: string | null;
+  objection_outcome: "pending" | "accepted" | "rejected" | null;
+  objection_decided_by: "tl" | "qc" | "qtl" | "other" | null;
+  review_objections_count: number | null;
 };
+
+export const ROLE_SHORT: Record<string, string> = { tl: "TL", qc: "QC", qtl: "QTL" };
+
+export function stageWaitingOn(stage: string | null): string | null {
+  if (stage === "pending_tl") return "TL";
+  if (stage === "pending_qc") return "QC";
+  if (stage === "pending_qtl" || stage === "pending_edit" || stage === "pending_qtl_confirm") return "QTL";
+  return null;
+}
 
 export type FollowupStatus = "open" | "in_progress" | "done";
 
@@ -47,6 +63,7 @@ export type FlagFilters = {
   tutor: string;
   flag_type: "2" | "1" | "";
   followup: FollowupStatus | "all";
+  objection: "all" | "yes" | "no";
 };
 
 export const emptyFlagFilters: FlagFilters = {
@@ -55,6 +72,7 @@ export const emptyFlagFilters: FlagFilters = {
   tutor: "",
   flag_type: "2",
   followup: "all",
+  objection: "all",
 };
 
 export const FLAG_PAGE_SIZE = 100;
@@ -75,6 +93,7 @@ export function useQualityFlagFollowups() {
       review_cycle: filters.cycle || null,
       tutor_status: null, organization: null, flag: null, student: null, mentor: null,
       flag_type: filters.flag_type === "" ? null : Number(filters.flag_type),
+      has_objection: filters.objection === "all" ? null : filters.objection,
     };
     if (scope.loading) return { ...p, team_lead: "__loading__" };
     if (scope.lockedTeamLead) p.team_lead = scope.lockedTeamLead;
@@ -169,6 +188,58 @@ export function useQualityFlagFollowups() {
     [followups],
   );
 
+  const [exporting, setExporting] = useState(false);
+  const exportAll = useCallback(async (): Promise<string | null> => {
+    setExporting(true);
+    try {
+      const CHUNK = 500;
+      const all: FlagRow[] = [];
+      for (let offset = 0; offset < 20000; offset += CHUNK) {
+        const rows = await runReplicaQuery<FlagRow>("quality_flags_list", { ...baseParams, limit: CHUNK, offset });
+        all.push(...rows);
+        if (rows.length < CHUNK) break;
+      }
+      const fu: Record<string, Followup> = {};
+      const ids = all.map((r) => Number(r.flag_id)).filter((n) => !Number.isNaN(n));
+      for (let i = 0; i < ids.length; i += 300) {
+        const { data } = await (supabase as any)
+          .from("quality_flag_followups")
+          .select("flag_id, status, note, updated_at")
+          .in("flag_id", ids.slice(i, i + 300));
+        for (const r of (data ?? []) as any[]) {
+          fu[String(r.flag_id)] = { flag_id: String(r.flag_id), status: r.status ?? "open", note: r.note ?? null, updated_at: r.updated_at ?? null };
+        }
+      }
+      const rows = all.filter((r) => filters.followup === "all" || (fu[r.flag_id]?.status ?? "open") === filters.followup);
+      const outcomeLabel = (r: FlagRow) =>
+        !r.objection_id ? "None" : r.objection_outcome === "accepted" ? "Accepted" : r.objection_outcome === "rejected" ? "Rejected" : "Pending";
+      downloadCsv(
+        `flag-follow-up_${filters.cycle || "all"}_${new Date().toISOString().slice(0, 10)}.csv`,
+        ["Tutor", "T-ID", "Team leader", "Mentor", "Reviewer", "Session date", "Cycle", "Score", "Score %", "Flag", "Criterion", "Flag description", "Objection", "Objection stage", "Objection decided by", "Follow-up status", "Action taken", "Last updated"],
+        rows.map((r) => {
+          const f = fu[r.flag_id];
+          return [
+            r.tutor_name, r.tutor_tid, r.team_leader, r.mentor_name, r.reviewer_name ?? "",
+            r.session_start_at ? r.session_start_at.slice(0, 10) : "", r.review_cycle,
+            r.score != null ? Number(r.score).toFixed(2) : "", r.score_pct ?? "",
+            r.flag_color === "red" ? "Red" : r.flag_color === "yellow" ? "Yellow" : "Other",
+            [r.parent_name, r.criterion_name].filter(Boolean).join(" · "), r.description ?? "",
+            outcomeLabel(r),
+            r.objection_id ? (stageWaitingOn(r.objection_stage) ? `Waiting on ${stageWaitingOn(r.objection_stage)}` : r.objection_stage ?? "") : "",
+            r.objection_decided_by ? (ROLE_SHORT[r.objection_decided_by] ?? "") : "",
+            FOLLOWUP_STATUS_LABEL[(f?.status ?? "open") as FollowupStatus], f?.note ?? "",
+            f?.updated_at ? f.updated_at.slice(0, 10) : "",
+          ];
+        }),
+      );
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : "Export failed";
+    } finally {
+      setExporting(false);
+    }
+  }, [baseParams, filters.followup, filters.cycle]);
+
   const update = (patch: Partial<FlagFilters>) => {
     setPage(0);
     setFilters((f) => ({ ...f, ...patch }));
@@ -202,6 +273,8 @@ export function useQualityFlagFollowups() {
     save,
     saving,
     scope,
+    exportAll,
+    exporting,
     refetch: () => {
       list.refetch();
       count.refetch();
