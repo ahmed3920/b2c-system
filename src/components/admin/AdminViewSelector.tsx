@@ -38,9 +38,9 @@ interface AdminViewSelectorProps {
 }
 
 const viewLabels: Record<AdminViewMode, { label: string; icon: React.ReactNode; color: string }> = {
-  my: { label: "My View", icon: <Eye className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/30" },
-  team_leader: { label: "Team Leader View", icon: <Users className="w-4 h-4" />, color: "bg-amber-50 text-amber-700 border-amber-200" },
-  mentor: { label: "Mentor View", icon: <User className="w-4 h-4" />, color: "bg-blue-50 text-blue-700 border-blue-200" },
+  my: { label: "My Tasks", icon: <Eye className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/30" },
+  mentor: { label: "Mentors Tasks", icon: <User className="w-4 h-4" />, color: "bg-blue-50 text-blue-700 border-blue-200" },
+  team_leader: { label: "Team Leaders Tasks", icon: <Users className="w-4 h-4" />, color: "bg-amber-50 text-amber-700 border-amber-200" },
   all: { label: "All System", icon: <Globe className="w-4 h-4" />, color: "bg-green-50 text-green-700 border-green-200" },
 };
 
