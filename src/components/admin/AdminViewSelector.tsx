@@ -38,9 +38,9 @@ interface AdminViewSelectorProps {
 }
 
 const viewLabels: Record<AdminViewMode, { label: string; icon: React.ReactNode; color: string }> = {
-  my: { label: "My View", icon: <Eye className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/30" },
-  team_leader: { label: "Team Leader View", icon: <Users className="w-4 h-4" />, color: "bg-amber-50 text-amber-700 border-amber-200" },
-  mentor: { label: "Mentor View", icon: <User className="w-4 h-4" />, color: "bg-blue-50 text-blue-700 border-blue-200" },
+  my: { label: "My Tasks", icon: <Eye className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/30" },
+  mentor: { label: "Mentors Tasks", icon: <User className="w-4 h-4" />, color: "bg-blue-50 text-blue-700 border-blue-200" },
+  team_leader: { label: "Team Leaders Tasks", icon: <Users className="w-4 h-4" />, color: "bg-amber-50 text-amber-700 border-amber-200" },
   all: { label: "All System", icon: <Globe className="w-4 h-4" />, color: "bg-green-50 text-green-700 border-green-200" },
 };
 
@@ -104,7 +104,7 @@ export const AdminViewSelector = ({
         })}
       </div>
 
-      {/* User Selection for TL/Mentor views */}
+      {/* Optional person filter for TL/Mentor tabs */}
       {needsUserSelection && (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
@@ -113,7 +113,7 @@ export const AdminViewSelector = ({
                 <span className="truncate">{selectedProfile.full_name || selectedProfile.mentor_name}</span>
               ) : (
                 <span className="text-muted-foreground">
-                  Select {viewMode === "team_leader" ? "Team Leader" : "Mentor"}...
+                  All {viewMode === "team_leader" ? "Team Leaders" : "Mentors"}
                 </span>
               )}
               <ChevronDown className="w-4 h-4 shrink-0" />
@@ -130,6 +130,18 @@ export const AdminViewSelector = ({
               />
             </div>
             <div className="max-h-[250px] overflow-y-auto space-y-0.5">
+              <button
+                onClick={() => {
+                  onSelectedUserChange(null);
+                  setIsOpen(false);
+                  setSearchQuery("");
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !selectedUserId ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                }`}
+              >
+                All {viewMode === "team_leader" ? "Team Leaders" : "Mentors"}
+              </button>
               {filteredUsers.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No results</p>
               ) : (

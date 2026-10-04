@@ -108,24 +108,44 @@ export function useAdminView(): AdminViewState {
 
         if (viewMode === "my" && currentUserId) {
           q = q.eq("user_id", currentUserId);
-        } else if (viewMode === "team_leader" && selectedUserId) {
-          const leader = profiles.find(p => p.user_id === selectedUserId);
-          if (leader) {
-            if (tlSubView === "own") {
-              q = q.eq("user_id", selectedUserId);
-            } else {
-              const teamMentorIds = profiles
-                .filter(p => p.team_leader === leader.mentor_name && p.user_id !== selectedUserId)
-                .map(p => p.user_id);
-              if (teamMentorIds.length > 0) {
-                q = q.in("user_id", teamMentorIds);
+        } else if (viewMode === "team_leader") {
+          if (selectedUserId) {
+            const leader = profiles.find(p => p.user_id === selectedUserId);
+            if (leader) {
+              if (tlSubView === "own") {
+                q = q.eq("user_id", selectedUserId);
               } else {
-                return null;
+                const teamMentorIds = profiles
+                  .filter(p => p.team_leader === leader.mentor_name && p.user_id !== selectedUserId)
+                  .map(p => p.user_id);
+                if (teamMentorIds.length > 0) {
+                  q = q.in("user_id", teamMentorIds);
+                } else {
+                  return null;
+                }
               }
             }
+          } else {
+            // Aggregated: all team leaders' own tasks
+            const tlIds = teamLeaders.map(p => p.user_id);
+            if (tlIds.length > 0) {
+              q = q.in("user_id", tlIds);
+            } else {
+              return null;
+            }
           }
-        } else if (viewMode === "mentor" && selectedUserId) {
-          q = q.eq("user_id", selectedUserId);
+        } else if (viewMode === "mentor") {
+          if (selectedUserId) {
+            q = q.eq("user_id", selectedUserId);
+          } else {
+            // Aggregated: all mentors' tasks
+            const mentorIds = mentors.map(p => p.user_id);
+            if (mentorIds.length > 0) {
+              q = q.in("user_id", mentorIds);
+            } else {
+              return null;
+            }
+          }
         }
         return q;
       };
@@ -143,6 +163,13 @@ export function useAdminView(): AdminViewState {
             return;
           }
         }
+      }
+      // Aggregated tabs with an empty roster bail out cleanly too.
+      if ((viewMode === "team_leader" && !selectedUserId && teamLeaders.length === 0) ||
+          (viewMode === "mentor" && !selectedUserId && mentors.length === 0)) {
+        setTasks([]);
+        setIsLoadingTasks(false);
+        return;
       }
 
       // Paginate to bypass PostgREST's 1000-row cap so older tasks aren't hidden.
@@ -178,15 +205,14 @@ export function useAdminView(): AdminViewState {
 
   useEffect(() => {
     if (!isAdmin || !currentUserId) return;
-    if ((viewMode === "team_leader" || viewMode === "mentor") && !selectedUserId) return;
     fetchTasks();
-  }, [viewMode, selectedUserId, currentUserId, isAdmin, profiles.length, tlSubView]);
+  }, [viewMode, selectedUserId, currentUserId, isAdmin, profiles.length, roleMap.size, tlSubView]);
 
   return {
     viewMode,
     setViewMode: (mode: AdminViewMode) => {
       setViewMode(mode);
-      if (mode === "my" || mode === "all") setSelectedUserId(null);
+      setSelectedUserId(null);
       if (mode !== "team_leader") setTlSubView("team");
     },
     selectedUserId,
