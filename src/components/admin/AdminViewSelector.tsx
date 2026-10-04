@@ -130,6 +130,18 @@ export const AdminViewSelector = ({
               />
             </div>
             <div className="max-h-[250px] overflow-y-auto space-y-0.5">
+              <button
+                onClick={() => {
+                  onSelectedUserChange(null);
+                  setIsOpen(false);
+                  setSearchQuery("");
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !selectedUserId ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                }`}
+              >
+                All {viewMode === "team_leader" ? "Team Leaders" : "Mentors"}
+              </button>
               {filteredUsers.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No results</p>
               ) : (
