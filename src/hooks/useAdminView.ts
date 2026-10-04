@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
-export type AdminViewMode = "my" | "team_leader" | "mentor" | "all";
+export type AdminViewMode = "my" | "team_leader" | "mentor" | "admin" | "all";
 export type TeamLeaderSubView = "own" | "team";
 
 interface Profile {
@@ -27,6 +27,8 @@ interface AdminViewState {
   profiles: Profile[];
   teamLeaders: Profile[];
   mentors: Profile[];
+  admins: Profile[];
+  roleMap: Map<string, Set<string>>;
   selectedProfile: Profile | null;
   refetchTasks: () => void;
   taskOwnerNames: Record<string, string>;
@@ -142,6 +144,14 @@ export function useAdminView(): AdminViewState {
               return null;
             }
           }
+        } else if (viewMode === "admin") {
+          if (selectedUserId) {
+            q = q.eq("user_id", selectedUserId);
+          } else {
+            const ids = admins.map(p => p.user_id);
+            if (ids.length > 0) q = q.in("user_id", ids);
+            else return null;
+          }
         } else if (viewMode === "mentor") {
           if (selectedUserId) {
             q = q.eq("user_id", selectedUserId);
@@ -174,7 +184,8 @@ export function useAdminView(): AdminViewState {
       }
       // Aggregated tabs with an empty roster bail out cleanly too.
       if ((viewMode === "team_leader" && !selectedUserId && teamLeaders.length === 0) ||
-          (viewMode === "mentor" && !selectedUserId && mentors.length === 0)) {
+          (viewMode === "mentor" && !selectedUserId && mentors.length === 0) ||
+          (viewMode === "admin" && !selectedUserId && admins.length === 0)) {
         setTasks([]);
         setIsLoadingTasks(false);
         return;
@@ -230,6 +241,8 @@ export function useAdminView(): AdminViewState {
     profiles,
     teamLeaders,
     mentors,
+    admins,
+    roleMap,
     selectedProfile,
     refetchTasks: fetchTasks,
     taskOwnerNames,
