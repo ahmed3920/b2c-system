@@ -1195,7 +1195,14 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  a.name as team_leader,
                  (btrim(m.name)) as mentor_name,
                  (btrim(qa.name)) as reviewer_name,
-                 ${TUTOR_ORGS} as organizations
+                 ${TUTOR_ORGS} as organizations,
+                 fo.id::text as objection_id,
+                 fo.stage as objection_stage,
+                 fo.outcome as objection_outcome,
+                 fo.decided_by as objection_decided_by,
+                 (select count(*)::int from public.quality_objections o2
+                   where o2.quality_review_id = qr.id
+                     and not (o2.objectionable_type = 'QualityReviewFlag' and o2.objectionable_id = f.id)) as review_objections_count
           from public.quality_review_flags f
           join public.quality_reviews qr on qr.id = f.quality_review_id
           join public.tutors t on t.id = qr.tutor_id
@@ -1207,12 +1214,27 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.admins qa on qa.id = qr.admin_id
           left join public.quality_criteria qc on qc.id = f.quality_criterion_id
           left join public.quality_criteria parent on parent.id = qc.parent_id
+          left join lateral (
+            select o.id,
+                   ${OBJ_STAGE} as stage,
+                   ${OBJ_OUTCOME} as outcome,
+                   (select ${OBJ_EVENT_ROLE}
+                      from public.activities act
+                     where act.trackable_type = 'QualityObjection' and act.trackable_id = o.id
+                       and act.action in (41, 48, 51, 52, 53, 56, 42)
+                     order by act.created_at desc, act.id desc limit 1) as decided_by
+              from public.quality_objections o
+             where o.objectionable_type = 'QualityReviewFlag' and o.objectionable_id = f.id
+             order by o.created_at desc limit 1) fo on true
           ${QUALITY_WHERE}
             and f.deleted_at is null
             and ($16::int is null or f.flag_type = $16::int)
+            and ($19::text is null
+                 or ($19::text = 'yes') = exists (select 1 from public.quality_objections ox
+                      where ox.objectionable_type = 'QualityReviewFlag' and ox.objectionable_id = f.id))
           order by f.flag_type desc, coalesce(qr.session_start_at, qr.created_at) desc
           limit coalesce($17::int, 100) offset coalesce($18::int, 0)`,
-    params: [...QUALITY_PARAMS, "flag_type", "limit", "offset"],
+    params: [...QUALITY_PARAMS, "flag_type", "limit", "offset", "has_objection"],
     limit: 2000,
   },
 
@@ -1232,8 +1254,11 @@ export const QUERIES: Record<string, ReplicaQuery> = {
           left join public.admins qa on qa.id = qr.admin_id
           ${QUALITY_WHERE}
             and f.deleted_at is null
-            and ($16::int is null or f.flag_type = $16::int)`,
-    params: [...QUALITY_PARAMS, "flag_type"],
+            and ($16::int is null or f.flag_type = $16::int)
+            and ($17::text is null
+                 or ($17::text = 'yes') = exists (select 1 from public.quality_objections ox
+                      where ox.objectionable_type = 'QualityReviewFlag' and ox.objectionable_id = f.id))`,
+    params: [...QUALITY_PARAMS, "flag_type", "has_objection"],
     limit: 1,
   },
 
@@ -1755,9 +1780,10 @@ export const QUERIES: Record<string, ReplicaQuery> = {
                  (btrim(m.name)) as mentor_name,
                  btrim(qa.name) as reviewer_name
           ${OBJ_FROM}
+            and ($21::bigint is null or o.id = $21::bigint)
           order by o.created_at desc
           limit $19::int offset $20::int`,
-    params: [...QUALITY_PARAMS, "stage", "outcome", "search", "limit", "offset"],
+    params: [...QUALITY_PARAMS, "stage", "outcome", "search", "limit", "offset", "objection_id"],
     limit: 500,
   },
 
