@@ -52,6 +52,7 @@ export const TaskBreakdownStats = ({
   const { isAdmin, isTeamLeader } = useUserRole();
   const [rawTasks, setRawTasks] = useState<RawTask[]>([]);
   const [rawProfiles, setRawProfiles] = useState<RawProfile[]>([]);
+  const [leaderIds, setLeaderIds] = useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = useState<BreakdownGroupBy>("team_leader");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [internalMonth, setInternalMonth] = useState<string>(() => {
@@ -78,6 +79,12 @@ export const TaskBreakdownStats = ({
       const visibleProfiles: RawProfile[] = profilesData || [];
       setRawProfiles(visibleProfiles);
 
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["team_leader", "super_team_leader"]);
+      setLeaderIds(new Set((rolesData || []).map((r) => r.user_id)));
+
       const visibleIds = visibleProfiles.map((p) => p.user_id);
       let q = supabase
         .from("tasks")
@@ -99,6 +106,7 @@ export const TaskBreakdownStats = ({
     [rawProfiles]
   );
   const isTeamLeaderUser = (userId: string) => {
+    if (leaderIds.has(userId)) return true;
     const p = profileMap.get(userId);
     if (!p) return false;
     return teamLeaderNames.has(p.mentor_name);
@@ -117,7 +125,7 @@ export const TaskBreakdownStats = ({
       .map((p) => p.user_id);
     onScopeChange({ groupBy, monthFilter, userIds });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupBy, monthFilter, rawProfiles]);
+  }, [groupBy, monthFilter, rawProfiles, leaderIds]);
 
   // Build grouped rows
   const groupedStats = useMemo<GroupRow[]>(() => {
@@ -146,6 +154,13 @@ export const TaskBreakdownStats = ({
       if (!cur.userIds.includes(userId)) cur.userIds.push(userId);
       return cur;
     };
+
+    // Show every team leader, even those with no tasks yet
+    if (groupBy === "team_leader") {
+      rawProfiles.forEach((p) => {
+        if (p.mentor_name && leaderIds.has(p.user_id)) ensure(p.mentor_name, p.user_id);
+      });
+    }
 
     rawTasks.forEach((t) => {
       const p = profileMap.get(t.user_id);
@@ -180,13 +195,13 @@ export const TaskBreakdownStats = ({
         const { typeCounts, ...rest } = g;
         return { ...rest, topType: top ? `${top[0]} (${top[1]})` : null };
       })
-      .sort((a, b) => b.monthTotal - a.monthTotal || b.total - a.total);
-  }, [groupBy, monthFilter, rawTasks, rawProfiles, profileMap, teamLeaderNames]);
+      .sort((a, b) => b.monthTotal - a.monthTotal || b.total - a.total || a.name.localeCompare(b.name));
+  }, [groupBy, monthFilter, rawTasks, rawProfiles, profileMap, teamLeaderNames, leaderIds]);
 
   // Drill-down: for a team leader, compute per-mentor breakdown
   const computeMentorChildren = (tlName: string): GroupRow[] => {
     const mentorProfiles = rawProfiles.filter(
-      (p) => p.team_leader === tlName && !teamLeaderNames.has(p.mentor_name)
+      (p) => p.team_leader === tlName && !teamLeaderNames.has(p.mentor_name) && !leaderIds.has(p.user_id)
     );
     const byUser = new Map<string, GroupRow>();
     mentorProfiles.forEach((p) => {
@@ -232,7 +247,7 @@ export const TaskBreakdownStats = ({
         const top = Object.entries(tc).sort((a, b) => b[1] - a[1])[0];
         return { ...r, topType: top ? `${top[0]} (${top[1]})` : null };
       })
-      .sort((a, b) => b.monthTotal - a.monthTotal || b.total - a.total);
+      .sort((a, b) => b.monthTotal - a.monthTotal || b.total - a.total || a.name.localeCompare(b.name));
   };
 
   if (!enabled) return null;
