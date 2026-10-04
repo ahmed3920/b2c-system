@@ -212,7 +212,7 @@ export function useAdminView(): AdminViewState {
     viewMode,
     setViewMode: (mode: AdminViewMode) => {
       setViewMode(mode);
-      if (mode === "my" || mode === "all") setSelectedUserId(null);
+      setSelectedUserId(null);
       if (mode !== "team_leader") setTlSubView("team");
     },
     selectedUserId,
