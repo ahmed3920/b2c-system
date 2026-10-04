@@ -19,7 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, ExternalLink, Loader2, RefreshCw, Save, X } from "lucide-react";
+import { AlertTriangle, Download, Eye, Loader2, RefreshCw, Save, X } from "lucide-react";
+import { QualityReviewDetailDialog } from "./QualityReviewDetailDialog";
+import { QualityObjectionDetailDialog } from "./QualityObjectionDetailDialog";
+import { runReplicaQuery } from "@/hooks/useReplicaQuery";
+import type { ObjectionRow } from "@/hooks/useQualityObjections";
 import { Field, Kpi, SearchableSelect } from "./QualityFilterBar";
 import { cycleLabel } from "@/lib/tutorStatus";
 import { toast } from "@/hooks/use-toast";
@@ -29,6 +33,8 @@ import {
   FLAG_PAGE_SIZE,
   type FollowupStatus,
   type FlagRow,
+  ROLE_SHORT,
+  stageWaitingOn,
 } from "@/hooks/useQualityFlagFollowups";
 
 const ALL = "all";
@@ -88,6 +94,28 @@ export function QualityFlagFollowupTab() {
   const total = f.filters.flag_type === "2" ? (t?.red ?? 0) : f.filters.flag_type === "1" ? (t?.yellow ?? 0) : (t?.total ?? 0);
   const pages = Math.max(1, Math.ceil(total / FLAG_PAGE_SIZE));
   const locked = f.scope.lockedTeamLead || f.scope.lockedMentor;
+  const [reviewId, setReviewId] = useState<string | null>(null);
+  const [objection, setObjection] = useState<ObjectionRow | null>(null);
+  const [loadingObj, setLoadingObj] = useState<string | null>(null);
+
+  const openObjection = async (id: string) => {
+    setLoadingObj(id);
+    try {
+      const rows = await runReplicaQuery<ObjectionRow>("quality_objections_list", { objection_id: id, limit: 1, offset: 0 });
+      if (rows[0]) setObjection(rows[0]);
+      else toast({ title: "Objection not found", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Could not load objection", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    } finally {
+      setLoadingObj(null);
+    }
+  };
+
+  const handleExport = async () => {
+    const err = await f.exportAll();
+    if (err) toast({ title: "Export failed", description: err, variant: "destructive" });
+    else toast({ title: "Export ready" });
+  };
 
   const handleSave = async (row: FlagRow, patch: { status?: FollowupStatus; note?: string }) => {
     const err = await f.save(row, patch);
@@ -128,6 +156,10 @@ export function QualityFlagFollowupTab() {
             )}
           </div>
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExport} disabled={f.exporting}>
+              {f.exporting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1.5" />}
+              Export
+            </Button>
             <Button size="sm" variant="ghost" onClick={f.reset}>
               <X className="w-3.5 h-3.5 mr-1.5" /> Clear
             </Button>
@@ -178,6 +210,19 @@ export function QualityFlagFollowupTab() {
               </SelectContent>
             </Select>
           </Field>
+          <Field label="Objection">
+            <Select
+              value={f.filters.objection}
+              onValueChange={(v) => f.update({ objection: v as "all" | "yes" | "no" })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="yes">Has objection</SelectItem>
+                <SelectItem value="no">No objection</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Tutor name or T-ID">
             <Input
               placeholder="e.g. T-4602"
@@ -223,6 +268,7 @@ export function QualityFlagFollowupTab() {
                       <TableHead>Session</TableHead>
                       <TableHead className="text-right">Score</TableHead>
                       <TableHead>Flag</TableHead>
+                      <TableHead>Objection</TableHead>
                       <TableHead className="w-[150px]">Status</TableHead>
                       <TableHead>Action taken</TableHead>
                       <TableHead />
@@ -231,13 +277,13 @@ export function QualityFlagFollowupTab() {
                   <TableBody>
                     {f.loading && f.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           Loading flags…
                         </TableCell>
                       </TableRow>
                     ) : f.rows.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                           No flags match these filters.
                         </TableCell>
                       </TableRow>
@@ -247,7 +293,9 @@ export function QualityFlagFollowupTab() {
                         return (
                           <TableRow key={r.flag_id}>
                             <TableCell>
-                              {r.tutor_name}
+                              <button type="button" className="text-left font-medium hover:underline" onClick={() => setReviewId(r.review_id)}>
+                                {r.tutor_name}
+                              </button>
                               <span className="block text-xs text-muted-foreground">{r.tutor_tid}</span>
                             </TableCell>
                             <TableCell className="text-sm">{r.team_leader ?? "—"}</TableCell>
@@ -265,7 +313,7 @@ export function QualityFlagFollowupTab() {
                                 {r.score_pct ? `${r.score_pct}%` : ""}
                               </span>
                             </TableCell>
-                            <TableCell className="max-w-[260px]">
+                            <TableCell className="max-w-[260px] cursor-pointer" onClick={() => setReviewId(r.review_id)}>
                               <Badge
                                 className={
                                   r.flag_color === "red"
@@ -282,6 +330,31 @@ export function QualityFlagFollowupTab() {
                               {r.description && (
                                 <span className="block text-xs text-muted-foreground">
                                   {r.description}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="min-w-[130px]">
+                              {r.objection_id ? (
+                                <button type="button" onClick={() => openObjection(r.objection_id!)} disabled={loadingObj === r.objection_id}>
+                                  {r.objection_outcome === "accepted" ? (
+                                    <Badge className="bg-success text-success-foreground">Accepted</Badge>
+                                  ) : r.objection_outcome === "rejected" ? (
+                                    <Badge variant="destructive">
+                                      Rejected{r.objection_decided_by && ROLE_SHORT[r.objection_decided_by] ? ` by ${ROLE_SHORT[r.objection_decided_by]}` : ""}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="border-warning text-warning">
+                                      Pending{stageWaitingOn(r.objection_stage) ? ` · ${stageWaitingOn(r.objection_stage)}` : ""}
+                                    </Badge>
+                                  )}
+                                  {loadingObj === r.objection_id && <Loader2 className="inline w-3 h-3 ml-1 animate-spin" />}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">None</span>
+                              )}
+                              {(r.review_objections_count ?? 0) > 0 && (
+                                <span className="block text-[11px] text-muted-foreground mt-1">
+                                  {r.review_objections_count} other objection{r.review_objections_count === 1 ? "" : "s"} on this review
                                 </span>
                               )}
                             </TableCell>
@@ -312,10 +385,8 @@ export function QualityFlagFollowupTab() {
                               />
                             </TableCell>
                             <TableCell>
-                              <Button size="sm" variant="ghost" asChild>
-                                <a href={`/performance?tab=quality&review=${r.review_id}`}>
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                </a>
+                              <Button size="sm" variant="ghost" onClick={() => setReviewId(r.review_id)}>
+                                <Eye className="w-3.5 h-3.5 mr-1" /> View review
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -351,6 +422,9 @@ export function QualityFlagFollowupTab() {
           )}
         </CardContent>
       </Card>
+
+      <QualityReviewDetailDialog reviewId={reviewId} onOpenChange={(o) => !o && setReviewId(null)} />
+      <QualityObjectionDetailDialog objection={objection} onOpenChange={(o) => !o && setObjection(null)} />
     </div>
   );
 }
