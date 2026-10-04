@@ -104,7 +104,7 @@ export const AdminViewSelector = ({
         })}
       </div>
 
-      {/* User Selection for TL/Mentor views */}
+      {/* Optional person filter for TL/Mentor tabs */}
       {needsUserSelection && (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
@@ -113,7 +113,7 @@ export const AdminViewSelector = ({
                 <span className="truncate">{selectedProfile.full_name || selectedProfile.mentor_name}</span>
               ) : (
                 <span className="text-muted-foreground">
-                  Select {viewMode === "team_leader" ? "Team Leader" : "Mentor"}...
+                  All {viewMode === "team_leader" ? "Team Leaders" : "Mentors"}
                 </span>
               )}
               <ChevronDown className="w-4 h-4 shrink-0" />
