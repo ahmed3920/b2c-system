@@ -181,14 +181,20 @@ export function AdminTaskAssignDialog({
       if (rolesError) throw rolesError;
 
       const roleMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
-      
+      // Super Team Leaders are also team leaders — collect both roles
+      const tlUserIds = new Set(
+        (roles || [])
+          .filter(r => r.role === "team_leader" || r.role === "super_team_leader")
+          .map(r => r.user_id)
+      );
+
       const usersWithRoles: UserOption[] = (profiles || []).map(p => ({
         ...p,
         role: roleMap.get(p.user_id) || "mentor",
       }));
 
       setAllUsers(usersWithRoles);
-      setTeamLeaders(usersWithRoles.filter(u => u.role === "team_leader"));
+      setTeamLeaders(usersWithRoles.filter(u => tlUserIds.has(u.user_id)));
     } catch (error) {
       toast({
         title: "Error",
