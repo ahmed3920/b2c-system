@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
-export type AdminViewMode = "my" | "team_leader" | "mentor" | "all";
+export type AdminViewMode = "my" | "team_leader" | "mentor" | "admin" | "all";
 export type TeamLeaderSubView = "own" | "team";
 
 interface Profile {
@@ -27,6 +27,8 @@ interface AdminViewState {
   profiles: Profile[];
   teamLeaders: Profile[];
   mentors: Profile[];
+  admins: Profile[];
+  roleMap: Map<string, Set<string>>;
   selectedProfile: Profile | null;
   refetchTasks: () => void;
   taskOwnerNames: Record<string, string>;
@@ -62,36 +64,44 @@ export function useAdminView(): AdminViewState {
     });
   }, [isAdmin]);
 
-  // Fetch roles to identify team leaders
-  const [roleMap, setRoleMap] = useState<Map<string, string>>(new Map());
+  // Fetch all roles per user (a user can hold several)
+  const [roleMap, setRoleMap] = useState<Map<string, Set<string>>>(new Map());
   useEffect(() => {
     if (!isAdmin) return;
     const fetchRoles = async () => {
       const { data } = await supabase.from("user_roles").select("user_id, role");
-      const map = new Map<string, string>();
+      const map = new Map<string, Set<string>>();
       (data || []).forEach(r => {
-        const existing = map.get(r.user_id);
-        if (!existing || r.role === "admin" || (r.role === "team_leader" && existing === "mentor")) {
-          map.set(r.user_id, r.role);
-        }
+        if (!map.has(r.user_id)) map.set(r.user_id, new Set());
+        map.get(r.user_id)!.add(r.role as string);
       });
       setRoleMap(map);
     };
     fetchRoles();
   }, [isAdmin]);
 
+  const has = (uid: string, ...roles: string[]) => {
+    const s = roleMap.get(uid);
+    return !!s && roles.some(r => s.has(r));
+  };
+
   const teamLeaders = useMemo(() => {
-    return profiles.filter(p => roleMap.get(p.user_id) === "team_leader");
+    return profiles.filter(p => has(p.user_id, "team_leader", "super_team_leader"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profiles, roleMap]);
 
   const mentors = useMemo(() => {
-    // Everyone who isn't a team leader / super team leader counts as a "mentor-like"
-    // entry in the picker — mentors, community moderators, admins acting as mentors, etc.
-    return profiles.filter(p => {
-      const r = roleMap.get(p.user_id);
-      return r !== "team_leader" && r !== "super_team_leader";
-    });
+    return profiles.filter(p =>
+      has(p.user_id, "mentor", "community_moderator") &&
+      !has(p.user_id, "team_leader", "super_team_leader", "admin"),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profiles, roleMap]);
+
+  const admins = useMemo(() => {
+    return profiles.filter(p => has(p.user_id, "admin") && p.user_id !== currentUserId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, roleMap, currentUserId]);
 
   const selectedProfile = useMemo(() => {
     if (!selectedUserId) return null;
@@ -134,6 +144,14 @@ export function useAdminView(): AdminViewState {
               return null;
             }
           }
+        } else if (viewMode === "admin") {
+          if (selectedUserId) {
+            q = q.eq("user_id", selectedUserId);
+          } else {
+            const ids = admins.map(p => p.user_id);
+            if (ids.length > 0) q = q.in("user_id", ids);
+            else return null;
+          }
         } else if (viewMode === "mentor") {
           if (selectedUserId) {
             q = q.eq("user_id", selectedUserId);
@@ -166,7 +184,8 @@ export function useAdminView(): AdminViewState {
       }
       // Aggregated tabs with an empty roster bail out cleanly too.
       if ((viewMode === "team_leader" && !selectedUserId && teamLeaders.length === 0) ||
-          (viewMode === "mentor" && !selectedUserId && mentors.length === 0)) {
+          (viewMode === "mentor" && !selectedUserId && mentors.length === 0) ||
+          (viewMode === "admin" && !selectedUserId && admins.length === 0)) {
         setTasks([]);
         setIsLoadingTasks(false);
         return;
@@ -222,6 +241,8 @@ export function useAdminView(): AdminViewState {
     profiles,
     teamLeaders,
     mentors,
+    admins,
+    roleMap,
     selectedProfile,
     refetchTasks: fetchTasks,
     taskOwnerNames,

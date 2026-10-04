@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Eye, User, Users, Globe, Search, ChevronDown, X } from "lucide-react";
+import { Eye, User, Users, Globe, Search, ChevronDown, X, Shield } from "lucide-react";
 import type { AdminViewMode, TeamLeaderSubView } from "@/hooks/useAdminView";
 
 interface Profile {
@@ -32,6 +32,8 @@ interface AdminViewSelectorProps {
   onSelectedUserChange: (id: string | null) => void;
   teamLeaders: Profile[];
   mentors: Profile[];
+  admins?: Profile[];
+  roleMap?: Map<string, Set<string>>;
   selectedProfile: Profile | null;
   tlSubView?: TeamLeaderSubView;
   onTlSubViewChange?: (sub: TeamLeaderSubView) => void;
@@ -41,6 +43,7 @@ const viewLabels: Record<AdminViewMode, { label: string; icon: React.ReactNode; 
   my: { label: "My Tasks", icon: <Eye className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/30" },
   mentor: { label: "Mentors Tasks", icon: <User className="w-4 h-4" />, color: "bg-blue-50 text-blue-700 border-blue-200" },
   team_leader: { label: "Team Leaders Tasks", icon: <Users className="w-4 h-4" />, color: "bg-amber-50 text-amber-700 border-amber-200" },
+  admin: { label: "Admins Tasks", icon: <Shield className="w-4 h-4" />, color: "bg-primary/10 text-primary border-primary/30" },
   all: { label: "All System", icon: <Globe className="w-4 h-4" />, color: "bg-green-50 text-green-700 border-green-200" },
 };
 
@@ -51,6 +54,8 @@ export const AdminViewSelector = ({
   onSelectedUserChange,
   teamLeaders,
   mentors,
+  admins = [],
+  roleMap,
   selectedProfile,
   tlSubView = "team",
   onTlSubViewChange,
@@ -59,8 +64,9 @@ export const AdminViewSelector = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const currentView = viewLabels[viewMode];
-  const needsUserSelection = viewMode === "team_leader" || viewMode === "mentor";
-  const userList = viewMode === "team_leader" ? teamLeaders : mentors;
+  const needsUserSelection = viewMode === "team_leader" || viewMode === "mentor" || viewMode === "admin";
+  const userList = viewMode === "team_leader" ? teamLeaders : viewMode === "admin" ? admins : mentors;
+  const allLabel = viewMode === "team_leader" ? "Team Leaders" : viewMode === "admin" ? "Admins" : "Mentors";
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return userList;
@@ -75,7 +81,7 @@ export const AdminViewSelector = ({
 
   const handleViewChange = (mode: AdminViewMode) => {
     onViewModeChange(mode);
-    if (mode !== "team_leader" && mode !== "mentor") {
+    if (mode !== "team_leader" && mode !== "mentor" && mode !== "admin") {
       setIsOpen(false);
     }
   };
@@ -113,7 +119,7 @@ export const AdminViewSelector = ({
                 <span className="truncate">{selectedProfile.full_name || selectedProfile.mentor_name}</span>
               ) : (
                 <span className="text-muted-foreground">
-                  All {viewMode === "team_leader" ? "Team Leaders" : "Mentors"}
+                  All {allLabel}
                 </span>
               )}
               <ChevronDown className="w-4 h-4 shrink-0" />
@@ -140,7 +146,7 @@ export const AdminViewSelector = ({
                   !selectedUserId ? "bg-primary/10 text-primary" : "hover:bg-secondary"
                 }`}
               >
-                All {viewMode === "team_leader" ? "Team Leaders" : "Mentors"}
+                All {allLabel}
               </button>
               {filteredUsers.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No results</p>
@@ -159,7 +165,12 @@ export const AdminViewSelector = ({
                         : "hover:bg-secondary"
                     }`}
                   >
-                    <p className="font-medium truncate">{user.full_name || user.mentor_name}</p>
+                    <p className="font-medium truncate">
+                      {user.full_name || user.mentor_name}
+                      {viewMode === "team_leader" && roleMap?.get(user.user_id)?.has("super_team_leader") && (
+                        <span className="ml-1 text-xs text-muted-foreground">(Super TL)</span>
+                      )}
+                    </p>
                     <p className="text-xs text-muted-foreground truncate">
                       {user.email} · {user.team_leader}
                     </p>

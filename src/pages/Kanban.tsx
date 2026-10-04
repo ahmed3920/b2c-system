@@ -334,6 +334,8 @@ const Kanban = () => {
             selectedUserId={adminView.selectedUserId}
             onSelectedUserChange={adminView.setSelectedUserId}
             teamLeaders={adminView.teamLeaders}
+            admins={adminView.admins}
+            roleMap={adminView.roleMap}
             mentors={adminView.mentors}
             selectedProfile={adminView.selectedProfile}
           />
