@@ -206,7 +206,7 @@ export function useAdminView(): AdminViewState {
   useEffect(() => {
     if (!isAdmin || !currentUserId) return;
     fetchTasks();
-  }, [viewMode, selectedUserId, currentUserId, isAdmin, profiles.length, tlSubView]);
+  }, [viewMode, selectedUserId, currentUserId, isAdmin, profiles.length, roleMap.size, tlSubView]);
 
   return {
     viewMode,
