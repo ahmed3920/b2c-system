@@ -73,6 +73,7 @@ export function CSTicketsTable() {
   }, [deepLinkTicket, loading, tickets, searchParams, setSearchParams]);
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [recordingFilter, setRecordingFilter] = useState<string>("all");
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>("all");
   const [teamLeaderFilter, setTeamLeaderFilter] = useState<string>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
@@ -131,6 +132,8 @@ export function CSTicketsTable() {
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (recordingFilter === "no_recording" && !t.no_recording) return false;
+      if (recordingFilter === "has_recording" && t.no_recording) return false;
       if (caseTypeFilter !== "all" && !t.case_types.includes(caseTypeFilter as any)) return false;
       if (teamLeaderFilter !== "all" && normalizeTL(t.team_leader) !== teamLeaderFilter) return false;
       if (monthFilter !== "all" && !(t.ticket_date ?? "").startsWith(monthFilter)) return false;
@@ -155,7 +158,7 @@ export function CSTicketsTable() {
       }
       return true;
     });
-  }, [tickets, statusFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search, dateFrom, dateTo]);
+  }, [tickets, statusFilter, recordingFilter, caseTypeFilter, teamLeaderFilter, monthFilter, csCategoryFilter, eduCategoryFilter, quickFilter, search, dateFrom, dateTo]);
 
   const filteredTableKey = useMemo(
     () => (loading ? "loading" : filtered.map((t) => t.id).join("|") || "empty"),
@@ -299,6 +302,16 @@ export function CSTicketsTable() {
               <SelectItem value="Not a Complain">Not a Complain</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={recordingFilter} onValueChange={setRecordingFilter}>
+            <SelectTrigger className="w-[190px]">
+              <SelectValue placeholder="Recording" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All recordings</SelectItem>
+              <SelectItem value="no_recording">No recording ({tickets.filter((t) => t.no_recording).length})</SelectItem>
+              <SelectItem value="has_recording">Validated with recording</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={teamLeaderFilter} onValueChange={setTeamLeaderFilter}>
             <SelectTrigger className="w-[180px]">
               <Filter className="mr-2 h-3 w-3" />
@@ -374,6 +387,7 @@ export function CSTicketsTable() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[t.status]}>{t.status}</Badge>
+                    {t.no_recording && <Badge variant="outline" className="ml-1 text-[10px]" title={t.no_recording_note ?? undefined}>No recording</Badge>}
                   </TableCell>
                 </TableRow>
               ))

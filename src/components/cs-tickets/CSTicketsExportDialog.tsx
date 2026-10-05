@@ -21,6 +21,8 @@ export function CSTicketsExportDialog({ open, onOpenChange, tickets }: Props) {
     { key: "ticket_number", label: "Ticket #", accessor: (r) => r.ticket_number },
     { key: "ticket_date", label: "Ticket Date", accessor: (r) => r.ticket_date },
     { key: "status", label: "Status", accessor: (r) => r.status },
+    { key: "no_recording", label: "No Recording", accessor: (r) => (r.no_recording ? "Yes" : "No") },
+    { key: "no_recording_note", label: "No Recording Note", accessor: (r) => r.no_recording_note ?? "", defaultOn: false },
     { key: "case_types", label: "Case Types", accessor: (r) => r.case_types.join(", ") },
     { key: "cs_category", label: "CS Category", accessor: (r) => r.cs_category ?? "" },
     { key: "edu_category", label: "Edu Category", accessor: (r) => r.edu_category ?? "" },

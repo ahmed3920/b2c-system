@@ -63,6 +63,8 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
   // Validation fields
   const [status, setStatus] = useState<CSTicketStatus>("Pending");
   const [response, setResponse] = useState("");
+  const [noRecording, setNoRecording] = useState(false);
+  const [noRecordingNote, setNoRecordingNote] = useState("");
 
   // Editable ticket fields
   const [ticketNumber, setTicketNumber] = useState("");
@@ -98,6 +100,8 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     if (ticket) {
       setStatus(ticket.status);
       setResponse(ticket.team_leader_response ?? "");
+      setNoRecording(!!ticket.no_recording);
+      setNoRecordingNote(ticket.no_recording_note ?? "");
       setTicketNumber(ticket.ticket_number);
       setTicketDate(new Date(ticket.ticket_date));
       setCsCategory(ticket.cs_category ?? (ticket.case_types.includes("CS") ? ticket.category : ""));
@@ -150,16 +154,24 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
     setSaving(true);
     try {
       const after = { status, team_leader_response: response || null };
+      const { data: u } = await supabase.auth.getUser();
+      const currentUid = u.user?.id ?? null;
       const { error } = await supabase
         .from("cs_tickets")
-        .update(after)
+        .update({
+          ...after,
+          no_recording: noRecording,
+          no_recording_note: noRecording ? noRecordingNote || null : null,
+          no_recording_marked_at: noRecording ? (ticket.no_recording ? ticket.no_recording_marked_at ?? new Date().toISOString() : new Date().toISOString()) : null,
+          no_recording_marked_by: noRecording ? (ticket.no_recording ? undefined : currentUid) : null,
+        } as any)
         .eq("id", ticket.id);
       if (error) throw error;
       await logCSTicketChanges({
         ticketId: ticket.id,
         ticketNumber: ticket.ticket_number,
-        before: { status: ticket.status, team_leader_response: ticket.team_leader_response },
-        after,
+        before: { status: ticket.status, team_leader_response: ticket.team_leader_response, no_recording: !!ticket.no_recording } as any,
+        after: { ...after, no_recording: noRecording } as any,
       });
       toast({ title: "Ticket updated" });
       onOpenChange(false);
@@ -482,6 +494,15 @@ export function CSTicketDetailDialog({ ticket, open, onOpenChange, onUpdated }: 
               {canValidate && (
               <div className="space-y-3 border-t pt-4">
                 <h3 className="text-sm font-semibold">Validation & Follow-up</h3>
+                <div className="space-y-2 rounded-md border border-dashed p-3">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+              <input type="checkbox" className="h-4 w-4" checked={noRecording} onChange={(e) => setNoRecording(e.target.checked)} />
+              Couldn't validate — no session recording
+            </label>
+            {noRecording && (
+              <Input placeholder="Optional note (e.g. recording missing on the system)" value={noRecordingNote} onChange={(e) => setNoRecordingNote(e.target.value)} />
+            )}
+          </div>
                 <div className="space-y-2">
                   <Label>Status Validation</Label>
                   <Select value={status} onValueChange={(v) => setStatus(v as CSTicketStatus)}>
