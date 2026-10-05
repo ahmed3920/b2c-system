@@ -77,6 +77,7 @@ export function CsTicketsAnalyticsTab() {
   const [status, setStatus] = useState("");
   const [category, setCategory] = useState("");
   const [tutor, setTutor] = useState("");
+  const [noRec, setNoRec] = useState<"all" | "only" | "exclude">("all");
   const [grain, setGrain] = useState<"day" | "week">("day");
   const [exporting, setExporting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,11 +104,45 @@ export function CsTicketsAnalyticsTab() {
       }
       if (status && normStatus(t.status) !== status) return false;
       if (category && categoryOf(t) !== category) return false;
+      if (noRec === "only" && !t.no_recording) return false;
+      if (noRec === "exclude" && t.no_recording) return false;
       if (q && !`${t.tutor_name || ""} ${t.tutor_external_id || ""} ${t.ticket_number || ""}`.toLowerCase().includes(q))
         return false;
       return true;
     });
-  }, [tickets, from, to, teamLeader, caseType, status, category, tutor]);
+  }, [tickets, from, to, teamLeader, caseType, status, category, tutor, noRec]);
+
+  const noRecRows = useMemo(() => rows.filter((t) => t.no_recording), [rows]);
+  const noRecTrend = useMemo(() => {
+    const map = new Map<string, { period: string; total: number }>();
+    for (const t of noRecRows) {
+      const day = ticketDay(t);
+      if (!day) continue;
+      const key = grain === "day" ? day : weekKey(day);
+      const cur = map.get(key) ?? { period: key, total: 0 };
+      cur.total++;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => a.period.localeCompare(b.period));
+  }, [noRecRows, grain]);
+  const noRecByTl = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const t of noRecRows) {
+      const tl = (t.team_leader || "Unassigned").trim() || "Unassigned";
+      map.set(tl, (map.get(tl) ?? 0) + 1);
+    }
+    return Array.from(map, ([team_leader, total]) => ({ team_leader, total })).sort((a, b) => b.total - a.total);
+  }, [noRecRows]);
+  const noRecByTutor = useMemo(() => {
+    const map = new Map<string, { tutor: string; total: number }>();
+    for (const t of noRecRows) {
+      const key = t.tutor_external_id || t.tutor_name || "Unknown";
+      const cur = map.get(key) ?? { tutor: `${t.tutor_name || "Unknown"}${t.tutor_external_id ? ` (${t.tutor_external_id})` : ""}`, total: 0 };
+      cur.total++;
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 15);
+  }, [noRecRows]);
 
   const kpis = useMemo(() => {
     const counts: Record<Status, number> = { Valid: 0, "Not Valid": 0, "Not a Complain": 0, Pending: 0 };
@@ -168,8 +203,9 @@ export function CsTicketsAnalyticsTab() {
       const tl = (t.team_leader || "Unassigned").trim() || "Unassigned";
       const cur =
         map.get(tl) ??
-        ({ team_leader: tl, total: 0, Valid: 0, "Not Valid": 0, "Not a Complain": 0, Pending: 0, closedDays: 0, closedCount: 0 } as any);
+        ({ team_leader: tl, total: 0, noRec: 0, Valid: 0, "Not Valid": 0, "Not a Complain": 0, Pending: 0, closedDays: 0, closedCount: 0 } as any);
       cur.total++;
+      if (t.no_recording) cur.noRec++;
       cur[normStatus(t.status)]++;
       if (t.closed_at && t.created_at) {
         cur.closedDays += (new Date(t.closed_at).getTime() - new Date(t.created_at).getTime()) / 86400000;
@@ -350,6 +386,17 @@ export function CsTicketsAnalyticsTab() {
             <Label>Tutor / ticket</Label>
             <Input placeholder="Name, T-ID or ticket #" value={tutor} onChange={(e) => setTutor(e.target.value)} />
           </div>
+          <div className="space-y-1">
+            <Label>No recording</Label>
+            <Select value={noRec} onValueChange={(v) => setNoRec(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tickets</SelectItem>
+                <SelectItem value="only">Only "no recording"</SelectItem>
+                <SelectItem value="exclude">Exclude "no recording"</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-end gap-2 md:col-span-4">
             <Button variant="outline" onClick={refresh} disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -357,7 +404,7 @@ export function CsTicketsAnalyticsTab() {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => { setFrom(""); setTo(""); setTeamLeader(""); setCaseType(""); setStatus(""); setCategory(""); setTutor(""); }}
+              onClick={() => { setFrom(""); setTo(""); setTeamLeader(""); setCaseType(""); setStatus(""); setCategory(""); setTutor(""); setNoRec("all"); }}
             >
               Clear filters
             </Button>
@@ -374,7 +421,7 @@ export function CsTicketsAnalyticsTab() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
+      <div className="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
         {[
           { label: "Total tickets", value: kpis.total, sub: "" },
           { label: "Valid", value: kpis.counts.Valid, sub: `${pct(kpis.counts.Valid, kpis.total)}%` },
@@ -382,6 +429,7 @@ export function CsTicketsAnalyticsTab() {
           { label: "Not a Complain", value: kpis.counts["Not a Complain"], sub: `${pct(kpis.counts["Not a Complain"], kpis.total)}%` },
           { label: "Pending", value: kpis.counts.Pending, sub: `${kpis.overdue} past deadline` },
           { label: "Validity rate", value: `${kpis.validityRate}%`, sub: "of decided tickets" },
+          { label: "No recording", value: noRecRows.length, sub: `${pct(noRecRows.length, kpis.total)}% couldn't be validated` },
           { label: "Avg. closing time", value: kpis.avgClosingDays === null ? "—" : `${kpis.avgClosingDays}d`, sub: "creation to close" },
         ].map((k) => (
           <Card key={k.label}>
@@ -555,6 +603,57 @@ export function CsTicketsAnalyticsTab() {
         </Card>
       )}
 
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">No-recording tickets over time</CardTitle></CardHeader>
+          <CardContent className="h-80" data-chart="No-recording tickets over time">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={noRecTrend} margin={{ top: 16 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="total" name="No recording" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="total" position="top" fontSize={10} formatter={hideZero} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">No-recording tickets by team leader</CardTitle></CardHeader>
+          <CardContent className="h-80" data-chart="No-recording tickets by team leader">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={noRecByTl} layout="vertical" margin={{ left: 40, right: 28 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} />
+                <YAxis type="category" dataKey="team_leader" width={140} tick={{ fontSize: 10 }} interval={0} />
+                <Tooltip />
+                <Bar dataKey="total" name="No recording" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="total" position="right" fontSize={10} formatter={hideZero} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Top tutors with no-recording tickets</CardTitle></CardHeader>
+          <CardContent className="h-80" data-chart="Top tutors with no-recording tickets">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={noRecByTutor} layout="vertical" margin={{ left: 40, right: 28 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} />
+                <YAxis type="category" dataKey="tutor" width={160} tick={{ fontSize: 9 }} interval={0} />
+                <Tooltip />
+                <Bar dataKey="total" name="No recording" fill="hsl(var(--destructive))">
+                  <LabelList dataKey="total" position="right" fontSize={10} formatter={hideZero} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">Team leader summary</CardTitle>
@@ -564,8 +663,8 @@ export function CsTicketsAnalyticsTab() {
             onClick={() =>
               downloadCsv(
                 "cs-tickets-by-team-leader",
-                ["Team leader", "Total", "Valid", "Not Valid", "Not a Complain", "Pending", "Validity %", "Avg closing days"],
-                byTeamLeader.map((r) => [r.team_leader, r.total, r.Valid, r["Not Valid"], r["Not a Complain"], r.Pending, r.validityPct, r.avgClosing ?? ""]),
+                ["Team leader", "Total", "Valid", "Not Valid", "Not a Complain", "Pending", "No recording", "Validity %", "Avg closing days"],
+                byTeamLeader.map((r) => [r.team_leader, r.total, r.Valid, r["Not Valid"], r["Not a Complain"], r.Pending, r.noRec, r.validityPct, r.avgClosing ?? ""]),
               )
             }
           >
@@ -582,15 +681,16 @@ export function CsTicketsAnalyticsTab() {
                 <TableHead className="text-right">Not Valid</TableHead>
                 <TableHead className="text-right">Not a Complain</TableHead>
                 <TableHead className="text-right">Pending</TableHead>
+                <TableHead className="text-right">No recording</TableHead>
                 <TableHead className="text-right">Validity %</TableHead>
                 <TableHead className="text-right">Avg closing (days)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && !rows.length ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
               ) : byTeamLeader.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No tickets match these filters</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No tickets match these filters</TableCell></TableRow>
               ) : (
                 byTeamLeader.map((r) => (
                   <TableRow key={r.team_leader}>
@@ -600,6 +700,7 @@ export function CsTicketsAnalyticsTab() {
                     <TableCell className="text-right">{r["Not Valid"]}</TableCell>
                     <TableCell className="text-right">{r["Not a Complain"]}</TableCell>
                     <TableCell className="text-right">{r.Pending}</TableCell>
+                    <TableCell className="text-right">{r.noRec}</TableCell>
                     <TableCell className="text-right">{r.validityPct}%</TableCell>
                     <TableCell className="text-right">{r.avgClosing ?? "—"}</TableCell>
                   </TableRow>
