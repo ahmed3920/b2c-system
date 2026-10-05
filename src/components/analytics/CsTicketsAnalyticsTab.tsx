@@ -198,7 +198,7 @@ export function CsTicketsAnalyticsTab() {
   }, [rows]);
 
   const byTeamLeader = useMemo(() => {
-    const map = new Map<string, { team_leader: string; total: number; closedDays: number; closedCount: number } & Record<Status, number>>();
+    const map = new Map<string, { team_leader: string; total: number; noRec: number; closedDays: number; closedCount: number } & Record<Status, number>>();
     for (const t of rows) {
       const tl = (t.team_leader || "Unassigned").trim() || "Unassigned";
       const cur =
