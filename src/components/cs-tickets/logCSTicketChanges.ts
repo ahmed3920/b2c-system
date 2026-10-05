@@ -11,6 +11,7 @@ const TRACKED_FIELDS = [
   "need_response_deadline",
   "status",
   "team_leader_response",
+  "no_recording",
 ] as const;
 
 type TrackedField = (typeof TRACKED_FIELDS)[number];
