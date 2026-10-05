@@ -19,10 +19,11 @@ export interface CsAnalyticsTicket {
   tutor_external_id: string | null;
   assigned_mentor_name: string | null;
   mentor_validation: string | null;
+  no_recording: boolean | null;
 }
 
 const COLUMNS =
-  "id,ticket_number,ticket_date,created_at,closed_at,need_response_deadline,case_type,case_types,category,cs_category,edu_category,status,team_leader,tutor_name,tutor_external_id,assigned_mentor_name,mentor_validation";
+  "id,ticket_number,ticket_date,created_at,closed_at,need_response_deadline,case_type,case_types,category,cs_category,edu_category,status,team_leader,tutor_name,tutor_external_id,assigned_mentor_name,mentor_validation,no_recording";
 
 /** Loads every CS ticket (paged past the 1000-row API limit) for client-side analysis. */
 export function useCsTicketAnalytics() {
