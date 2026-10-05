@@ -66,6 +66,9 @@ export interface CSTicket {
   session_recordings: SessionRecording[];
   additional_tutors: AdditionalTutor[];
   parent_attachments: ParentAttachment[];
+  no_recording?: boolean;
+  no_recording_note?: string | null;
+  no_recording_marked_at?: string | null;
 }
 
 export type CSTicketScope = "all" | "mine" | "assigned_to_me";

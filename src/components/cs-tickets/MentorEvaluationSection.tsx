@@ -43,6 +43,8 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
   const [recommendation, setRecommendation] = useState(ticket.mentor_recommendation ?? "");
   const [validation, setValidation] = useState<string>(ticket.mentor_validation ?? "");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [noRecording, setNoRecording] = useState<boolean>(!!ticket.no_recording);
+  const [noRecordingNote, setNoRecordingNote] = useState(ticket.no_recording_note ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mentorFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +64,8 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
     setEvalNotes(ticket.mentor_evaluation_notes ?? "");
     setRecommendation(ticket.mentor_recommendation ?? "");
     setValidation(ticket.mentor_validation ?? "");
+    setNoRecording(!!ticket.no_recording);
+    setNoRecordingNote(ticket.no_recording_note ?? "");
   }, [ticket.id]);
 
   useEffect(() => {
@@ -217,7 +221,11 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
           mentor_recommendation: recommendation || null,
           mentor_validation: validation,
           session_recordings: recordings as any,
-        })
+          no_recording: noRecording,
+          no_recording_note: noRecording ? noRecordingNote || null : null,
+          no_recording_marked_at: noRecording ? (ticket.no_recording ? ticket.no_recording_marked_at ?? new Date().toISOString() : new Date().toISOString()) : null,
+          no_recording_marked_by: noRecording ? (ticket.no_recording ? undefined : currentUserId) : null,
+        } as any)
         .eq("id", ticket.id);
       if (error) throw error;
       toast({ title: "Evaluation saved" });
@@ -374,6 +382,16 @@ export function MentorEvaluationSection({ ticket, onChanged }: Props) {
               Upload Screenshot/File
             </Button>
           </div>
+        </div>
+
+        <div className="space-y-2 rounded-md border border-dashed p-3">
+          <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+            <input type="checkbox" className="h-4 w-4" checked={noRecording} onChange={(e) => setNoRecording(e.target.checked)} />
+            Couldn't validate — no session recording
+          </label>
+          {noRecording && (
+            <Input placeholder="Optional note (e.g. recording missing on the system)" value={noRecordingNote} onChange={(e) => setNoRecordingNote(e.target.value)} />
+          )}
         </div>
 
         <div className="space-y-2">
