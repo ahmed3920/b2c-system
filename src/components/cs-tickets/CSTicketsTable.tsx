@@ -210,11 +210,12 @@ export function CSTicketsTable() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-[240px]">
           <Input
             placeholder="Search by ticket #, tutor, category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="min-w-[240px]"
           />
         </div>
         <div className="flex flex-wrap gap-2 items-center">

@@ -49,9 +49,9 @@ export function CsTicketsView({ items, loading, onChanged }: Props) {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <CardTitle>CS Tickets</CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
+            <div className="relative flex-1 min-w-[240px]">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search ticket / tutor / student..." className="pl-8 w-[260px]" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search ticket / tutor / student..." className="pl-8 min-w-[240px]" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
