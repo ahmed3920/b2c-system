@@ -72,7 +72,7 @@ export function AssignedCSEvaluations() {
             placeholder="Search by ticket #, tutor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[200px]"
+            className="flex-1 min-w-[260px]"
           />
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
